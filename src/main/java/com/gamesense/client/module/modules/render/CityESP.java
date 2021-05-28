@@ -45,10 +45,6 @@ public class CityESP extends Module {
     DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 10);
     DoubleSetting maxDamage = registerDouble("Max Self Damage", 7, 0, 20);
     BooleanSetting ignoreCrystals = registerBoolean("Ignore Crystals", true);
-    BooleanSetting mine = registerBoolean("Shift Mine", false);
-    BooleanSetting switchPick = registerBoolean("Switch Pick", true);
-    DoubleSetting distanceMine = registerDouble("Distance Mine", 5, 0, 10);
-    ModeSetting mineMode = registerMode("Mine Mode", Arrays.asList("Packet", "Vanilla"), "Packet");
     ModeSetting targetMode = registerMode("Target", Arrays.asList("Single", "All"), "Single");
     ModeSetting selectMode = registerMode("Select", Arrays.asList("Closest", "All"), "Closest");
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
@@ -114,47 +110,7 @@ public class CityESP extends Module {
                 cityable.put(player, sides);
             }
         }
-        if (mine.getValue()) {
-            if (mc.gameSettings.keyBindSneak.isPressed()) {
-                for (List<BlockPos> poss : cityable.values()) {
-                    boolean found = false;
-                    for (BlockPos block : poss) {
-                        if (mc.player.getDistance(block.x, block.y, block.z) <= distanceMine.getValue()) {
-                            found = true;
-                            if (packetMined && coordsPacketMined == block)
-                                break;
 
-                            if (mc.player.getHeldItemMainhand().getItem() != Items.DIAMOND_PICKAXE && switchPick.getValue()) {
-                                oldSlot = mc.player.inventory.currentItem;
-                                int slot = InventoryUtil.findFirstItemSlot(ItemPickaxe.class, 0, 9);
-                                if (slot != 1)
-                                    mc.player.inventory.currentItem = slot;
-                            }
-
-                            switch (mineMode.getValue()) {
-                                case "Packet": {
-                                    mc.player.swingArm(EnumHand.MAIN_HAND);
-                                    mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, block, EnumFacing.UP));
-                                    mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, block, EnumFacing.UP));
-                                    packetMined = true;
-                                    coordsPacketMined = block;
-                                }
-                                case "Vanilla": {
-                                    mc.player.swingArm(EnumHand.MAIN_HAND);
-                                    mc.playerController.onPlayerDamageBlock(block, EnumFacing.UP);
-                                }
-                                default: {
-                                    mc.player.swingArm(EnumHand.MAIN_HAND);
-                                    mc.playerController.onPlayerDamageBlock(block, EnumFacing.UP);
-                                }
-                            }
-                            break;
-                        }
-                    }
-                    if (found) break;
-                }
-            }
-        }
     }
 
     public void onWorldRender(RenderEvent event) {

@@ -1,7 +1,10 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.BlockChangeEvent;
 import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.render.GSColor;
@@ -15,6 +18,9 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.AutoGG;
+import com.mojang.realmsclient.gui.ChatFormatting;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -24,10 +30,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.item.ItemPickaxe;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerDigging;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -42,11 +51,11 @@ import java.util.stream.Collectors;
  * Ported and modified from Surround.java
  */
 
-@Module.Declaration(name = "AAProva", category = Category.Combat)
+@Module.Declaration(name = "AutoCity", category = Category.Combat)
 public class AutoCity extends Module {
 
 
-    IntegerSetting range = registerInteger("Range", 20, 1, 30);
+    DoubleSetting range = registerDouble("Range", 6, 0, 8);
     IntegerSetting down = registerInteger("Down", 1, 0, 3);
     IntegerSetting sides = registerInteger("Sides", 1, 0, 4);
     IntegerSetting depth = registerInteger("Depth", 3, 0, 10);
@@ -57,11 +66,12 @@ public class AutoCity extends Module {
     BooleanSetting switchPick = registerBoolean("Switch Pick", true);
     BooleanSetting placeCrystal = registerBoolean("Place Crystal", false);
     ModeSetting mineMode = registerMode("Mine Mode", Arrays.asList("Packet", "Vanilla"), "Packet");
-    ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
+    ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both", "None"), "Both");
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     ColorSetting color = registerColor("Color", new GSColor(102, 51, 153));
 
-    private BlockPos blockMine;
+    private BlockPos blockMine,
+                     blockCrystal;
     private int oldSlot;
     private EntityPlayer aimTarget;
     private boolean isMining;
@@ -69,13 +79,14 @@ public class AutoCity extends Module {
     private boolean blockInside,
                     finalY,
                     noHole,
-                    noPossible;
+                    noPossible,
+                    done;
 
 
     public void onEnable() {
         aimTarget = null;
-        blockMine = null;
-        isMining = packet = blockInside = finalY = noHole = noPossible = false;
+        blockMine = blockCrystal = null;
+        isMining = packet = blockInside = finalY = noHole = noPossible = done = false;
     }
 
     public void onDisable() {
@@ -90,18 +101,49 @@ public class AutoCity extends Module {
         else setDisabledMessage("AutoCity turned OFF!");
 
     }
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<BlockChangeEvent> totemPopEventListener = new Listener<>(event -> {
+        if (mc.player == null || mc.world == null) return;
 
+        if (event.getBlock() == null || event.getPosition() == null || blockMine == null) return;
+
+        if (event.getPosition() == blockMine && event.getBlock() instanceof BlockAir) {
+            /*
+            if (placeCrystal.getValue()) {
+                int slot = -1;
+                EnumHand hand = EnumHand.MAIN_HAND;
+                if (mc.player.getHeldItemOffhand().getItem() == Items.END_CRYSTAL)
+                    hand = EnumHand.OFF_HAND;
+                else {
+
+                    slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
+                    if (slot != -1) {
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                    }
+                }
+                if (hand == EnumHand.OFF_HAND || slot != -1) {
+                    mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(blockCrystal, EnumFacing.UP, hand, 0, 0, 0));
+                    mc.player.swingArm(hand);
+                }
+            }
+             */
+
+            if (!packet)
+                if (oldSlot != -1)
+                    mc.player.inventory.currentItem = oldSlot;
+            done = true;
+        }
+
+    });
 
 
     public void onUpdate() {
         if (mc.player == null || mc.world == null)
             return;
-        //SPacketBlockChange
+
         if (isMining) {
-            if (BlockUtil.getBlock(blockMine) instanceof BlockAir) {
-                if (!packet)
-                    mc.player.inventory.currentItem = oldSlot;
-                PistonCrystal.printDebug("Block destroyed!", false);
+            if (done) {
                 disable();
             } else
             if (!packet) {
@@ -163,11 +205,19 @@ public class AutoCity extends Module {
 
         if (sides.size() > 0) {
             blockMine = sides.get(0);
+            /*
+            blockCrystal = new BlockPos(blockMine.getX() - (aimTarget.posX - blockMine.getX()),
+                                           blockMine.getY(),
+                                         blockMine.getZ() - (aimTarget.posZ - blockMine.getZ()));*/
             double distance = mc.player.getDistanceSq(blockMine);
             for(BlockPos poss : sides) {
                 if (mc.player.getDistanceSq(blockMine) < distance) {
                     blockMine = poss;
                     distance = mc.player.getDistanceSq(blockMine);
+                    /*
+                    blockCrystal = new BlockPos(poss.getZ() - (aimTarget.posZ - blockMine.getZ()),
+                            poss.getY(),
+                            blockMine.getZ() - (aimTarget.posZ - blockMine.getZ()));*/
                 }
             }
         } else {
@@ -303,6 +353,9 @@ public class AutoCity extends Module {
             case "Fill": {
                 RenderUtil.drawBox(blockPos, 1, gsColor2, GeometryMasks.Quad.ALL);
                 break;
+            }
+            case "None": {
+
             }
         }
     }

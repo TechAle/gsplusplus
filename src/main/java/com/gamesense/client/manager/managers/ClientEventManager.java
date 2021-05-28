@@ -1,9 +1,6 @@
 package com.gamesense.client.manager.managers;
 
-import com.gamesense.api.event.events.PacketEvent;
-import com.gamesense.api.event.events.PlayerJoinEvent;
-import com.gamesense.api.event.events.PlayerLeaveEvent;
-import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.event.events.*;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.misc.VersionChecker;
 import com.gamesense.api.util.player.NameUtil;
@@ -16,9 +13,12 @@ import com.gamesense.client.module.ModuleManager;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.Block;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.network.play.server.SPacketBlockChange;
 import net.minecraft.network.play.server.SPacketPlayerListItem;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -147,6 +147,11 @@ public enum ClientEventManager implements Manager {
                     }
                 }
             }
+        } else if(event.getPacket() instanceof SPacketBlockChange) {
+            SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
+            GameSense.EVENT_BUS.post(new BlockChangeEvent(
+                    packet.getBlockPosition(),
+                    packet.getBlockState().getBlock()));
         }
     });
 
