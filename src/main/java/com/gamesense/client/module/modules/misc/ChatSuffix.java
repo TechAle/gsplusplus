@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.command.CommandManager;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 public class ChatSuffix extends Module {
 
     ModeSetting Separator = registerMode("Separator", Arrays.asList(">>", "<<", "|"), "|");
+    BooleanSetting noUnicode = registerBoolean("No Unicode", false);
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -23,17 +25,13 @@ public class ChatSuffix extends Module {
         if (event.getPacket() instanceof CPacketChatMessage) {
             if (((CPacketChatMessage) event.getPacket()).getMessage().startsWith("/") || ((CPacketChatMessage) event.getPacket()).getMessage().startsWith(CommandManager.getCommandPrefix()))
                 return;
-            String Separator2 = null;
-            if (Separator.getValue().equalsIgnoreCase(">>")) {
-                Separator2 = " \u300b";
-            }
-            if (Separator.getValue().equalsIgnoreCase("<<")) {
-                Separator2 = " \u300a";
-            } else if (Separator.getValue().equalsIgnoreCase("|")) {
-                Separator2 = " \u23D0 ";
-            }
+            String Separator2 = noUnicode.getValue() ? " " + Separator.getValue() : (
+                    Separator.getValue().equalsIgnoreCase(">>") ? " \u300b" :
+                    Separator.getValue().equalsIgnoreCase("<<") ? " \u300a" :
+                    " \u23D0 "
+                    );
             String old = ((CPacketChatMessage) event.getPacket()).getMessage();
-            String suffix = Separator2 + toUnicode(GameSense.MODNAME);
+            String suffix = Separator2 + (noUnicode.getValue() ? GameSense.MODNAME : toUnicode(GameSense.MODNAME));
             String s = old + suffix;
             if (s.length() > 255) return;
             ((CPacketChatMessage) event.getPacket()).message = s;

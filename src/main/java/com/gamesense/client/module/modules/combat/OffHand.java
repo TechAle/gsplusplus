@@ -12,6 +12,7 @@ import com.gamesense.client.module.Module;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
@@ -148,7 +149,10 @@ public class OffHand extends Module {
 
     @Override
     public void onUpdate() {
-        if (mc.currentScreen instanceof GuiContainer) return;
+        if (mc.currentScreen instanceof GuiContainer) {
+            if (!(mc.currentScreen instanceof GuiInventory))
+                return;
+        }
         // If we are changing
         if (stepChanging)
             // Check if we have to wait

@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.player.social.Enemy;
 import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
+import com.gamesense.api.util.player.social.SpecialNames;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GuiConfig;
 import com.gamesense.client.command.CommandManager;
@@ -31,7 +32,7 @@ import java.nio.file.Paths;
 
 public class SaveConfig {
 
-    public static final String fileName = "GameSense/";
+    public static final String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
@@ -48,6 +49,7 @@ public class SaveConfig {
             saveCustomFont();
             saveFriendsList();
             saveEnemiesList();
+            saveSpecialNames();
             saveClickGUIPositions();
             saveAutoGG();
             saveAutoReply();
@@ -222,6 +224,24 @@ public class SaveConfig {
         fontObject.add("Font Name", new JsonPrimitive(GameSense.INSTANCE.cFontRenderer.getFontName()));
         fontObject.add("Font Size", new JsonPrimitive(GameSense.INSTANCE.cFontRenderer.getFontSize()));
         String jsonString = gson.toJson(new JsonParser().parse(fontObject.toString()));
+        fileOutputStreamWriter.write(jsonString);
+        fileOutputStreamWriter.close();
+    }
+
+    private static void saveSpecialNames() throws IOException {
+
+        registerFiles(miscName, "SpecialNames");
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        OutputStreamWriter fileOutputStreamWriter = new OutputStreamWriter(new FileOutputStream(fileName + miscName + "SpecialNames" + ".json"), StandardCharsets.UTF_8);
+        JsonObject mainObject = new JsonObject();
+        JsonArray friendArray = new JsonArray();
+
+        for (SpecialNames friend : SocialManager.getSpecialNames()) {
+            friendArray.add(friend.getName());
+        }
+        mainObject.add("SpecialNames", friendArray);
+        String jsonString = gson.toJson(new JsonParser().parse(mainObject.toString()));
         fileOutputStreamWriter.write(jsonString);
         fileOutputStreamWriter.close();
     }

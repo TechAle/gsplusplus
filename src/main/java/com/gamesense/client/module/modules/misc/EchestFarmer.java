@@ -84,8 +84,13 @@ public class EchestFarmer extends Module {
         echestToMine = (stackWanted - obbyCount) / 8;
 
         if (HowplaceBlock.getValue().equals("Looking")) {
-            blockAim = mc.objectMouseOver.getBlockPos();
-            blockAim.y += 1;
+            try {
+                blockAim = mc.objectMouseOver.getBlockPos();
+                blockAim.y += 1;
+            }catch (NullPointerException e) {
+                disable();
+                return;
+            }
 
             if (BlockUtil.getPlaceableSide(blockAim) == null) {
                 looking = false;

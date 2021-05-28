@@ -12,6 +12,7 @@ public class CapeUtil {
     private static final List<UUID> uuids = new ArrayList<>();
 
     public static void init() {
+
         try {
             URL capesList = new URL("https://raw.githubusercontent.com/IUDevman/gamesense-assets/main/files/capeslist.txt");
             BufferedReader in = new BufferedReader(new InputStreamReader(capesList.openStream()));

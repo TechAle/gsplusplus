@@ -6,10 +6,12 @@ public class SocialManager {
 
     private static ArrayList<Friend> friends;
     private static ArrayList<Enemy> enemies;
+    private static ArrayList<SpecialNames> SpecialNames;
 
     public static void init() {
         friends = new ArrayList<>();
         enemies = new ArrayList<>();
+        SpecialNames = new ArrayList<>();
     }
 
     public static ArrayList<Friend> getFriends() {
@@ -18,6 +20,10 @@ public class SocialManager {
 
     public static ArrayList<Enemy> getEnemies() {
         return enemies;
+    }
+
+    public static ArrayList<SpecialNames> getSpecialNames() {
+        return SpecialNames;
     }
 
     public static ArrayList<String> getFriendsByName() {
@@ -60,12 +66,37 @@ public class SocialManager {
         return value;
     }
 
+    public static boolean isSpecial(String name) {
+        boolean value = false;
+
+        for (SpecialNames enemy : getSpecialNames()) {
+            if (enemy.getName().equalsIgnoreCase(name)) {
+                value = true;
+                break;
+            }
+        }
+
+        return value;
+    }
+
     public static Friend getFriend(String name) {
         return getFriends().stream().filter(friend -> friend.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     public static Enemy getEnemy(String name) {
         return getEnemies().stream().filter(enemy -> enemy.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+    }
+
+    public static SpecialNames getSpecialNames(String name) {
+        return getSpecialNames().stream().filter(enemy -> enemy.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+    }
+
+    public static ArrayList<String> getSpecialNamesString() {
+        ArrayList<String> out = new ArrayList<>();
+        for(SpecialNames name : getSpecialNames()) {
+            out.add(name.getName());
+        }
+        return out;
     }
 
     public static void addFriend(String name) {
@@ -82,5 +113,17 @@ public class SocialManager {
 
     public static void delEnemy(String name) {
         getEnemies().remove(getEnemy(name));
+    }
+
+    public static void delSpecial(String name) {
+        getSpecialNames().remove(getSpecialNames(name));
+    }
+
+    public static void addSpecialName(String name) {
+        getSpecialNames().add(new SpecialNames(name));
+    }
+
+    public static void removeSpecialName(String name) {
+        getSpecialNames().remove(getSpecialNames(name));
     }
 }

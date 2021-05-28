@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 
 public class LoadConfig {
 
-    private static final String fileName = "GameSense/";
+    private static final String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
@@ -48,6 +48,7 @@ public class LoadConfig {
             loadCustomFont();
             loadFriendsList();
             loadEnemiesList();
+            loadSpecialNames();
             loadClickGUIPositions();
             loadAutoGG();
             loadAutoReply();
@@ -299,6 +300,44 @@ public class LoadConfig {
         JsonArray friendObject = mainObject.get("Friends").getAsJsonArray();
 
         friendObject.forEach(object -> SocialManager.addFriend(object.getAsString()));
+        inputStream.close();
+    }
+
+    private static void loadSpecialNames() throws IOException {
+        String friendLocation = fileName + miscName;
+
+        if (!Files.exists(Paths.get(friendLocation + "SpecialNames" + ".json"))) {
+            for(String defaultValue : new String[] {
+                    "nocatsnolife",
+                    "gamesense",
+                    "gs",
+                    "salbe",
+                    "phantom826",
+                    "doogie13",
+                    "soulbond",
+                    "vqk",
+                    "gaynal",
+                    "anonymousplayer",
+                    "lambdaclient",
+                    // This is for special colors
+                    "\u2063",
+                    "\u0262\ua731"
+            }) {
+                SocialManager.addSpecialName(defaultValue);
+            }
+            return;
+        }
+
+        InputStream inputStream = Files.newInputStream(Paths.get(friendLocation + "SpecialNames" + ".json"));
+        JsonObject mainObject = new JsonParser().parse(new InputStreamReader(inputStream)).getAsJsonObject();
+
+        if (mainObject.get("SpecialNames") == null) {
+            return;
+        }
+
+        JsonArray friendObject = mainObject.get("SpecialNames").getAsJsonArray();
+
+        friendObject.forEach(object -> SocialManager.addSpecialName(object.getAsString()));
         inputStream.close();
     }
 

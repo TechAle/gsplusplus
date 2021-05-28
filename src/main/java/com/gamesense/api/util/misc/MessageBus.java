@@ -2,6 +2,7 @@ package com.gamesense.api.util.misc;
 
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.hud.Notifications;
+import com.gamesense.client.module.modules.misc.ChatModifier;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketChatMessage;
@@ -14,7 +15,7 @@ import net.minecraft.util.text.TextComponentString;
 
 public class MessageBus {
 
-    public static String watermark = ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Game" + ChatFormatting.GREEN + "Sense" + ChatFormatting.GRAY + "] " + ChatFormatting.RESET;
+    public static String watermark = ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "g" + ChatFormatting.GREEN + "s++" + ChatFormatting.GRAY + "] " + ChatFormatting.RESET;
     public static ChatFormatting messageFormatting = ChatFormatting.GRAY;
 
     protected static final Minecraft mc = Minecraft.getMinecraft();
@@ -23,7 +24,7 @@ public class MessageBus {
      * Sends a client-sided message WITH the client prefix
      **/
     public static void sendClientPrefixMessage(String message) {
-        TextComponentString string1 = new TextComponentString(watermark + messageFormatting + message);
+        TextComponentString string1 = new TextComponentString((ModuleManager.getModule(ChatModifier.class).watermarkSpecial.getValue() ? "\u2063[gs++]" : watermark) + messageFormatting + message);
         TextComponentString string2 = new TextComponentString(messageFormatting + message);
 
         Notifications notifications = ModuleManager.getModule(Notifications.class);

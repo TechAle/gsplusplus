@@ -17,7 +17,7 @@ public class VersionChecker {
     public static String joinMessage = "None";
 
     public static void init() {
-        checkVersion(GameSense.MODVER);
+        //checkVersion(GameSense.MODVER);
     }
 
     private static void checkVersion(String version) {

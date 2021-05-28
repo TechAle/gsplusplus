@@ -18,6 +18,7 @@ import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockSkull;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemSkull;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -50,6 +51,9 @@ public class AutoSkull extends Module {
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 6);
     BooleanSetting autoTrap = registerBoolean("AutoTrap", false);
     IntegerSetting BlocksPerTick = registerInteger("Blocks Per Tick", 4, 0, 10);
+    BooleanSetting phase = registerBoolean("Phase", true);
+    BooleanSetting ServerRespond = registerBoolean("Server Respond", true);
+    BooleanSetting predictPhase = registerBoolean("Predict Phase", true);
 
     private static final Vec3d[] AIR = {
         // Supports
@@ -73,6 +77,8 @@ public class AutoSkull extends Module {
     private Vec3d lastHitVec = new Vec3d(-1, -1, -1);
     private int preRotationTick;
     private int afterRotationTick;
+    private int stage;
+    private boolean toPhase;
     private boolean alrPlaced;
 
     public void onEnable() {
@@ -82,9 +88,9 @@ public class AutoSkull extends Module {
             disable();
             return;
         }
-        noObby = firstShift = alrPlaced = activedBefore = false;
+        noObby = firstShift = alrPlaced = activedBefore = toPhase = false;
         lastHitVec = null;
-        preRotationTick = afterRotationTick = 0;
+        preRotationTick = afterRotationTick = stage = resetPhase = 0;
     }
 
     @SuppressWarnings("unused")
@@ -110,6 +116,7 @@ public class AutoSkull extends Module {
     }
 
     private boolean firstShift;
+    private int resetPhase;
 
     public void onUpdate() {
         if (mc.player == null) {
@@ -126,6 +133,31 @@ public class AutoSkull extends Module {
             delayTimeTicks++;
         } else {
             delayTimeTicks = 0;
+
+            if (toPhase) {
+                if (BlockUtil.getBlock(mc.player.posX, mc.player.posY, mc.player.posZ) instanceof BlockSkull) {
+                    if (mc.player.posY % 10 != 0) {
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - (mc.player.posY - (int) mc.player.posY), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                    }
+                    switch (stage) {
+                        case 0:
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 0.001, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 1000, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                            break;
+                        case 1:
+                            break;
+                    }
+                } else {
+                    if (BlockUtil.getBlock(mc.player.posX, mc.player.posY, mc.player.posZ).fullBlock && mc.player.posY - (int) mc.player.posY <= 0.6) {
+                        disable();
+                    }
+                    if ((mc.player.posY - (int) mc.player.posY) > .6) {
+                        placeBlock(false);
+                    } else if (++resetPhase == 50)
+                        disable();
+                }
+                return;
+            }
 
             if (onlyHoles.getValue() && HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() == HoleUtil.HoleType.NONE)
                 return;
@@ -148,19 +180,19 @@ public class AutoSkull extends Module {
             }
 
             if (instaActive.getValue()) {
-                placeBlock();
+                placeBlock(true);
                 return;
             }
 
             if (onShift.getValue() && mc.gameSettings.keyBindSneak.isKeyDown()) {
                 if (!firstShift)
-                    placeBlock();
+                    placeBlock(true);
                 return;
             } else if (firstShift && !mc.gameSettings.keyBindSneak.isKeyDown()) firstShift = false;
 
             if (playerDistance.getValue() != 0) {
                 if (PlayerUtil.findClosestTarget(playerDistance.getValue(), null) != null) {
-                    placeBlock();
+                    placeBlock(true);
                     return;
                 }
             }
@@ -187,63 +219,75 @@ public class AutoSkull extends Module {
         }
     };
 
-    private void placeBlock() {
+    private void placeBlock(boolean changeStatus) {
 
-        if (mc.player.onGround) {
-            BlockPos pos = new BlockPos(mc.player.posX, mc.player.posY + .4, mc.player.posZ);
-            if (BlockUtil.getBlock(pos) instanceof BlockAir) {
-                EnumHand handSwing = EnumHand.MAIN_HAND;
+        BlockPos pos = new BlockPos(mc.player.posX, mc.player.posY + .4, mc.player.posZ);
+        if (mc.world.getBlockState(pos).getMaterial().isReplaceable()) {
+            EnumHand handSwing = EnumHand.MAIN_HAND;
 
-                int skullSlot = InventoryUtil.findSkullSlot(offHandSkull.getValue(), activedBefore);
+            int skullSlot = InventoryUtil.findSkullSlot(offHandSkull.getValue(), activedBefore);
 
-                if (skullSlot == -1) {
-                    noObby = true;
-                    return;
-                }
+            if (skullSlot == -1) {
+                noObby = true;
+                return;
+            }
 
-                if (skullSlot == 9) {
-                    if (mc.player.getHeldItemOffhand().getItem() instanceof ItemSkull) {
-                        // We can continue
-                        handSwing = EnumHand.OFF_HAND;
-                    } else return;
-                }
+            if (skullSlot == 9) {
+                if (mc.player.getHeldItemOffhand().getItem() instanceof ItemSkull) {
+                    // We can continue
+                    handSwing = EnumHand.OFF_HAND;
+                } else return;
+            }
 
-                if (mc.player.inventory.currentItem != skullSlot && skullSlot != 9) {
-                    oldSlot = mc.player.inventory.currentItem;
-                    mc.player.inventory.currentItem = skullSlot;
-                }
+            if (mc.player.inventory.currentItem != skullSlot && skullSlot != 9) {
+                oldSlot = mc.player.inventory.currentItem;
+                mc.player.inventory.currentItem = skullSlot;
+            }
 
 
-                if (preSwitch.getValue() > 0 && preRotationTick++ == preSwitch.getValue()) {
+            if (preSwitch.getValue() > 0 && preRotationTick++ == preSwitch.getValue()) {
+                lastHitVec = new Vec3d(pos.x, pos.y, pos.z);
+                return;
+            }
+
+
+            if ((alrPlaced && changeStatus) || (noUp.getValue() ? (PlacementUtil.place(pos, handSwing, rotate.getValue(), exd) || PlacementUtil.place(pos, handSwing, rotate.getValue()))
+                : PlacementUtil.place(pos, handSwing, rotate.getValue()))) {
+                alrPlaced = true;
+                if (afterSwitch.getValue() > 0 && afterRotationTick++ == afterSwitch.getValue()) {
                     lastHitVec = new Vec3d(pos.x, pos.y, pos.z);
                     return;
                 }
 
-
-                if (alrPlaced || (noUp.getValue() ? (PlacementUtil.place(pos, handSwing, rotate.getValue(), exd) || PlacementUtil.place(pos, handSwing, rotate.getValue()))
-                    : PlacementUtil.place(pos, handSwing, rotate.getValue()))) {
-                    alrPlaced = true;
-                    if (afterSwitch.getValue() > 0 && afterRotationTick++ == afterSwitch.getValue()) {
-                        lastHitVec = new Vec3d(pos.x, pos.y, pos.z);
-                        return;
-                    }
-
-                    if (oldSlot != -1) {
-                        mc.player.inventory.currentItem = oldSlot;
-                        oldSlot = -1;
-                    }
+                if (oldSlot != -1) {
+                    mc.player.inventory.currentItem = oldSlot;
+                    oldSlot = -1;
+                }
+                if (changeStatus) {
                     firstShift = true;
                     activedBefore = alrPlaced = true;
                     if (offHandSkull.getValue())
                         OffHand.removeItem(1);
 
-                    if (disableAfter.getValue()) {
+                    if (disableAfter.getValue() && !phase.getValue()) {
                         disable();
+                    }
+                    if (phase.getValue()) {
+                        toPhase = true;
+                        stage = 0;
+                        if (ServerRespond.getValue())
+                            mc.world.setBlockToAir(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ));
+                        if (predictPhase.getValue()) {
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 0.001, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 1000, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                        }
+
                     }
                     preRotationTick = afterRotationTick = 0;
                     lastHitVec = null;
-                } else lastHitVec = null;
-            }
+                }
+            } else lastHitVec = null;
         }
     }
+
 }

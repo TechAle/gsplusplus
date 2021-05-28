@@ -12,8 +12,8 @@ import com.gamesense.client.GameSense;
 
 public class Discord {
 
-    private static final String discordID = "770790009397313596";
-    private static final DiscordRichPresence discordRichPresence = new DiscordRichPresence();
+    private static final String discordID = "840996509880680479";
+    public static final DiscordRichPresence discordRichPresence = new DiscordRichPresence();
     private static final DiscordRPC discordRPC = DiscordRPC.INSTANCE;
 
     private static final String clientVersion = GameSense.MODVER;
@@ -26,8 +26,8 @@ public class Discord {
 
         discordRichPresence.startTimestamp = System.currentTimeMillis() / 1000L;
         discordRichPresence.details = clientVersion;
-        discordRichPresence.largeImageKey = "logo";
-        discordRichPresence.largeImageText = "discord.gg/xfgPw63";
+        discordRichPresence.largeImageKey = "gs";
+        discordRichPresence.largeImageText = "gs++";
         discordRichPresence.state = null;
         discordRPC.Discord_UpdatePresence(discordRichPresence);
     }
