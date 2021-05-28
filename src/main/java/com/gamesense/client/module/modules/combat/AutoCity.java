@@ -64,7 +64,7 @@ public class AutoCity extends Module {
     BooleanSetting ignoreCrystals = registerBoolean("Ignore Crystals", true);
     ModeSetting target = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
     BooleanSetting switchPick = registerBoolean("Switch Pick", true);
-    BooleanSetting placeCrystal = registerBoolean("Place Crystal", false);
+    //BooleanSetting placeCrystal = registerBoolean("Place Crystal", false);
     ModeSetting mineMode = registerMode("Mine Mode", Arrays.asList("Packet", "Vanilla"), "Packet");
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both", "None"), "Both");
     IntegerSetting width = registerInteger("Width", 1, 1, 10);

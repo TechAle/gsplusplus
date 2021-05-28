@@ -1,3 +1,6 @@
+/*
+    CheckLightFor from lambda (https://github.com/lambda-client/lambda/blob/master/src/main/java/com/lambda/client/mixin/client/world/MixinWorld.java)
+ */
 package com.gamesense.mixin.mixins;
 
 import com.gamesense.client.module.ModuleManager;
@@ -18,10 +21,7 @@ public class MixinWorld {
         NoRender noRender = ModuleManager.getModule(NoRender.class);
 
         if (noRender.isEnabled() && noRender.noSkylight.getValue()) {
-            if (lightType == EnumSkyBlock.SKY) {
-                callbackInfoReturnable.setReturnValue(true);
-                callbackInfoReturnable.cancel();
-            }
+            callbackInfoReturnable.setReturnValue(false);
         }
     }
 }
