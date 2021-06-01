@@ -53,7 +53,7 @@ public class LoadConfig {
             loadAutoGG();
             loadAutoReply();
             loadAutoRespawn();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -311,7 +311,7 @@ public class LoadConfig {
                     "nocatsnolife",
                     "gamesense",
                     "gs",
-                    "salbe",
+                    "sable",
                     "phantom826",
                     "doogie13",
                     "soulbond",

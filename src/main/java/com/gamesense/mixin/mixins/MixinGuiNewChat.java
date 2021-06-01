@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 
 @Mixin(GuiNewChat.class)
 public abstract class MixinGuiNewChat {
+    /*
     // Get te module
     ChatModifier chatModifier = ModuleManager.getModule(ChatModifier.class);
 
@@ -378,6 +380,6 @@ public abstract class MixinGuiNewChat {
             if (chatModifier.maxW.getValue() != -1)
                 cir.setReturnValue(chatModifier.maxW.getValue());
         }
-    }
+    }*/
 
 }

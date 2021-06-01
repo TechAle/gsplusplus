@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.misc;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.misc.ColorUtil;
+import com.gamesense.api.util.misc.NewChat;
 import com.gamesense.api.util.player.social.Enemy;
 import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
@@ -10,15 +11,23 @@ import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraft.client.gui.GuiIngame;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 import javax.xml.soap.Text;
 import java.text.SimpleDateFormat;
@@ -46,6 +55,7 @@ public class ChatModifier extends Module {
     public DoubleSetting xScale = registerDouble("Width Scale", 1, 0, 3);
     public IntegerSetting maxH = registerInteger("Max Height", -1, -1, 500);
     public IntegerSetting maxW = registerInteger("Max Width", -1, -1, 500);
+    public BooleanSetting smooth = registerBoolean("Smooth", true);
     BooleanSetting greenText = registerBoolean("Green Text", false);
     BooleanSetting unFormattedText = registerBoolean("Unformatted Text", false);
     BooleanSetting chatTimeStamps = registerBoolean("Chat Time Stamp", false);
@@ -77,6 +87,45 @@ public class ChatModifier extends Module {
     public ColorSetting purple = registerColor("Purple", new GSColor(255,85,255));
     public ColorSetting red = registerColor("Red", new GSColor(255,85,85));
     public ColorSetting white = registerColor("White", new GSColor(255,255,255));
+
+    public float clamp(float number, float min, float max) {
+        return number < min ? min : Math.min(number, max);
+    }
+
+    public static NewChat myChat;
+
+    boolean iniz = false,
+            fin = false;
+
+    @Override
+    protected void onEnable() {
+        iniz = false;
+    }
+
+    @Override
+    public void onUpdate() {
+        if (!iniz) {
+            ObfuscationReflectionHelper.setPrivateValue(GuiIngame.class, Minecraft.getMinecraft().ingameGUI, new NewChat(Minecraft.getMinecraft()), "field_73840_e");
+            iniz = true;
+        }
+    }
+
+    @Override
+    protected void onDisable() {
+        ObfuscationReflectionHelper.setPrivateValue(GuiIngame.class, Minecraft.getMinecraft().ingameGUI, new GuiNewChat(Minecraft.getMinecraft()), "field_73840_e");
+    }
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<TickEvent.ClientTickEvent> onUpdate = new Listener<>(event -> {
+        if (mc.player == null || mc.world == null) {
+            return;
+        }
+        if (!iniz) {
+
+        }
+    });
+
 
     @SuppressWarnings("unused")
     @EventHandler
