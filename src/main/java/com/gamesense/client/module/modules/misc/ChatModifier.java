@@ -55,7 +55,7 @@ public class ChatModifier extends Module {
     public DoubleSetting xScale = registerDouble("Width Scale", 1, 0, 3);
     public IntegerSetting maxH = registerInteger("Max Height", -1, -1, 500);
     public IntegerSetting maxW = registerInteger("Max Width", -1, -1, 500);
-    public BooleanSetting smooth = registerBoolean("Smooth", true);
+    public ModeSetting animationtext = registerMode("Animation Text", Arrays.asList("None", "Down Up", "Left Right"), "Down Up");
     BooleanSetting greenText = registerBoolean("Green Text", false);
     BooleanSetting unFormattedText = registerBoolean("Unformatted Text", false);
     BooleanSetting chatTimeStamps = registerBoolean("Chat Time Stamp", false);
