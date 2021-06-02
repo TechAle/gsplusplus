@@ -130,33 +130,35 @@ public class ChatModifier extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<ClientChatReceivedEvent> chatReceivedEventListener = new Listener<>(event -> {
-
         ITextComponent output = event.getMessage();
-        if (customName.getValue()) {
-            String name = event.getMessage().getUnformattedText().split(" ")[0];
-            String nome = output.getFormattedText().split(" ")[0];
-            output = new TextComponentString((
-                    isFriend(name) ? (specialFriend.getValue() ?
-                            "\u2063" : "\u2064") :
-                            isEnemy(name) ? "\u2065" :
-                                    "\u2066"
-            )
-                    + name + ChatFormatting.RESET + output.getFormattedText().substring(output.getFormattedText().split(" ")[0].length()));
-        }
-        if (chatTimeStamps.getValue()) {
-            String decoLeft = decoration.getValue().equalsIgnoreCase(" ") ? "" : decoration.getValue().split(" ")[0];
-            String decoRight = decoration.getValue().equalsIgnoreCase(" ") ? "" : decoration.getValue().split(" ")[1];
-            if (space.getValue()) decoRight += " ";
-            String dateFormat = format.getValue().replace("H24", "k").replace("H12", "h");
-            String date = new SimpleDateFormat(dateFormat).format(new Date());
-            TextComponentString time = new TextComponentString(
-                    (specialTime.getValue() ? "\u2063" : "\u2067")
-                    + decoLeft + date + decoRight + TextFormatting.RESET);
-            output = time.appendSibling(output);
-        }
-        if (unFormattedText.getValue())
-            output = new TextComponentString(output.getUnformattedText());
+        try {
+            if (customName.getValue()) {
+                String name = event.getMessage().getUnformattedText().split(" ")[0];
+                String nome = output.getFormattedText().split(" ")[0];
+                output = new TextComponentString((
+                        isFriend(name) ? (specialFriend.getValue() ?
+                                "\u2063" : "\u2064") :
+                                isEnemy(name) ? "\u2065" :
+                                        "\u2066"
+                )
+                        + name + ChatFormatting.RESET + output.getFormattedText().substring(output.getFormattedText().split(" ")[0].length()));
+            }
+            if (chatTimeStamps.getValue()) {
+                String decoLeft = decoration.getValue().equalsIgnoreCase(" ") ? "" : decoration.getValue().split(" ")[0];
+                String decoRight = decoration.getValue().equalsIgnoreCase(" ") ? "" : decoration.getValue().split(" ")[1];
+                if (space.getValue()) decoRight += " ";
+                String dateFormat = format.getValue().replace("H24", "k").replace("H12", "h");
+                String date = new SimpleDateFormat(dateFormat).format(new Date());
+                TextComponentString time = new TextComponentString(
+                        (specialTime.getValue() ? "\u2063" : "\u2067")
+                                + decoLeft + date + decoRight + TextFormatting.RESET);
+                output = time.appendSibling(output);
+            }
+            if (unFormattedText.getValue())
+                output = new TextComponentString(output.getUnformattedText());
+        } catch (ArrayIndexOutOfBoundsException e) {
 
+        }
         event.setMessage(output);
     });
 

@@ -482,7 +482,7 @@ public class NewChat extends GuiNewChat {
                     nowColor = Integer.toString(-new GSColor(chatModifier.playerColor.getValue(), 255).getRGB());
                 } else if (c == '\u2067') {
                     nowColor = Integer.toString(-new GSColor(chatModifier.timeColor.getValue(), 255).getRGB());
-                }
+                } else
                 // If we had a color
                 if (before$) {
                     // Ignore special characters

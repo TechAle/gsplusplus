@@ -13,7 +13,6 @@
     "MixinEntityRenderer",
     "MixinFontRenderer",
     "MixinGuiBossOverlay",
-    "MixinGuiNewChat",
     "MixinGuiPlayerTabOverlay",
     "MixinGuiScreen",
     "MixinItemRenderer",
