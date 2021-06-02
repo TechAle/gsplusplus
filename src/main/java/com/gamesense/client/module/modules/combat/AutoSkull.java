@@ -54,6 +54,7 @@ public class AutoSkull extends Module {
     BooleanSetting phase = registerBoolean("Phase", true);
     BooleanSetting ServerRespond = registerBoolean("Server Respond", true);
     BooleanSetting predictPhase = registerBoolean("Predict Phase", true);
+    IntegerSetting maxTickTries = registerInteger("Max Tick Try", 100, 1, 200);
 
     private static final Vec3d[] AIR = {
         // Supports
@@ -80,6 +81,7 @@ public class AutoSkull extends Module {
     private int stage;
     private boolean toPhase;
     private boolean alrPlaced;
+    private int tickTry;
 
     public void onEnable() {
         ROTATION_UTIL.onEnable();
@@ -90,7 +92,7 @@ public class AutoSkull extends Module {
         }
         noObby = firstShift = alrPlaced = activedBefore = toPhase = false;
         lastHitVec = null;
-        preRotationTick = afterRotationTick = stage = resetPhase = 0;
+        preRotationTick = afterRotationTick = stage = resetPhase = tickTry = 0;
     }
 
     @SuppressWarnings("unused")
@@ -111,7 +113,7 @@ public class AutoSkull extends Module {
             return;
         }
 
-        if (noObby) setDisabledMessage("Skull not found... Blocker turned OFF!");
+        if (noObby) setDisabledMessage("Skull not found... AutoSkull turned OFF!");
         if (offHandSkull.getValue()) OffHand.removeItem(1);
     }
 
@@ -135,6 +137,11 @@ public class AutoSkull extends Module {
             delayTimeTicks = 0;
 
             if (toPhase) {
+                if (++tickTry == maxTickTries.getValue()) {
+                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, (int)mc.player.posY + 1, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                    mc.player.posY = (int) mc.player.posY + 1;
+                    disable();
+                }
                 if (BlockUtil.getBlock(mc.player.posX, mc.player.posY, mc.player.posZ) instanceof BlockSkull) {
                     if (mc.player.posY % 10 != 0) {
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - (mc.player.posY - (int) mc.player.posY), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));

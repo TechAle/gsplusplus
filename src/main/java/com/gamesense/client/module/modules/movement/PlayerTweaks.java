@@ -4,14 +4,28 @@ import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.WaterPushEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.util.player.PlacementUtil;
+import com.gamesense.api.util.world.BlockUtil;
+import com.gamesense.api.util.world.EntityUtil;
+import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.AntiCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockObsidian;
+import net.minecraft.block.BlockPistonBase;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.entity.Entity;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.InputUpdateEvent;
 import org.lwjgl.input.Keyboard;
 
@@ -23,6 +37,34 @@ public class PlayerTweaks extends Module {
     BooleanSetting noFall = registerBoolean("No Fall", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
+    public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
+    BooleanSetting noPistonPush = registerBoolean("No Piston Push", false);
+    BooleanSetting anti0TickPiston = registerBoolean("Anti 0 Tick Piston", false);
+    BooleanSetting shiftForceHole = registerBoolean("Shift Force Hole", false);
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetReceiveListener = new Listener<>(event -> {
+        if (shiftForceHole.isOn() && mc.gameSettings.keyBindSneak.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position && HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE  )
+            event.cancel();
+        else if (noPistonPush.isOn() && !mc.gameSettings.keyBindJump.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position) {
+            Block temp;
+            boolean found = false;
+            for (Vec3d surround : new Vec3d[]{
+                    new Vec3d(1, 1, 0),
+                    new Vec3d(-1, 1, 0),
+                    new Vec3d(0, 1, 1),
+                    new Vec3d(0, 1, -1)
+            }) {
+                BlockPos pos = new BlockPos(mc.player.posX + surround.x, mc.player.posY + 1, mc.player.posZ + surround.z);
+                if ((temp = BlockUtil.getBlock(pos)) instanceof BlockPistonBase && ( anti0TickPiston.isOn() || temp.getBlockState().getBaseState().getProperties().entrySet().asList().get(0).getValue().equals(true))) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                event.cancel();
+        }
+    });
 
     public void onUpdate() {
         if (guiMove.getValue() && mc.currentScreen != null) {
@@ -47,6 +89,7 @@ public class PlayerTweaks extends Module {
                 }
             }
         }
+
     }
 
     @SuppressWarnings("unused")
@@ -76,6 +119,7 @@ public class PlayerTweaks extends Module {
                 if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
                     event.cancel();
                 }
+
             }
             if (event.getPacket() instanceof SPacketExplosion) {
                 event.cancel();

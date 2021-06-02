@@ -159,8 +159,11 @@ public class NewChat extends GuiNewChat {
                                         y = (float) (j2 - 8);
                                         break;
                                 }
+                                try {
+                                    displayText(s, x, y);
+                                }catch (IndexOutOfBoundsException e) {
 
-                                displayText(s, x, y);
+                                }
                                 //this.mc.fontRenderer.drawStringWithShadow(s, x, y, 16777215 + (l1 << 24));
 
                                 GlStateManager.disableAlpha();

@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import com.gamesense.client.module.modules.movement.Sprint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
@@ -22,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityPlayerSP.class)
 public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
@@ -183,5 +185,12 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         double pitchDiff = rotation.y - this.lastReportedPitch;
 
         return yawDiff != 0.0D || pitchDiff != 0.0D;
+    }
+
+    PlayerTweaks vel = ModuleManager.getModule(PlayerTweaks.class);
+    @Inject(method="pushOutOfBlocks", at=@At(value="HEAD"), cancellable=true)
+    private void pushOutOfBlocksHook(double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
+        if (vel.noPushBlock.isOn())
+            cir.setReturnValue(false);
     }
 }
