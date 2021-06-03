@@ -93,8 +93,12 @@ public class SocialManager {
 
     public static ArrayList<String> getSpecialNamesString() {
         ArrayList<String> out = new ArrayList<>();
-        for(SpecialNames name : getSpecialNames()) {
-            out.add(name.getName());
+        try {
+            for (SpecialNames name : getSpecialNames()) {
+                out.add(name.getName());
+            }
+        }catch (OutOfMemoryError e) {
+
         }
         return out;
     }

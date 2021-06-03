@@ -63,6 +63,7 @@ public class NewChat extends GuiNewChat {
 
     public void drawChat(int updateCounter) {
         if (configuring) return;
+        // Y position for down animation
         if (prevMillis == -1) {
             prevMillis = System.currentTimeMillis();
             return;
@@ -90,21 +91,8 @@ public class NewChat extends GuiNewChat {
                 int k = MathHelper.ceil((float) this.getChatWidth() / f1);
                 GlStateManager.pushMatrix();
                 float x, y;
-                //if (this.isScrolled) {
-                    x = 2.0F + chatModifier.leftPosition.getValue();
-                    y = 8.0F - chatModifier.upPosition.getValue();
-                //}
-                /*
-                switch (chatModifier.animationtext.getValue()) {
-                    case "Down Up":
-                        x = 2.0F + chatModifier.leftPosition.getValue();
-                        y = 8.0F - chatModifier.upPosition.getValue() + (9 - 9*percent)*f1;
-                        break;
-                    default:
-                        x = 2.0F + chatModifier.leftPosition.getValue();
-                        y = 8.0F - chatModifier.upPosition.getValue();
-                        break;
-                }*/
+                x = 2.0F + chatModifier.leftPosition.getValue();
+                y = 8.0F - chatModifier.upPosition.getValue();
                 // Custom Scale
                 GlStateManager.scale(chatModifier.xScale.getValue(), chatModifier.yScale.getValue(), 1f);
                 // Translate it
@@ -137,21 +125,28 @@ public class NewChat extends GuiNewChat {
                             if (l1 > 3) {
                                 int i2 = 0;
                                 int j2 = -i1 * 9;
+                                // Draw background color
                                 drawRect(-2, j2 - 9, i2 + k + 4, j2, new GSColor(chatModifier.backColor.getValue(), chatModifier.alphaColor.getValue()).getRGB());
                                 String s = chatline.getChatComponent().getFormattedText();
                                 GlStateManager.enableBlend();
 
+                                // If we have to add a new animation
                                 switch (chatModifier.animationtext.getValue()) {
                                     case "Down Up":
+                                        // Down up
                                         x = 0F;
                                         y = (float) (j2 - 8) + (18 - 18*percent)*f1;
                                         break;
                                     case "Left Right":
+                                        // Get X Percent
                                         float xPercent = (updateCounter) - chatline.getUpdatedCounter();
+                                        // If 8 ticks are passed
                                         if (xPercent > 8)
                                             x = 0;
                                         else
+                                            // If no, calculate the percent
                                             x = 8F - (9 - 9*((xPercent / 8 * 100) - 100)/40)*f1;
+                                        // Set the y
                                         y = (float) (j2 - 8);
                                         break;
                                     default:
