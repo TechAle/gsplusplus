@@ -79,13 +79,15 @@ public class Elevatot extends Module {
         if (getAimTarget())
             return;
 
-
+        playerChecks();
 
     }
 
     private void initValues() {
         sur_block = new double[4][3];
-        slot_mat = new int[5];
+        slot_mat = new int[] {
+                -1, -1, -1, -1, -1
+        };
         enemyCoordsDouble = new double[3];
         toPlace = new structureTemp(0, 0, null);
 
@@ -146,8 +148,7 @@ public class Elevatot extends Module {
                         }
             }
         }
-        if (!redstoneBlockMode)
-            slot_mat[5] = -1;
+
         // Count what we found
         int count = 0;
         for (int val : slot_mat) {
@@ -156,10 +157,10 @@ public class Elevatot extends Module {
         }
 
         if (debugMode.getValue())
-            PistonCrystal.printDebug(String.format("%d %d %d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3], slot_mat[4], slot_mat[5]), false);
+            PistonCrystal.printDebug(String.format("%d %d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3], slot_mat[4]), false);
 
         // If we have everything we need, return true
-        return count >= 3 + (antiWeakness.getValue() ? 1 : 0) + (redstoneBlockMode ? 1 : 0);
+        return count >= 4 + (antiWeakness.getValue() ? 1 : 0);
 
     }
 
@@ -190,7 +191,7 @@ public class Elevatot extends Module {
 
     @Override
     public void onUpdate() {
-
+        int a = 0;
     }
 
     // Make some checks for startup
@@ -270,8 +271,9 @@ public class Elevatot extends Module {
         // First check, h check.
         if (meCoordsInt[1] - enemyCoordsInt[1] > -1
                 && meCoordsInt[1] - enemyCoordsInt[1] <= maxYincr.getValue()) {
-            int i = 0;
-            for (double[] cord_b : sur_block) {
+            // Iterate for the surround (why is the foreach iterate in a random way in elevatot LMAO
+            for(int i = 0; i < 4; i++) {
+
                 /// Note:
                 /*
                     Abs = Absolute
@@ -281,19 +283,24 @@ public class Elevatot extends Module {
                     Since they are a lot of if, i prefer keeping them
                     separated but, also, on the same tab.
                     I'll use "continue"
+                    0 = {double[3]@11290} [55.575943989104964, 1.0, 17.51419950026377]
+                    1 = {double[3]@11304} [53.575943989104964, 1.0, 17.51419950026377]
+                    2 = {double[3]@11380} [54.575943989104964, 1.0, 18.51419950026377]
+                    3 = {double[3]@11381} [54.575943989104964, 1.0, 16.51419950026377]
+                    54 1 17
                  */
                 /// Piston Coordinates ///
                 // Init + Get
-                double[] pistonCoordsAbs = {cord_b[0], cord_b[1], cord_b[2]};
-                int[] pistonCoordsRel = {disp_surblock[i][0], disp_surblock[i][1], disp_surblock[i][2]};
+                double[] pistonCoordsAbs = {sur_block[i][0], sur_block[i][1] + 1, sur_block[i][2]};
+                int[] pistonCoordsRel = {disp_surblock[i][0], disp_surblock[i][1] + 1, disp_surblock[i][2]};
 
                 /// Crystal Position Checks ///
                 // Check, first of all, the distance
                 if (!((distanceNowCrystal = mc.player.getDistance(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2])) < addedStructure.distance))
                     continue;
 
-                // Check if someone is in that block
-                if (PistonCrystal.someoneInCoords(pistonCoordsAbs[0], pistonCoordsAbs[2]))
+                // Check if the block is free
+                if (!(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockAir))
                     continue;
 
                 /// Redstone ///
@@ -301,15 +308,15 @@ public class Elevatot extends Module {
                 /// Redstone Coordinates
                 double[] redstoneCoordsAbs = new double[3];
                 int[] redstoneCoordsRel = new int[3];
-                double minFound = Double.MAX_VALUE;
+                double minFound = 1000;
                 double minNow = -1;
-                boolean foundOne = true;
+                boolean foundOne = false;
                 // Iterate for all 4 positions
                 for (int[] pos : disp_surblock) {
                     // Get coordinates
                     double[] torchCoords = new double[]{pistonCoordsAbs[0] + pos[0], pistonCoordsAbs[1], pistonCoordsAbs[2] + pos[2]};
                     // If it's min of what we have now
-                    if ((minNow = mc.player.getDistance(torchCoords[0], torchCoords[1], torchCoords[2])) >= minFound)
+                    if ((minNow = mc.player.getDistance(torchCoords[0], torchCoords[1], torchCoords[2])) > minFound)
                         continue;
 
                     // Check if: Someone is here, if it's air
@@ -321,30 +328,26 @@ public class Elevatot extends Module {
 
                     redstoneCoordsAbs = new double[]{torchCoords[0], torchCoords[1], torchCoords[2]};
                     redstoneCoordsRel = new int[]{pistonCoordsRel[0] + pos[0], pistonCoordsRel[1], pistonCoordsRel[2] + pos[2]};
-                    foundOne = false;
+                    foundOne = true;
                     minFound = minNow;
                 }
 
                 redstoneAbovePiston = false;
-                if (foundOne) {
+                if (!foundOne) {
                     // Lets check if we can place it on top of the piston
                     if (!redstoneBlockMode && BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1] + 1, pistonCoordsAbs[2]) instanceof BlockAir) {
                         redstoneCoordsAbs = new double[]{pistonCoordsAbs[0], pistonCoordsAbs[1] + 1, pistonCoordsAbs[2]};
                         redstoneCoordsRel = new int[]{pistonCoordsRel[0], pistonCoordsRel[1] + 1, pistonCoordsRel[2]};
                         redstoneAbovePiston = true;
                     }
-                } else continue;
+                    if (!redstoneAbovePiston)
+                        continue;
+                }
 
                 /// Create the structure
                 // Skeleton
                 List<Vec3d> toPlaceTemp = new ArrayList<>();
                 int supportBlock = 0;
-
-                // Piston
-                if (BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1] - 1, pistonCoordsAbs[2]) instanceof BlockAir) {
-                    toPlaceTemp.add(new Vec3d(pistonCoordsRel[0], pistonCoordsRel[1] - 1, pistonCoordsRel[2]));
-                    supportBlock++;
-                }
 
                 // If we are placing a redstone torch
                 if (!redstoneBlockMode) {
@@ -353,16 +356,18 @@ public class Elevatot extends Module {
                         // Get the position
                         int[] toAdd;
                         if (enemyCoordsInt[0] == (int) pistonCoordsAbs[0] && enemyCoordsInt[2] == (int) pistonCoordsAbs[2]) {
-                            toAdd = new int[]{pistonCoordsRel[0], 0, 0};
+                            toAdd = new int[]{pistonCoordsRel[0], pistonCoordsRel[1], 0};
                         } else {
-                            toAdd = new int[]{pistonCoordsRel[0], 0, pistonCoordsRel[2]};
+                            toAdd = new int[]{pistonCoordsRel[0], pistonCoordsRel[1], pistonCoordsRel[2]};
                         }
                         // Lets check if there is the structure
-                        for (int hight = 0; hight < 2; hight++)
+                        for (int hight = -1; hight < 2; hight++)
                             // Is air
-                            if (BlockUtil.getBlock(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[1] + hight, pistonCoordsAbs[2] + toAdd[2]) instanceof BlockAir) {
+                            if (!PistonCrystal.someoneInCoords(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[2] + toAdd[2])
+                                    && BlockUtil.getBlock(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[1] + hight, pistonCoordsAbs[2] + toAdd[2])
+                                    instanceof BlockAir) {
                                 // Obby
-                                toPlaceTemp.add(new Vec3d(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[1] + hight, pistonCoordsAbs[2] + toAdd[2]));
+                                toPlaceTemp.add(new Vec3d(pistonCoordsRel[0] + toAdd[0], pistonCoordsRel[1] + hight, pistonCoordsRel[2] + toAdd[2]));
                                 supportBlock++;
                             }
                     } else if (BlockUtil.getBlock(redstoneCoordsAbs[0], redstoneCoordsAbs[1] - 1, redstoneCoordsAbs[2]) instanceof BlockAir) {
@@ -424,6 +429,8 @@ public class Elevatot extends Module {
                 }
                 toPlace = addedStructure;
 
+
+
             }
 
         }
@@ -465,6 +472,7 @@ public class Elevatot extends Module {
             for (Vec3d parte : addedStructure.to_place) {
                 PistonCrystal.printDebug(String.format("%f %f %f", parte.x, parte.y, parte.z), false);
             }
+            PistonCrystal.printDebug(String.format("X: %f Y: %f Z: %f", toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ), false);
         }
 
         return addedStructure.to_place != null;
