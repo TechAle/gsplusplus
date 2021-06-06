@@ -17,6 +17,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.*;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -63,6 +64,7 @@ public class Elevatot extends Module {
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Mode", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
+    BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
     EntityPlayer aimTarget;
 
@@ -92,6 +94,39 @@ public class Elevatot extends Module {
             isSneaking,
             redstonePlaced;
 
+    // Class for the structure
+    class structureTemp {
+        public double distance;
+        public int supportBlock;
+        public List<Vec3d> to_place;
+        public int direction;
+        public float offsetX;
+        public float offsetY;
+        public float offsetZ;
+        public int position;
+
+        public structureTemp(double distance, int supportBlock, List<Vec3d> to_place, int position) {
+            this.distance = distance;
+            this.supportBlock = supportBlock;
+            this.to_place = to_place;
+            this.direction = -1;
+            this.position = position;
+        }
+
+        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, int direction, float offsetX, float offsetZ, float offsetY, int position) {
+            this.distance = distance;
+            this.supportBlock = supportBlock;
+            this.to_place = to_place;
+            this.direction = direction;
+            this.offsetX = offsetX;
+            this.offsetZ = offsetZ;
+            this.offsetY = offsetY;
+            this.position = position;
+        }
+    }
+
+    structureTemp toPlace;
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<BlockChangeEvent> blockChangeEventListener = new Listener<>(event -> {
@@ -102,13 +137,19 @@ public class Elevatot extends Module {
         BlockPos temp;
         if (event.getPosition().getX() == (temp = compactBlockPos(2)).getX()
                 && event.getPosition().getY() == temp.getY()
-                && event.getPosition().getZ() == temp.getZ()
-                && event.getBlock() instanceof BlockRedstoneTorch ) {
-            if (tickBreakRedstone.getValue() == 0) {
-                breakBlock(temp);
-                lastStage = 2;
-            } else {
-                lastStage = 3;
+                && event.getPosition().getZ() == temp.getZ() ) {
+            if (event.getBlock() instanceof BlockRedstoneTorch) {
+                if (tickBreakRedstone.getValue() == 0) {
+                    breakBlock(temp);
+                    lastStage = 2;
+                } else {
+                    lastStage = 3;
+                }
+            } else if (event.getBlock() instanceof BlockAir) {
+                if (redstoneDelay.getValue() == 0) {
+                    placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
+                    mc.world.setBlockState(temp, Blocks.REDSTONE_TORCH.getDefaultState());
+                }
             }
         }
 
@@ -145,39 +186,6 @@ public class Elevatot extends Module {
             ));
         }
     }
-
-    // Class for the structure
-    class structureTemp {
-        public double distance;
-        public int supportBlock;
-        public List<Vec3d> to_place;
-        public int direction;
-        public float offsetX;
-        public float offsetY;
-        public float offsetZ;
-        public int position;
-
-        public structureTemp(double distance, int supportBlock, List<Vec3d> to_place, int position) {
-            this.distance = distance;
-            this.supportBlock = supportBlock;
-            this.to_place = to_place;
-            this.direction = -1;
-            this.position = position;
-        }
-
-        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, int direction, float offsetX, float offsetZ, float offsetY, int position) {
-            this.distance = distance;
-            this.supportBlock = supportBlock;
-            this.to_place = to_place;
-            this.direction = direction;
-            this.offsetX = offsetX;
-            this.offsetZ = offsetZ;
-            this.offsetY = offsetY;
-            this.position = position;
-        }
-    }
-
-    structureTemp toPlace;
 
     @Override
     public void onEnable() {
@@ -217,7 +225,7 @@ public class Elevatot extends Module {
             }
 
         // Output in chat
-        setDisabledMessage(output + "PistonCrystal turned OFF!");
+        setDisabledMessage(output + "Elevatot turned OFF!");
         if (!materialsNeeded.equals(""))
             setDisabledMessage("Materials missing:" + materialsNeeded);
 
@@ -243,6 +251,8 @@ public class Elevatot extends Module {
             output.append(" Redstone");
         if (slot_mat[3] == -1 && redstoneBlockMode)
             output.append(" Pick");
+        if (slot_mat[4] == -1 && forceBurrow.getValue())
+            output.append(" Skull");
 
         return output.toString();
     }
@@ -327,7 +337,7 @@ public class Elevatot extends Module {
             }
             // Check for the redstone
             if (BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
-                placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, false, slot_mat[2], -1);
+                placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
                 // Check if we can continue
                 lastStage = 2;
                 return;
@@ -356,6 +366,17 @@ public class Elevatot extends Module {
 
         // If we have something to place
         if (toPlace.supportBlock > 0) {
+
+            if (forceBurrow.getValue() && BlockUtil.getBlock(aimTarget.getPosition()) instanceof BlockAir ) {
+                boolean temp = redstoneAbovePiston;
+                redstoneAbovePiston = true;
+                placeBlock(aimTarget.getPosition(), 0, 0, 0, true, false, slot_mat[4], -1);
+                redstoneAbovePiston = temp;
+                if (continueBlock()) {
+                    lastStage = 0;
+                    return false;
+                }
+            }
 
             // Iterate until the finish
             for(int i = 0; i < toPlace.supportBlock; i++) {
@@ -519,7 +540,7 @@ public class Elevatot extends Module {
     void initValues() {
         sur_block = new double[4][3];
         slot_mat = new int[] {
-                -1, -1, -1, -1
+                -1, -1, -1, -1, -1
         };
         enemyCoordsDouble = new double[3];
         toPlace = new structureTemp(0, 0, null, -1);
@@ -544,6 +565,7 @@ public class Elevatot extends Module {
 			1 => piston
 			2 => redstone
 			3 => pick
+			4 => skull
 		 */
 
         if (placeMode.getValue().equals("Block"))
@@ -557,10 +579,12 @@ public class Elevatot extends Module {
             // If there is no block
             if (stack == ItemStack.EMPTY) {
                 continue;
-            }
+            } else
             // If Pick
             if (stack.getItem() instanceof ItemPickaxe) {
                 slot_mat[3] = i;
+            } else if (forceBurrow.getValue() && stack.getItem() instanceof ItemSkull) {
+                slot_mat[4] = i;
             }
             if (stack.getItem() instanceof ItemBlock) {
 
@@ -597,7 +621,7 @@ public class Elevatot extends Module {
             PistonCrystal.printDebug(String.format("%d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3]), false);
 
         // If we have everything we need, return true
-        return count >= 3 + (redstoneBlockMode ? 1 : 0);
+        return count >= 3 + (redstoneBlockMode ? 1 : 0) + (forceBurrow.getValue() ? 1 : 0);
 
     }
 
@@ -767,6 +791,24 @@ public class Elevatot extends Module {
                 }
             }
 
+            // If trapPlayer
+            if (trapMode.getValue()) {
+                // Iterate for everything
+                toPlaceTemp.addAll(Arrays.asList(// Supports
+                        new Vec3d(-1, -1, -1),
+                        new Vec3d(-1, 0, -1),
+                        new Vec3d(-1, 1, -1),
+                        // Start circle
+                        new Vec3d(-1, 2, -1),
+                        new Vec3d(-1, 2, 0),
+                        new Vec3d(0, 2, -1),
+                        new Vec3d(1, 2, -1),
+                        new Vec3d(1, 2, 0),
+                        new Vec3d(1, 2, 1),
+                        new Vec3d(0, 2, 1)));
+                supportBlock += 10;
+            }
+
             /// Add all others blocks
             // Piston
             toPlaceTemp.add(new Vec3d(pistonCoordsRel[0], pistonCoordsRel[1], pistonCoordsRel[2]));
@@ -811,23 +853,7 @@ public class Elevatot extends Module {
             // Repleace the structure
             addedStructure.replaceValues(distanceNowCrystal, supportBlock, toPlaceTemp, -1, offsetX, offsetZ, offsetY, position);
 
-            // If trapPlayer
-            if (trapMode.getValue()) {
-                // Iterate for everything
-                addedStructure.to_place.addAll(Arrays.asList(// Supports
-                        new Vec3d(-1, -1, -1),
-                        new Vec3d(-1, 0, -1),
-                        new Vec3d(-1, 1, -1),
-                        // Start circle
-                        new Vec3d(-1, 2, -1),
-                        new Vec3d(-1, 2, 0),
-                        new Vec3d(0, 2, -1),
-                        new Vec3d(1, 2, -1),
-                        new Vec3d(1, 2, 0),
-                        new Vec3d(1, 2, 1),
-                        new Vec3d(0, 2, 1)));
-                addedStructure.supportBlock += 10;
-            }
+
             toPlace = addedStructure;
 
 
