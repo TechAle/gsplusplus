@@ -12,6 +12,7 @@ import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.misc.AutoGG;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
@@ -19,6 +20,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -37,16 +40,30 @@ import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
  * Most things are ported from PistonCrystal (guess why lol)
  */
 
+/*
+    Remove antiweakness [done]
+    Place everything [done]
+    Add working rotatione
+    Add ondisable
+    Add event packet destroyed
+    Break torch when placed
+    Place torch when broke
+ */
+
 @Module.Declaration(name = "Elevatot", category = Category.Combat)
 public class Elevatot extends Module {
 
     ModeSetting target = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
     ModeSetting placeMode = registerMode("Place", Arrays.asList("Torch", "Block", "Both"), "Torch");
+    IntegerSetting supportDelay = registerInteger("Support Delay", 0, 0, 8);
+    IntegerSetting pistonDelay = registerInteger("Piston Delay", 0, 0, 8);
+    IntegerSetting redstoneDelay = registerInteger("Redstone Delay", 0, 0, 8);
+    IntegerSetting blocksPerTick = registerInteger("Blocks per Tick", 4, 1, 8);
     DoubleSetting enemyRange = registerDouble("Range", 4.9, 0, 6);
     IntegerSetting maxYincr = registerInteger("Max Y", 3, 0, 5);
-    BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false);
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Mode", false);
+    BooleanSetting rotate = registerBoolean("Rotate", false);
 
     EntityPlayer aimTarget;
 
@@ -63,11 +80,45 @@ public class Elevatot extends Module {
                   enemyCoordsInt,
                   meCoordsInt;
 
+    int lastStage,
+        blockPlaced;
 
     boolean redstoneBlockMode,
             enoughSpace,
             isHole,
-            noMaterials;
+            noMaterials,
+            redstoneAbovePiston,
+            isSneaking;
+
+    // Class for the structure
+    class structureTemp {
+        public double distance;
+        public int supportBlock;
+        public List<Vec3d> to_place;
+        public int direction;
+        public float offsetX;
+        public float offsetY;
+        public float offsetZ;
+
+        public structureTemp(double distance, int supportBlock, List<Vec3d> to_place) {
+            this.distance = distance;
+            this.supportBlock = supportBlock;
+            this.to_place = to_place;
+            this.direction = -1;
+        }
+
+        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, int direction, float offsetX, float offsetZ, float offsetY) {
+            this.distance = distance;
+            this.supportBlock = supportBlock;
+            this.to_place = to_place;
+            this.direction = direction;
+            this.offsetX = offsetX;
+            this.offsetZ = offsetZ;
+            this.offsetY = offsetY;
+        }
+    }
+
+    structureTemp toPlace;
 
     @Override
     public void onEnable() {
@@ -83,10 +134,258 @@ public class Elevatot extends Module {
 
     }
 
-    private void initValues() {
+    @Override
+    public void onDisable() {
+        if (isSneaking) {
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+            isSneaking = false;
+        }
+    }
+
+    @Override
+    public void onUpdate() {
+        // If no mc.player
+        if (mc.player == null) {
+            disable();
+            return;
+        }
+
+        /*
+            -1 (default) = When started, no wait, why would you lmao
+            0 = Before there was a place support
+            1 = Before he placed the piston
+            2 = Before he placed the redstone torch
+        */
+        int toWait;
+        switch (lastStage) {
+            case 0:
+                toWait = supportDelay.getValue();
+                break;
+            case 1:
+                toWait = pistonDelay.getValue();
+                break;
+            case 2:
+                toWait = redstoneDelay.getValue();
+                break;
+            default:
+                toWait = 0;
+                break;
+        }
+
+        // Enable rotation spoof
+        ROTATION_UTIL.shouldSpoofAngles(true);
+
+        // Check if something is not ok
+        if (enemyCoordsDouble == null || aimTarget == null) {
+            if (aimTarget == null) {
+                aimTarget = PlayerUtil.findLookingPlayer(enemyRange.getValue());
+                if (aimTarget != null) {
+
+                    if (ModuleManager.isModuleEnabled(AutoGG.class)) {
+                        AutoGG.INSTANCE.addTargetedPlayer(aimTarget.getName());
+                    }
+
+                    playerChecks();
+                }
+            } else
+                checkVariable();
+            return;
+        }
+        /*
+            First we have to place every supports blocks.
+            Then, we have to do this:
+            Check if the piston exists, if not, place it.
+            Check if the redstone torch exists, if not, place it.
+         */
+
+        // First place support blocks
+        if (placeSupport()) {
+            BlockPos temp;
+            // Check for the piston
+            if (BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) {
+                placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, true, slot_mat[1]);
+                // Check if we can continue
+                if (continueBlock()) {
+                    lastStage = 1;
+                    return;
+                }
+            }
+            // Check for the redstone
+            if (BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
+                placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, true, slot_mat[2]);
+                // Check if we can continue
+                lastStage = 2;
+                return;
+            }
+
+
+        }
+
+
+
+
+    }
+
+    boolean continueBlock() {
+        return ++blockPlaced == blocksPerTick.getValue();
+    }
+
+    boolean placeSupport() {
+
+        // If we have something to place
+        if (toPlace.supportBlock > 0) {
+
+            // Iterate until the finish
+            for(int i = 0; i < toPlace.supportBlock; i++) {
+
+                // Get the coordinates of that block
+                BlockPos targetPos = getTargetPos(i);
+
+                // If it's air
+                if (BlockUtil.getBlock(targetPos) instanceof BlockAir) {
+                    placeBlock(targetPos, 0, 0, 0, false, false, slot_mat[0]);
+
+                    // If we reached the limit
+                    if (continueBlock()) {
+                        // Stop
+                        lastStage = 0;
+                        return false;
+                    }
+
+                }
+
+            }
+
+
+        }
+
+        return true;
+    }
+
+    final ArrayList<EnumFacing> exd = new ArrayList<EnumFacing>() {
+        {
+            add(EnumFacing.DOWN);
+        }
+    };
+
+    boolean placeBlock(BlockPos pos, double offsetX, double offsetY, double offsetZ, boolean redstone, boolean piston, int slot) {
+        // Get the block
+        Block block = mc.world.getBlockState(pos).getBlock();
+        // Get all sides
+        EnumFacing side;
+        if (redstone && redstoneAbovePiston) {
+            side = BlockUtil.getPlaceableSideExlude(pos, exd);
+        } else side = BlockUtil.getPlaceableSide(pos);
+
+        // If there is a solid block
+        if (!(block instanceof BlockAir) && !(block instanceof BlockLiquid)) {
+            return false;
+        }
+        // If we cannot find any side
+        if (side == null) {
+            return false;
+        }
+
+        // Get position of the side
+        BlockPos neighbour = pos.offset(side);
+        EnumFacing opposite = side.getOpposite();
+
+        // If that block can be clicked
+        if (!BlockUtil.canBeClicked(neighbour)) {
+            return false;
+        }
+
+        // Get the position where we are gonna click
+        Vec3d hitVec = new Vec3d(neighbour).add(0.5 + offsetX, 0.5, 0.5 + offsetZ).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+        Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
+
+        //try {
+
+        if (mc.player.inventory.getStackInSlot(slot) != ItemStack.EMPTY) {
+            if (mc.player.inventory.currentItem != slot) {
+                // I dont wanna people getting kicked :P
+                if (slot == -1) {
+                    noMaterials = true;
+                    return  false;
+                }
+                //
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                mc.player.inventory.currentItem = slot;
+            }
+        }
+
+        /*}catch (Exception e) {
+            PistonCrystal.printDebug("Fatal Error during the creation of the structure. Please, report this bug in the discor's server", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[PistonCrystal] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[PistonCrystal] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[PistonCrystal] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[PistonCrystal] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[PistonCrystal] " + errorMess.toString());
+                }
+                LOGGER.error("[PistonCrystal] StackTrace End");
+            }
+            disable();
+        }*/
+
+        if (!isSneaking && BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+            isSneaking = true;
+        }
+
+        // If rotate
+        if (rotate.getValue()) {
+            // Look
+            BlockUtil.faceVectorPacketInstant(hitVec, true);
+        }
+        // Else, we have still to rotate for the piston
+        else if (piston) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Rotation(0, 0, mc.player.onGround));
+        }
+
+        // Place the block
+        mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
+        mc.player.swingArm(EnumHand.MAIN_HAND);
+
+        return true;
+
+    }
+
+    // Given a index of a block, get the target position (this is used for support blocks)
+    BlockPos getTargetPos(int idx) {
+        BlockPos offsetPos = new BlockPos(toPlace.to_place.get(idx));
+        return new BlockPos(enemyCoordsDouble[0] + offsetPos.getX(), enemyCoordsDouble[1] + offsetPos.getY(), enemyCoordsDouble[2] + offsetPos.getZ());
+    }
+
+    // Given a step, return the absolute block position
+    public BlockPos compactBlockPos(int step) {
+        // Get enemy's relative position of the block
+        BlockPos offsetPos = new BlockPos(toPlace.to_place.get(toPlace.supportBlock + step - 1));
+        // Get absolute position and return
+        return new BlockPos(enemyCoordsDouble[0] + offsetPos.getX(), enemyCoordsDouble[1] + offsetPos.getY(), enemyCoordsDouble[2] + offsetPos.getZ());
+
+    }
+
+    // Check if we have to disable
+    boolean checkVariable() {
+        // If something went wrong
+        if (noMaterials || !isHole || !enoughSpace) {
+            disable();
+            return true;
+        }
+        return false;
+    }
+
+    void initValues() {
         sur_block = new double[4][3];
         slot_mat = new int[] {
-                -1, -1, -1, -1, -1
+                -1, -1, -1, -1
         };
         enemyCoordsDouble = new double[3];
         toPlace = new structureTemp(0, 0, null);
@@ -94,17 +393,18 @@ public class Elevatot extends Module {
         redstoneBlockMode = isHole = noMaterials = false;
 
         aimTarget = null;
+
+        lastStage = -1;
     }
 
     // Get all the materials
-    private boolean getMaterialsSlot() {
+    boolean getMaterialsSlot() {
 		/*
 			// I use this as a remind to which index refers to what
 			0 => obsidian
 			1 => piston
 			2 => redstone
-			3 => sword
-			4 => pick
+			3 => pick
 		 */
 
         if (placeMode.getValue().equals("Block"))
@@ -118,13 +418,10 @@ public class Elevatot extends Module {
             if (stack == ItemStack.EMPTY) {
                 continue;
             }
-            if (antiWeakness.getValue() && stack.getItem() instanceof ItemSword) {
+            // If Pick
+            if (stack.getItem() instanceof ItemPickaxe) {
                 slot_mat[3] = i;
-            } else
-                // If Pick
-                if (stack.getItem() instanceof ItemPickaxe) {
-                    slot_mat[4] = i;
-                }
+            }
             if (stack.getItem() instanceof ItemBlock) {
 
                 // If yes, get the block
@@ -157,15 +454,15 @@ public class Elevatot extends Module {
         }
 
         if (debugMode.getValue())
-            PistonCrystal.printDebug(String.format("%d %d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3], slot_mat[4]), false);
+            PistonCrystal.printDebug(String.format("%d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3]), false);
 
         // If we have everything we need, return true
-        return count >= 4 + (antiWeakness.getValue() ? 1 : 0);
+        return count >= 4;
 
     }
 
     // Get target function
-    private boolean getAimTarget() {
+    boolean getAimTarget() {
         /// Get aimTarget
         // If nearest, get it
         if (target.getValue().equals("Nearest"))
@@ -183,15 +480,6 @@ public class Elevatot extends Module {
             return aimTarget == null;
         }
         return false;
-    }
-
-    @Override
-    public void onDisable() {
-    }
-
-    @Override
-    public void onUpdate() {
-        int a = 0;
     }
 
     // Make some checks for startup
@@ -226,37 +514,6 @@ public class Elevatot extends Module {
         // Check if the guy is in a hole
         return HoleUtil.isHole(EntityUtil.getPosition(aimTarget), true, true).getType() != HoleUtil.HoleType.NONE;
     }
-
-    // Class for the structure
-    private static class structureTemp {
-        public double distance;
-        public int supportBlock;
-        public List<Vec3d> to_place;
-        public int direction;
-        public float offsetX;
-        public float offsetY;
-        public float offsetZ;
-
-        public structureTemp(double distance, int supportBlock, List<Vec3d> to_place) {
-            this.distance = distance;
-            this.supportBlock = supportBlock;
-            this.to_place = to_place;
-            this.direction = -1;
-        }
-
-        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, int direction, float offsetX, float offsetZ, float offsetY) {
-            this.distance = distance;
-            this.supportBlock = supportBlock;
-            this.to_place = to_place;
-            this.direction = direction;
-            this.offsetX = offsetX;
-            this.offsetZ = offsetZ;
-            this.offsetY = offsetY;
-        }
-    }
-
-    boolean redstoneAbovePiston;
-    structureTemp toPlace;
 
     boolean createStructure() {
 
