@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.BlockChangeEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -8,29 +9,24 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.AutoGG;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.*;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.client.CPacketPlayerDigging;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +41,8 @@ import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 /*
     Remove antiweakness [done]
     Place everything [done]
-    Add working rotatione
+    Add working rotatione [done]
+    Fix bug crash [done]
     Add ondisable
     Add event packet destroyed
     Break torch when placed
@@ -61,6 +58,7 @@ public class Elevatot extends Module {
     IntegerSetting pistonDelay = registerInteger("Piston Delay", 0, 0, 8);
     IntegerSetting redstoneDelay = registerInteger("Redstone Delay", 0, 0, 8);
     IntegerSetting blocksPerTick = registerInteger("Blocks per Tick", 4, 1, 8);
+    IntegerSetting tickBreakRedstone = registerInteger("Tick Break Redstone", 2, 0, 10);
     DoubleSetting enemyRange = registerDouble("Range", 4.9, 0, 6);
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Mode", false);
@@ -82,14 +80,71 @@ public class Elevatot extends Module {
                   meCoordsInt;
 
     int lastStage,
-        blockPlaced;
+        blockPlaced,
+        tickPassedRedstone,
+        delayTimeTicks;
 
     boolean redstoneBlockMode,
             enoughSpace,
             isHole,
             noMaterials,
             redstoneAbovePiston,
-            isSneaking;
+            isSneaking,
+            redstonePlaced;
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<BlockChangeEvent> blockChangeEventListener = new Listener<>(event -> {
+
+        if (mc.player == null || mc.world == null) return;
+
+        if (event.getBlock() == null || event.getPosition() == null) return;
+        BlockPos temp;
+        if (event.getPosition().getX() == (temp = compactBlockPos(2)).getX()
+                && event.getPosition().getY() == temp.getY()
+                && event.getPosition().getZ() == temp.getZ()
+                && event.getBlock() instanceof BlockRedstoneTorch ) {
+            if (tickBreakRedstone.getValue() == 0) {
+                breakBlock(temp);
+                lastStage = 2;
+            } else {
+                lastStage = 3;
+            }
+        }
+
+
+    });
+
+    // Algo for breaking a block
+    private void breakBlock(BlockPos pos) {
+        // If we have a redstone block
+        if (redstoneBlockMode) {
+            // Switch to the pick
+            mc.player.inventory.currentItem = slot_mat[3];
+        }
+        EnumFacing side = BlockUtil.getPlaceableSide(pos);
+        if (side != null) {
+            // If rotate, look at the redstone torch
+            if (rotate.getValue()) {
+                BlockPos neighbour = pos.offset(side);
+                EnumFacing opposite = side.getOpposite();
+                Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+                BlockUtil.faceVectorPacketInstant(hitVec, true);
+                /*
+                if (forceRotation.getValue()) {
+                    lastHitVec = hitVec;
+                }*/
+            }
+            // Destroy it
+            mc.player.swingArm(EnumHand.MAIN_HAND);
+            mc.player.connection.sendPacket(new CPacketPlayerDigging(
+                    CPacketPlayerDigging.Action.START_DESTROY_BLOCK, pos, side
+            ));
+            mc.player.connection.sendPacket(new CPacketPlayerDigging(
+                    CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, pos, side
+            ));
+        }
+    }
 
     // Class for the structure
     class structureTemp {
@@ -144,6 +199,52 @@ public class Elevatot extends Module {
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
             isSneaking = false;
         }
+
+        String output = "";
+        String materialsNeeded = "";
+
+        // No target found
+        if (aimTarget == null) {
+            output = "No target found...";
+        } else
+            if (!isHole)
+                output = "The enemy is not in a hole...";
+            else if (!enoughSpace)
+                output = "Not enough space...";
+            else if (noMaterials) {
+                output = "No materials detected...";
+                materialsNeeded = getMissingMaterials();
+            }
+
+        // Output in chat
+        setDisabledMessage(output + "PistonCrystal turned OFF!");
+        if (!materialsNeeded.equals(""))
+            setDisabledMessage("Materials missing:" + materialsNeeded);
+
+
+    }
+
+    String getMissingMaterials() {
+        /*
+			// I use this as a remind to which index refers to what
+			0 => obsidian
+			1 => piston
+			2 => redstone
+			3 => pick
+		 */
+
+        StringBuilder output = new StringBuilder();
+
+        if (slot_mat[0] == -1)
+            output.append(" Obsidian");
+        if (slot_mat[1] == -1)
+            output.append(" Piston");
+        if (slot_mat[2] == -1)
+            output.append(" Redstone");
+        if (slot_mat[3] == -1 && redstoneBlockMode)
+            output.append(" Pick");
+
+        return output.toString();
     }
 
     @Override
@@ -159,6 +260,7 @@ public class Elevatot extends Module {
             0 = Before there was a place support
             1 = Before he placed the piston
             2 = Before he placed the redstone torch
+            3 = Before breaking the block
         */
         int toWait;
         switch (lastStage) {
@@ -171,9 +273,17 @@ public class Elevatot extends Module {
             case 2:
                 toWait = redstoneDelay.getValue();
                 break;
+            case 3:
+                toWait = tickBreakRedstone.getValue();
+                break;
             default:
                 toWait = 0;
                 break;
+        }
+
+        if (delayTimeTicks < toWait) {
+            delayTimeTicks++;
+            return;
         }
 
         // Enable rotation spoof
@@ -191,10 +301,11 @@ public class Elevatot extends Module {
 
                     playerChecks();
                 }
-            } else
-                checkVariable();
+            }
             return;
         }
+        if (checkVariable())
+            return;
         /*
             First we have to place every supports blocks.
             Then, we have to do this:
@@ -218,6 +329,13 @@ public class Elevatot extends Module {
             if (BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
                 placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, false, slot_mat[2], -1);
                 // Check if we can continue
+                lastStage = 2;
+                return;
+            }
+
+            // Break the redstone
+            if (lastStage == 3) {
+                breakBlock(compactBlockPos(2));
                 lastStage = 2;
                 return;
             }
@@ -406,11 +524,16 @@ public class Elevatot extends Module {
         enemyCoordsDouble = new double[3];
         toPlace = new structureTemp(0, 0, null, -1);
 
-        redstoneBlockMode = isHole = noMaterials = false;
+        redstoneBlockMode = noMaterials = redstonePlaced = false;
+
+        isHole = true;
 
         aimTarget = null;
 
         lastStage = -1;
+
+        delayTimeTicks = 0;
+
     }
 
     // Get all the materials
@@ -425,6 +548,7 @@ public class Elevatot extends Module {
 
         if (placeMode.getValue().equals("Block"))
             redstoneBlockMode = true;
+
 
         // Iterate for all the inventory
         for (int i = 0; i < 9; i++) {
@@ -473,7 +597,7 @@ public class Elevatot extends Module {
             PistonCrystal.printDebug(String.format("%d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3]), false);
 
         // If we have everything we need, return true
-        return count >= 4;
+        return count >= 3 + (redstoneBlockMode ? 1 : 0);
 
     }
 
@@ -554,11 +678,6 @@ public class Elevatot extends Module {
                 Since they are a lot of if, i prefer keeping them
                 separated but, also, on the same tab.
                 I'll use "continue"
-                0 = {double[3]@11290} [55.575943989104964, 1.0, 17.51419950026377]
-                1 = {double[3]@11304} [53.575943989104964, 1.0, 17.51419950026377]
-                2 = {double[3]@11380} [54.575943989104964, 1.0, 18.51419950026377]
-                3 = {double[3]@11381} [54.575943989104964, 1.0, 16.51419950026377]
-                54 1 17
              */
             /// Piston Coordinates ///
             // Init + Get
@@ -571,7 +690,7 @@ public class Elevatot extends Module {
                 continue;
 
             // Check if the block is free
-            if (!(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockAir))
+            if (!(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockAir) && !(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockPistonBase))
                 continue;
 
             /// Redstone ///
@@ -759,8 +878,5 @@ public class Elevatot extends Module {
 
         return addedStructure.to_place != null;
     }
-
-
-
 
 }
