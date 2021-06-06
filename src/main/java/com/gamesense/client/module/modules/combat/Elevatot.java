@@ -39,16 +39,6 @@ import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
  * Most things are ported from PistonCrystal (guess why lol)
  */
 
-/*
-    Remove antiweakness [done]
-    Place everything [done]
-    Add working rotatione [done]
-    Fix bug crash [done]
-    Add ondisable
-    Add event packet destroyed
-    Break torch when placed
-    Place torch when broke
- */
 
 @Module.Declaration(name = "Elevatot", category = Category.Combat)
 public class Elevatot extends Module {
@@ -63,6 +53,7 @@ public class Elevatot extends Module {
     DoubleSetting enemyRange = registerDouble("Range", 4.9, 0, 6);
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Mode", false);
+    BooleanSetting trapAfter = registerBoolean("Trap After", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
