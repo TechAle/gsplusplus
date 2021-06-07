@@ -58,6 +58,7 @@ public class Elevatot extends Module {
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting clientInstaBreak = registerBoolean("Client Insta Break", false);
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
+    BooleanSetting pauseAfterSupport = registerBoolean("Pause After Support", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
     EntityPlayer aimTarget;
@@ -77,7 +78,6 @@ public class Elevatot extends Module {
 
     int lastStage,
         blockPlaced,
-        tickPassedRedstone,
         delayTimeTicks;
 
     boolean redstoneBlockMode,
@@ -89,7 +89,7 @@ public class Elevatot extends Module {
             redstonePlaced;
 
     // Class for the structure
-    class structureTemp {
+    static class structureTemp {
         public double distance;
         public int supportBlock;
         public List<Vec3d> to_place;
@@ -315,20 +315,22 @@ public class Elevatot extends Module {
             Check if the redstone torch exists, if not, place it.
          */
 
+        blockPlaced = 0;
         // First place support blocks
         if (placeSupport()) {
             BlockPos temp;
             // Check for the piston
+
             if (BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) {
                 placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, true, slot_mat[1], toPlace.position);
                 // Check if we can continue
                 if (continueBlock()) {
                     lastStage = 1;
-                    return;
                 }
+
             }
             // Check for the redstone
-            if (BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
+            if ( BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
                 placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
                 // Check if we can continue
                 lastStage = 2;
@@ -359,29 +361,27 @@ public class Elevatot extends Module {
         // If we have something to place
         if (toPlace.supportBlock > 0) {
 
-            if (forceBurrow.getValue() && BlockUtil.getBlock(aimTarget.getPosition()) instanceof BlockAir ) {
-                boolean temp = redstoneAbovePiston;
-                redstoneAbovePiston = true;
-                placeBlock(aimTarget.getPosition(), 0, 0, 0, true, false, slot_mat[4], -1);
-                redstoneAbovePiston = temp;
-                if (continueBlock()) {
-                    lastStage = 0;
-                    return false;
-                }
-            }
-
             // Iterate until the finish
             for(int i = 0; i < toPlace.supportBlock; i++) {
 
                 // Get the coordinates of that block
                 BlockPos targetPos = getTargetPos(i);
 
+
                 // If it's air
                 if (BlockUtil.getBlock(targetPos) instanceof BlockAir) {
-                    placeBlock(targetPos, 0, 0, 0, false, false, slot_mat[0], -1);
+                    boolean placed;
+                    // Burrow
+                    if (forceBurrow.getValue() && i == 0) {
+                        boolean temp = redstoneAbovePiston;
+                        redstoneAbovePiston = true;
+                        placed = placeBlock(targetPos, 0, 0, 0, true, false, slot_mat[4], -1);
+                        redstoneAbovePiston = temp;
+                    } else
+                        placed = placeBlock(targetPos, 0, 0, 0, false, false, slot_mat[0], -1);
 
                     // If we reached the limit
-                    if (continueBlock()) {
+                    if (placed && continueBlock()) {
                         // Stop
                         lastStage = 0;
                         return false;
@@ -394,7 +394,7 @@ public class Elevatot extends Module {
 
         }
 
-        return true;
+        return blockPlaced <= 0 || !pauseAfterSupport.getValue();
     }
 
     final ArrayList<EnumFacing> exd = new ArrayList<EnumFacing>() {
@@ -707,7 +707,7 @@ public class Elevatot extends Module {
             double[] redstoneCoordsAbs = new double[3];
             int[] redstoneCoordsRel = new int[3];
             double minFound = 1000;
-            double minNow = -1;
+            double minNow;
             boolean foundOne = false;
             for (int[] pos : disp_surblock) {
                 if (trapMode.getValue() && !(pos[0] == disp_surblock[i][0] || pos[2] == disp_surblock[i][0] ))
@@ -747,6 +747,12 @@ public class Elevatot extends Module {
             // Skeleton
             List<Vec3d> toPlaceTemp = new ArrayList<>();
             int supportBlock = 0;
+
+            // Skull
+            if (forceBurrow.getValue()) {
+                toPlaceTemp.add(new Vec3d(0,0,0));
+                supportBlock++;
+            }
 
             // If we are placing a redstone torch
             if (!redstoneBlockMode) {
