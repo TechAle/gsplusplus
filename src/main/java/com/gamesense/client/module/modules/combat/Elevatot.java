@@ -27,10 +27,12 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 
@@ -44,7 +46,6 @@ import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 public class Elevatot extends Module {
 
     ModeSetting target = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
-    ModeSetting placeMode = registerMode("Place", Arrays.asList("Torch", "Block", "Both"), "Torch");
     IntegerSetting supportDelay = registerInteger("Support Delay", 0, 0, 8);
     IntegerSetting pistonDelay = registerInteger("Piston Delay", 0, 0, 8);
     IntegerSetting redstoneDelay = registerInteger("Redstone Delay", 0, 0, 8);
@@ -55,6 +56,8 @@ public class Elevatot extends Module {
     BooleanSetting trapMode = registerBoolean("Trap Mode", false);
     BooleanSetting trapAfter = registerBoolean("Trap After", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
+    BooleanSetting clientInstaBreak = registerBoolean("Client Insta Break", false);
+    BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
     EntityPlayer aimTarget;
@@ -139,7 +142,8 @@ public class Elevatot extends Module {
             } else if (event.getBlock() instanceof BlockAir) {
                 if (redstoneDelay.getValue() == 0) {
                     placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
-                    mc.world.setBlockState(temp, Blocks.REDSTONE_TORCH.getDefaultState());
+                    if (clientInstaPlace.getValue())
+                        mc.world.setBlockState(temp, Blocks.REDSTONE_TORCH.getDefaultState());
                 }
             }
         }
@@ -149,11 +153,6 @@ public class Elevatot extends Module {
 
     // Algo for breaking a block
     private void breakBlock(BlockPos pos) {
-        // If we have a redstone block
-        if (redstoneBlockMode) {
-            // Switch to the pick
-            mc.player.inventory.currentItem = slot_mat[3];
-        }
         EnumFacing side = BlockUtil.getPlaceableSide(pos);
         if (side != null) {
             // If rotate, look at the redstone torch
@@ -175,6 +174,8 @@ public class Elevatot extends Module {
             mc.player.connection.sendPacket(new CPacketPlayerDigging(
                     CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, pos, side
             ));
+            if (clientInstaBreak.getValue())
+                mc.world.setBlockToAir(pos);
         }
     }
 
@@ -251,7 +252,7 @@ public class Elevatot extends Module {
     @Override
     public void onUpdate() {
         // If no mc.player
-        if (mc.player == null) {
+        if (mc.player == null || mc.world == null) {
             disable();
             return;
         }
@@ -433,7 +434,7 @@ public class Elevatot extends Module {
         Vec3d hitVec = new Vec3d(neighbour).add(0.5 + offsetX, 0.5, 0.5 + offsetZ).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
 
-        //try {
+        try {
 
         if (mc.player.inventory.getStackInSlot(slot) != ItemStack.EMPTY) {
             if (mc.player.inventory.currentItem != slot) {
@@ -447,25 +448,25 @@ public class Elevatot extends Module {
             }
         }
 
-        /*}catch (Exception e) {
+        }catch (Exception e) {
             PistonCrystal.printDebug("Fatal Error during the creation of the structure. Please, report this bug in the discor's server", true);
-            final Logger LOGGER = LogManager.getLogger("GameSense");
-            LOGGER.error("[PistonCrystal] error during the creation of the structure.");
+            final Logger LOGGER = (Logger) LogManager.getLogger("GameSense");
+            LOGGER.info("[PistonCrystal] error during the creation of the structure.");
             if (e.getMessage() != null)
-                LOGGER.error("[PistonCrystal] error message: " + e.getClass().getName() + " " + e.getMessage());
+                LOGGER.info("[PistonCrystal] error message: " + e.getClass().getName() + " " + e.getMessage());
             else
-                LOGGER.error("[PistonCrystal] cannot find the cause");
+                LOGGER.info("[PistonCrystal] cannot find the cause");
             int i5 = 0;
 
             if (e.getStackTrace().length != 0) {
-                LOGGER.error("[PistonCrystal] StackTrace Start");
+                LOGGER.info("[PistonCrystal] StackTrace Start");
                 for (StackTraceElement errorMess : e.getStackTrace()) {
-                    LOGGER.error("[PistonCrystal] " + errorMess.toString());
+                    LOGGER.info("[PistonCrystal] " + errorMess.toString());
                 }
-                LOGGER.error("[PistonCrystal] StackTrace End");
+                LOGGER.info("[PistonCrystal] StackTrace End");
             }
             disable();
-        }*/
+        }
 
         if (!isSneaking && BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
@@ -559,9 +560,6 @@ public class Elevatot extends Module {
 			4 => skull
 		 */
 
-        if (placeMode.getValue().equals("Block"))
-            redstoneBlockMode = true;
-
 
         // Iterate for all the inventory
         for (int i = 0; i < 9; i++) {
@@ -572,9 +570,7 @@ public class Elevatot extends Module {
                 continue;
             } else
             // If Pick
-            if (stack.getItem() instanceof ItemPickaxe) {
-                slot_mat[3] = i;
-            } else if (forceBurrow.getValue() && stack.getItem() instanceof ItemSkull) {
+            if (forceBurrow.getValue() && stack.getItem() instanceof ItemSkull) {
                 slot_mat[4] = i;
             }
             if (stack.getItem() instanceof ItemBlock) {
@@ -591,12 +587,9 @@ public class Elevatot extends Module {
                         slot_mat[1] = i;
                     } else
                         // RedstoneTorch / RedstoneBlock
-                        if (!placeMode.getValue().equals("Block") && block instanceof BlockRedstoneTorch) {
+                        if (block instanceof BlockRedstoneTorch) {
                             slot_mat[2] = i;
                             redstoneBlockMode = false;
-                        } else if (!placeMode.getValue().equals("Torch") && block.translationKey.equals("blockRedstone")) {
-                            slot_mat[2] = i;
-                            redstoneBlockMode = true;
                         }
             }
         }
@@ -612,7 +605,7 @@ public class Elevatot extends Module {
             PistonCrystal.printDebug(String.format("%d %d %d %d", slot_mat[0], slot_mat[1], slot_mat[2], slot_mat[3]), false);
 
         // If we have everything we need, return true
-        return count >= 3 + (redstoneBlockMode ? 1 : 0) + (forceBurrow.getValue() ? 1 : 0);
+        return count >= 3 + (forceBurrow.getValue() ? 1 : 0);
 
     }
 
@@ -716,8 +709,9 @@ public class Elevatot extends Module {
             double minFound = 1000;
             double minNow = -1;
             boolean foundOne = false;
-            // Iterate for all 4 positions
             for (int[] pos : disp_surblock) {
+                if (trapMode.getValue() && !(pos[0] == disp_surblock[i][0] || pos[2] == disp_surblock[i][0] ))
+                    continue;
                 // Get coordinates
                 double[] torchCoords = new double[]{pistonCoordsAbs[0] + pos[0], pistonCoordsAbs[1], pistonCoordsAbs[2] + pos[2]};
                 // If it's min of what we have now
@@ -796,8 +790,9 @@ public class Elevatot extends Module {
                         new Vec3d(1, 2, -1),
                         new Vec3d(1, 2, 0),
                         new Vec3d(1, 2, 1),
-                        new Vec3d(0, 2, 1)));
-                supportBlock += 10;
+                        new Vec3d(0, 2, 1),
+                        new Vec3d(-1, 2, 1)));
+                supportBlock += 11;
             }
 
             /// Add all others blocks
