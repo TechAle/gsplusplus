@@ -16,7 +16,7 @@ import java.util.HashMap;
 @Command.Declaration(name = "AutoGear", syntax = "gear set/save/del/list [name]", alias = {"gear", "gr", "kit"})
 public class AutoGearCommand extends Command {
 
-    final static private String pathSave = "GameSense/Misc/AutoGear.json";
+    final static private String pathSave = "gs++/Misc/AutoGear.json";
 
     private static final HashMap<String, String> errorMessage = new HashMap<String, String>() {
         {
