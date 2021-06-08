@@ -90,6 +90,8 @@ public class Elevatot extends Module {
             isSneaking,
             redstonePlaced;
 
+    String uuid_enemy;
+
     // Class for the structure
     static class structureTemp {
         public double distance;
@@ -182,6 +184,12 @@ public class Elevatot extends Module {
 
     @Override
     public void onEnable() {
+
+        if (mc.player == null || mc.world == null) {
+            disable();
+            return;
+        }
+
         ROTATION_UTIL.onEnable();
 
         initValues();
@@ -196,6 +204,12 @@ public class Elevatot extends Module {
 
     @Override
     public void onDisable() {
+
+        if (mc.player == null || mc.world == null) {
+            disable();
+            return;
+        }
+
         if (isSneaking) {
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
             isSneaking = false;
@@ -289,21 +303,27 @@ public class Elevatot extends Module {
             return;
         }
 
+        if (enemyCoordsDouble == null) {
+            //disable();
+            return;
+        }
+
         // Enable rotation spoof
         ROTATION_UTIL.shouldSpoofAngles(true);
         boolean back = false;
-        BlockPos pos;
-        try {
-            pos = getPosUiid(aimTarget.getGameProfile().getId().toString());
-        } catch (NullPointerException e) { // ?
-            return;
-        }
+        BlockPos pos = new BlockPos(0, -100, 0);
+        for(int i = 0; i < mc.world.playerEntities.size(); i++)
+            if (mc.world.playerEntities.get(i).getGameProfile().getId().toString().equals(uuid_enemy))
+                pos = mc.world.playerEntities.get(i).getPosition();
+
         // Check if something is not ok
-        if (enemyCoordsDouble == null || pos == null) {
+        if (pos.getY() == -100) {
+            disable();
             return;
         }
-        if (checkVariable())
+        if (checkVariable()) {
             return;
+        }
         // Check if the enemy is out of the hole
         if (pos.getY() != enemyCoordsInt[1] && (pos.getX() != enemyCoordsInt[0] || pos.getZ() != enemyCoordsInt[2])) {
             PistonCrystal.printDebug("Enemy pushed out of the hole.", false);
@@ -339,7 +359,7 @@ public class Elevatot extends Module {
             if ( BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
                 placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
                 // Check if we can continue
-                lastStage = 2;
+                lastStage = 3;
                 return;
             }
 
@@ -358,12 +378,6 @@ public class Elevatot extends Module {
 
     }
 
-    BlockPos getPosUiid(String uuid) {
-        for(int i = 0; i < mc.world.playerEntities.size(); i++)
-            if (mc.world.playerEntities.get(i).getGameProfile().getId().toString().equals(uuid))
-                return mc.world.playerEntities.get(i).getPosition();
-        return null;
-    }
 
     boolean continueBlock() {
         return ++blockPlaced == blocksPerTick.getValue();
@@ -639,7 +653,7 @@ public class Elevatot extends Module {
                 disable();
             // If not found a target
             return aimTarget == null;
-        }
+        } else uuid_enemy = aimTarget.getGameProfile().getId().toString();
         return false;
     }
 
