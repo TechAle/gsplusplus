@@ -53,12 +53,12 @@ public class Elevatot extends Module {
     IntegerSetting tickBreakRedstone = registerInteger("Tick Break Redstone", 2, 0, 10);
     DoubleSetting enemyRange = registerDouble("Range", 4.9, 0, 6);
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
-    BooleanSetting trapMode = registerBoolean("Trap Mode", false);
-    BooleanSetting trapAfter = registerBoolean("Trap After", false);
+    BooleanSetting trapMode = registerBoolean("Trap Before", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting clientInstaBreak = registerBoolean("Client Insta Break", false);
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
     BooleanSetting pauseAfterSupport = registerBoolean("Pause After Support", false);
+    BooleanSetting checkPush = registerBoolean("Check Push", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
     EntityPlayer aimTarget;
@@ -93,29 +93,28 @@ public class Elevatot extends Module {
         public double distance;
         public int supportBlock;
         public List<Vec3d> to_place;
-        public int direction;
         public float offsetX;
         public float offsetY;
         public float offsetZ;
         public int position;
+        BlockPos target;
 
         public structureTemp(double distance, int supportBlock, List<Vec3d> to_place, int position) {
             this.distance = distance;
             this.supportBlock = supportBlock;
             this.to_place = to_place;
-            this.direction = -1;
             this.position = position;
         }
 
-        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, int direction, float offsetX, float offsetZ, float offsetY, int position) {
+        public void replaceValues(double distance, int supportBlock, List<Vec3d> to_place, float offsetX, float offsetZ, float offsetY, int position, BlockPos target) {
             this.distance = distance;
             this.supportBlock = supportBlock;
             this.to_place = to_place;
-            this.direction = direction;
             this.offsetX = offsetX;
             this.offsetZ = offsetZ;
             this.offsetY = offsetY;
             this.position = position;
+            this.target = target;
         }
     }
 
@@ -290,24 +289,29 @@ public class Elevatot extends Module {
 
         // Enable rotation spoof
         ROTATION_UTIL.shouldSpoofAngles(true);
-
+        boolean back = false;
+        BlockPos pos;
+        try {
+            pos = getPosUiid(aimTarget.getGameProfile().getId().toString());
+        } catch (NullPointerException e) { // ?
+            return;
+        }
         // Check if something is not ok
-        if (enemyCoordsDouble == null || aimTarget == null) {
-            if (aimTarget == null) {
-                aimTarget = PlayerUtil.findLookingPlayer(enemyRange.getValue());
-                if (aimTarget != null) {
-
-                    if (ModuleManager.isModuleEnabled(AutoGG.class)) {
-                        AutoGG.INSTANCE.addTargetedPlayer(aimTarget.getName());
-                    }
-
-                    playerChecks();
-                }
-            }
+        if (enemyCoordsDouble == null || pos == null) {
             return;
         }
         if (checkVariable())
             return;
+        // Check if the enemy is out of the hole
+        if (pos.getY() != enemyCoordsInt[1] && (pos.getX() != enemyCoordsInt[0] || pos.getZ() != enemyCoordsInt[2])) {
+            PistonCrystal.printDebug("Enemy pushed out of the hole.", false);
+            if (trapMode.getValue()) {
+                PistonCrystal.printDebug("Finished trapping him", false);
+                placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
+            }
+            disable();
+            return;
+        }
         /*
             First we have to place every supports blocks.
             Then, we have to do this:
@@ -350,6 +354,13 @@ public class Elevatot extends Module {
 
 
 
+    }
+
+    BlockPos getPosUiid(String uuid) {
+        for(int i = 0; i < mc.world.playerEntities.size(); i++)
+            if (mc.world.playerEntities.get(i).getGameProfile().getId().toString().equals(uuid))
+                return mc.world.playerEntities.get(i).getPosition();
+        return null;
     }
 
     boolean continueBlock() {
@@ -638,7 +649,7 @@ public class Elevatot extends Module {
             if (is_in_hole()) {
                 // Get enemy coordinates
                 enemyCoordsDouble = new double[]{aimTarget.posX, aimTarget.posY, aimTarget.posZ};
-                enemyCoordsInt = new int[]{(int) enemyCoordsDouble[0], (int) enemyCoordsDouble[1], (int) enemyCoordsDouble[2]};
+                enemyCoordsInt = new int[]{aimTarget.getPosition().getX(), aimTarget.getPosition().getY(), aimTarget.getPosition().getZ()};
                 // Get me coordinates
                 meCoordsInt = new int[]{(int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ};
                 // Start choosing where to place what
@@ -701,6 +712,14 @@ public class Elevatot extends Module {
             if (!(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockAir) && !(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockPistonBase))
                 continue;
 
+            BlockPos startTrap = new BlockPos(pistonCoordsAbs[0] - disp_surblock[i][0] * 2, pistonCoordsAbs[1], pistonCoordsAbs[2] - disp_surblock[i][2] * 2);
+            // Check if it's possible
+            if (checkPush.getValue()
+                && (!(BlockUtil.getBlock(startTrap) instanceof BlockAir)
+                    || !(BlockUtil.getBlock(startTrap.getX(), startTrap.getY() + 1, startTrap.getZ()) instanceof BlockAir))) {
+                continue;
+            }
+
             /// Redstone ///
             // Check for the redstone
             /// Redstone Coordinates
@@ -710,8 +729,6 @@ public class Elevatot extends Module {
             double minNow;
             boolean foundOne = false;
             for (int[] pos : disp_surblock) {
-                if (trapMode.getValue() && !(pos[0] == disp_surblock[i][0] || pos[2] == disp_surblock[i][0] ))
-                    continue;
                 // Get coordinates
                 double[] torchCoords = new double[]{pistonCoordsAbs[0] + pos[0], pistonCoordsAbs[1], pistonCoordsAbs[2] + pos[2]};
                 // If it's min of what we have now
@@ -785,20 +802,25 @@ public class Elevatot extends Module {
             // If trapPlayer
             if (trapMode.getValue()) {
                 // Iterate for everything
-                toPlaceTemp.addAll(Arrays.asList(// Supports
-                        new Vec3d(-1, -1, -1),
-                        new Vec3d(-1, 0, -1),
-                        new Vec3d(-1, 1, -1),
+                for(Vec3d var : new Vec3d[] {
+                        new Vec3d(1, -1, 1),
+                        new Vec3d(1, 0, 1),
+                        new Vec3d(1, 1, 1),
                         // Start circle
-                        new Vec3d(-1, 2, -1),
-                        new Vec3d(-1, 2, 0),
-                        new Vec3d(0, 2, -1),
                         new Vec3d(1, 2, -1),
                         new Vec3d(1, 2, 0),
                         new Vec3d(1, 2, 1),
                         new Vec3d(0, 2, 1),
-                        new Vec3d(-1, 2, 1)));
-                supportBlock += 11;
+                        new Vec3d(-1, 2, 1),
+                        new Vec3d(-1, 2, -1),
+                        new Vec3d(-1, 2, 0),
+                        new Vec3d(0, 2, -1)
+                }) {
+                    if (!((int) var.x == disp_surblock[i][0] && (int) var.z == disp_surblock[i][2])) {
+                        toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
+                        supportBlock += 1;
+                    }
+                }
             }
 
             /// Add all others blocks
@@ -843,7 +865,7 @@ public class Elevatot extends Module {
             offsetY = meCoordsInt[1] - enemyCoordsInt[1] == -1 ? 0 : 1;
 
             // Repleace the structure
-            addedStructure.replaceValues(distanceNowCrystal, supportBlock, toPlaceTemp, -1, offsetX, offsetZ, offsetY, position);
+            addedStructure.replaceValues(distanceNowCrystal, supportBlock, toPlaceTemp, offsetX, offsetZ, offsetY, position, startTrap);
 
 
             toPlace = addedStructure;
