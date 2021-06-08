@@ -59,6 +59,8 @@ public class Elevatot extends Module {
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
     BooleanSetting pauseAfterSupport = registerBoolean("Pause After Support", false);
     BooleanSetting checkPush = registerBoolean("Check Push", false);
+    BooleanSetting checkSurround = registerBoolean("Check Surround", true);
+    BooleanSetting checkBurrow = registerBoolean("Check Burrow", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
 
     EntityPlayer aimTarget;
@@ -671,7 +673,8 @@ public class Elevatot extends Module {
         };
 
         // Check if the guy is in a hole
-        return HoleUtil.isHole(EntityUtil.getPosition(aimTarget), true, true).getType() != HoleUtil.HoleType.NONE;
+        return (!checkSurround.getValue() || HoleUtil.isHole(EntityUtil.getPosition(aimTarget), true, true).getType() != HoleUtil.HoleType.NONE)
+                && (!checkBurrow.getValue() || !(BlockUtil.getBlock(EntityUtil.getPosition(aimTarget)) instanceof BlockAir));
     }
 
     boolean createStructure() {
