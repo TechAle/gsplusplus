@@ -66,6 +66,7 @@ public class Elevatot extends Module {
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
     BooleanSetting stopOut = registerBoolean("Stop Out", true);
     IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10);
+    BooleanSetting addRoof = registerBoolean("Add Roof", false);
 
     EntityPlayer aimTarget;
 
@@ -142,7 +143,7 @@ public class Elevatot extends Module {
                 && event.getPosition().getZ() == temp.getZ() && !(BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) ) {
             if (event.getBlock() instanceof BlockRedstoneTorch) {
                 if (tickBreakRedstone.getValue() == 0) {
-                    breakBlock(temp);
+                    breakBlock(compactBlockPos(2));
                     lastStage = 2;
                 } else {
                     lastStage = 3;
@@ -151,7 +152,7 @@ public class Elevatot extends Module {
                 if (redstoneDelay.getValue() == 0) {
                     placeBlock(temp, 0, 0, 0, true, false, slot_mat[2], -1);
                     if (clientInstaPlace.getValue())
-                        mc.world.setBlockState(temp, Blocks.REDSTONE_TORCH.getDefaultState());
+                        mc.world.setBlockState(compactBlockPos(2), Blocks.REDSTONE_TORCH.getDefaultState());
                 }
             }
         }
@@ -211,7 +212,6 @@ public class Elevatot extends Module {
     public void onDisable() {
 
         if (mc.player == null || mc.world == null) {
-            disable();
             return;
         }
 
@@ -281,6 +281,7 @@ public class Elevatot extends Module {
         }
 
         if (aimTarget == null) {
+
             if (!getAimTarget())
                 return;
             playerChecks();
@@ -318,7 +319,7 @@ public class Elevatot extends Module {
         }
 
         if (enemyCoordsDouble == null) {
-            //disable();
+            disable();
             return;
         }
 
@@ -346,6 +347,7 @@ public class Elevatot extends Module {
                     PistonCrystal.printDebug("Finished trapping him", false);
                     placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
                 }
+                breakBlock(compactBlockPos(2));
                 disable();
                 return;
             }
@@ -720,7 +722,7 @@ public class Elevatot extends Module {
         // Distance we are going to find
         double distanceNowCrystal;
         // Since they may happens some errors that i did not expect, i use a try-catch
-        //try {
+        try {
 
         // First check, h check.
         // Iterate for the surround (why is the foreach iterate in a random way in elevatot LMAO
@@ -852,6 +854,18 @@ public class Elevatot extends Module {
                         supportBlock += 1;
                     }
                 }
+
+                if (addRoof.getValue()) {
+                    // Iterate for everything
+                    for(Vec3d var : new Vec3d[] {
+                            new Vec3d(0, 3, -1),
+                            new Vec3d(1, 3, -1)
+                    }) {
+                        toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
+                        supportBlock += 1;
+                    }
+                }
+
             } else if (doubleTrap.getValue()) {
                 Vec3d mid;
                 // Iterate for everything
@@ -882,6 +896,18 @@ public class Elevatot extends Module {
                 /*
                 toPlaceTemp.add(new Vec3d(-disp_surblock[i][0], 2, -disp_surblock[i][2]));
                 supportBlock++;*/
+
+                if (addRoof.getValue()) {
+                    // Iterate for everything
+                    for(Vec3d var : new Vec3d[] {
+                            new Vec3d(0, 3, -1),
+                            new Vec3d(0, 3, 0),
+                            new Vec3d(-1,3,0)
+                    }) {
+                        toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
+                        supportBlock += 1;
+                    }
+                }
 
 
             }
@@ -939,37 +965,37 @@ public class Elevatot extends Module {
 
 
 
-        /*}catch (Exception e) {
+        }catch (Exception e) {
             PistonCrystal.printDebug("Fatal Error during the creation of the structure. Please, report this bug in the discord's server", true);
-            final Logger LOGGER = LogManager.getLogger("GameSense");
-            LOGGER.error("[Elevator] error during the creation of the structure.");
+            final Logger LOGGER = (Logger) LogManager.getLogger("GameSense");
+            LOGGER.info("[Elevator] error during the creation of the structure.");
             if (e.getMessage() != null)
-                LOGGER.error("[Elevator] error message: " + e.getClass().getName() + " " + e.getMessage());
+                LOGGER.info("[Elevator] error message: " + e.getClass().getName() + " " + e.getMessage());
             else
-                LOGGER.error("[Elevator] cannot find the cause");
+                LOGGER.info("[Elevator] cannot find the cause");
             int i5 = 0;
 
             if (e.getStackTrace().length != 0) {
-                LOGGER.error("[Elevator] StackTrace Start");
+                LOGGER.info("[Elevator] StackTrace Start");
                 for (StackTraceElement errorMess : e.getStackTrace()) {
-                    LOGGER.error("[Elevator] " + errorMess.toString());
+                    LOGGER.info("[Elevator] " + errorMess.toString());
                 }
-                LOGGER.error("[Elevator] StackTrace End");
+                LOGGER.info("[Elevator] StackTrace End");
             }
 
             if (aimTarget != null) {
-                LOGGER.error("[Elevator] closest target is not null");
-            } else LOGGER.error("[Elevator] closest target is null somehow");
-            for (Double[] cord_b : sur_block) {
+                LOGGER.info("[Elevator] closest target is not null");
+            } else LOGGER.info("[Elevator] closest target is null somehow");
+            for (double[] cord_b : sur_block) {
                 if (cord_b != null) {
-                    LOGGER.error("[Elevator] " + i5 + " is not null");
+                    LOGGER.info("[Elevator] " + i5 + " is not null");
                 } else {
-                    LOGGER.error("[Elevator] " + i5 + " is null");
+                    LOGGER.info("[Elevator] " + i5 + " is null");
                 }
                 i5++;
             }
 
-        }*/
+        }
 
         if (debugMode.getValue() && addedStructure.to_place != null) {
             PistonCrystal.printDebug("Skeleton structure:", false);
