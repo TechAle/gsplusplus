@@ -54,6 +54,7 @@ public class Elevatot extends Module {
     DoubleSetting enemyRange = registerDouble("Range", 4.9, 0, 6);
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Before", false);
+    BooleanSetting doubleTrap = registerBoolean("Double Trap", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting clientInstaBreak = registerBoolean("Client Insta Break", false);
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
@@ -818,10 +819,10 @@ public class Elevatot extends Module {
             }
 
             // If trapPlayer
-            if (trapMode.getValue()) {
+            if (trapMode.getValue() && !doubleTrap.getValue()) {
                 // Iterate for everything
                 for(Vec3d var : new Vec3d[] {
-                        new Vec3d(1, -1, 1),
+                        new Vec3d(0, 0, 1),
                         new Vec3d(1, 0, 1),
                         new Vec3d(1, 1, 1),
                         // Start circle
@@ -839,6 +840,38 @@ public class Elevatot extends Module {
                         supportBlock += 1;
                     }
                 }
+            } else if (doubleTrap.getValue()) {
+                Vec3d mid;
+                // Iterate for everything
+                for(Vec3d var : new Vec3d[] {
+                        new Vec3d(0, 0, 1),
+                        new Vec3d(1, 0, 1),
+                        new Vec3d(1, 1, 1),
+                        // Start circle
+                        new Vec3d(1, 2, -1),
+                        new Vec3d(1, 2, 0),
+                        new Vec3d(1, 2, 1),
+                        new Vec3d(0, 2, 1),
+                        new Vec3d(-1, 2, 1),
+                        new Vec3d(-1, 2, -1),
+                        new Vec3d(-1, 2, 0),
+                        new Vec3d(0, 2, -1)
+                }) {
+                    if (!((int) var.x == disp_surblock[i][0] && (int) var.z == disp_surblock[i][2])) {
+                        toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
+                        supportBlock++;
+                    } else mid = var;
+                }
+
+                toPlaceTemp.add(new Vec3d(disp_surblock[i][0], 2, disp_surblock[i][2]));
+                supportBlock++;
+
+
+                /*
+                toPlaceTemp.add(new Vec3d(-disp_surblock[i][0], 2, -disp_surblock[i][2]));
+                supportBlock++;*/
+
+
             }
 
             /// Add all others blocks
