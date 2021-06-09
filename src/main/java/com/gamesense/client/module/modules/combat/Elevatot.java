@@ -144,7 +144,7 @@ public class Elevatot extends Module {
                 }
             } else if (event.getBlock() instanceof BlockAir) {
                 if (redstoneDelay.getValue() == 0) {
-                    placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
+                    placeBlock(temp, 0, 0, 0, true, false, slot_mat[2], -1);
                     if (clientInstaPlace.getValue())
                         mc.world.setBlockState(temp, Blocks.REDSTONE_TORCH.getDefaultState());
                 }
@@ -357,7 +357,7 @@ public class Elevatot extends Module {
             }
             // Check for the redstone
             if ( BlockUtil.getBlock(temp = compactBlockPos(2)) instanceof BlockAir) {
-                placeBlock(temp, 0, 0, 0, false, false, slot_mat[2], -1);
+                placeBlock(temp, 0, 0, 0, true, false, slot_mat[2], -1);
                 // Check if we can continue
                 lastStage = 3;
                 return;
@@ -539,11 +539,16 @@ public class Elevatot extends Module {
 
     // Given a step, return the absolute block position
     public BlockPos compactBlockPos(int step) {
-        // Get enemy's relative position of the block
-        BlockPos offsetPos = new BlockPos(toPlace.to_place.get(toPlace.supportBlock + step - 1));
-        // Get absolute position and return
-        return new BlockPos(enemyCoordsDouble[0] + offsetPos.getX(), enemyCoordsDouble[1] + offsetPos.getY(), enemyCoordsDouble[2] + offsetPos.getZ());
-
+        try {
+            // Get enemy's relative position of the block
+            BlockPos offsetPos = new BlockPos(toPlace.to_place.get(toPlace.supportBlock + step - 1));
+            // Get absolute position and return
+            return new BlockPos(enemyCoordsDouble[0] + offsetPos.getX(), enemyCoordsDouble[1] + offsetPos.getY(), enemyCoordsDouble[2] + offsetPos.getZ());
+        } catch (NullPointerException e) {
+            PistonCrystal.printDebug("Crash!", false);
+            disable();
+            return new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1], enemyCoordsDouble[2]);
+        }
     }
 
     // Check if we have to disable
@@ -792,21 +797,14 @@ public class Elevatot extends Module {
             if (!redstoneBlockMode) {
                 // Check first if we are above
                 if (redstoneAbovePiston) {
-                    // Get the position
-                    int[] toAdd;
-                    if (enemyCoordsInt[0] == (int) pistonCoordsAbs[0] && enemyCoordsInt[2] == (int) pistonCoordsAbs[2]) {
-                        toAdd = new int[]{pistonCoordsRel[0], pistonCoordsRel[1], 0};
-                    } else {
-                        toAdd = new int[]{pistonCoordsRel[0], pistonCoordsRel[1], pistonCoordsRel[2]};
-                    }
                     // Lets check if there is the structure
                     for (int hight = -1; hight < 2; hight++)
                         // Is air
-                        if (!PistonCrystal.someoneInCoords(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[2] + toAdd[2])
-                                && BlockUtil.getBlock(pistonCoordsAbs[0] + toAdd[0], pistonCoordsAbs[1] + hight, pistonCoordsAbs[2] + toAdd[2])
+                        if (!PistonCrystal.someoneInCoords(pistonCoordsAbs[0] + pistonCoordsRel[0], pistonCoordsAbs[2] + pistonCoordsRel[0])
+                                && BlockUtil.getBlock(pistonCoordsAbs[0] + pistonCoordsRel[0], pistonCoordsAbs[1] + hight, pistonCoordsRel[2] + pistonCoordsRel[2])
                                 instanceof BlockAir) {
                             // Obby
-                            toPlaceTemp.add(new Vec3d(pistonCoordsRel[0] + toAdd[0], pistonCoordsRel[1] + hight, pistonCoordsRel[2] + toAdd[2]));
+                            toPlaceTemp.add(new Vec3d(pistonCoordsRel[0] * 2, pistonCoordsRel[1] + hight, pistonCoordsRel[2] * 2));
                             supportBlock++;
                         }
                 } else if (BlockUtil.getBlock(redstoneCoordsAbs[0], redstoneCoordsAbs[1] - 1, redstoneCoordsAbs[2]) instanceof BlockAir) {
