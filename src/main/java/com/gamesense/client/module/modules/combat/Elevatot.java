@@ -55,6 +55,7 @@ public class Elevatot extends Module {
     BooleanSetting debugMode = registerBoolean("Debug Mode", false);
     BooleanSetting trapMode = registerBoolean("Trap Before", false);
     BooleanSetting doubleTrap = registerBoolean("Double Trap", false);
+    BooleanSetting stopCa = registerBoolean("StopCa", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting clientInstaBreak = registerBoolean("Client Insta Break", false);
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
@@ -63,6 +64,8 @@ public class Elevatot extends Module {
     BooleanSetting checkSurround = registerBoolean("Check Surround", true);
     BooleanSetting checkBurrow = registerBoolean("Check Burrow", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
+    BooleanSetting stopOut = registerBoolean("Stop Out", true);
+    IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10);
 
     EntityPlayer aimTarget;
 
@@ -81,7 +84,8 @@ public class Elevatot extends Module {
 
     int lastStage,
         blockPlaced,
-        delayTimeTicks;
+        delayTimeTicks,
+        tickOut;
 
     boolean redstoneBlockMode,
             enoughSpace,
@@ -135,7 +139,7 @@ public class Elevatot extends Module {
         BlockPos temp;
         if (event.getPosition().getX() == (temp = compactBlockPos(2)).getX()
                 && event.getPosition().getY() == temp.getY()
-                && event.getPosition().getZ() == temp.getZ() ) {
+                && event.getPosition().getZ() == temp.getZ() && !(BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) ) {
             if (event.getBlock() instanceof BlockRedstoneTorch) {
                 if (tickBreakRedstone.getValue() == 0) {
                     breakBlock(temp);
@@ -238,6 +242,9 @@ public class Elevatot extends Module {
             setDisabledMessage("Materials missing:" + materialsNeeded);
 
 
+        if (stopCa.getValue())
+            AutoCrystal.stopAC = false;
+
     }
 
     String getMissingMaterials() {
@@ -332,15 +339,17 @@ public class Elevatot extends Module {
             return;
         }
         // Check if the enemy is out of the hole
-        if (pos.getY() != enemyCoordsInt[1] && (pos.getX() != enemyCoordsInt[0] || pos.getZ() != enemyCoordsInt[2])) {
-            PistonCrystal.printDebug("Enemy pushed out of the hole.", false);
-            if (trapMode.getValue()) {
-                PistonCrystal.printDebug("Finished trapping him", false);
-                placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
+        if (stopOut.getValue() && pos.getY() != enemyCoordsInt[1] && (pos.getX() != enemyCoordsInt[0] || pos.getZ() != enemyCoordsInt[2])) {
+            if (tickOut++ >= tickOutHole.getValue()) {
+                PistonCrystal.printDebug("Enemy pushed out of the hole.", false);
+                if (trapMode.getValue()) {
+                    PistonCrystal.printDebug("Finished trapping him", false);
+                    placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
+                }
+                disable();
+                return;
             }
-            disable();
-            return;
-        }
+        } else if (tickOut != 0) tickOut = 0;
         /*
             First we have to place every supports blocks.
             Then, we have to do this:
@@ -584,7 +593,10 @@ public class Elevatot extends Module {
 
         lastStage = -1;
 
-        delayTimeTicks = 0;
+        delayTimeTicks = tickOut = 0;
+
+        if (stopCa.getValue())
+            AutoCrystal.stopAC = true;
 
     }
 
