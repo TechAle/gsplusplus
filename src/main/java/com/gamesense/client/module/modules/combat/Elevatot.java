@@ -195,7 +195,7 @@ public class Elevatot extends Module {
         initValues();
 
         // Get Target
-        if (getAimTarget())
+        if (!getAimTarget())
             return;
 
         playerChecks();
@@ -270,6 +270,12 @@ public class Elevatot extends Module {
         if (mc.player == null || mc.world == null) {
             disable();
             return;
+        }
+
+        if (aimTarget == null) {
+            if (!getAimTarget())
+                return;
+            playerChecks();
         }
 
         /*
@@ -652,14 +658,11 @@ public class Elevatot extends Module {
             aimTarget = PlayerUtil.findLookingPlayer(enemyRange.getValue());
 
         // If we didnt found a target
-        if (aimTarget == null || !target.getValue().equals("Looking")) {
-            // if it's not looking and we didnt found a target
-            if (!target.getValue().equals("Looking") && aimTarget == null)
+        if (aimTarget == null) {
+            if (!target.getValue().equals("Looking"))
                 disable();
-            // If not found a target
-            return aimTarget == null;
         } else uuid_enemy = aimTarget.getGameProfile().getId().toString();
-        return false;
+        return aimTarget != null;
     }
 
     // Make some checks for startup
