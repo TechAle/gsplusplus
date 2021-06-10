@@ -65,6 +65,7 @@ public class Elevatot extends Module {
     BooleanSetting checkBurrow = registerBoolean("Check Burrow", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
     BooleanSetting stopOut = registerBoolean("Stop Out", true);
+    BooleanSetting noGlitchPiston = registerBoolean("No Glitch Piston", false);
     IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10);
     BooleanSetting addRoof = registerBoolean("Add Roof", false);
 
@@ -367,6 +368,8 @@ public class Elevatot extends Module {
 
             if (BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) {
                 placeBlock(temp, toPlace.offsetX, toPlace.offsetY, toPlace.offsetZ, false, true, slot_mat[1], toPlace.position);
+                if (noGlitchPiston.getValue())
+                    mc.world.setBlockToAir(temp);
                 // Check if we can continue
                 if (continueBlock()) {
                     lastStage = 1;
