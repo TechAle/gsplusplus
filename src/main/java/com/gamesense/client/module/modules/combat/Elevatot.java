@@ -67,6 +67,7 @@ public class Elevatot extends Module {
     BooleanSetting stopOut = registerBoolean("Stop Out", true);
     BooleanSetting noGlitchPiston = registerBoolean("No Glitch Piston", false);
     IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10);
+    BooleanSetting fillHole = registerBoolean("Fill hole", false);
     BooleanSetting addRoof = registerBoolean("Add Roof", false);
 
     EntityPlayer aimTarget;
@@ -135,7 +136,7 @@ public class Elevatot extends Module {
     @EventHandler
     private final Listener<BlockChangeEvent> blockChangeEventListener = new Listener<>(event -> {
 
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.world == null || aimTarget == null) return;
 
         if (event.getBlock() == null || event.getPosition() == null) return;
         BlockPos temp;
@@ -347,6 +348,10 @@ public class Elevatot extends Module {
                 if (trapMode.getValue()) {
                     PistonCrystal.printDebug("Finished trapping him", false);
                     placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
+                }
+                if (fillHole.getValue()) {
+                    PistonCrystal.printDebug("Filling the hole", false);
+                    placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1], enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
                 }
                 breakBlock(compactBlockPos(2));
                 disable();
