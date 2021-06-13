@@ -106,7 +106,7 @@ public class FastShulker extends Module {
                         0
                 }) {
                     if (BlockUtil.getBlock(mc.player.posX + sur[0], mc.player.posY + h, mc.player.posZ + sur[1]) instanceof BlockAir && BlockUtil.getPlaceableSide(new BlockPos(mc.player.posX + sur[0], mc.player.posY + h, mc.player.posZ + sur[1])) != null && BlockUtil.getBlock(mc.player.posX + sur[0], mc.player.posY + h + 1, mc.player.posZ + sur[1]) instanceof BlockAir) {
-                        if (!PistonCrystal.someoneInCoords(mc.player.posX + sur[0], mc.player.posZ + sur[1])) {
+                        if (!PistonCrystal.someoneInCoords(mc.player.posX + sur[0], mc.player.posY + h, mc.player.posZ + sur[1])) {
                             blockAim = new BlockPos(mc.player.posX + sur[0], mc.player.posY + h, mc.player.posZ + sur[1]);
                             break;
                         }

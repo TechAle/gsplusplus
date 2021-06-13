@@ -11,11 +11,13 @@ import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.AntiCrystal;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.block.BlockPistonBase;
+import net.minecraft.block.BlockShulkerBox;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
@@ -42,8 +44,11 @@ public class PlayerTweaks extends Module {
     BooleanSetting anti0TickPiston = registerBoolean("Anti 0 Tick Piston", false);
     BooleanSetting shiftForceHole = registerBoolean("Shift Force Hole", false);
 
+    boolean beforeHoleSent, beforeHole;
+    double prevY = -1;
     @EventHandler
     private final Listener<PacketEvent.Send> packetReceiveListener = new Listener<>(event -> {
+        /*
         if (shiftForceHole.isOn() && mc.gameSettings.keyBindSneak.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position && HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE  )
             event.cancel();
         else if (noPistonPush.isOn() && !mc.gameSettings.keyBindJump.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position) {
@@ -63,6 +68,29 @@ public class PlayerTweaks extends Module {
             }
             if (found)
                 event.cancel();
+        }*/
+
+        if (event.getPacket() instanceof CPacketPlayer.Position || event.getPacket() instanceof CPacketPlayer.PositionRotation) {
+            if (HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE) {
+                Block temp;
+                boolean found = false;
+                for (Vec3d surround : new Vec3d[]{
+                        new Vec3d(1, 1, 0),
+                        new Vec3d(-1, 1, 0),
+                        new Vec3d(0, 1, 1),
+                        new Vec3d(0, 1, -1)
+                }) {
+                    BlockPos pos = new BlockPos(mc.player.posX + surround.x, mc.player.posY + 1, mc.player.posZ + surround.z);
+                    if ((temp = BlockUtil.getBlock(pos)) instanceof BlockPistonBase || temp instanceof BlockShulkerBox) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    mc.player.posY = 63;
+                    event.cancel();
+                }
+            }
         }
     });
 

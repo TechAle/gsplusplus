@@ -760,6 +760,10 @@ public class Elevatot extends Module {
             if (!(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockAir) && !(BlockUtil.getBlock(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]) instanceof BlockPistonBase))
                 continue;
 
+            // Check if someone is here
+            if (PistonCrystal.someoneInCoords(pistonCoordsAbs[0], pistonCoordsAbs[1], pistonCoordsAbs[2]))
+                continue;
+
             BlockPos startTrap = new BlockPos(pistonCoordsAbs[0] - disp_surblock[i][0] * 2, pistonCoordsAbs[1], pistonCoordsAbs[2] - disp_surblock[i][2] * 2);
             // Check if it's possible
             if (checkPush.getValue()
@@ -784,7 +788,7 @@ public class Elevatot extends Module {
                     continue;
 
                 // Check if: Someone is here, if it's air
-                if (PistonCrystal.someoneInCoords(torchCoords[0], torchCoords[2])
+                if (PistonCrystal.someoneInCoords(torchCoords[0], torchCoords[1], torchCoords[2])
                         || !(BlockUtil.getBlock(torchCoords[0], torchCoords[1], torchCoords[2]) instanceof BlockRedstoneTorch
                         || BlockUtil.getBlock(torchCoords[0], torchCoords[1], torchCoords[2]) instanceof BlockAir)) {
                     continue;
@@ -826,7 +830,7 @@ public class Elevatot extends Module {
                     // Lets check if there is the structure
                     for (int hight = -1; hight < 2; hight++)
                         // Is air
-                        if (!PistonCrystal.someoneInCoords(pistonCoordsAbs[0] + pistonCoordsRel[0], pistonCoordsAbs[2] + pistonCoordsRel[0])
+                        if (!PistonCrystal.someoneInCoords(pistonCoordsAbs[0] + pistonCoordsRel[0], pistonCoordsAbs[1], pistonCoordsAbs[2] + pistonCoordsRel[0])
                                 && BlockUtil.getBlock(pistonCoordsAbs[0] + pistonCoordsRel[0], pistonCoordsAbs[1] + hight, pistonCoordsRel[2] + pistonCoordsRel[2])
                                 instanceof BlockAir) {
                             // Obby

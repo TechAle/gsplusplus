@@ -37,6 +37,7 @@ import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
@@ -1264,7 +1265,7 @@ public class PistonCrystal extends Module {
                                 || !((BlockUtil.getBlock(crystalCordsAbs[0], crystalCordsAbs[1] + 1, crystalCordsAbs[2])) instanceof BlockAir)))
                                 continue;
                             // Check if someone is in that block
-                            if (someoneInCoords(crystalCordsAbs[0], crystalCordsAbs[2]))
+                            if (someoneInCoords(crystalCordsAbs[0], crystalCordsAbs[1] , crystalCordsAbs[2]))
                                 continue;
                             // Check if that block is a piece of obsidian or bedrock
                             if (!(BlockUtil.getBlock(crystalCordsAbs[0], crystalCordsAbs[1] - 1, crystalCordsAbs[2]) instanceof BlockObsidian
@@ -1284,7 +1285,7 @@ public class PistonCrystal extends Module {
                                 // If it's not air or piston and if someone is here
                                 if ((tempBlock = BlockUtil.getBlock(pistonCordAbs[0], pistonCordAbs[1], pistonCordAbs[2])) instanceof BlockPistonBase
                                     == tempBlock instanceof BlockAir
-                                    || someoneInCoords(pistonCordAbs[0], pistonCordAbs[2]))
+                                    || someoneInCoords(pistonCordAbs[0], pistonCordAbs[1], pistonCordAbs[2]))
                                     // Exit
                                     continue;
                                 // Get relative coords
@@ -1306,7 +1307,7 @@ public class PistonCrystal extends Module {
                                     // If it's not air or piston and if someone is here
                                     if (!(BlockUtil.getBlock(blockPiston.getX(), blockPiston.getY(), blockPiston.getZ()) instanceof BlockPistonBase
                                         || BlockUtil.getBlock(blockPiston.getX(), blockPiston.getY(), blockPiston.getZ()) instanceof BlockAir)
-                                        || someoneInCoords(crystalCordsAbs[0] + disp[0], crystalCordsAbs[2] + disp[2]))
+                                        || someoneInCoords(crystalCordsAbs[0] + disp[0], crystalCordsAbs[1], crystalCordsAbs[2] + disp[2]))
                                         continue;
                                     // The block in front of the piston should be air
                                     if (!(BlockUtil.getBlock(blockPiston.getX() - crystalCordsRel[0], blockPiston.getY(), blockPiston.getZ() - crystalCordsRel[2]) instanceof BlockAir))
@@ -1379,7 +1380,7 @@ public class PistonCrystal extends Module {
                                      == tempBlock instanceof BlockAir
                                  */
                                 // Check if: Someone is here, if it's air, if it's the position of the crystal
-                                if (someoneInCoords(torchCoords[0], torchCoords[2])
+                                if (someoneInCoords(torchCoords[0], torchCoords[1], torchCoords[2])
                                     || !(BlockUtil.getBlock(torchCoords[0], torchCoords[1], torchCoords[2]) instanceof BlockRedstoneTorch
                                     || BlockUtil.getBlock(torchCoords[0], torchCoords[1], torchCoords[2]) instanceof BlockAir)
                                     || (int) torchCoords[0] == (int) crystalCordsAbs[0] && (int) torchCoords[2] == (int) crystalCordsAbs[2]) {
@@ -1592,7 +1593,8 @@ public class PistonCrystal extends Module {
         return addedStructure.to_place != null;
     }
 
-    public static boolean someoneInCoords(double x, double z) {
+    public static boolean someoneInCoords(double x, double y, double z) {
+        /*
         int xCheck = (int) x;
         int zCheck = (int) z;
         // Get player's list
@@ -1603,8 +1605,8 @@ public class PistonCrystal extends Module {
             if ((int) player.posX == xCheck && (int) player.posZ == zCheck)
                 return true;
         }
-
-        return false;
+        */
+        return mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(new BlockPos(x, y, z))).stream().anyMatch(entity -> entity instanceof EntityPlayer);
     }
 
     // Get all the materials

@@ -11,7 +11,7 @@ import net.minecraft.util.math.BlockPos;
 @Module.Declaration(name = "FastBow", category = Category.Combat)
 public class FastBow extends Module {
 
-    IntegerSetting drawLength = registerInteger("Draw Length", 3, 3, 21);
+    IntegerSetting drawLength = registerInteger("Draw Length", 3, 0, 21);
 
     public void onUpdate() {
         if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive() && mc.player.getItemInUseMaxCount() >= drawLength.getValue()) {
