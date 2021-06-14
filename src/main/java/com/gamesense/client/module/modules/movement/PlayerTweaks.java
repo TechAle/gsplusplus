@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.WaterPushEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
@@ -25,7 +26,10 @@ import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityShulkerBox;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.InputUpdateEvent;
@@ -40,59 +44,49 @@ public class PlayerTweaks extends Module {
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
-    BooleanSetting noPistonPush = registerBoolean("No Piston Push", false);
-    BooleanSetting anti0TickPiston = registerBoolean("Anti 0 Tick Piston", false);
-    BooleanSetting shiftForceHole = registerBoolean("Shift Force Hole", false);
+    IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40);
 
-    boolean beforeHoleSent, beforeHole;
-    double prevY = -1;
+
+    int ticksBef;
+
     @EventHandler
     private final Listener<PacketEvent.Send> packetReceiveListener = new Listener<>(event -> {
-        /*
-        if (shiftForceHole.isOn() && mc.gameSettings.keyBindSneak.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position && HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE  )
-            event.cancel();
-        else if (noPistonPush.isOn() && !mc.gameSettings.keyBindJump.isKeyDown() && event.getPacket() instanceof CPacketPlayer.Position) {
-            Block temp;
-            boolean found = false;
-            for (Vec3d surround : new Vec3d[]{
-                    new Vec3d(1, 1, 0),
-                    new Vec3d(-1, 1, 0),
-                    new Vec3d(0, 1, 1),
-                    new Vec3d(0, 1, -1)
-            }) {
-                BlockPos pos = new BlockPos(mc.player.posX + surround.x, mc.player.posY + 1, mc.player.posZ + surround.z);
-                if ((temp = BlockUtil.getBlock(pos)) instanceof BlockPistonBase && ( anti0TickPiston.isOn() || temp.getBlockState().getBaseState().getProperties().entrySet().asList().get(0).getValue().equals(true))) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found)
-                event.cancel();
-        }*/
 
         if (event.getPacket() instanceof CPacketPlayer.Position || event.getPacket() instanceof CPacketPlayer.PositionRotation) {
-            if (HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE) {
-                Block temp;
-                boolean found = false;
-                for (Vec3d surround : new Vec3d[]{
-                        new Vec3d(1, 1, 0),
-                        new Vec3d(-1, 1, 0),
-                        new Vec3d(0, 1, 1),
-                        new Vec3d(0, 1, -1)
-                }) {
-                    BlockPos pos = new BlockPos(mc.player.posX + surround.x, mc.player.posY + 1, mc.player.posZ + surround.z);
-                    if ((temp = BlockUtil.getBlock(pos)) instanceof BlockPistonBase || temp instanceof BlockShulkerBox) {
-                        found = true;
-                        break;
-                    }
-                }
+            if ( HoleUtil.isHole(EntityUtil.getPosition(mc.player), true, true).getType() != HoleUtil.HoleType.NONE) {
+
+                boolean found = isPushable(mc.player.posX, mc.player.posY, mc.player.posZ);
+
+
                 if (found) {
-                    mc.player.posY = 63;
+                    event.cancel();
+                    ticksBef = postSecure.getValue();
+                } else if (--ticksBef > 0) {
                     event.cancel();
                 }
             }
         }
     });
+
+    boolean isPushable(double x, double y, double z) {
+        Block temp;
+
+        if ((temp = BlockUtil.getBlock(x, ++y, z)) == Blocks.PISTON_HEAD || temp == Blocks.PISTON_EXTENSION )
+            return true;
+
+        TileEntityShulkerBox tempShulker;
+        AxisAlignedBB tempAxis;
+        for(TileEntity entity : mc.world.loadedTileEntityList) {
+            if (entity instanceof TileEntityShulkerBox) {
+                if ((tempShulker = ((TileEntityShulkerBox) entity)).getProgress(mc.getRenderPartialTicks()) > 0)
+                    if ((tempAxis = tempShulker.getRenderBoundingBox()).minY <= y && tempAxis.maxY >= y
+                    &&  ((int) tempAxis.minX <= x && tempAxis.maxX >= x) || ((int) tempAxis.minZ <= z && tempAxis.maxZ >= z))
+                        return true;
+            } // (int) == x
+        }
+
+        return false;
+    }
 
     public void onUpdate() {
         if (guiMove.getValue() && mc.currentScreen != null) {
