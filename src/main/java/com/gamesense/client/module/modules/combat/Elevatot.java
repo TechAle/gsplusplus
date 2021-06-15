@@ -61,6 +61,7 @@ public class Elevatot extends Module {
     BooleanSetting clientInstaPlace = registerBoolean("Client Insta Place", false);
     BooleanSetting pauseAfterSupport = registerBoolean("Pause After Support", false);
     BooleanSetting checkPush = registerBoolean("Check Push", false);
+    BooleanSetting checkAbove = registerBoolean("Check Above", false);
     BooleanSetting checkSurround = registerBoolean("Check Surround", true);
     BooleanSetting checkBurrow = registerBoolean("Check Burrow", false);
     BooleanSetting forceBurrow = registerBoolean("Force Burrow", false);
@@ -732,6 +733,11 @@ public class Elevatot extends Module {
         // Since they may happens some errors that i did not expect, i use a try-catch
         try {
 
+        // Check above
+        if (!checkAbove.getValue() ||
+                !(BlockUtil.getBlock(enemyCoordsDouble[0], enemyCoordsDouble[1] + 1, enemyCoordsDouble[2]) instanceof BlockAir))
+            return false;
+
         // First check, h check.
         // Iterate for the surround (why is the foreach iterate in a random way in elevatot LMAO
         for(int i = 0; i < 4; i++) {
@@ -771,6 +777,8 @@ public class Elevatot extends Module {
                     || !(BlockUtil.getBlock(startTrap.getX(), startTrap.getY() + 1, startTrap.getZ()) instanceof BlockAir))) {
                 continue;
             }
+
+
 
             /// Redstone ///
             // Check for the redstone

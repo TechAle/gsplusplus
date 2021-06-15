@@ -4,7 +4,10 @@
 package com.gamesense.mixin.mixins;
 
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.gamesense.client.module.modules.render.NoRender;
+import com.gamesense.client.module.modules.render.noGlitchBlock;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
@@ -24,4 +27,15 @@ public class MixinWorld {
             callbackInfoReturnable.setReturnValue(false);
         }
     }
+
+    @Inject(method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;I)Z", at = @At("HEAD"), cancellable = true)
+    private void setBlockState(BlockPos pos, IBlockState newState, int flags, CallbackInfoReturnable<Boolean> cir) {
+        noGlitchBlock noGlitchBlock = ModuleManager.getModule(noGlitchBlock.class);
+        if (noGlitchBlock.placeBlock.getValue() && flags != 3) {
+            cir.cancel();
+            cir.setReturnValue(false);
+        }
+    }
+
+
 }

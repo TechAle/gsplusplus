@@ -6,6 +6,7 @@ import com.gamesense.api.event.events.ReachDistanceEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.exploits.PacketUse;
+import com.gamesense.client.module.modules.render.noGlitchBlock;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemFood;
@@ -27,6 +28,11 @@ public abstract class MixinPlayerControllerMP {
 
     @Inject(method = "onPlayerDestroyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playEvent(ILnet/minecraft/util/math/BlockPos;I)V"), cancellable = true)
     private void onPlayerDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
+        noGlitchBlock noGlitchBlock = ModuleManager.getModule(noGlitchBlock.class);
+        if (noGlitchBlock.breakBlock.getValue()) {
+            callbackInfoReturnable.cancel();
+            callbackInfoReturnable.setReturnValue(false);
+        }
         GameSense.EVENT_BUS.post(new DestroyBlockEvent(pos));
     }
 
