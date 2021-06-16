@@ -4,7 +4,9 @@ package com.gamesense.api.util.misc;
 import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.gui.ColorMain;
 import com.gamesense.client.module.modules.misc.ChatModifier;
 import com.google.common.collect.Lists;
 import net.minecraft.client.Minecraft;
@@ -30,6 +32,8 @@ import java.util.List;
 public class NewChat extends GuiNewChat {
 
     ChatModifier chatModifier = ModuleManager.getModule(ChatModifier.class);
+    ColorMain colorMain = ModuleManager.getModule(ColorMain.class);
+
     private static final Logger LOGGER = LogManager.getLogger();
     private final Minecraft mc;
     /**
@@ -62,6 +66,7 @@ public class NewChat extends GuiNewChat {
     }
 
     public void drawChat(int updateCounter) {
+        boolean customText = colorMain.textFont.getValue();
         if (configuring) return;
         // Y position for down animation
         if (prevMillis == -1) {
@@ -155,7 +160,7 @@ public class NewChat extends GuiNewChat {
                                         break;
                                 }
                                 try {
-                                    displayText(s, x, y);
+                                    displayText(s, x, y, customText);
                                 }catch (IndexOutOfBoundsException e) {
 
                                 }
@@ -387,7 +392,7 @@ public class NewChat extends GuiNewChat {
 
     String[] specialWords = null;
 
-    private void displayText(String word, float x, float y) {
+    private void displayText(String word, float x, float y, boolean isCustom) {
         // Lets get the actual colored output
         StringBuilder outputstring = new StringBuilder();
 
@@ -517,27 +522,27 @@ public class NewChat extends GuiNewChat {
                     // If rainbow desync
                     if (chatModifier.desyncRainbowNormal.getValue()) {
                         // Write
-                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom);
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
                         // Else, customColor
-                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB());
+                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), isCustom);
                     break;
                 // If special
                 case "\u200Especial":
                     // If rainbow desync
                     if (chatModifier.desyncRainbowSpecial.getValue()) {
-                        temp = writeDesync(strings.get(1).replace("\u2063", ""), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                        temp = writeDesync(strings.get(1).replace("\u2063", ""), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom);
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
                         // Else, custom
-                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB());
+                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), isCustom);
                     break;
                 default:
                     // Write custom with the color in input
-                    width += writeCustom(strings.get(1), width, x, y, Integer.parseInt(strings.get(0)));
+                    width += writeCustom(strings.get(1), width, x, y, Integer.parseInt(strings.get(0)), isCustom);
                     break;
             }
         }
@@ -597,13 +602,13 @@ public class NewChat extends GuiNewChat {
 
     }
 
-    private int writeCustom(String text, int width, float x, float y, int color) {
+    private int writeCustom(String text, int width, float x, float y, int color, boolean isCustom) {
         // Write it and return the new width
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(text, x + width, y, -color);
-        return Minecraft.getMinecraft().fontRenderer.getStringWidth(text);
+        return isCustom ? GameSense.INSTANCE.cFontRenderer.getStringWidth(text) : mc.fontRenderer.getStringWidth(text);
     }
 
-    private int[] writeDesync(String text, int width, float x, float y, int rainbowColor, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
+    private int[] writeDesync(String text, int width, float x, float y, int rainbowColor, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, boolean isCustom) {
         boolean skip = false;
         // Iterate for every characters
         for(String character : text.split("")) {
@@ -641,7 +646,7 @@ public class NewChat extends GuiNewChat {
             // Color 1 character
             Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(character, x + width, y, new GSColor(colorOut.getRGB()).getRGB());
             // Add width
-            width += Minecraft.getMinecraft().fontRenderer.getStringWidth(character);
+            width += isCustom ? GameSense.INSTANCE.cFontRenderer.getStringWidth(character) : mc.fontRenderer.getStringWidth(character);
             // Add rainbow
             rainbowColor += 1;
         }
