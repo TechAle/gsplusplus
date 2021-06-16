@@ -734,7 +734,7 @@ public class Elevatot extends Module {
         try {
 
         // Check above
-        if (!checkAbove.getValue() ||
+        if (checkAbove.getValue() &&
                 !(BlockUtil.getBlock(enemyCoordsDouble[0], enemyCoordsDouble[1] + 1, enemyCoordsDouble[2]) instanceof BlockAir))
             return false;
 

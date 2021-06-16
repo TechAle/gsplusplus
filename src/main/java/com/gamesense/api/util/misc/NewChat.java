@@ -184,8 +184,11 @@ public class NewChat extends GuiNewChat {
                     if (l2 != i3) {
                         int k3 = j3 > 0 ? 170 : 96;
                         int l3 = this.isScrolled ? 13382451 : 3355562;
-                        drawRect(0, -j3, 2, -j3 - k1, l3 + (k3 << 24));
-                        drawRect(2, -j3, 1, -j3 - k1, 13421772 + (k3 << 24));
+                        if (!chatModifier.hideSlider.getValue()) {
+                            drawRect(-1, -j3, 0, -j3 - k1,  new GSColor(chatModifier.firstColor.getValue(), chatModifier.firstAlpha.getValue()).getRGB());
+                            drawRect(0, -j3, 1, -j3 - k1,  new GSColor(chatModifier.secondColor.getValue(), chatModifier.secondAlpha.getValue()).getRGB());
+                            drawRect(1, -j3, 2, -j3 - k1,  new GSColor(chatModifier.thirdColor.getValue(), chatModifier.thirdAlpha.getValue()).getRGB());
+                        }
                     }
                 }
 
@@ -522,7 +525,7 @@ public class NewChat extends GuiNewChat {
                     // If rainbow desync
                     if (chatModifier.desyncRainbowNormal.getValue()) {
                         // Write
-                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom);
+                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), chatModifier.stopDesyncNormal.getValue());
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
@@ -533,12 +536,12 @@ public class NewChat extends GuiNewChat {
                 case "\u200Especial":
                     // If rainbow desync
                     if (chatModifier.desyncRainbowSpecial.getValue()) {
-                        temp = writeDesync(strings.get(1).replace("\u2063", ""), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom);
+                        temp = writeDesync(strings.get(1).replace("\u2063", ""), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom, -new GSColor(chatModifier.specialColor.getValue(), 255).getRGB(), chatModifier.stopDesyncSpecial.getValue());
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
                         // Else, custom
-                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), isCustom);
+                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.specialColor.getValue(), 255).getRGB(), isCustom);
                     break;
                 default:
                     // Write custom with the color in input
@@ -608,7 +611,7 @@ public class NewChat extends GuiNewChat {
         return isCustom ? GameSense.INSTANCE.cFontRenderer.getStringWidth(text) : mc.fontRenderer.getStringWidth(text);
     }
 
-    private int[] writeDesync(String text, int width, float x, float y, int rainbowColor, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, boolean isCustom) {
+    private int[] writeDesync(String text, int width, float x, float y, int rainbowColor, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, boolean isCustom, int startColor, boolean stop) {
         boolean skip = false;
         // Iterate for every characters
         for(String character : text.split("")) {
@@ -625,22 +628,22 @@ public class NewChat extends GuiNewChat {
             GSColor colorOut = null;
             switch (chatModifier.rainbowType.getValue().toLowerCase()) {
                 case "sin":
-                    colorOut = getSinRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                    colorOut = getSinRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
                 case "tan":
-                    colorOut = getTanRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                    colorOut = getTanRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
                 case "secant":
-                    colorOut = getSecantRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                    colorOut = getSecantRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
                 case "cosecant":
-                    colorOut = getCosecRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                    colorOut = getCosecRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
                 case "cotangent":
-                    colorOut = getCoTanRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+                    colorOut = getCoTanRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
                 default:
-                    colorOut = getRainbow(rainbowColor);
+                    colorOut = getRainbow(rainbowColor, startColor, stop);
                     break;
             }
             // Color 1 character
@@ -654,38 +657,38 @@ public class NewChat extends GuiNewChat {
     }
 
     // Get rainbow color
-    private GSColor getRainbow(int incr) {
-        GSColor color = ColorSetting.getRainbowColor(incr, chatModifier.rainbowDesyncSmooth.getValue());
+    private GSColor getRainbow(int incr, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowColor(incr, chatModifier.rainbowDesyncSmooth.getValue(), start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color
-    private GSColor getSinRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
-        GSColor color = ColorSetting.getRainbowSin(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+    private GSColor getSinRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowSin(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color
-    private GSColor getTanRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
-        GSColor color = ColorSetting.getRainbowTan(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+    private GSColor getTanRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowTan(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color
-    private GSColor getCosecRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
-        GSColor color = ColorSetting.getRainbowCosec(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+    private GSColor getCosecRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowCosec(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color
-    private GSColor getSecantRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
-        GSColor color = ColorSetting.getRainbowSec(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+    private GSColor getSecantRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowSec(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color
-    private GSColor getCoTanRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin) {
-        GSColor color = ColorSetting.getRainbowCoTan(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin);
+    private GSColor getCoTanRainbow(int incr, int rainbowDesyncSmooth, double heightSin, int multiplyHeight, double millSin, int start, boolean stop) {
+        GSColor color = ColorSetting.getRainbowCoTan(incr, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, start, stop);
         return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 

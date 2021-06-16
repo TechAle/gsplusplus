@@ -18,32 +18,32 @@ public class ColorSetting extends Setting<GSColor> implements com.lukflug.panels
 
     @Override
     public GSColor getValue() {
-        if (rainbow) return this.getRainbowColor(0, 0);
+        if (rainbow) return this.getRainbowColor(0, 0, 0, false);
         else return super.getValue();
     }
 
-    public static GSColor getRainbowColor(int incr, int multiply) {
-        return GSColor.fromHSB(((System.currentTimeMillis() + incr * multiply) % (360 * 32)) / (360f * 32), 1, 1);
+    public static GSColor getRainbowColor(int incr, int multiply, int start, boolean stop) {
+        return GSColor.fromHSB((((stop ? start : System.currentTimeMillis()) + incr * multiply) % (360 * 32)) / (360f * 32), 1, 1);
     }
 
-    public static GSColor getRainbowSin(int incr, int multiply, double height, int multiplyHeight, double millSin) {
-        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.sin(((System.currentTimeMillis() + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
+    public static GSColor getRainbowSin(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
+        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.sin((((stop ? start : System.currentTimeMillis()) + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
     }
 
-    public static GSColor getRainbowTan(int incr, int multiply, double height, int multiplyHeight, double millSin) {
-        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.tan(((System.currentTimeMillis() + ((incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
+    public static GSColor getRainbowTan(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
+        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.tan((((stop ? start : System.currentTimeMillis()) + ((incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
     }
 
-    public static GSColor getRainbowSec(int incr, int multiply, double height, int multiplyHeight, double millSin) {
-        return GSColor.fromHSB((float) ((height * multiplyHeight * (1/Math.sin(((System.currentTimeMillis() + ((float) incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
+    public static GSColor getRainbowSec(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
+        return GSColor.fromHSB((float) ((height * multiplyHeight * (1/Math.sin((((stop ? start : System.currentTimeMillis()) + ((float) incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
     }
 
-    public static GSColor getRainbowCosec(int incr, int multiply, double height, int multiplyHeight, double millSin) {
-        return GSColor.fromHSB((float) ((height * multiplyHeight * (1/Math.cos(((System.currentTimeMillis() + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
+    public static GSColor getRainbowCosec(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
+        return GSColor.fromHSB((float) ((height * multiplyHeight * (1/Math.cos((((stop ? start : System.currentTimeMillis()) + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32))))), 1, 1);
     }
 
-    public static GSColor getRainbowCoTan(int incr, int multiply, double height, int multiplyHeight, double millSin) {
-        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.tan(((System.currentTimeMillis() + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
+    public static GSColor getRainbowCoTan(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
+        return GSColor.fromHSB((float) ((height * multiplyHeight * Math.tan((((stop ? start : System.currentTimeMillis()) + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
     }
 
     public int toInteger() {
