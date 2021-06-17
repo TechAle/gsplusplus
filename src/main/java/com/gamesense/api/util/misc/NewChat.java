@@ -54,6 +54,7 @@ public class NewChat extends GuiNewChat {
     public static int newLines;
     public static long prevMillis = -1;
     public boolean configuring;
+    double count = 0;
 
     public NewChat(Minecraft mcIn) {
         super(mcIn);
@@ -66,6 +67,8 @@ public class NewChat extends GuiNewChat {
     }
 
     public void drawChat(int updateCounter) {
+        if (!chatModifier.stopDesyncSpecial.getValue())
+            count += chatModifier.customAdd.getValue() * chatModifier.customMultiply.getValue();
         boolean customText = colorMain.textFont.getValue();
         if (configuring) return;
         // Y position for down animation
@@ -185,9 +188,9 @@ public class NewChat extends GuiNewChat {
                         int k3 = j3 > 0 ? 170 : 96;
                         int l3 = this.isScrolled ? 13382451 : 3355562;
                         if (!chatModifier.hideSlider.getValue()) {
-                            drawRect(-1, -j3, 0, -j3 - k1,  new GSColor(chatModifier.firstColor.getValue(), chatModifier.firstAlpha.getValue()).getRGB());
-                            drawRect(0, -j3, 1, -j3 - k1,  new GSColor(chatModifier.secondColor.getValue(), chatModifier.secondAlpha.getValue()).getRGB());
-                            drawRect(1, -j3, 2, -j3 - k1,  new GSColor(chatModifier.thirdColor.getValue(), chatModifier.thirdAlpha.getValue()).getRGB());
+                            drawRect(-chatModifier.sliderSpace.getValue() + chatModifier.sliderWidth.getValue(), -j3, -chatModifier.sliderSpace.getValue(), -j3 - k1,  new GSColor(chatModifier.firstColor.getValue(), chatModifier.firstAlpha.getValue()).getRGB());
+                            drawRect(-chatModifier.sliderSpace.getValue(), -j3, -chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3 - k1,  new GSColor(chatModifier.secondColor.getValue(), chatModifier.secondAlpha.getValue()).getRGB());
+                            drawRect(-chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3, -chatModifier.sliderSpace.getValue() + (-chatModifier.sliderWidth.getValue()*2), -j3 - k1,  new GSColor(chatModifier.thirdColor.getValue(), chatModifier.thirdAlpha.getValue()).getRGB());
                         }
                     }
                 }
@@ -642,6 +645,9 @@ public class NewChat extends GuiNewChat {
                 case "cotangent":
                     colorOut = getCoTanRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
                     break;
+                case "custom":
+                    colorOut = getRainbowCustom(rainbowColor);
+                    break;
                 default:
                     colorOut = getRainbow(rainbowColor, startColor, stop);
                     break;
@@ -651,9 +657,16 @@ public class NewChat extends GuiNewChat {
             // Add width
             width += isCustom ? GameSense.INSTANCE.cFontRenderer.getStringWidth(character) : mc.fontRenderer.getStringWidth(character);
             // Add rainbow
-            rainbowColor += 1;
+            if (chatModifier.rainbowType.getValue().toLowerCase().equals("custom"))
+                rainbowColor += chatModifier.rainbowDesyncSmooth.getValue() * chatModifier.cutomDesync.getValue();
+            else rainbowColor += 1;
         }
         return new int[] {width, rainbowColor};
+    }
+
+    private GSColor getRainbowCustom(int incr) {
+        GSColor color = ColorSetting.getRainbowColor(count + incr);
+        return new GSColor(color.getRed(), color.getBlue(), color.getGreen(), 255);
     }
 
     // Get rainbow color

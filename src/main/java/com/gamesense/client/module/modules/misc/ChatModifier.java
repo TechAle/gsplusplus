@@ -41,18 +41,23 @@ public class ChatModifier extends Module {
     public BooleanSetting desyncRainbowSpecial = registerBoolean("Desync Rainbow Special", false);
     public BooleanSetting stopDesyncNormal = registerBoolean("Stop Desync Normal", false);
     public BooleanSetting stopDesyncSpecial = registerBoolean("Stop Desync Special", false);
-    public ModeSetting rainbowType = registerMode("Rainbow Type", Arrays.asList("Slow", "Sin", "Tan", "Secant", "Cosecant", "Cotangent"), "Tan");
+    public ModeSetting rainbowType = registerMode("Rainbow Type", Arrays.asList("Slow", "Custom", "Sin", "Tan", "Secant", "Cosecant", "Cotangent"), "Tan");
     public IntegerSetting rainbowDesyncSmooth = registerInteger("Rainbow Desync Smooth", 50, 1, 1000);
+    public DoubleSetting customAdd = registerDouble("customAdd", 1, 1, 40);
+    public DoubleSetting customMultiply = registerDouble("customMultiply", 1, 1, 30);
+    public IntegerSetting cutomDesync = registerInteger("Custom Desync Multiply", 1, 1, 100);
     public DoubleSetting heightSin = registerDouble("Height Sin", 1, 0.1, 20);
     public IntegerSetting multiplyHeight = registerInteger("Multiply Height Sin", 1, 1, 10);
     public DoubleSetting millSin = registerDouble("Mill Sin", 10, 0.1, 15);
     // Slider
     public BooleanSetting hideSlider = registerBoolean("Hide Slider", false);
-    public ColorSetting firstColor = registerColor("First Color", new GSColor(25, 25, 25));
+    public IntegerSetting sliderWidth = registerInteger("Slider Width", 1, 0,10);
+    public IntegerSetting sliderSpace = registerInteger("Slider Space", 1, 0, 10);
+    public ColorSetting firstColor = registerColor("First Color", new GSColor(0, 255, 0));
     public IntegerSetting firstAlpha = registerInteger("First Alpha", 255, 0, 255);
-    public ColorSetting secondColor = registerColor("Second Color", new GSColor(40, 40, 40));
+    public ColorSetting secondColor = registerColor("Second Color", new GSColor(255, 255, 255));
     public IntegerSetting secondAlpha = registerInteger("Second Alpha", 255, 0, 255);
-    public ColorSetting thirdColor = registerColor("Third Color", new GSColor(80, 40, 40));
+    public ColorSetting thirdColor = registerColor("Third Color", new GSColor(255, 0, 0));
     public IntegerSetting thirdAlpha = registerInteger("Third Alpha", 255, 0, 255);
     // Dimensions
     public IntegerSetting upPosition = registerInteger("Up Translation", -1, -100, 700);

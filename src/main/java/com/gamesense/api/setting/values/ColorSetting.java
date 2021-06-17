@@ -26,6 +26,10 @@ public class ColorSetting extends Setting<GSColor> implements com.lukflug.panels
         return GSColor.fromHSB((((stop ? start : System.currentTimeMillis()) + incr * multiply) % (360 * 32)) / (360f * 32), 1, 1);
     }
 
+    public static GSColor getRainbowColor(double incr) {
+        return GSColor.fromHSB((float) (((incr) % (360 * 32)) / (360f * 32)), 1, 1);
+    }
+
     public static GSColor getRainbowSin(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
         return GSColor.fromHSB((float) ((height * multiplyHeight * Math.sin((((stop ? start : System.currentTimeMillis()) + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
     }
