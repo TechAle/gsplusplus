@@ -46,10 +46,20 @@ public class Quiver extends Module {
         }
     };
 
+    ArrayList<String> disableWhen = new ArrayList<String>() {
+        {
+            add("none");
+            add("moving");
+            add("stand");
+        }
+    };
+
     ModeSetting firstArrow = registerMode("First Arrow", Arrays.asList(arrowType.toArray(new String[0])), "strength");
+    ModeSetting disableFirst = registerMode("Disable First", Arrays.asList(disableWhen.toArray(new String[0])), "none");
     ModeSetting secondArrow = registerMode("Second Arrow", Arrays.asList(arrowType.toArray(new String[0])), "none");
+    ModeSetting disableSecond = registerMode("Disable Second", Arrays.asList(disableWhen.toArray(new String[0])), "none");
     ModeSetting active = registerMode("Active", Arrays.asList("On Bow", "Switch"), "On Bow");
-    IntegerSetting pitchMoving = registerInteger("Pitch Moving", -10, 0, -70);
+    IntegerSetting pitchMoving = registerInteger("Pitch Moving", -45, 0, -70);
     IntegerSetting standDrawLength = registerInteger("Stand Draw Length", 4, 0, 21);
     IntegerSetting movingDrawLength = registerInteger("Moving Draw Length", 3, 0, 21);
     IntegerSetting tickWait = registerInteger("Tick Finish Wait", 20, 1, 50);
@@ -139,18 +149,22 @@ public class Quiver extends Module {
 
     }
 
+    boolean canArrow(boolean isMoving, String notWanted) {
+        switch (notWanted) {
+            case "none":
+                return true;
+            case "moving":
+                return isMoving == false;
+            case "stand":
+                return isMoving == true;
+            default:
+                return false;
+        }
+    }
+
     public void onUpdate() {
         if (mc.world == null || mc.player == null) {
             return;
-        }
-
-        // If we have to check the last place
-        if (slotCheck != -1) {
-            // If is empty
-            if (mc.player.inventory.getStackInSlot(slotCheck).isEmpty())
-                // Place
-                mc.playerController.windowClick(0, slotCheck, 0, ClickType.PICKUP, mc.player);
-            slotCheck = -1;
         }
 
         // If we havent a bow
@@ -188,23 +202,29 @@ public class Quiver extends Module {
                 return;
             }
         }
-
+        boolean isMoving = isMoving();
         // If we are not powering
         if (!isPowering) {
             // If firstWait is < 0 (we have to wait for not bow spamming)
             if (--firstWait < 0) {
-                // Get the slot of the arrow
-                slot = getSlotArrow(firstArrow.getValue());
-                isFirst = true;
+                boolean enter = canArrow(isMoving, disableFirst.getValue());
+                if (enter) {
+                    // Get the slot of the arrow
+                    slot = getSlotArrow(firstArrow.getValue());
+                    isFirst = true;
+                } else slot = new int[] {-1, -1};
             }
             // If before we found nothing
             if (slot[1] == -1) {
                 // Wait 2 time
                 if (--secondWait < 0) {
-                    // Get slot
-                    slot = getSlotArrow(secondArrow.getValue());
-                    // Set new wait
-                    secondWait = tickWait.getValue();
+                    boolean enter = canArrow(isMoving, disableFirst.getValue());
+                    if (enter) {
+                        // Get slot
+                        slot = getSlotArrow(secondArrow.getValue());
+                        // Set new wait
+                        secondWait = tickWait.getValue();
+                    } else slot = new int[] {-1, -1};
                 }
                 // Lets say that this is the second
                 isFirst = false;
@@ -267,6 +287,7 @@ public class Quiver extends Module {
             mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
             // Check that the last item was placed correctly
             slotCheck = slot[0];
+            mc.playerController.updateController();
         }
     }
 
