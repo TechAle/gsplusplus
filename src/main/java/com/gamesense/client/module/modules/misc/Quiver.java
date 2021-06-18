@@ -29,6 +29,11 @@ import java.util.*;
 
 import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 
+/*
+    @Author TechAle
+ */
+
+@SuppressWarnings("unused")
 @Module.Declaration(name = "Quiver", category = Category.Misc, priority = 250)
 public class Quiver extends Module {
 
@@ -38,7 +43,6 @@ public class Quiver extends Module {
             add("none");
             add("strength");
             add("swiftness");
-            add("leaping");
         }
     };
 
@@ -83,19 +87,16 @@ public class Quiver extends Module {
         blockedUp = beforeActive = isPowering = false;
         hasBow = isFirst = true;
         firstWait = secondWait = 0;
+        oldslot = -1;
     }
 
     boolean playerCheck() {
-        // Check if above we have a block
+        // Check if above we have a block (so it's impossible to get with the arrow)
         blockedUp = !(BlockUtil.getBlock(EntityUtil.getPosition(mc.player).add(0, 2, 0)) instanceof BlockAir);
         if (blockedUp) {
             disable();
             return false;
         }
-        // Get every materials he want
-        // mc.player.inventory.getStackInSlot(0).getItem() == Items.TIPPED_ARROW
-        // mc.player.inventory.getStackInSlot(0).getTagCompound().getTag("Potion")
-        // mc.player.inventory.getStackInSlot(0).getTagCompound().getTag("Potion").getString().contains("strength")
         return true;
     }
 
@@ -104,8 +105,26 @@ public class Quiver extends Module {
             return;
         }
 
-        if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive())
+        // Disable bow
+        if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive()) {
             mc.player.stopActiveHand();
+            KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
+        }
+
+        // Output message
+        String output = "";
+
+        if (blockedUp)
+            output = "There is a block above you";
+        else if (!hasBow)
+            output = "No bow detected";
+
+
+        // Output in chat
+        setDisabledMessage(output + "Elevatot turned OFF!");
+
+        if (oldslot != -1)
+            mc.player.inventory.currentItem = oldslot;
 
     }
 
@@ -114,104 +133,146 @@ public class Quiver extends Module {
             return;
         }
 
+        // If we havent a bow
         if (mc.player.inventory.getCurrentItem().getItem() != Items.BOW) {
+            // If switch
             if (active.getValue().equals("Switch")) {
+                // Check for a bow
                 int slot = InventoryUtil.findFirstItemSlot(Items.BOW.getClass(), 0, 8);
+                // If not found
                 if (slot == -1) {
+                    // Disable
                     hasBow = false;
                     disable();
                     return;
+                // Else, switch
                 } else {
                     oldslot = mc.player.inventory.currentItem;
                     mc.player.inventory.currentItem = slot;
                 }
+            // If we have onBow
             } else if (active.getValue().equals("On Bow")) {
+                // Just set isPowering to false
                 isPowering = false;
                 return;
             }
         }
 
+        // If it's the first time
         if (!beforeActive) {
+            // Reset
             resetValues();
+            // If something about the player is not right
             if (!playerCheck()) {
-                disable();
+                // Return
                 return;
             }
         }
 
+        // If we are not powering
         if (!isPowering) {
+            // If firstWait is < 0 (we have to wait for not bow spamming)
             if (--firstWait < 0) {
+                // Get the slot of the arrow
                 slot = getSlotArrow(firstArrow.getValue());
                 isFirst = true;
             }
+            // If before we found nothing
             if (slot[1] == -1) {
+                // Wait 2 time
                 if (--secondWait < 0) {
+                    // Get slot
                     slot = getSlotArrow(secondArrow.getValue());
+                    // Set new wait
                     secondWait = tickWait.getValue();
                 }
+                // Lets say that this is the second
                 isFirst = false;
+            // Set new wait for first
             } else firstWait = tickWait.getValue();
+
+            // If we found nothing, return
             if (slot[1] == -1) {
                 return;
             }
-            if (slot[0] != -1) {
-                mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
-                mc.playerController.windowClick(0, slot[1], 0, ClickType.PICKUP, mc.player);
-                mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
-            }
+
+            // If we have to switch (if slot[0] == -1 then the arrow will be the first)
+            switchArrow();
         }
 
-
+        // Set rightClick to true
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), true);
+        // Active everything
         isPowering = beforeActive = true;
 
-        if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive() && mc.player.getItemInUseMaxCount() >= drawLength.getValue()) {
+        // If we have to draw
+        if (mc.player.getItemInUseMaxCount() >= drawLength.getValue()) {
+            // release
             mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, mc.player.getHorizontalFacing()));
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(mc.player.getActiveHand()));
             mc.player.stopActiveHand();
-            if (slot[0] != -1) {
-                mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
-                mc.playerController.windowClick(0, slot[1], 0, ClickType.PICKUP, mc.player);
-                mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
-            }
+            // If we have to switch back
+            switchArrow();
+            // Disable bow powering
             KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
             mc.player.stopActiveHand();
+            // Reset some values
             slot = new int[] {-1, -1};
             isPowering = false;
+            // Add new wait
             if (isFirst) {
                 isFirst = false;
                 firstWait = tickWait.getValue();
             }
             else {
+                // Add new wait
                 secondWait = tickWait.getValue();
+                // If switch
                 if (active.getValue().equals("Switch")) {
-                    beforeActive = false;
-                    mc.player.inventory.currentItem = oldslot;
+                    // Then, we have to disable
                     disable();
+                    //noinspection UnnecessaryReturnStatement
+                    return;
                 }
             }
         }
 
     }
 
+    private void switchArrow() {
+        if (slot[0] != -1) {
+            mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
+            mc.playerController.windowClick(0, slot[1], 0, ClickType.PICKUP, mc.player);
+            mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
+        }
+    }
+
     int[] getSlotArrow(String wanted) {
+        // Set the return value
         int[] returnValeus = new int[] {-1, -1};
 
+        // If we have the effect, return
         if (haveEffect(wanted))
             return returnValeus;
 
+        // Else, lets check for the arrow
         Item temp;
         for(int i = 0; i < mc.player.inventory.getSizeInventory(); i++) {
             temp = mc.player.inventory.getStackInSlot(i).getItem();
 
+            // Check if the item is a normal arrow or if we dont need it
             //noinspection ConstantConditions
             if (returnValeus[0] == -1 && ((temp) == Items.ARROW || temp == Items.SPECTRAL_ARROW
                     || ( temp == Items.TIPPED_ARROW && !mc.player.inventory.getStackInSlot(i).getTagCompound().getTag("Potion").toString().contains(wanted)))) {
                 returnValeus[0] = i + (i < 9 ? 36 : 0);
             }
+
+            // Check if the arrow is what we need
+            //noinspection ConstantConditions
             if (temp == Items.TIPPED_ARROW
                     && mc.player.inventory.getStackInSlot(i).getTagCompound().getTag("Potion").toString().contains(wanted)) {
                 returnValeus[1] = i + (i < 9 ? 36 : 0);
+                // We can return now
                 return returnValeus;
             }
 
@@ -220,12 +281,18 @@ public class Quiver extends Module {
         return returnValeus;
     }
 
+    // Check if we already have that effect
     boolean haveEffect(String wanted) {
+        // Iterate for every effects
         for(int i = 0; i < mc.player.getActivePotionEffects().toArray().length; i++) {
+            // Get it
             PotionEffect effect = (PotionEffect) mc.player.getActivePotionEffects().toArray()[i];
+            // Get the name
             String name = I18n.format(effect.getPotion().getName());
+            // If it's the same as what we want
             if (name.toLowerCase().contains(wanted.toLowerCase()))
                 return true;
+            // Swiftness and speed dont like eachothers lmao, why mojang do you change names
             if (wanted.equals("swiftness") && name.equals("Speed"))
                 return true;
         }
