@@ -49,12 +49,14 @@ public class Quiver extends Module {
     ModeSetting firstArrow = registerMode("First Arrow", Arrays.asList(arrowType.toArray(new String[0])), "strength");
     ModeSetting secondArrow = registerMode("Second Arrow", Arrays.asList(arrowType.toArray(new String[0])), "none");
     ModeSetting active = registerMode("Active", Arrays.asList("On Bow", "Switch"), "On Bow");
-    IntegerSetting drawLength = registerInteger("Draw Length", 4, 0, 21);
-    IntegerSetting tickWait = registerInteger("Tick Finish Wait", 10, 1, 50);
+    IntegerSetting pitchMoving = registerInteger("Pitch Moving", -10, 0, -70);
+    IntegerSetting standDrawLength = registerInteger("Stand Draw Length", 4, 0, 21);
+    IntegerSetting movingDrawLength = registerInteger("Moving Draw Length", 3, 0, 21);
+    IntegerSetting tickWait = registerInteger("Tick Finish Wait", 20, 1, 50);
 
     int[] slot;
     int oldslot;
-    int firstWait, secondWait;
+    int firstWait, secondWait, slotCheck;
 
     boolean blockedUp,
             beforeActive,
@@ -62,12 +64,21 @@ public class Quiver extends Module {
             isPowering,
             isFirst;
 
+    boolean isMoving() {
+        return Math.abs(mc.player.motionX) + Math.abs(mc.player.motionZ) > 0.01;
+    }
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
         if ( mc.player == null || mc.world == null || !isPowering) return;
-
-        PlayerPacket packet = new PlayerPacket(this, new Vec2f(0, -90));
+        PlayerPacket packet;
+        // If he is not moving
+        if (!isMoving())
+            // Aim up
+            packet = new PlayerPacket(this, new Vec2f(0, -90));
+        // Else, aim down
+        else packet = new PlayerPacket(this, new Vec2f(mc.player.rotationYaw, pitchMoving.getValue()));
         PlayerPacketManager.INSTANCE.addPacket(packet);
     });
 
@@ -84,10 +95,10 @@ public class Quiver extends Module {
     }
 
     void resetValues() {
-        blockedUp = beforeActive = isPowering = false;
+        blockedUp = beforeActive = isPowering =false;
         hasBow = isFirst = true;
         firstWait = secondWait = 0;
-        oldslot = -1;
+        oldslot = slotCheck = -1;
     }
 
     boolean playerCheck() {
@@ -131,6 +142,15 @@ public class Quiver extends Module {
     public void onUpdate() {
         if (mc.world == null || mc.player == null) {
             return;
+        }
+
+        // If we have to check the last place
+        if (slotCheck != -1) {
+            // If is empty
+            if (mc.player.inventory.getStackInSlot(slotCheck).isEmpty())
+                // Place
+                mc.playerController.windowClick(0, slotCheck, 0, ClickType.PICKUP, mc.player);
+            slotCheck = -1;
         }
 
         // If we havent a bow
@@ -206,7 +226,7 @@ public class Quiver extends Module {
         isPowering = beforeActive = true;
 
         // If we have to draw
-        if (mc.player.getItemInUseMaxCount() >= drawLength.getValue()) {
+        if (mc.player.getItemInUseMaxCount() >= (isMoving() ? movingDrawLength.getValue() : standDrawLength.getValue())) {
             // release
             mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, mc.player.getHorizontalFacing()));
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(mc.player.getActiveHand()));
@@ -241,9 +261,12 @@ public class Quiver extends Module {
 
     private void switchArrow() {
         if (slot[0] != -1) {
+            // Switch items
             mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
             mc.playerController.windowClick(0, slot[1], 0, ClickType.PICKUP, mc.player);
             mc.playerController.windowClick(0, slot[0], 0, ClickType.PICKUP, mc.player);
+            // Check that the last item was placed correctly
+            slotCheck = slot[0];
         }
     }
 
