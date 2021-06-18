@@ -39,17 +39,17 @@ public class NewChat extends GuiNewChat {
     /**
      * A list of messages previously sent through the chat GUI
      */
-    private final List<String> sentMessages = Lists.<String>newArrayList();
+    private final List<String> sentMessages = Lists.newArrayList();
     /**
      * Chat lines to be displayed in the chat box
      */
-    private final List<ChatLine> chatLines = Lists.<ChatLine>newArrayList();
+    private final List<ChatLine> chatLines = Lists.newArrayList();
     /**
      * List of the ChatLines currently drawn
      */
-    private final List<ChatLine> drawnChatLines = Lists.<ChatLine>newArrayList();
+    private final List<ChatLine> drawnChatLines = Lists.newArrayList();
     private int scrollPos;
-    private boolean isScrolled;
+    //private boolean isScrolled;
     public static float percentComplete = 0.0F;
     public static int newLines;
     public static long prevMillis = -1;
@@ -67,6 +67,7 @@ public class NewChat extends GuiNewChat {
     }
 
     public void drawChat(int updateCounter) {
+        // type custom use a different count, normally dey use the date of the machine, custom use a double
         if (!chatModifier.stopDesyncSpecial.getValue())
             count += chatModifier.customAdd.getValue() * chatModifier.customMultiply.getValue();
         boolean customText = colorMain.textFont.getValue();
@@ -163,8 +164,9 @@ public class NewChat extends GuiNewChat {
                                         break;
                                 }
                                 try {
+                                    // Gs custom text
                                     displayText(s, x, y, customText);
-                                }catch (IndexOutOfBoundsException e) {
+                                }catch (IndexOutOfBoundsException ignored) {
 
                                 }
                                 //this.mc.fontRenderer.drawStringWithShadow(s, x, y, 16777215 + (l1 << 24));
@@ -185,8 +187,10 @@ public class NewChat extends GuiNewChat {
                     int k1 = i3 * i3 / l2;
 
                     if (l2 != i3) {
+                        /*
                         int k3 = j3 > 0 ? 170 : 96;
-                        int l3 = this.isScrolled ? 13382451 : 3355562;
+                        int l3 = this.isScrolled ? 13382451 : 3355562;*/
+                        // Gs custom slider
                         if (!chatModifier.hideSlider.getValue()) {
                             drawRect(-chatModifier.sliderSpace.getValue() + chatModifier.sliderWidth.getValue(), -j3, -chatModifier.sliderSpace.getValue(), -j3 - k1,  new GSColor(chatModifier.firstColor.getValue(), chatModifier.firstAlpha.getValue()).getRGB());
                             drawRect(-chatModifier.sliderSpace.getValue(), -j3, -chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3 - k1,  new GSColor(chatModifier.secondColor.getValue(), chatModifier.secondAlpha.getValue()).getRGB());
@@ -237,7 +241,7 @@ public class NewChat extends GuiNewChat {
 
         for (ITextComponent itextcomponent : list) {
             if (flag && this.scrollPos > 0) {
-                this.isScrolled = true;
+                //this.isScrolled = true;
                 this.scroll(1);
             }
 
@@ -278,7 +282,7 @@ public class NewChat extends GuiNewChat {
      * Adds this string to the list of sent messages, for recall using the up/down arrow keys
      */
     public void addToSentMessages(String message) {
-        if (this.sentMessages.isEmpty() || !((String) this.sentMessages.get(this.sentMessages.size() - 1)).equals(message)) {
+        if (this.sentMessages.isEmpty() || !this.sentMessages.get(this.sentMessages.size() - 1).equals(message)) {
             this.sentMessages.add(message);
         }
     }
@@ -288,7 +292,7 @@ public class NewChat extends GuiNewChat {
      */
     public void resetScroll() {
         this.scrollPos = 0;
-        this.isScrolled = false;
+        //this.isScrolled = false;
     }
 
     /**
@@ -304,7 +308,7 @@ public class NewChat extends GuiNewChat {
 
         if (this.scrollPos <= 0) {
             this.scrollPos = 0;
-            this.isScrolled = false;
+            //this.isScrolled = false;
         }
     }
 
@@ -628,7 +632,7 @@ public class NewChat extends GuiNewChat {
                 skip = true;
                 continue;
             }
-            GSColor colorOut = null;
+            GSColor colorOut;
             switch (chatModifier.rainbowType.getValue().toLowerCase()) {
                 case "sin":
                     colorOut = getSinRainbow(rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, startColor, stop);
@@ -657,7 +661,7 @@ public class NewChat extends GuiNewChat {
             // Add width
             width += isCustom ? GameSense.INSTANCE.cFontRenderer.getStringWidth(character) : mc.fontRenderer.getStringWidth(character);
             // Add rainbow
-            if (chatModifier.rainbowType.getValue().toLowerCase().equals("custom"))
+            if (chatModifier.rainbowType.getValue().equalsIgnoreCase("custom"))
                 rainbowColor += chatModifier.rainbowDesyncSmooth.getValue() * chatModifier.cutomDesync.getValue();
             else rainbowColor += 1;
         }
@@ -713,14 +717,16 @@ public class NewChat extends GuiNewChat {
     }
 
     public static int calculateChatboxWidth(float scale) {
+        /*
         int i = 320;
-        int j = 40;
+        int j = 40;*/
         return MathHelper.floor(scale * 280.0F + 40.0F);
     }
 
     public static int calculateChatboxHeight(float scale) {
+        /*
         int i = 180;
-        int j = 20;
+        int j = 20;*/
         return MathHelper.floor(scale * 160.0F + 20.0F);
     }
 
