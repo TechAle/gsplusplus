@@ -11,8 +11,6 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.misc.AutoGG;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.*;
@@ -141,19 +139,27 @@ public class Elevatot extends Module {
 
         if (event.getBlock() == null || event.getPosition() == null) return;
         BlockPos temp;
+        // Get position of the redstone
         if (event.getPosition().getX() == (temp = compactBlockPos(2)).getX()
-                && event.getPosition().getY() == temp.getY()
+                && event.getPosition().getY() == temp.getY() // Be sure that the position of the piston is not air
                 && event.getPosition().getZ() == temp.getZ() && !(BlockUtil.getBlock(temp = compactBlockPos(1)) instanceof BlockAir) ) {
+            // If we are placing a redstone torch
             if (event.getBlock() instanceof BlockRedstoneTorch) {
+                // If tick = 0, break it
                 if (tickBreakRedstone.getValue() == 0) {
                     breakBlock(compactBlockPos(2));
                     lastStage = 2;
                 } else {
+                    // Else, wait
                     lastStage = 3;
                 }
+            // If we are breaking
             } else if (event.getBlock() instanceof BlockAir) {
+                // If placing == 0
                 if (redstoneDelay.getValue() == 0) {
+                    // Place
                     placeBlock(temp, 0, 0, 0, true, false, slot_mat[2], -1);
+                    // If instaPlace
                     if (clientInstaPlace.getValue())
                         mc.world.setBlockState(compactBlockPos(2), Blocks.REDSTONE_TORCH.getDefaultState());
                 }
@@ -201,7 +207,7 @@ public class Elevatot extends Module {
 
         ROTATION_UTIL.onEnable();
 
-        initValues();
+        resetValues();
 
         // Get Target
         if (!getAimTarget())
@@ -283,12 +289,17 @@ public class Elevatot extends Module {
             return;
         }
 
+        // If aimtarget == null
         if (aimTarget == null) {
-
+            // If we are still not finding one, return
             if (!getAimTarget())
                 return;
+            // Else, continue with playerChecks
             playerChecks();
         }
+
+        // Enable rotation spoof
+        ROTATION_UTIL.shouldSpoofAngles(true);
 
         /*
             -1 (default) = When started, no wait, why would you lmao
@@ -315,24 +326,27 @@ public class Elevatot extends Module {
                 toWait = 0;
                 break;
         }
-
+        // Wait
         if (delayTimeTicks < toWait) {
             delayTimeTicks++;
             return;
         }
-
+        // If enemy is dead (?)
         if (enemyCoordsDouble == null) {
             disable();
             return;
         }
 
-        // Enable rotation spoof
-        ROTATION_UTIL.shouldSpoofAngles(true);
         boolean back = false;
         BlockPos pos = new BlockPos(0, -100, 0);
+        // Lets check if the enemy changed the position
         for(int i = 0; i < mc.world.playerEntities.size(); i++)
-            if (mc.world.playerEntities.get(i).getGameProfile().getId().toString().equals(uuid_enemy))
+            // Get him
+            if (mc.world.playerEntities.get(i).getGameProfile().getId().toString().equals(uuid_enemy)) {
+                // Get position
                 pos = mc.world.playerEntities.get(i).getPosition();
+                break;
+            }
 
         // Check if something is not ok
         if (pos.getY() == -100) {
@@ -344,20 +358,26 @@ public class Elevatot extends Module {
         }
         // Check if the enemy is out of the hole
         if (stopOut.getValue() && pos.getY() != enemyCoordsInt[1] && (pos.getX() != enemyCoordsInt[0] || pos.getZ() != enemyCoordsInt[2])) {
+            // If we have to wait a bit for him to exit
             if (tickOut++ >= tickOutHole.getValue()) {
+                // Enemy pushed
                 PistonCrystal.printDebug("Enemy pushed out of the hole.", false);
+                // If normal trap
                 if (trapMode.getValue()) {
                     PistonCrystal.printDebug("Finished trapping him", false);
                     placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1] + 2, enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
                 }
+                // If fillHole
                 if (fillHole.getValue()) {
                     PistonCrystal.printDebug("Filling the hole", false);
                     placeBlock(new BlockPos(enemyCoordsDouble[0], enemyCoordsDouble[1], enemyCoordsDouble[2]), 0, 0, 0, false, false, slot_mat[0], -1);
                 }
+                // Break redstone torch
                 breakBlock(compactBlockPos(2));
                 disable();
                 return;
             }
+        // If he is back normal, restart
         } else if (tickOut != 0) tickOut = 0;
         /*
             First we have to place every supports blocks.
@@ -505,19 +525,19 @@ public class Elevatot extends Module {
         }catch (Exception e) {
             PistonCrystal.printDebug("Fatal Error during the creation of the structure. Please, report this bug in the discor's server", true);
             final Logger LOGGER = (Logger) LogManager.getLogger("GameSense");
-            LOGGER.info("[PistonCrystal] error during the creation of the structure.");
+            LOGGER.info("[Elevatot] error during the creation of the structure.");
             if (e.getMessage() != null)
-                LOGGER.info("[PistonCrystal] error message: " + e.getClass().getName() + " " + e.getMessage());
+                LOGGER.info("[Elevatot] error message: " + e.getClass().getName() + " " + e.getMessage());
             else
-                LOGGER.info("[PistonCrystal] cannot find the cause");
+                LOGGER.info("[Elevatot] cannot find the cause");
             int i5 = 0;
 
             if (e.getStackTrace().length != 0) {
-                LOGGER.info("[PistonCrystal] StackTrace Start");
+                LOGGER.info("[Elevatot] StackTrace Start");
                 for (StackTraceElement errorMess : e.getStackTrace()) {
-                    LOGGER.info("[PistonCrystal] " + errorMess.toString());
+                    LOGGER.info("[Elevatot] " + errorMess.toString());
                 }
-                LOGGER.info("[PistonCrystal] StackTrace End");
+                LOGGER.info("[Elevatot] StackTrace End");
             }
             disable();
         }
@@ -588,7 +608,8 @@ public class Elevatot extends Module {
         return false;
     }
 
-    void initValues() {
+    void resetValues() {
+
         sur_block = new double[4][3];
         slot_mat = new int[] {
                 -1, -1, -1, -1, -1
@@ -788,8 +809,9 @@ public class Elevatot extends Module {
             double minFound = 1000;
             double minNow;
             boolean foundOne = false;
+            // Iterate for the 4 possibilities
             for (int[] pos : disp_surblock) {
-                // Get coordinates
+                // Get coordinates of torch
                 double[] torchCoords = new double[]{pistonCoordsAbs[0] + pos[0], pistonCoordsAbs[1], pistonCoordsAbs[2] + pos[2]};
                 // If it's min of what we have now
                 if ((minNow = mc.player.getDistance(torchCoords[0], torchCoords[1], torchCoords[2])) > minFound)
@@ -869,9 +891,11 @@ public class Elevatot extends Module {
                         new Vec3d(-1, 2, 0),
                         new Vec3d(0, 2, -1)
                 }) {
+                    // Lets check that is not the block between the player and the center of the trap
                     if (!((int) var.x == disp_surblock[i][0] && (int) var.z == disp_surblock[i][2])) {
+                        // If not, add
                         toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
-                        supportBlock += 1;
+                        supportBlock++;
                     }
                 }
 
@@ -882,7 +906,7 @@ public class Elevatot extends Module {
                             new Vec3d(1, 3, -1)
                     }) {
                         toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
-                        supportBlock += 1;
+                        supportBlock++;
                     }
                 }
 
@@ -903,6 +927,7 @@ public class Elevatot extends Module {
                         new Vec3d(-1, 2, 0),
                         new Vec3d(0, 2, -1)
                 }) {
+                    // As before, no between
                     if (!((int) var.x == disp_surblock[i][0] && (int) var.z == disp_surblock[i][2])) {
                         toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
                         supportBlock++;
@@ -912,21 +937,18 @@ public class Elevatot extends Module {
                 toPlaceTemp.add(new Vec3d(disp_surblock[i][0], 2, disp_surblock[i][2]));
                 supportBlock++;
 
-
-                /*
-                toPlaceTemp.add(new Vec3d(-disp_surblock[i][0], 2, -disp_surblock[i][2]));
-                supportBlock++;*/
-
                 if (addRoof.getValue()) {
                     // Iterate for everything
                     for(Vec3d var : new Vec3d[] {
                             new Vec3d(0, 3, -1),
                             new Vec3d(0, 3, 0),
-                            new Vec3d(-1,3,0)
                     }) {
+                        // Add
                         toPlaceTemp.add(new Vec3d((int) var.x - disp_surblock[i][0], var.y, (int) var.z - disp_surblock[i][2]));
-                        supportBlock += 1;
+                        supportBlock++;
                     }
+                    toPlaceTemp.add(new Vec3d(0, 3, 0));
+                    supportBlock++;
                 }
 
 
