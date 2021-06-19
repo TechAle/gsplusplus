@@ -33,18 +33,18 @@ public class ChatModifier extends Module {
 
     // General chat colors
     public ColorSetting backColor = registerColor("Background Color", new GSColor(0, 0, 0));
-    public IntegerSetting alphaColor = registerInteger("Background Alpha", 255, 0, 255);
-    public ColorSetting normalColor = registerColor("Normal Color", new GSColor(0, 0, 0));
-    public ColorSetting specialColor = registerColor("Special Color", new GSColor(0, 125, 125));
+    public IntegerSetting alphaColor = registerInteger("Background Alpha", 0, 0, 255);
+    public ColorSetting normalColor = registerColor("Normal Color", new GSColor(255, 255, 255));
+    public ColorSetting specialColor = registerColor("Special Color", new GSColor(0, 255, 125));
     // Rainbow settings
     public BooleanSetting desyncRainbowNormal = registerBoolean("Desync Rainbow Normal", false);
-    public BooleanSetting desyncRainbowSpecial = registerBoolean("Desync Rainbow Special", false);
+    public BooleanSetting desyncRainbowSpecial = registerBoolean("Desync Rainbow Special", true);
     public BooleanSetting stopDesyncNormal = registerBoolean("Stop Desync Normal", false);
     public BooleanSetting stopDesyncSpecial = registerBoolean("Stop Desync Special", false);
-    public ModeSetting rainbowType = registerMode("Rainbow Type", Arrays.asList("Slow", "Custom", "Sin", "Tan", "Secant", "Cosecant", "Cotangent"), "Tan");
-    public IntegerSetting rainbowDesyncSmooth = registerInteger("Rainbow Desync Smooth", 50, 1, 1000);
-    public DoubleSetting customAdd = registerDouble("customAdd", 1, 1, 40);
-    public DoubleSetting customMultiply = registerDouble("customMultiply", 1, 1, 30);
+    public ModeSetting rainbowType = registerMode("Rainbow Type", Arrays.asList("Slow", "Custom", "Sin", "Tan", "Secant", "Cosecant", "Cotangent"), "Custom");
+    public IntegerSetting rainbowDesyncSmooth = registerInteger("Rainbow Desync Smooth", 250, 1, 1000);
+    public DoubleSetting customAdd = registerDouble("customAdd", 12, 1, 40);
+    public DoubleSetting customMultiply = registerDouble("customMultiply", 3.64, 1, 30);
     public IntegerSetting cutomDesync = registerInteger("Custom Desync Multiply", 1, 1, 100);
     public DoubleSetting heightSin = registerDouble("Height Sin", 1, 0.1, 20);
     public IntegerSetting multiplyHeight = registerInteger("Multiply Height Sin", 1, 1, 10);
@@ -72,12 +72,12 @@ public class ChatModifier extends Module {
     // Unformatted
     BooleanSetting unFormattedText = registerBoolean("Unformatted Text", false);
     // Time
-    BooleanSetting chatTimeStamps = registerBoolean("Chat Time Stamp", false);
+    BooleanSetting chatTimeStamps = registerBoolean("Chat Time Stamp", true);
     ModeSetting format = registerMode("Format", Arrays.asList("H24:mm", "H12:mm", "H12:mm a", "H24:mm:ss", "H12:mm:ss", "H12:mm:ss a"), "H24:mm");
-    ModeSetting decoration = registerMode("Deco", Arrays.asList("< >", "[ ]", "{ }", " "), "[ ]");
+    ModeSetting decoration = registerMode("Deco", Arrays.asList("< >", "[ ]", "{ }", " "), "< >");
     public ColorSetting timeColor = registerColor("Time Color", new GSColor(85,255,255));
-    BooleanSetting specialTime = registerBoolean("Special Color Time", false);
-    BooleanSetting space = registerBoolean("Space", false);
+    BooleanSetting specialTime = registerBoolean("Special Color Time", true);
+    BooleanSetting space = registerBoolean("Space", true);
     // Player name
     BooleanSetting fakeName = registerBoolean("Fake Name", false);
     BooleanSetting customName = registerBoolean("Custom Name", true);

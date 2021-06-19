@@ -5,6 +5,7 @@ import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 
@@ -22,6 +23,7 @@ public class Anchor extends Module {
 
     BooleanSetting guarantee = registerBoolean("Guarantee Hole", true);
     IntegerSetting activateHeight = registerInteger("Activate Height", 2, 1, 5);
+    //IntegerSetting activationPitch = registerInteger("Activation Pitch", 75, 0, 90);
 
     BlockPos playerPos;
 
@@ -29,6 +31,9 @@ public class Anchor extends Module {
         if (mc.player == null) {
             return;
         }
+
+        /*if (mc.player.rotationPitch < activationPitch.getValue())
+            return;*/
 
         if (mc.player.posY < 0) {
             return;
