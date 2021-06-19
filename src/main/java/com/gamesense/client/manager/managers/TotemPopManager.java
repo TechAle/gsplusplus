@@ -27,8 +27,20 @@ public enum TotemPopManager implements Manager {
     INSTANCE;
 
     public boolean sendMsgs = false;
+    public boolean sendCountPops = false;
+    public boolean sendCountKills = false;
     public ChatFormatting chatFormatting = ChatFormatting.WHITE;
     private final HashMap<String, Integer> playerPopCount = new HashMap<>();
+    private int countPops = 0;
+    private int countKills = 0;
+
+    public int getPops() {
+        return countPops;
+    }
+
+    public int getKills() {
+        return countKills;
+    }
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -42,8 +54,12 @@ public enum TotemPopManager implements Manager {
 
         for (EntityPlayer entityPlayer : getWorld().playerEntities) {
             if (entityPlayer.getHealth() <= 0 && playerPopCount.containsKey(entityPlayer.getName())) {
-                if (sendMsgs)
+                if (sendMsgs) {
                     MessageBus.sendClientPrefixMessage(chatFormatting + entityPlayer.getName() + " died after popping " + ChatFormatting.GREEN + getPlayerPopCount(entityPlayer.getName()) + chatFormatting + " totems!");
+                }
+                ++countKills;
+                if (sendCountKills)
+                    MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countKills + chatFormatting + " people killed!");
                 playerPopCount.remove(entityPlayer.getName());
             }
         }
@@ -72,6 +88,11 @@ public enum TotemPopManager implements Manager {
         if (event.getEntity() == null) return;
 
         String entityName = event.getEntity().getName();
+
+        ++countPops;
+
+        if (sendCountPops)
+            MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countPops + chatFormatting + " people popped!");
 
         if (playerPopCount.get(entityName) == null) {
             playerPopCount.put(entityName, 1);

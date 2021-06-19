@@ -32,6 +32,8 @@ public class PvPInfo extends Module {
     BooleanSetting strengthDetect = registerBoolean("Strength Detect", false);
     BooleanSetting weaknessDetect = registerBoolean("Weakness Detect", false);
     BooleanSetting popCounter = registerBoolean("Pop Counter", false);
+    BooleanSetting countPops = registerBoolean("Count Pops", false);
+    BooleanSetting countKills = registerBoolean("Count Kills", false);
     ModeSetting chatColor = registerMode("Color", ColorUtil.colors, "Light Purple");
 
     List<Entity> knownPlayers = new ArrayList<>();
@@ -48,6 +50,9 @@ public class PvPInfo extends Module {
         }
 
         TotemPopManager.INSTANCE.sendMsgs = popCounter.getValue();
+        TotemPopManager.INSTANCE.sendCountPops = popCounter.getValue();
+        TotemPopManager.INSTANCE.sendCountKills = countKills.getValue();
+
         if (popCounter.getValue()) TotemPopManager.INSTANCE.chatFormatting = ColorUtil.textToChatFormatting(chatColor);
 
         if (visualRange.getValue()) {
