@@ -49,6 +49,9 @@ public class Speed extends Module {
             return;
         }
 
+        if (Anchor.active)
+            return;
+
         if (mode.getValue().equalsIgnoreCase("YPort")) {
             handleYPortSpeed();
         }
@@ -72,7 +75,7 @@ public class Speed extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
-        if (mc.player.isInLava() || mc.player.isInWater() || mc.player.isOnLadder() || mc.player.isInWeb) {
+        if (mc.player.isInLava() || mc.player.isInWater() || mc.player.isOnLadder() || mc.player.isInWeb || Anchor.active) {
             return;
         }
 

@@ -23,17 +23,26 @@ public class Anchor extends Module {
 
     BooleanSetting guarantee = registerBoolean("Guarantee Hole", true);
     IntegerSetting activateHeight = registerInteger("Activate Height", 2, 1, 5);
-    //IntegerSetting activationPitch = registerInteger("Activation Pitch", 75, 0, 90);
+    IntegerSetting activationPitch = registerInteger("Activation Pitch", 75, 0, 90);
+    BooleanSetting stopSpeed = registerBoolean("Stop Speed", true);
+
+    public static boolean active = false;
 
     BlockPos playerPos;
+
+    protected void onDisable() {
+        active = false;
+    }
 
     public void onUpdate() {
         if (mc.player == null) {
             return;
         }
 
-        /*if (mc.player.rotationPitch < activationPitch.getValue())
-            return;*/
+        active = false;
+
+        if (mc.player.rotationPitch < activationPitch.getValue())
+            return;
 
         if (mc.player.posY < 0) {
             return;
@@ -62,6 +71,8 @@ public class Anchor extends Module {
                 HashMap<HoleUtil.BlockOffset, HoleUtil.BlockSafety> sides = HoleUtil.getUnsafeSides(currentBlock.up());
                 sides.entrySet().removeIf(entry -> entry.getValue() == HoleUtil.BlockSafety.RESISTANT);
                 if (sides.size() == 0) {
+                    if (stopSpeed.getValue())
+                        active = true;
                     mc.player.motionX = 0f;
                     mc.player.motionZ = 0f;
                 }
