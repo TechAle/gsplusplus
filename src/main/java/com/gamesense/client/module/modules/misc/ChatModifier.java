@@ -79,6 +79,7 @@ public class ChatModifier extends Module {
     BooleanSetting specialTime = registerBoolean("Special Color Time", false);
     BooleanSetting space = registerBoolean("Space", false);
     // Player name
+    BooleanSetting fakeName = registerBoolean("Fake Name", false);
     BooleanSetting customName = registerBoolean("Custom Name", true);
     public ColorSetting friendColor = registerColor("Friend Color", new GSColor(85,255,255));
     BooleanSetting specialFriend = registerBoolean("Special Color Friend", false);
@@ -141,11 +142,13 @@ public class ChatModifier extends Module {
     private final Listener<ClientChatReceivedEvent> chatReceivedEventListener = new Listener<>(event -> {
         // Get it
         ITextComponent output = event.getMessage();
+        if (fakeName.getValue())
+            output = new TextComponentString(output.getFormattedText().replaceAll(mc.player.getName(), "YourName"));
         try {
             // if custom name
             if (customName.getValue()) {
                 // Get name
-                String name = event.getMessage().getUnformattedText().split(" ")[0];
+                String name = output.getUnformattedText().split(" ")[0];
                 // Add his special color
                 output = new TextComponentString((
                         isFriend(name) ? (specialFriend.getValue() ?
@@ -175,7 +178,7 @@ public class ChatModifier extends Module {
             if (unFormattedText.getValue())
                 output = new TextComponentString(output.getUnformattedText());
         // Preventing dumb things when the server send to us an empty message (WHY)
-        } catch (ArrayIndexOutOfBoundsException e) {
+        } catch (ArrayIndexOutOfBoundsException ignored) {
 
         }
         // Set the enw message
