@@ -144,7 +144,7 @@ public class Quiver extends Module {
 
 
         // Output in chat
-        setDisabledMessage(output + "Elevatot turned OFF!");
+        setDisabledMessage(output + "Quiver turned OFF!");
 
         if (oldslot != -1)
             mc.player.inventory.currentItem = oldslot;
@@ -176,6 +176,9 @@ public class Quiver extends Module {
 
         // If we havent a bow
         if (mc.player.inventory.getCurrentItem().getItem() != Items.BOW) {
+            if (isPowering) {
+                KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
+            }
             // If switch
             if (active.getValue().equals("Switch")) {
                 // Check for a bow
