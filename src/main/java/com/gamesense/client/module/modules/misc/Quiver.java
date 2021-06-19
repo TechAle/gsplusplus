@@ -62,11 +62,12 @@ public class Quiver extends Module {
     IntegerSetting pitchMoving = registerInteger("Pitch Moving", -45, 0, -70);
     IntegerSetting standDrawLength = registerInteger("Stand Draw Length", 4, 0, 21);
     IntegerSetting movingDrawLength = registerInteger("Moving Draw Length", 3, 0, 21);
-    IntegerSetting tickWait = registerInteger("Tick Finish Wait", 20, 1, 50);
+    IntegerSetting tickWait = registerInteger("Tick Retry Wait", 20, 1, 50);
+    IntegerSetting tickWaitEnd = registerInteger("Tick Arrow Wait", 0, 0, 100);
 
     int[] slot;
     int oldslot;
-    int firstWait, secondWait, slotCheck;
+    int firstWait, secondWait, slotCheck, endWait;
 
     boolean blockedUp,
             beforeActive,
@@ -108,6 +109,7 @@ public class Quiver extends Module {
         blockedUp = beforeActive = isPowering =false;
         hasBow = isFirst = true;
         firstWait = secondWait = 0;
+        endWait = 0;
         oldslot = slotCheck = -1;
     }
 
@@ -164,6 +166,11 @@ public class Quiver extends Module {
 
     public void onUpdate() {
         if (mc.world == null || mc.player == null) {
+            return;
+        }
+
+        if (endWait > 0) {
+            endWait--;
             return;
         }
 
@@ -248,18 +255,17 @@ public class Quiver extends Module {
         // If we have to draw
         if (mc.player.getItemInUseMaxCount() >= (isMoving() ? movingDrawLength.getValue() : standDrawLength.getValue())) {
             // release
+            KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
             mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, mc.player.getHorizontalFacing()));
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(mc.player.getActiveHand()));
             mc.player.stopActiveHand();
             // If we have to switch back
             switchArrow();
-            // Disable bow powering
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
-            mc.player.stopActiveHand();
             // Reset some values
             slot = new int[] {-1, -1};
             isPowering = false;
             // Add new wait
+            endWait = tickWaitEnd.getValue();
             if (isFirst) {
                 isFirst = false;
                 firstWait = tickWait.getValue();
