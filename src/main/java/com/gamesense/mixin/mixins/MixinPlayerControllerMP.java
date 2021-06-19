@@ -29,7 +29,7 @@ public abstract class MixinPlayerControllerMP {
     @Inject(method = "onPlayerDestroyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playEvent(ILnet/minecraft/util/math/BlockPos;I)V"), cancellable = true)
     private void onPlayerDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
         noGlitchBlock noGlitchBlock = ModuleManager.getModule(noGlitchBlock.class);
-        if (noGlitchBlock.breakBlock.getValue()) {
+        if ( noGlitchBlock.isOn() && noGlitchBlock.breakBlock.getValue()) {
             callbackInfoReturnable.cancel();
             callbackInfoReturnable.setReturnValue(false);
         }
