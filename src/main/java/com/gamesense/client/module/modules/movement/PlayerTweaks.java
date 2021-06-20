@@ -40,6 +40,7 @@ public class PlayerTweaks extends Module {
 
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     BooleanSetting noPush = registerBoolean("No Push", false);
+    BooleanSetting noPushWater = registerBoolean("No Push Liquid", false);
     BooleanSetting noFall = registerBoolean("No Fall", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
@@ -161,7 +162,7 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<WaterPushEvent> waterPushEventListener = new Listener<>(event -> {
-        if (noPush.getValue()) {
+        if (noPushWater.getValue()) {
             event.cancel();
         }
     });
