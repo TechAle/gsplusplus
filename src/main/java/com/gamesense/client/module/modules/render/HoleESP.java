@@ -14,11 +14,14 @@ import com.google.common.collect.Sets;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @reworked by 0b00101010 on 14/01/2021
@@ -30,6 +33,7 @@ public class HoleESP extends Module {
     public IntegerSetting range = registerInteger("Range", 5, 1, 20);
     ModeSetting customHoles = registerMode("Show", Arrays.asList("Single", "Double", "Custom"), "Single");
     ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
+    BooleanSetting fillRaytrace = registerBoolean("Fill raytrace", false);
     ModeSetting mode = registerMode("Mode", Arrays.asList("Air", "Ground", "Flat", "Slab", "Double"), "Air");
     BooleanSetting hideOwn = registerBoolean("Hide Own", false);
     BooleanSetting flatOwn = registerBoolean("Flat Own", false);
@@ -129,8 +133,9 @@ public class HoleESP extends Module {
                 break;
             }
             case "Both": {
+                if (mc.world.rayTraceBlocks(hole.getCenter(), new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight() + 1, mc.player.posZ)) == null)
+                    renderFill(hole, color);
                 renderOutline(hole, color);
-                renderFill(hole, color);
                 break;
             }
         }
