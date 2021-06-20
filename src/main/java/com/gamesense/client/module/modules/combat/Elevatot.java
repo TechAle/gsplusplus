@@ -17,10 +17,7 @@ import net.minecraft.block.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.*;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.client.CPacketPlayerDigging;
+import net.minecraft.network.play.client.*;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -68,6 +65,7 @@ public class Elevatot extends Module {
     IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10);
     BooleanSetting fillHole = registerBoolean("Fill hole", false);
     BooleanSetting addRoof = registerBoolean("Add Roof", false);
+    BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
 
     EntityPlayer aimTarget;
 
@@ -408,10 +406,8 @@ public class Elevatot extends Module {
                 // Check if we can continue
                 lastStage = 3;
                 return;
-            }
-
-            // Break the redstone
-            if (lastStage == 3) {
+            } else // Break the redstone
+            {
                 breakBlock(compactBlockPos(2));
                 lastStage = 2;
                 return;
@@ -507,7 +503,7 @@ public class Elevatot extends Module {
         // Get the position where we are gonna click
         Vec3d hitVec = new Vec3d(neighbour).add(0.5 + offsetX, 0.5, 0.5 + offsetZ).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
-
+        int oldSlot = mc.player.inventory.currentItem;
         try {
 
         if (mc.player.inventory.getStackInSlot(slot) != ItemStack.EMPTY) {
@@ -517,8 +513,11 @@ public class Elevatot extends Module {
                     noMaterials = true;
                     return  false;
                 }
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                mc.player.inventory.currentItem = slot;
+
+                if (silentSwitch.getValue()) {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                } else
+                    mc.player.inventory.currentItem = slot;
             }
         }
 
@@ -572,7 +571,13 @@ public class Elevatot extends Module {
 
         // Place the block
         mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
-        mc.player.swingArm(EnumHand.MAIN_HAND);
+        if (silentSwitch.getValue()) {
+            mc.player.connection.sendPacket(new CPacketAnimation(EnumHand.MAIN_HAND));
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+        }
+        else
+            mc.player.swingArm(EnumHand.MAIN_HAND);
+
 
         return true;
 
