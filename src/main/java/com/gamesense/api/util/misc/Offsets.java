@@ -118,4 +118,41 @@ public class Offsets {
         new Vec3d(0, 0, 0),
         new Vec3d(0, 1, 0)
     };
+
+    public static final Vec3d[] Around = {
+        new Vec3d(0, -1, 1),
+        new Vec3d(1, -1, 1),
+        new Vec3d(1, -1, 0),
+        new Vec3d(1, -1, -1),
+        new Vec3d(0, -1, -1),
+        new Vec3d(-1, -1, -1),
+        new Vec3d(-1, -1, 0),
+        new Vec3d(-1, -1, 1)
+    };
+
+    public static final Vec3d[] AutoCity = {
+            new Vec3d(0, -1, 1),
+            new Vec3d(0, -1, 2),
+            new Vec3d(1, -1, 0),
+            new Vec3d(2, -1, 0),
+            new Vec3d(0, -1, -1),
+            new Vec3d(0, -1, -2),
+            new Vec3d(-1, -1, 0),
+            new Vec3d(-2, -1, 0),
+    };
+
+    public static final Vec3d[] Both = {
+            new Vec3d(0, -1, 1),
+            new Vec3d(0, -1, 2),
+            new Vec3d(1, -1, 1),
+            new Vec3d(1, -1, 0),
+            new Vec3d(2, -1, 0),
+            new Vec3d(1, -1, -1),
+            new Vec3d(0, -1, -1),
+            new Vec3d(0, -1, -2),
+            new Vec3d(-1, -1, -1),
+            new Vec3d(-1, -1, 0),
+            new Vec3d(-2, -1, 0),
+            new Vec3d(-1, -1, 1)
+    };
 }
