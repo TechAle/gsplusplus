@@ -16,6 +16,7 @@ import net.minecraft.block.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -49,11 +50,14 @@ public class HoleFill extends Module {
     BooleanSetting autoSwitch = registerBoolean("Switch", true);
     BooleanSetting offHandObby = registerBoolean("Off Hand Obby", false);
     BooleanSetting disableOnFinish = registerBoolean("Disable on Finish", true);
+    BooleanSetting SilentSwitch = registerBoolean("Silent Switch", false);
 
     private int delayTicks = 0;
     private int oldHandEnable = -1;
     private boolean activedOff;
     private int obbySlot;
+    boolean hasPlaced;
+    int oldslot;
 
     /*
      * Stops us from spam placing same closest position while
@@ -72,6 +76,7 @@ public class HoleFill extends Module {
         if (obbySlot == 9) {
             activedOff = true;
         }
+
     }
 
     public void onDisable() {
@@ -110,17 +115,6 @@ public class HoleFill extends Module {
             }
         }
 
-        if (autoSwitch.getValue()) {
-            //int oldHand = mc.player.inventory.currentItem;
-            int newHand = findRightBlock();
-
-            if (newHand != -1) {
-                mc.player.inventory.currentItem = newHand;
-                mc.playerController.syncCurrentPlayItem();
-            } else {
-                return;
-            }
-        }
 
         List<BlockPos> holePos = new ArrayList<>(findHoles());
         holePos.removeAll(recentPlacements.keySet());
@@ -130,6 +124,7 @@ public class HoleFill extends Module {
         // Get every players
         List<EntityPlayer> listPlayer = new ArrayList<>(mc.world.playerEntities);
         listPlayer.removeIf(player -> EntityUtil.basicChecksEntity(player) || (!onlyPlayer.getValue() || mc.player.getDistance(player) > 6 + playerRange.getValue()));
+        hasPlaced = false;
         holePos.removeIf(placePos -> {
             if (placements.get() >= bpc.getValue()) {
                 return false;
@@ -141,7 +136,7 @@ public class HoleFill extends Module {
 
             boolean output = false;
 
-            if (isHoldingRightBlock(mc.player.inventory.currentItem, mc.player.getHeldItem(EnumHand.MAIN_HAND).getItem()) || offHandObby.getValue()) {
+            if (isHoldingRightBlock(mc.player.inventory.currentItem, mc.player.getHeldItem(EnumHand.MAIN_HAND).getItem()) || offHandObby.getValue() || SilentSwitch.getValue()) {
                 // Player range
                 boolean found = false;
                 if (onlyPlayer.getValue()) {
@@ -166,6 +161,9 @@ public class HoleFill extends Module {
             return output;
         });
 
+        if (hasPlaced)
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
         if (disableOnFinish.getValue() && holePos.size() == 0) {
             disable();
         }
@@ -189,7 +187,29 @@ public class HoleFill extends Module {
             }
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), true);
+        if (autoSwitch.getValue() || SilentSwitch.getValue()) {
+            //int oldHand = mc.player.inventory.currentItem;
+            int newHand = findRightBlock();
+
+            if (newHand != -1) {
+                if (mc.player.inventory.currentItem != newHand) {
+                    if (SilentSwitch.getValue()) {
+                        if (!hasPlaced) {
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(newHand));
+                            hasPlaced = true;
+                            oldslot = mc.player.inventory.currentItem;
+                        }
+                    } else {
+                        mc.player.inventory.currentItem = newHand;
+                        mc.playerController.syncCurrentPlayItem();
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return PlacementUtil.place(pos, handSwing, rotate.getValue(), !SilentSwitch.getValue());
     }
 
     private List<BlockPos> findHoles() {

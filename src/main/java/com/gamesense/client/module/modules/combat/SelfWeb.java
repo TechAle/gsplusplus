@@ -13,6 +13,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -35,6 +36,7 @@ public class SelfWeb extends Module {
     BooleanSetting centerPlayer = registerBoolean("Center Player", false);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Web", true);
+    BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
 
     private final Timer delayTimer = new Timer();
     private Vec3d centeredBlock = Vec3d.ZERO;
@@ -43,6 +45,7 @@ public class SelfWeb extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean isSneaking = false;
+    boolean hasPlaced;
 
     public void onEnable() {
         PlacementUtil.onEnable();
@@ -124,7 +127,7 @@ public class SelfWeb extends Module {
             delayTimer.reset();
 
             int blocksPlaced = 0;
-
+            hasPlaced = false;
             while (blocksPlaced <= blocksPerTick.getValue()) {
                 int maxSteps;
                 Vec3d[] offsetPattern;
@@ -171,6 +174,8 @@ public class SelfWeb extends Module {
                     isSneaking = false;
                 }
             }
+            if (hasPlaced)
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
         }
     }
 
@@ -185,9 +190,15 @@ public class SelfWeb extends Module {
         }
 
         if (mc.player.inventory.currentItem != targetBlockSlot) {
-            mc.player.inventory.currentItem = targetBlockSlot;
+            if (silentSwitch.getValue()) {
+                if (!hasPlaced) {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+                    hasPlaced = true;
+                }
+            } else
+                mc.player.inventory.currentItem = targetBlockSlot;
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), true);
+        return PlacementUtil.place(pos, handSwing, rotate.getValue(), silentSwitch.getValue());
     }
 }
