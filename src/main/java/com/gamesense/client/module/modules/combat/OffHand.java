@@ -47,6 +47,7 @@ public class OffHand extends Module {
     IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20);
     IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30);
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10);
+    IntegerSetting startingBiasDamage= registerInteger("Starting Bias Damage", 22, 0, 36);
     DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3);
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30);
     BooleanSetting pickObby = registerBoolean("Pick Obby", false);
@@ -337,15 +338,16 @@ public class OffHand extends Module {
     }
 
     private boolean crystalDamage() {
-        // Check if the crystal exist
-        for (Entity t : mc.world.loadedEntityList) {
-            // If it's a crystal
-            if (t instanceof EntityEnderCrystal && mc.player.getDistance(t) <= 12) {
-                if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue() >= mc.player.getHealth()) {
-                    return true;
+        if (PlayerUtil.getHealth() <= startingBiasDamage.getValue())
+            // Check if the crystal exist
+            for (Entity t : mc.world.loadedEntityList) {
+                // If it's a crystal
+                if (t instanceof EntityEnderCrystal && mc.player.getDistance(t) <= 12) {
+                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
+                        return true;
+                    }
                 }
             }
-        }
         return false;
     }
 
