@@ -5,6 +5,8 @@ import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.manager.Manager;
+import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.misc.PvPInfo;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -33,6 +35,7 @@ public enum TotemPopManager implements Manager {
     private final HashMap<String, Integer> playerPopCount = new HashMap<>();
     private int countPops = 0;
     private int countKills = 0;
+    PvPInfo pvp = ModuleManager.getModule(PvPInfo.class);
 
     public int getPops() {
         return countPops;
@@ -54,11 +57,11 @@ public enum TotemPopManager implements Manager {
 
         for (EntityPlayer entityPlayer : getWorld().playerEntities) {
             if (entityPlayer.getHealth() <= 0 && playerPopCount.containsKey(entityPlayer.getName())) {
-                if (sendMsgs) {
+                if (sendMsgs && pvp.isOn()) {
                     MessageBus.sendClientPrefixMessage(chatFormatting + entityPlayer.getName() + " died after popping " + ChatFormatting.GREEN + getPlayerPopCount(entityPlayer.getName()) + chatFormatting + " totems!");
                 }
                 ++countKills;
-                if (sendCountKills)
+                if (sendCountKills && pvp.isOn())
                     MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countKills + chatFormatting + " people killed!");
                 playerPopCount.remove(entityPlayer.getName());
             }
@@ -91,18 +94,18 @@ public enum TotemPopManager implements Manager {
 
         ++countPops;
 
-        if (sendCountPops)
+        if (sendCountPops && pvp.isOn())
             MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countPops + chatFormatting + " people popped!");
 
         if (playerPopCount.get(entityName) == null) {
             playerPopCount.put(entityName, 1);
-            if (sendMsgs)
+            if (sendMsgs && pvp.isOn())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + 1 + chatFormatting + " totem!");
         } else {
             int popCounter = playerPopCount.get(entityName) + 1;
 
             playerPopCount.put(entityName, popCounter);
-            if (sendMsgs)
+            if (sendMsgs && pvp.isOn())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + popCounter + chatFormatting + " totems!");
         }
     });

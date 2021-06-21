@@ -5,6 +5,7 @@ import com.gamesense.client.module.modules.combat.AutoCrystal;
 import com.gamesense.client.module.modules.combat.OffHand;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockObsidian;
+import net.minecraft.block.BlockShulkerBox;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -77,6 +78,21 @@ public class InventoryUtil {
                 continue;
 
             slot = i;
+            break;
+        }
+        return slot;
+    }
+
+    public static int findFirstShulker(int lower, int upper) {
+        int slot = -1;
+        List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
+        for (int i = lower; i <= upper; i++) {
+            ItemStack stack = mainInventory.get(i);
+            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock))
+                continue;
+
+            if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockShulkerBox)
+                slot = i;
             break;
         }
         return slot;
