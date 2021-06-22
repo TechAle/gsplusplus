@@ -24,9 +24,10 @@ public class MessageBus {
      * Sends a client-sided message WITH the client prefix
      **/
     public static void sendClientPrefixMessage(String message) {
+        ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
         TextComponentString string1 = new TextComponentString(
-                (   ModuleManager.getModule(ChatModifier.class).isOn() &&
-                        ModuleManager.getModule(ChatModifier.class).watermarkSpecial.getValue() ? "\u2063" : "")
+                (   chat.isEnabled() &&
+                        chat.watermarkSpecial.getValue() ? "\u2063" : "")
                         + watermark
                         + messageFormatting + message);
         TextComponentString string2 = new TextComponentString(messageFormatting + message);

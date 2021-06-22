@@ -31,7 +31,7 @@ public class MixinWorld {
     @Inject(method = "setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;I)Z", at = @At("HEAD"), cancellable = true)
     private void setBlockState(BlockPos pos, IBlockState newState, int flags, CallbackInfoReturnable<Boolean> cir) {
         noGlitchBlock noGlitchBlock = ModuleManager.getModule(noGlitchBlock.class);
-        if ( noGlitchBlock.isOn() && noGlitchBlock.placeBlock.getValue() && flags != 3) {
+        if ( noGlitchBlock.isEnabled() && noGlitchBlock.placeBlock.getValue() && flags != 3) {
             cir.cancel();
             cir.setReturnValue(false);
         }
