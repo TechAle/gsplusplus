@@ -3,7 +3,7 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.Offsets;
+import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
@@ -12,7 +12,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -42,7 +41,6 @@ public class AutoWeb extends Module {
     private int oldSlot = -1;
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
-    private boolean isSneaking = false;
 
     public void onEnable() {
         PlacementUtil.onEnable();
@@ -63,11 +61,6 @@ public class AutoWeb extends Module {
         if (oldSlot != mc.player.inventory.currentItem && oldSlot != -1) {
             mc.player.inventory.currentItem = oldSlot;
             oldSlot = -1;
-        }
-
-        if (isSneaking) {
-            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-            isSneaking = false;
         }
 
         AutoCrystal.stopAC = false;
@@ -158,11 +151,6 @@ public class AutoWeb extends Module {
                 }
 
                 offsetSteps++;
-
-                if (isSneaking) {
-                    mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-                    isSneaking = false;
-                }
             }
         }
     }

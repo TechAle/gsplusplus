@@ -1,19 +1,27 @@
 package com.gamesense.api.setting.values;
 
+import java.util.function.Supplier;
+
 import com.gamesense.api.setting.Setting;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.module.Module;
 
-import java.awt.*;
-
-public class ColorSetting extends Setting<GSColor> implements com.lukflug.panelstudio.settings.ColorSetting {
-
-    private boolean rainbow;
+public class ColorSetting extends Setting<GSColor> {
+    private boolean rainbow = false;
+    private final boolean rainbowEnabled,alphaEnabled;
 
     public ColorSetting(String name, Module module, boolean rainbow, GSColor value) {
         super(value, name, module);
-
         this.rainbow = rainbow;
+        this.rainbowEnabled = true;
+        this.alphaEnabled = false;
+    }
+
+    public ColorSetting(String name, String configName, Module module, Supplier<Boolean> isVisible, boolean rainbow, boolean rainbowEnabled, boolean alphaEnabled, GSColor value) {
+        super(value, name, configName, module, isVisible);
+        this.rainbow = rainbow;
+        this.rainbowEnabled = rainbowEnabled;
+        this.alphaEnabled = alphaEnabled;
     }
 
     @Override
@@ -72,11 +80,18 @@ public class ColorSetting extends Setting<GSColor> implements com.lukflug.panels
 
     @Override
     public boolean getRainbow() {
-        return this.rainbow;
+    	return rainbow;
     }
 
-    @Override
-    public void setRainbow(boolean rainbow) {
-        this.rainbow = rainbow;
+    public void setRainbow (boolean rainbow) {
+    	this.rainbow=rainbow;
+    }
+
+    public boolean rainbowEnabled() {
+    	return rainbowEnabled;
+    }
+
+    public boolean alphaEnabled() {
+    	return alphaEnabled;
     }
 }

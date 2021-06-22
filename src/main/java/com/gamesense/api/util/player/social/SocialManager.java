@@ -4,9 +4,9 @@ import java.util.ArrayList;
 
 public class SocialManager {
 
-    private static ArrayList<Friend> friends;
-    private static ArrayList<Enemy> enemies;
-    private static ArrayList<SpecialNames> SpecialNames;
+    private static final ArrayList<Friend> friends = new ArrayList<>();
+    private static final ArrayList<Enemy> enemies = new ArrayList<>();
+    private static final ArrayList<SpecialNames> SpecialNames;
 
     public static void init() {
         friends = new ArrayList<>();
