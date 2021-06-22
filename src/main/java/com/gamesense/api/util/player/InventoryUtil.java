@@ -91,9 +91,10 @@ public class InventoryUtil {
             if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock))
                 continue;
 
-            if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockShulkerBox)
+            if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockShulkerBox) {
                 slot = i;
-            break;
+                break;
+            }
         }
         return slot;
     }
