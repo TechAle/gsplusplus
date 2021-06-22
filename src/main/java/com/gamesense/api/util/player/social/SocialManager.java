@@ -4,15 +4,9 @@ import java.util.ArrayList;
 
 public class SocialManager {
 
-    private static ArrayList<Friend> friends;
-    private static ArrayList<Enemy> enemies;
-    private static ArrayList<SpecialNames> SpecialNames;
-
-    public static void init() {
-        friends = new ArrayList<>();
-        enemies = new ArrayList<>();
-        SpecialNames = new ArrayList<>();
-    }
+    private static final ArrayList<Friend> friends = new ArrayList<>();
+    private static final ArrayList<Enemy> enemies = new ArrayList<>();
+    private static final ArrayList<SpecialNames> SpecialNames = new ArrayList<>();
 
     public static ArrayList<Friend> getFriends() {
         return friends;
@@ -97,7 +91,7 @@ public class SocialManager {
             for (SpecialNames name : getSpecialNames()) {
                 out.add(name.getName());
             }
-        }catch (OutOfMemoryError e) {
+        }catch (OutOfMemoryError ignored) {
 
         }
         return out;

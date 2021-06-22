@@ -3,7 +3,7 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.Offsets;
+import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
@@ -80,11 +80,6 @@ public class Surround extends Module {
         if (oldSlot != mc.player.inventory.currentItem && oldSlot != -1 && oldSlot != 9) {
             mc.player.inventory.currentItem = oldSlot;
             oldSlot = -1;
-        }
-
-        if (isSneaking) {
-            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-            isSneaking = false;
         }
 
         AutoCrystal.stopAC = false;
@@ -191,11 +186,6 @@ public class Surround extends Module {
                 }
 
                 offsetSteps++;
-
-                if (isSneaking) {
-                    mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-                    isSneaking = false;
-                }
             }
 
             if (hasPlaced)

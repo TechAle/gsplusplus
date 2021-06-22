@@ -57,11 +57,11 @@ public enum TotemPopManager implements Manager {
 
         for (EntityPlayer entityPlayer : getWorld().playerEntities) {
             if (entityPlayer.getHealth() <= 0 && playerPopCount.containsKey(entityPlayer.getName())) {
-                if (sendMsgs && pvp.isOn()) {
+                if (sendMsgs && pvp.isEnabled()) {
                     MessageBus.sendClientPrefixMessage(chatFormatting + entityPlayer.getName() + " died after popping " + ChatFormatting.GREEN + getPlayerPopCount(entityPlayer.getName()) + chatFormatting + " totems!");
                 }
                 ++countKills;
-                if (sendCountKills && pvp.isOn())
+                if (sendCountKills && pvp.isEnabled())
                     MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countKills + chatFormatting + " people killed!");
                 playerPopCount.remove(entityPlayer.getName());
             }
@@ -94,18 +94,18 @@ public enum TotemPopManager implements Manager {
 
         ++countPops;
 
-        if (sendCountPops && pvp.isOn())
+        if (sendCountPops && pvp.isEnabled())
             MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countPops + chatFormatting + " people popped!");
 
         if (playerPopCount.get(entityName) == null) {
             playerPopCount.put(entityName, 1);
-            if (sendMsgs && pvp.isOn())
+            if (sendMsgs && pvp.isEnabled())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + 1 + chatFormatting + " totem!");
         } else {
             int popCounter = playerPopCount.get(entityName) + 1;
 
             playerPopCount.put(entityName, popCounter);
-            if (sendMsgs && pvp.isOn())
+            if (sendMsgs && pvp.isEnabled())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + popCounter + chatFormatting + " totems!");
         }
     });

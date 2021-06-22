@@ -187,10 +187,10 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         return yawDiff != 0.0D || pitchDiff != 0.0D;
     }
 
-    PlayerTweaks vel = ModuleManager.getModule(PlayerTweaks.class);
     @Inject(method="pushOutOfBlocks", at=@At(value="HEAD"), cancellable=true)
     private void pushOutOfBlocksHook(double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
-        if (vel.noPushBlock.isOn())
+        PlayerTweaks vel = ModuleManager.getModule(PlayerTweaks.class);
+        if (vel.isEnabled() && vel.noPushBlock.getValue())
             cir.setReturnValue(false);
     }
 }

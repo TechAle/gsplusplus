@@ -1,21 +1,21 @@
 package com.gamesense.client.module;
 
-import com.gamesense.api.util.misc.ReflectionUtil;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 
+import com.gamesense.api.util.misc.ClassUtil;
+
 public class ModuleManager {
-    
+
     private static final String modulePath = "com.gamesense.client.module.modules";
     private static final LinkedHashMap<Class<? extends Module>, Module> modulesClassMap = new LinkedHashMap<>();
     private static final LinkedHashMap<String, Module> modulesNameMap = new LinkedHashMap<>();
 
     public static void init() {
         for (Category category : Category.values()) {
-            for (Class<?> clazz : ReflectionUtil.findClassesInPath(modulePath + "." + category.toString().toLowerCase())) {
+            for (Class<?> clazz : ClassUtil.findClassesInPath(modulePath + "." + category.toString().toLowerCase())) {
 
                 if (clazz == null) continue;
 
@@ -31,7 +31,7 @@ public class ModuleManager {
         }
     }
 
-    public static void addMod(Module module) {
+    private static void addMod(Module module) {
         modulesClassMap.put(module.getClass(), module);
         modulesNameMap.put(module.getName().toLowerCase(Locale.ROOT), module);
     }

@@ -36,7 +36,7 @@ public abstract class MixinAbstractClientPlayer {
                 me = CapesModule.getUsName();
             }
 
-            if (getPlayerInfo().getGameProfile().getName().equals(me) && !capesModule.isOn())
+            if (getPlayerInfo().getGameProfile().getName().equals(me) && !capesModule.isEnabled())
                 return;
 
             if (capesModule.capeMode.getValue().equalsIgnoreCase("Old")) {
