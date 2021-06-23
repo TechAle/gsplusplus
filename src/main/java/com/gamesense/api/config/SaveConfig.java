@@ -8,6 +8,7 @@ import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.player.social.SpecialNames;
 import com.gamesense.client.GameSense;
+import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.clickgui.GuiConfig;
 import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.module.Module;
@@ -237,9 +238,8 @@ public class SaveConfig {
         JsonObject mainObject = new JsonObject();
         JsonArray friendArray = new JsonArray();
 
-        for (SpecialNames friend : SocialManager.getSpecialNames()) {
-            friendArray.add(friend.getName());
-        }
+        SocialManager.getSpecialNames().forEach(specialNames -> friendArray.add(specialNames.getName()));
+
         mainObject.add("SpecialNames", friendArray);
         String jsonString = gson.toJson(new JsonParser().parse(mainObject.toString()));
         fileOutputStreamWriter.write(jsonString);
@@ -255,9 +255,8 @@ public class SaveConfig {
         JsonObject mainObject = new JsonObject();
         JsonArray friendArray = new JsonArray();
 
-        for (Friend friend : SocialManager.getFriends()) {
-            friendArray.add(friend.getName());
-        }
+        SocialManager.getFriends().forEach(friend -> friendArray.add(friend.getName()));
+
         mainObject.add("Friends", friendArray);
         String jsonString = gson.toJson(new JsonParser().parse(mainObject.toString()));
         fileOutputStreamWriter.write(jsonString);
@@ -273,9 +272,8 @@ public class SaveConfig {
         JsonObject mainObject = new JsonObject();
         JsonArray enemyArray = new JsonArray();
 
-        for (Enemy enemy : SocialManager.getEnemies()) {
-            enemyArray.add(enemy.getName());
-        }
+        SocialManager.getEnemies().forEach(enemy -> enemyArray.add(enemy.getName()));
+
         mainObject.add("Enemies", enemyArray);
         String jsonString = gson.toJson(new JsonParser().parse(mainObject.toString()));
         fileOutputStreamWriter.write(jsonString);
@@ -284,7 +282,7 @@ public class SaveConfig {
 
     private static void saveClickGUIPositions() throws IOException {
         registerFiles(mainName, "ClickGUI");
-        GameSense.INSTANCE.gameSenseGUI.gui.saveConfig(new GuiConfig(fileName + mainName));
+        GameSenseGUI.gui.saveConfig(new GuiConfig(fileName + mainName));
     }
 
     private static void saveAutoGG() throws IOException {
@@ -296,9 +294,8 @@ public class SaveConfig {
         JsonObject mainObject = new JsonObject();
         JsonArray messageArray = new JsonArray();
 
-        for (String autoGG : AutoGG.getAutoGgMessages()) {
-            messageArray.add(autoGG);
-        }
+        AutoGG.getAutoGgMessages().forEach(messageArray::add);
+
         mainObject.add("Messages", messageArray);
         String jsonString = gson.toJson(new JsonParser().parse(mainObject.toString()));
         fileOutputStreamWriter.write(jsonString);

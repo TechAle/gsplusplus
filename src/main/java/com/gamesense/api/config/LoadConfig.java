@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.font.CFontRenderer;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.client.GameSense;
+import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.clickgui.GuiConfig;
 import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.module.Module;
@@ -362,7 +363,7 @@ public class LoadConfig {
     }
 
     private static void loadClickGUIPositions() throws IOException {
-        GameSense.INSTANCE.gameSenseGUI.gui.loadConfig(new GuiConfig(fileName + mainName));
+        GameSenseGUI.gui.loadConfig(new GuiConfig(fileName + mainName));
     }
 
     private static void loadAutoGG() throws IOException {

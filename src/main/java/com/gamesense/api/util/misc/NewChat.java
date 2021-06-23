@@ -2,6 +2,7 @@ package com.gamesense.api.util.misc;
 
 
 import com.gamesense.api.setting.values.ColorSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
@@ -31,7 +32,7 @@ import java.util.List;
 @SideOnly(Side.CLIENT)
 public class NewChat extends GuiNewChat {
 
-    ChatModifier chatModifier = ModuleManager.getModule(ChatModifier.class);
+    final ChatModifier chatModifier = ModuleManager.getModule(ChatModifier.class);
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final Minecraft mc;
@@ -134,7 +135,8 @@ public class NewChat extends GuiNewChat {
                                 int i2 = 0;
                                 int j2 = -i1 * 9;
                                 // Draw background color
-                                drawRect(-2, j2 - 9, i2 + k + 4, j2, new GSColor(chatModifier.backColor.getValue(), chatModifier.alphaColor.getValue()).getRGB());
+                                drawRect(-2, j2 - 9, i2 + k + 4, j2,
+                                        getColorAlpha(chatModifier.backColor, chatModifier.alphaColor));
                                 String s = chatline.getChatComponent().getFormattedText();
                                 GlStateManager.enableBlend();
 
@@ -191,9 +193,15 @@ public class NewChat extends GuiNewChat {
                         int l3 = this.isScrolled ? 13382451 : 3355562;*/
                         // Gs custom slider
                         if (!chatModifier.hideSlider.getValue()) {
-                            drawRect(-chatModifier.sliderSpace.getValue() + chatModifier.sliderWidth.getValue(), -j3, -chatModifier.sliderSpace.getValue(), -j3 - k1,  new GSColor(chatModifier.firstColor.getValue(), chatModifier.firstAlpha.getValue()).getRGB());
-                            drawRect(-chatModifier.sliderSpace.getValue(), -j3, -chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3 - k1,  new GSColor(chatModifier.secondColor.getValue(), chatModifier.secondAlpha.getValue()).getRGB());
-                            drawRect(-chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3, -chatModifier.sliderSpace.getValue() + (-chatModifier.sliderWidth.getValue()*2), -j3 - k1,  new GSColor(chatModifier.thirdColor.getValue(), chatModifier.thirdAlpha.getValue()).getRGB());
+                            drawRect(-chatModifier.sliderSpace.getValue() + chatModifier.sliderWidth.getValue(), -j3,
+                                    -chatModifier.sliderSpace.getValue(), -j3 - k1,
+                                    getColorAlpha(chatModifier.firstColor, chatModifier.firstAlpha));
+                            drawRect(-chatModifier.sliderSpace.getValue(), -j3,
+                                    -chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(),
+                                    -j3 - k1,  getColorAlpha(chatModifier.secondColor, chatModifier.secondAlpha));
+                            drawRect(-chatModifier.sliderSpace.getValue() + -chatModifier.sliderWidth.getValue(), -j3,
+                                    -chatModifier.sliderSpace.getValue() + (-chatModifier.sliderWidth.getValue()*2),
+                                    -j3 - k1,  getColorAlpha(chatModifier.thirdColor, chatModifier.thirdAlpha));
                         }
                     }
                 }
@@ -406,7 +414,7 @@ public class NewChat extends GuiNewChat {
         StringBuilder outputstring = new StringBuilder();
 
         // The list that is going to tell us how we are going to write everything
-        ArrayList<ArrayList<String>> toWrite = new ArrayList<>();
+        List<List<String>> toWrite = new ArrayList<>();
 
         // The color
         String nowColor = "";
@@ -482,15 +490,15 @@ public class NewChat extends GuiNewChat {
             else {
                 // If friend
                 if (c == '\u2064') {
-                    nowColor = Integer.toString(-new GSColor(chatModifier.friendColor.getValue(), 255).getRGB());
+                    nowColor = Integer.toString(getColorAlpha(chatModifier.friendColor));
                     // If enemy
                 } else if (c == '\u2065') {
-                    nowColor = Integer.toString(-new GSColor(chatModifier.enemyColor.getValue(), 255).getRGB());
+                    nowColor = Integer.toString(getColorAlpha(chatModifier.enemyColor));
                     // If normal
                 } else if (c == '\u2066') {
-                    nowColor = Integer.toString(-new GSColor(chatModifier.playerColor.getValue(), 255).getRGB());
+                    nowColor = Integer.toString(getColorAlpha(chatModifier.playerColor));
                 } else if (c == '\u2067') {
-                    nowColor = Integer.toString(-new GSColor(chatModifier.timeColor.getValue(), 255).getRGB());
+                    nowColor = Integer.toString(getColorAlpha(chatModifier.timeColor));
                 } else
                 // If we had a color
                 if (before$) {
@@ -523,7 +531,7 @@ public class NewChat extends GuiNewChat {
         int multiplyHeight = chatModifier.multiplyHeight.getValue();
         double millSin = chatModifier.millSin.getValue();
         // Iterate for every string
-        for (ArrayList<String> strings : toWrite) {
+        for (List<String> strings : toWrite) {
             // Check the type of the text
             switch (strings.get(0)) {
                 // Normal text
@@ -531,23 +539,29 @@ public class NewChat extends GuiNewChat {
                     // If rainbow desync
                     if (chatModifier.desyncRainbowNormal.getValue()) {
                         // Write
-                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), chatModifier.stopDesyncNormal.getValue());
+                        temp = writeDesync(strings.get(1), width, x, y, rainbowColor, rainbowDesyncSmooth,
+                                heightSin, multiplyHeight, millSin, isCustom,
+                                getColorAlpha(chatModifier.normalColor), chatModifier.stopDesyncNormal.getValue());
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
                         // Else, customColor
-                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.normalColor.getValue(), 255).getRGB(), isCustom);
+                        width += writeCustom(strings.get(1), width, x, y, getColorAlpha(chatModifier.normalColor), isCustom);
                     break;
                 // If special
                 case "\u200Especial":
                     // If rainbow desync
                     if (chatModifier.desyncRainbowSpecial.getValue()) {
-                        temp = writeDesync(strings.get(1).replace("\u2063", ""), width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight, millSin, isCustom, -new GSColor(chatModifier.specialColor.getValue(), 255).getRGB(), chatModifier.stopDesyncSpecial.getValue());
+                        temp = writeDesync(strings.get(1).replace("\u2063", ""),
+                                width, x, y, rainbowColor, rainbowDesyncSmooth, heightSin, multiplyHeight,
+                                millSin, isCustom, getColorAlpha(chatModifier.specialColor),
+                                chatModifier.stopDesyncSpecial.getValue());
                         width = temp[0];
                         rainbowColor = temp[1];
                     } else
                         // Else, custom
-                        width += writeCustom(strings.get(1), width, x, y, -new GSColor(chatModifier.specialColor.getValue(), 255).getRGB(), isCustom);
+                        width += writeCustom(strings.get(1), width, x, y,
+                                getColorAlpha(chatModifier.specialColor), isCustom);
                     break;
                 default:
                     // Write custom with the color in input
@@ -558,55 +572,63 @@ public class NewChat extends GuiNewChat {
 
     }
 
+    int getColorAlpha(ColorSetting startColor) {
+        return -new GSColor(startColor.getValue(), 255).getRGB();
+    }
+
+    int getColorAlpha(ColorSetting startColor, IntegerSetting alpha) {
+        return new GSColor(startColor.getValue(), alpha.getValue()).getRGB();
+    }
+
     private int getIntFromat(char value) {
         switch (value) {
             // aqua
             case 'b':
-                return -new GSColor(chatModifier.aqua.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.aqua);
             // purple
             case 'd':
-                return -new GSColor(chatModifier.purple.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.purple);
             // Dark purple
             case '5':
-                return -new GSColor(chatModifier.dark_purple.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_purple);
             // Blue
             case '9':
-                return -new GSColor(chatModifier.blue.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.blue);
             // Gray
             case '7':
-                return -new GSColor(chatModifier.gray.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.gray);
             // Dark Aqua
             case '3':
-                return -new GSColor(chatModifier.dark_aqua.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_aqua);
             // Dark Blue
             case '1':
-                return -new GSColor(chatModifier.dark_blue.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_blue);
             // Yellow
             case 'e':
-                return -new GSColor(chatModifier.yellow.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.yellow);
             // Red
             case 'c':
-                return-new GSColor(chatModifier.red.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.red);
             // Green
             case 'a':
-                return -new GSColor(chatModifier.green.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.green);
             // Dark Gray
             case '8':
-                return -new GSColor(chatModifier.dark_gray.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_gray);
             // Gold
             case '6':
-                return -new GSColor(chatModifier.gold.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.gold);
             // Dark Red
             case '4':
-                return -new GSColor(chatModifier.dark_red.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_red);
             // Dark Green
             case '2':
-                return -new GSColor(chatModifier.dark_green.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.dark_green);
             // Black
             case '0':
-                return -new GSColor(chatModifier.black.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.black);
             default:
-                return -new GSColor(chatModifier.white.getValue(), 255).getRGB();
+                return getColorAlpha(chatModifier.white);
         }
 
     }

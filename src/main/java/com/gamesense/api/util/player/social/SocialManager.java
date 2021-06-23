@@ -1,6 +1,9 @@
 package com.gamesense.api.util.player.social;
 
+import com.gamesense.client.module.modules.combat.PistonCrystal;
+
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class SocialManager {
 
@@ -35,62 +38,66 @@ public class SocialManager {
     }
 
     public static boolean isFriend(String name) {
-        boolean value = false;
 
         for (Friend friend : getFriends()) {
             if (friend.getName().equalsIgnoreCase(name)) {
-                value = true;
-                break;
+                return true;
             }
         }
 
-        return value;
+        return false;
     }
 
     public static boolean isEnemy(String name) {
-        boolean value = false;
 
         for (Enemy enemy : getEnemies()) {
             if (enemy.getName().equalsIgnoreCase(name)) {
-                value = true;
-                break;
+                return true;
             }
         }
 
-        return value;
+        return false;
     }
 
     public static boolean isSpecial(String name) {
-        boolean value = false;
 
         for (SpecialNames enemy : getSpecialNames()) {
             if (enemy.getName().equalsIgnoreCase(name)) {
-                value = true;
-                break;
+                return true;
             }
         }
 
-        return value;
+        return false;
     }
 
     public static Friend getFriend(String name) {
-        return getFriends().stream().filter(friend -> friend.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+
+        for(Friend friend : getFriends())
+            if (friend.getName().equalsIgnoreCase(name))
+                return friend;
+        return null;
     }
 
     public static Enemy getEnemy(String name) {
-        return getEnemies().stream().filter(enemy -> enemy.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+
+        for(Enemy enemy : getEnemies())
+            if (enemy.getName().equalsIgnoreCase(name))
+                return enemy;
+        return null;
+
     }
 
     public static SpecialNames getSpecialNames(String name) {
-        return getSpecialNames().stream().filter(enemy -> enemy.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        for(SpecialNames specialNames : getSpecialNames())
+            if (specialNames.getName().equalsIgnoreCase(name))
+                return specialNames;
+        return null;
     }
 
     public static ArrayList<String> getSpecialNamesString() {
         ArrayList<String> out = new ArrayList<>();
         try {
-            for (SpecialNames name : getSpecialNames()) {
-                out.add(name.getName());
-            }
+            getSpecialNames().forEach(name -> out.add(name.getName()));
         }catch (OutOfMemoryError ignored) {
 
         }

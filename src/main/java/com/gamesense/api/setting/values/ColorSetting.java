@@ -26,9 +26,13 @@ public class ColorSetting extends Setting<GSColor> {
 
     @Override
     public GSColor getValue() {
-        if (rainbow) return this.getRainbowColor(0, 0, 0, false);
+        if (rainbow) return getRainbowColor(0, 0, 0, false);
         else return super.getValue();
     }
+
+    /*
+    This is a fucking mess -TechAle
+     */
 
     public static GSColor getRainbowColor(int incr, int multiply, int start, boolean stop) {
         return GSColor.fromHSB((((stop ? start : System.currentTimeMillis()) + incr * multiply) % (360 * 32)) / (360f * 32), 1, 1);
@@ -56,16 +60,6 @@ public class ColorSetting extends Setting<GSColor> {
 
     public static GSColor getRainbowCoTan(int incr, int multiply, double height, int multiplyHeight, double millSin, int start, boolean stop) {
         return GSColor.fromHSB((float) ((height * multiplyHeight * Math.tan((((stop ? start : System.currentTimeMillis()) + (incr / millSin) * multiply) % (360 * 32)) / (360f * 32)))), 1, 1);
-    }
-
-    public int toInteger() {
-        return getValue().getRGB() & 0xFFFFFF + (this.rainbow ? 1 : 0) * 0x1000000;
-    }
-
-    public void fromInteger(int number) {
-        this.rainbow = ((number & 0x1000000) != 0);
-
-        super.setValue(this.rainbow ? GSColor.fromHSB((System.currentTimeMillis() % (360 * 32)) / (360f * 32), 1, 1) : new GSColor(number & 0xFFFFFF));
     }
 
     @Override
