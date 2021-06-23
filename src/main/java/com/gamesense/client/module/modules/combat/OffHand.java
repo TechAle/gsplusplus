@@ -47,7 +47,7 @@ public class OffHand extends Module {
     IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20);
     IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30);
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10);
-    IntegerSetting startingBiasDamage= registerInteger("Starting Bias Damage", 22, 0, 36);
+    IntegerSetting startingBiasDamage= registerInteger("Bias Health", 22, 0, 36);
     DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3);
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30);
     BooleanSetting pickObby = registerBoolean("Pick Obby", false);
