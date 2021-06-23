@@ -9,12 +9,14 @@ import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.BlockAir;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.network.play.client.CPacketPlayerDigging;
@@ -41,6 +43,7 @@ public class BreakESP extends Module {
     IntegerSetting lineWidth = registerInteger("Width", 1, 0, 5);
     IntegerSetting range = registerInteger("Range", 100, 1, 200);
     IntegerSetting tickPacket = registerInteger("Tick Packet", 50, 0, 200);
+    IntegerSetting stillRender = registerInteger("Still Render", 20, 0, 500);
     BooleanSetting cancelAnimation = registerBoolean("No Animation", true);
     BooleanSetting showPercentage = registerBoolean("Show Percentage", false);
     BooleanSetting showPacket = registerBoolean("Show possible packet mine", false);
@@ -110,14 +113,22 @@ public class BreakESP extends Module {
                BlockPos temp = (BlockPos) possiblePacket.get(i).get(0);
                int tick = (int) possiblePacket.get(i).get(1);
 
-               if (!displayed.contains(temp)) {
-                   AxisAlignedBB axisAlignedBB = mc.world.getBlockState(temp).getSelectedBoundingBox(mc.world, temp);
-                   renderESP(axisAlignedBB, tick, tick == tickPacket.getValue() ? colorReady.getColor() : colorNotReady.getValue(), tickPacket.getValue());
-                   if (showPercentage.getValue())
-                       showPercentage(temp, new String[]{String.format("%.02f%%", (float) tick / tickPacket.getValue() * 100)});
-               } else possiblePacket.get(i).set(1, ++tick);
+               if (BlockUtil.getBlock(temp) instanceof BlockAir) {
+                   possiblePacket.remove(i);
+                   i--;
+                   continue;
+               }
 
-               if (++tick > tickPacket.getValue()) {
+               if (!displayed.contains(temp)) {
+                   if (temp.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= range.getValue()) {
+                       AxisAlignedBB axisAlignedBB = mc.world.getBlockState(temp).getSelectedBoundingBox(mc.world, temp);
+                       renderESP(axisAlignedBB, tick >= tickPacket.getValue() ? tickPacket.getValue() : tick,
+                               tick > tickPacket.getValue() ? colorReady.getColor() : colorNotReady.getValue(), tickPacket.getValue());
+                       if (showPercentage.getValue())
+                           showPercentage(temp, new String[]{String.format("%.02f%%", (float) (tick >= tickPacket.getValue() ? tickPacket.getValue() : tick) / tickPacket.getValue() * 100)});
+                   }
+               } else possiblePacket.get(i).set(1, ++tick);
+               if (++tick > tickPacket.getValue() + stillRender.getValue() ) {
                    possiblePacket.remove(i);
                    i--;
                } else possiblePacket.get(i).set(1, tick);
