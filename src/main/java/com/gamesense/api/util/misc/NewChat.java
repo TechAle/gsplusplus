@@ -32,7 +32,6 @@ import java.util.List;
 public class NewChat extends GuiNewChat {
 
     ChatModifier chatModifier = ModuleManager.getModule(ChatModifier.class);
-    ColorMain colorMain = ModuleManager.getModule(ColorMain.class);
 
     private static final Logger LOGGER = LogManager.getLogger();
     private final Minecraft mc;
@@ -70,7 +69,7 @@ public class NewChat extends GuiNewChat {
         // type custom use a different count, normally dey use the date of the machine, custom use a double
         if (!chatModifier.stopDesyncSpecial.getValue())
             count += chatModifier.customAdd.getValue() * chatModifier.customMultiply.getValue();
-        boolean customText = colorMain.textFont.getValue();
+        boolean customText = ModuleManager.getModule(ColorMain.class).textFont.getValue();
         if (configuring) return;
         // Y position for down animation
         if (prevMillis == -1) {
