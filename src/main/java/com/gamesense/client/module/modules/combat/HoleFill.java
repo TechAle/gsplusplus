@@ -17,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 @Module.Declaration(name = "HoleFill", category = Category.Combat)
 public class HoleFill extends Module {
 
-    ModeSetting mode = registerMode("Type", Arrays.asList("Obby", "Echest", "Both", "Web", "Plate"), "Obby");
+    ModeSetting mode = registerMode("Type", Arrays.asList("Obby", "Echest", "Both", "Web", "Plate", "Skull"), "Obby");
     IntegerSetting placeDelay = registerInteger("Delay", 2, 0, 10);
     IntegerSetting retryDelay = registerInteger("Retry Delay", 10, 0, 50);
     IntegerSetting bpc = registerInteger("Block pre Cycle", 2, 1, 5);
@@ -78,6 +79,13 @@ public class HoleFill extends Module {
         }
 
     }
+
+    private final ArrayList<EnumFacing> exd = new ArrayList<EnumFacing>() {
+        {
+            add(EnumFacing.DOWN);
+            add(EnumFacing.UP);
+        }
+    };
 
     public void onDisable() {
         PlacementUtil.onDisable();
@@ -209,7 +217,9 @@ public class HoleFill extends Module {
             }
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), !SilentSwitch.getValue());
+        return mode.getValue().equalsIgnoreCase("skull") ?
+                PlacementUtil.place(pos, handSwing, rotate.getValue(), exd)
+                :PlacementUtil.place(pos, handSwing, rotate.getValue(), !SilentSwitch.getValue());
     }
 
     private List<BlockPos> findHoles() {
@@ -244,6 +254,9 @@ public class HoleFill extends Module {
             }
             case "Plate": {
                 return InventoryUtil.findFirstBlockSlot(BlockPressurePlate.class, 0, 8);
+            }
+            case "Skull": {
+                return InventoryUtil.findSkullSlot(false, false);
             }
             default: {
                 return -1;

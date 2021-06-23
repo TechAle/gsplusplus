@@ -99,9 +99,10 @@ public class BreakESP extends Module {
 
                     int progress = destroyBlockProgress.getPartialBlockDamage();
                     AxisAlignedBB axisAlignedBB = mc.world.getBlockState(blockPos).getSelectedBoundingBox(mc.world, blockPos);
-                    renderESP(axisAlignedBB, progress, progress == 8 ? colorReady.getColor() : colorNotReady.getValue(), 8);
+                    renderESP(axisAlignedBB, progress, progress >= 8 ? colorReady.getColor() : colorNotReady.getValue(), 8);
+                    float temp;
                     if (showPercentage.getValue())
-                        showPercentage(blockPos, new String[]{String.format("%.02f%%", (float) progress / 2 * 25)});
+                        showPercentage(blockPos, new String[]{String.format("%.02f%%", (temp = (float) progress / 2 * 25) >= 100 ? 100 : temp)});
                 }
             }
         });

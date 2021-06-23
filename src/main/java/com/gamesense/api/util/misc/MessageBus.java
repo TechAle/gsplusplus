@@ -27,8 +27,7 @@ public class MessageBus {
         ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
         TextComponentString string1 = new TextComponentString(
                 (   chat.isEnabled() &&
-                        chat.watermarkSpecial.getValue() ? "\u2063" : "")
-                        + watermark
+                        chat.watermarkSpecial.getValue() ? "\u2063[gs++]" : watermark)
                         + messageFormatting + message);
         TextComponentString string2 = new TextComponentString(messageFormatting + message);
 
