@@ -133,7 +133,7 @@ public class HoleESP extends Module {
                 break;
             }
             case "Both": {
-                if (mc.world.rayTraceBlocks(hole.getCenter(), new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight() + 1, mc.player.posZ)) == null)
+                if ( fillRaytrace.getValue() && mc.world.rayTraceBlocks(hole.getCenter(), new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight() + 1, mc.player.posZ)) == null)
                     renderFill(hole, color);
                 renderOutline(hole, color);
                 break;
