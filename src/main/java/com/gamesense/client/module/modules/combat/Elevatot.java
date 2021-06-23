@@ -11,6 +11,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.*;
@@ -1053,6 +1054,13 @@ public class Elevatot extends Module {
         }
 
         return addedStructure.to_place != null;
+    }
+
+    public String getHudInfo() {
+        String temp = "";
+        if (!(temp = aimTarget.getGameProfile().getName()).equalsIgnoreCase(""))
+            return "[" + ChatFormatting.WHITE + temp + ChatFormatting.GRAY + "]";
+        return "";
     }
 
 }

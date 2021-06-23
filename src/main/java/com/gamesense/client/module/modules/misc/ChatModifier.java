@@ -151,13 +151,14 @@ public class ChatModifier extends Module {
                 String name = output.getUnformattedText().split(" ")[0];
                 // Add his special color
                 output = new TextComponentString((
-                        isFriend(name) ? (specialFriend.getValue() ?
+                        isFriend(name) ? (
+                                specialFriend.getValue() ?
                                 "\u2063" : "\u2064") :
-                                isEnemy(name) ? "\u2065" :
-                                        // he is normal
-                                        "\u2066"
+                        isEnemy(name) ?  // he is normal
+                                "\u2065" :"\u2066"
                 )
-                        + name + ChatFormatting.RESET + output.getFormattedText().substring(output.getFormattedText().split(" ")[0].length()));
+                        + name + ChatFormatting.RESET +
+                        output.getFormattedText().substring(output.getFormattedText().split(" ")[0].length()));
             }
             // If we have to add the time
             if (chatTimeStamps.getValue()) {

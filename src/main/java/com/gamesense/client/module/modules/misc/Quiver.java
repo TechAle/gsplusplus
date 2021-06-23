@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.misc;
 
+import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.client.resources.I18n;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -74,6 +75,7 @@ public class Quiver extends Module {
             hasBow,
             isPowering,
             isFirst;
+    String arrow = "";
 
     boolean isMoving() {
         return Math.abs(mc.player.motionX) + Math.abs(mc.player.motionZ) > 0.01;
@@ -111,6 +113,7 @@ public class Quiver extends Module {
         firstWait = secondWait = 0;
         endWait = 0;
         oldslot = slotCheck = -1;
+        arrow = "";
     }
 
     boolean playerCheck() {
@@ -156,9 +159,9 @@ public class Quiver extends Module {
             case "none":
                 return true;
             case "moving":
-                return isMoving == false;
+                return !isMoving;
             case "stand":
-                return isMoving == true;
+                return isMoving;
             default:
                 return false;
         }
@@ -267,6 +270,7 @@ public class Quiver extends Module {
             // Reset some values
             slot = new int[] {-1, -1};
             isPowering = false;
+            arrow = "";
             // Add new wait
             endWait = tickWaitEnd.getValue();
             if (isFirst) {
@@ -336,6 +340,7 @@ public class Quiver extends Module {
 
     // Check if we already have that effect
     boolean haveEffect(String wanted) {
+        arrow = wanted;
         // Iterate for every effects
         for(int i = 0; i < mc.player.getActivePotionEffects().toArray().length; i++) {
             // Get it
@@ -350,6 +355,12 @@ public class Quiver extends Module {
                 return true;
         }
         return false;
+    }
+
+    public String getHudInfo() {
+        if (!arrow.equals(""))
+            return "[" + ChatFormatting.WHITE + arrow + ChatFormatting.GRAY + "]";
+        return "";
     }
 
 }
