@@ -81,7 +81,7 @@ public class DiscordRPCModule extends Module {
 
     int curImg = -1;
     ModeSetting imgType = registerMode("Image", Arrays.asList("gs++", "insigna", "luk"), "gs++");
-    ModeSetting lowImg = registerMode("Low Img", Arrays.asList("none", "nocatsnolife", "sable__", "phantom826", "doogie13", "soulbond", "anonymousplayer", "hoosier"), "none");
+    ModeSetting lowImg = registerMode("Low Img", Arrays.asList("none", "nocatsnolife", "sable__", "phantom826", "doogie13", "soulbond", "anonymousplayer", "hoosier", "toxicaven"), "none");
     BooleanSetting animateGs = registerBoolean("Animated gs++", true);
     IntegerSetting msChange = registerInteger("Image Change", 2000, 250, 5000);
     ModeSetting timeDisplay = registerMode("Display Time", Arrays.asList("Linear", "Reverse", "None"), "Linear");
