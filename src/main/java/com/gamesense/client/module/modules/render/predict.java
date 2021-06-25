@@ -14,7 +14,6 @@ import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
-import com.gamesense.test.EntityPositionsProvider;
 import com.mojang.authlib.GameProfile;
 import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -38,7 +37,11 @@ public class predict extends Module {
 
     IntegerSetting range = registerInteger("Range", 10,0, 100);
     IntegerSetting tickPredict = registerInteger("Tick Predict", 2, 0, 30);
-    IntegerSetting decreaseY = registerInteger("Decrease Y", 1, 1, 5);
+    IntegerSetting startDecrease = registerInteger("Start Decrease", 80, 0, 150);
+    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5);
+    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3);
+    IntegerSetting increaseY = registerInteger("Increase Y", 1, 1, 5);
+    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 1, 1, 3);
     BooleanSetting splitXZ = registerBoolean("Split XZ", true);
     BooleanSetting hideSelf = registerBoolean("Hide Self", false);
     IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
@@ -63,6 +66,8 @@ public class predict extends Module {
             double motionX = entity.motionX;
             double motionY = entity.motionY;
             double motionZ = entity.motionZ;
+            double befY = -1000;
+            boolean goingUp = false;
             for(int i = 0; i < tickPredict.getValue(); i++) {
                 RayTraceResult result;
                 if (splitXZ.getValue()) {
@@ -89,11 +94,34 @@ public class predict extends Module {
                     }
                 }
 
+
                 newPosVec[1] += motionY;
                 result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], newPosVec[1], newPosVec[2]));
                 if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
                     posVec = newPosVec.clone();
-                    motionY -= 10/decreaseY.getValue();
+
+                     if (befY != -1001) {
+                        if (befY == -1000)
+                            befY = motionY;
+                        else {
+                            if (befY != motionY) {
+                                goingUp = motionY > befY;
+                                befY = -1001;
+                            }
+                        }
+                    } else {
+                        if (goingUp && motionY > startDecrease.getValue() / 100)
+                            goingUp = false;
+                        else {
+                            motionY += goingUp ?
+                                    increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue())
+                                    : -decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                        }
+                    }
+                } else {
+                    if (befY == -1001 && !goingUp) {
+                        goingUp = true;
+                    }
                 }
 
 
