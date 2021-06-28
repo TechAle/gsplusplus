@@ -38,7 +38,7 @@ public class predict extends Module {
     IntegerSetting range = registerInteger("Range", 10,0, 100);
     IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30);
     BooleanSetting calculateYPredict = registerBoolean("Calculate Y Predict", true);
-    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 100);
+    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200);
     IntegerSetting expnentStartDecrease = registerInteger("Exponent Start", 2, 1, 5);
     IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5);
     IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3);
@@ -60,9 +60,9 @@ public class predict extends Module {
             // This is likely a temp variable that is going to replace posVec
             double[] newPosVec = posVec.clone();
             // entity motions
-            double motionX = entity.motionX;
-            double motionY = entity.motionY;
-            double motionZ = entity.motionZ;
+            double motionX = entity.posX - entity.prevPosX;
+            double motionY = entity.posY - entity.prevPosY;
+            double motionZ = entity.posZ - entity.prevPosZ;
             // Y Prediction stuff
             boolean goingUp = false;
             boolean start = true;
@@ -142,16 +142,16 @@ public class predict extends Module {
                             PistonCrystal.printDebug("Start motionY: " + motionY, false);
                     }
                     // Lets just add values to our motionY
-                    motionY += goingUp ? increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()) : -decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                    motionY += goingUp ? increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()) : decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
                     // If the motionY is going too far, go down
                     if (Math.abs(motionY) > startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue())) {
                         goingUp = false;
                         if (debug.getValue())
                             up++;
-                        motionY = -decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                        motionY = decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
                     }
                     // Lets add motionY
-                    newPosVec[1] += motionY;
+                    newPosVec[1] += (goingUp ? 1 : -1) * motionY;
                     // Get result
                     result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]),
                             new Vec3d(newPosVec[0], newPosVec[1], newPosVec[2]));
