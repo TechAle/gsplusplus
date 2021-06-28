@@ -5,6 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
+import java.util.function.Supplier;
 
 import me.zero.alpine.listener.Listenable;
 import org.lwjgl.input.Keyboard;
@@ -164,14 +165,35 @@ public abstract class Module implements Listenable {
         return integerSetting;
     }
 
+    protected IntegerSetting registerInteger(String name, int value, int min, int max, Supplier<Boolean> dipendent) {
+        IntegerSetting integerSetting = new IntegerSetting(name, this, value, min, max);
+        integerSetting.setVisible(dipendent);
+        SettingsManager.addSetting(integerSetting);
+        return integerSetting;
+    }
+
     protected DoubleSetting registerDouble(String name, double value, double min, double max) {
         DoubleSetting doubleSetting = new DoubleSetting(name, this, value, min, max);
         SettingsManager.addSetting(doubleSetting);
         return doubleSetting;
     }
 
+    protected DoubleSetting registerDouble(String name, double value, double min, double max, Supplier<Boolean> dipendent) {
+        DoubleSetting doubleSetting = new DoubleSetting(name, this, value, min, max);
+        doubleSetting.setVisible(dipendent);
+        SettingsManager.addSetting(doubleSetting);
+        return doubleSetting;
+    }
+
     protected BooleanSetting registerBoolean(String name, boolean value) {
-        BooleanSetting booleanSetting = new BooleanSetting(name, this, value);
+        BooleanSetting booleanSetting = new BooleanSetting(name, this,value);
+        SettingsManager.addSetting(booleanSetting);
+        return booleanSetting;
+    }
+
+    protected BooleanSetting registerBoolean(String name, boolean value, Supplier<Boolean> dipendent) {
+        BooleanSetting booleanSetting = new BooleanSetting(name, this,value);
+        booleanSetting.setVisible(dipendent);
         SettingsManager.addSetting(booleanSetting);
         return booleanSetting;
     }
@@ -182,13 +204,33 @@ public abstract class Module implements Listenable {
         return modeSetting;
     }
 
+    protected ModeSetting registerMode(String name, List<String> modes, String value, Supplier<Boolean> dipendent) {
+        ModeSetting modeSetting = new ModeSetting(name, this, value, modes);
+        modeSetting.setVisible(dipendent);
+        SettingsManager.addSetting(modeSetting);
+        return modeSetting;
+    }
+
     protected ColorSetting registerColor(String name, GSColor color) {
         ColorSetting colorSetting = new ColorSetting(name, this, false, color);
         SettingsManager.addSetting(colorSetting);
         return colorSetting;
     }
 
+    protected ColorSetting registerColor(String name, GSColor color, Supplier<Boolean> dipendent) {
+        ColorSetting colorSetting = new ColorSetting(name, this, false, color);
+        colorSetting.setVisible(dipendent);
+        SettingsManager.addSetting(colorSetting);
+        return colorSetting;
+    }
+
     protected ColorSetting registerColor(String name) {
         return registerColor(name, new GSColor(90, 145, 240));
+    }
+
+    protected ColorSetting registerColor(String name, Supplier<Boolean> dipendent) {
+        ColorSetting color = registerColor(name, new GSColor(90, 145, 240));
+        color.setVisible(dipendent);
+        return color;
     }
 }

@@ -1,6 +1,9 @@
 package com.gamesense.api.setting;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.gamesense.client.module.Module;
 
@@ -10,7 +13,8 @@ public abstract class Setting<T> {
     private final String name;
     private final String configName;
     private final Module module;
-    private final Supplier<Boolean> isVisible;
+    private Supplier<Boolean> isVisible;
+    private final List<Setting<?>> subSettings=new ArrayList<Setting<?>>();
 
     public Setting(T value, String name, String configName, Module module, Supplier<Boolean> isVisible) {
         this.value = value;
@@ -18,6 +22,10 @@ public abstract class Setting<T> {
         this.configName = configName;
         this.module = module;
         this.isVisible = isVisible;
+    }
+
+    public void setVisible(Supplier<Boolean> vis) {
+        this.isVisible = vis;
     }
     
     public Setting(T value, String name, Module module) {
@@ -46,5 +54,13 @@ public abstract class Setting<T> {
     
     public boolean isVisible() {
     	return isVisible.get();
+    }
+
+    public Stream<Setting<?>> getSubSettings() {
+    	return subSettings.stream();
+    }
+
+    public void addSubSetting (Setting<?> setting) {
+    	subSettings.add(setting);
     }
 }
