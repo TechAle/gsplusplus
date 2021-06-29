@@ -50,7 +50,7 @@ public class AutoTrap extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
-    private boolean isSneaking = false;
+    int secureSilentSwitch = -1;
     boolean hasPlaced;
 
     public void onEnable() {
@@ -61,6 +61,7 @@ public class AutoTrap extends Module {
         }
 
         oldSlot = mc.player.inventory.currentItem;
+        secureSilentSwitch = -1;
     }
 
     public void onDisable() {
@@ -209,6 +210,7 @@ public class AutoTrap extends Module {
         if (mc.player.inventory.currentItem != targetBlockSlot && targetBlockSlot != 9) {
             if (silentSwitch.getValue()) {
                 if (!hasPlaced) {
+                    secureSilentSwitch = mc.player.inventory.currentItem;
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
                     hasPlaced = true;
                 }
@@ -216,6 +218,6 @@ public class AutoTrap extends Module {
                 mc.player.inventory.currentItem = targetBlockSlot;
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), silentSwitch.getValue());
+        return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
 }

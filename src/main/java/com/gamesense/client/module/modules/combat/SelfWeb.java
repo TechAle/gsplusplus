@@ -189,6 +189,6 @@ public class SelfWeb extends Module {
                 mc.player.inventory.currentItem = targetBlockSlot;
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), silentSwitch.getValue());
+        return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
 }
