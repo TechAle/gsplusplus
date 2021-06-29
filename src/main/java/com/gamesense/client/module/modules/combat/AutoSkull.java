@@ -320,7 +320,7 @@ public class AutoSkull extends Module {
                     }
 
                     // If phase
-                    if (phase.getValue()) {
+                    if (phase.getValue() && (mc.player.posY > 1)) {
                         // Active it
                         toPhase = true;
                         stage = 0;
