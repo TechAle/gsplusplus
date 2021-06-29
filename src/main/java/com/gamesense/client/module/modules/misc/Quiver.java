@@ -58,7 +58,7 @@ public class Quiver extends Module {
     ModeSetting firstArrow = registerMode("First Arrow", Arrays.asList(arrowType.toArray(new String[0])), "strength");
     ModeSetting disableFirst = registerMode("Disable First", Arrays.asList(disableWhen.toArray(new String[0])), "none");
     ModeSetting secondArrow = registerMode("Second Arrow", Arrays.asList(arrowType.toArray(new String[0])), "none");
-    ModeSetting disableSecond = registerMode("Disable Second", Arrays.asList(disableWhen.toArray(new String[0])), "none");
+    ModeSetting disableSecond = registerMode("Disable Second", Arrays.asList(disableWhen.toArray(new String[0])), "none", () -> !secondArrow.getValue().equals("none"));
     ModeSetting active = registerMode("Active", Arrays.asList("On Bow", "Switch"), "On Bow");
     IntegerSetting pitchMoving = registerInteger("Pitch Moving", -45, 0, -70);
     IntegerSetting standDrawLength = registerInteger("Stand Draw Length", 4, 0, 21);

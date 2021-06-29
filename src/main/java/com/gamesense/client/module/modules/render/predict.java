@@ -38,12 +38,12 @@ public class predict extends Module {
     IntegerSetting range = registerInteger("Range", 10,0, 100);
     IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30);
     BooleanSetting calculateYPredict = registerBoolean("Calculate Y Predict", true);
-    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200);
-    IntegerSetting expnentStartDecrease = registerInteger("Exponent Start", 2, 1, 5);
-    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5);
-    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3);
-    IntegerSetting increaseY = registerInteger("Increase Y", 3, 1, 5);
-    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3);
+    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200, () -> calculateYPredict.getValue());
+    IntegerSetting expnentStartDecrease = registerInteger("Exponent Start", 2, 1, 5, () -> calculateYPredict.getValue());
+    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5, () -> calculateYPredict.getValue());
+    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3, () -> calculateYPredict.getValue());
+    IntegerSetting increaseY = registerInteger("Increase Y", 3, 1, 5, () -> calculateYPredict.getValue());
+    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3, () -> calculateYPredict.getValue());
     BooleanSetting splitXZ = registerBoolean("Split XZ", true);
     BooleanSetting hideSelf = registerBoolean("Hide Self", false);
     IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
@@ -124,53 +124,54 @@ public class predict extends Module {
                     i think this y prediction is usefull for detecting, in short distance, if we are going up or down
                     on a block
                     */
-
-                newPosVec = posVec.clone();
-                // If the enemy is not on the ground. We also be sure that it's not -0.078
-                // Because -0.078 is the motion we have when standing in a block.
-                // I dont know if we have antiHunger the server say we are onGround or not, i'll keep it here
-                if (!entity.onGround && motionY != -0.0784000015258789) {
-                    if (start) {
-                        // If it's the first time, we have to check first if our motionY is == 0.
-                        // MotionY is == 0 when we are jumping at the moment when we are going down
-                        if (motionY == 0)
-                            motionY = startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue());
-                        // Check if we are going up or down. We say > because of motionY
-                        goingUp = false ;
-                        start = false;
-                        if (debug.getValue())
-                            PistonCrystal.printDebug("Start motionY: " + motionY, false);
-                    }
-                    // Lets just add values to our motionY
-                    motionY += goingUp ? increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()) : decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
-                    // If the motionY is going too far, go down
-                    if (Math.abs(motionY) > startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue())) {
-                        goingUp = false;
-                        if (debug.getValue())
-                            up++;
-                        motionY = decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
-                    }
-                    // Lets add motionY
-                    newPosVec[1] += (goingUp ? 1 : -1) * motionY;
-                    // Get result
-                    result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]),
-                            new Vec3d(newPosVec[0], newPosVec[1], newPosVec[2]));
-
-                    if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
-                        posVec = newPosVec.clone();
-                    } else {
-                        if (!goingUp) {
-                            goingUp = true;
-                            // Add this for deleting before motion
-                            newPosVec[1] += (increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()));
-                            motionY = increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue());
-                            newPosVec[1] += motionY;
+                if (calculateYPredict.getValue()) {
+                    newPosVec = posVec.clone();
+                    // If the enemy is not on the ground. We also be sure that it's not -0.078
+                    // Because -0.078 is the motion we have when standing in a block.
+                    // I dont know if we have antiHunger the server say we are onGround or not, i'll keep it here
+                    if (!entity.onGround && motionY != -0.0784000015258789) {
+                        if (start) {
+                            // If it's the first time, we have to check first if our motionY is == 0.
+                            // MotionY is == 0 when we are jumping at the moment when we are going down
+                            if (motionY == 0)
+                                motionY = startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue());
+                            // Check if we are going up or down. We say > because of motionY
+                            goingUp = false;
+                            start = false;
                             if (debug.getValue())
-                                down++;
+                                PistonCrystal.printDebug("Start motionY: " + motionY, false);
                         }
+                        // Lets just add values to our motionY
+                        motionY += goingUp ? increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()) : decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                        // If the motionY is going too far, go down
+                        if (Math.abs(motionY) > startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue())) {
+                            goingUp = false;
+                            if (debug.getValue())
+                                up++;
+                            motionY = decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                        }
+                        // Lets add motionY
+                        newPosVec[1] += (goingUp ? 1 : -1) * motionY;
+                        // Get result
+                        result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]),
+                                new Vec3d(newPosVec[0], newPosVec[1], newPosVec[2]));
+
+                        if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
+                            posVec = newPosVec.clone();
+                        } else {
+                            if (!goingUp) {
+                                goingUp = true;
+                                // Add this for deleting before motion
+                                newPosVec[1] += (increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()));
+                                motionY = increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue());
+                                newPosVec[1] += motionY;
+                                if (debug.getValue())
+                                    down++;
+                            }
+                        }
+
+
                     }
-
-
                 }
 
 

@@ -42,14 +42,15 @@ public class BreakESP extends Module {
     ModeSetting renderType = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
     IntegerSetting lineWidth = registerInteger("Width", 1, 0, 5);
     IntegerSetting range = registerInteger("Range", 100, 1, 200);
-    IntegerSetting tickPacket = registerInteger("Tick Packet", 50, 0, 200);
-    IntegerSetting stillRender = registerInteger("Still Render", 20, 0, 500);
-    BooleanSetting cancelAnimation = registerBoolean("No Animation", true);
-    BooleanSetting showPercentage = registerBoolean("Show Percentage", false);
     BooleanSetting showPacket = registerBoolean("Show possible packet mine", false);
-    ColorSetting colorNotReady = registerColor("Color Not Ready", new GSColor(255, 0, 0, 255));
-    ColorSetting colorReady = registerColor("Color Ready", new GSColor(0, 255, 0, 255));
-    ColorSetting textColor  = registerColor("Text Color", new GSColor(255, 255, 255));
+    IntegerSetting tickPacket = registerInteger("Tick Packet", 50, 0, 200, () -> showPacket.getValue());
+    IntegerSetting stillRender = registerInteger("Still Render", 20, 0, 500, () -> showPacket.getValue());
+    BooleanSetting cancelAnimation = registerBoolean("No Animation", true);
+    BooleanSetting showColor = registerBoolean("Show Color", true);
+    ColorSetting colorNotReady = registerColor("Color Not Ready", new GSColor(255, 0, 0, 255), () -> showColor.getValue());
+    ColorSetting colorReady = registerColor("Color Ready", new GSColor(0, 255, 0, 255), () -> showColor.getValue());
+    BooleanSetting showPercentage = registerBoolean("Show Percentage", false);
+    ColorSetting textColor  = registerColor("Text Color", new GSColor(255, 255, 255), () -> showPercentage.getValue());
     ArrayList<ArrayList<Object>> possiblePacket = new ArrayList<>();
 
     // Fast Reset, this is on by default since well, it has no cons
@@ -99,7 +100,8 @@ public class BreakESP extends Module {
 
                     int progress = destroyBlockProgress.getPartialBlockDamage();
                     AxisAlignedBB axisAlignedBB = mc.world.getBlockState(blockPos).getSelectedBoundingBox(mc.world, blockPos);
-                    renderESP(axisAlignedBB, progress, progress >= 8 ? colorReady.getColor() : colorNotReady.getValue(), 8);
+                    if (showColor.getValue())
+                        renderESP(axisAlignedBB, progress, progress >= 8 ? colorReady.getColor() : colorNotReady.getValue(), 8);
                     float temp;
                     if (showPercentage.getValue())
                         showPercentage(blockPos, new String[]{String.format("%.02f%%", (temp = (float) progress / 2 * 25) >= 100 ? 100 : temp)});
