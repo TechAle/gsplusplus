@@ -2,7 +2,6 @@ package com.gamesense.client;
 
 import com.gamesense.api.config.LoadConfig;
 import com.gamesense.api.util.font.CFontRenderer;
-import com.gamesense.api.util.misc.VersionChecker;
 import com.gamesense.api.util.render.CapeUtil;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.command.CommandManager;
@@ -23,7 +22,7 @@ public class GameSense {
 
     public static final String MODNAME = "gs++";
     public static final String MODID = "gs++";
-    public static final String MODVER = "b2.3.2.b";
+    public static final String MODVER = "b2.3.2.c";
     /**
      * Official release starts with a "v", dev versions start with a "d" to bypass version check
      */
@@ -51,8 +50,6 @@ public class GameSense {
     public GameSenseGUI gameSenseGUI;
 
     private void startClient() {
-        VersionChecker.init();
-        LOGGER.info("Version checked!");
 
         cFontRenderer = new CFontRenderer(new Font("Verdana", Font.PLAIN, 18), true, true);
         LOGGER.info("Custom font initialized!");
