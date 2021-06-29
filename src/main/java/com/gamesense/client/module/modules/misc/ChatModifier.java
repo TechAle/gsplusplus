@@ -10,6 +10,7 @@ import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -144,6 +145,12 @@ public class ChatModifier extends Module {
         ITextComponent output = event.getMessage();
         if (fakeName.getValue())
             output = new TextComponentString(output.getFormattedText().replaceAll(mc.player.getName(), "YourName"));
+
+        if (output.getFormattedText().contains("[Abyss]")) {
+            PistonCrystal.printDebug("Ciao", false);
+            output = new TextComponentString(output.getFormattedText().substring(3));
+        }
+
         try {
             // if custom name
             if (customName.getValue()) {

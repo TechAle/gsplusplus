@@ -2,7 +2,6 @@ package com.gamesense.client.manager.managers;
 
 import com.gamesense.api.event.events.*;
 import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.misc.VersionChecker;
 import com.gamesense.api.util.player.NameUtil;
 import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.client.GameSense;
@@ -107,12 +106,6 @@ public enum ClientEventManager implements Manager {
         GameSense.EVENT_BUS.post(event);
     }
 
-    @SubscribeEvent
-    public void onEntityJoin(EntityJoinWorldEvent event) {
-        if (event.getEntity() != null && event.getEntity().equals(getPlayer()) && !VersionChecker.joinMessage.equalsIgnoreCase("None")) {
-            MessageBus.sendClientPrefixMessage(VersionChecker.joinMessage);
-        }
-    }
 
     @SuppressWarnings("unused")
     @EventHandler
