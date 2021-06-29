@@ -28,22 +28,29 @@ public class FakePlayer extends Module {
     };
 
     BooleanSetting playerStacked = registerBoolean("Player Stacked", false);
-
+    BooleanSetting onShift = registerBoolean("On Shift", false);
+    int incr;
     public void onEnable() {
+        incr = 0;
+        beforePressed = false;
         if (mc.player == null || mc.player.isDead) {
             disable();
             return;
         }
+        if (!onShift.getValue())
+        spawnPlayer();
+    }
 
-
-        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit1"));
+    void spawnPlayer() {
+        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit" + incr));
         clonedPlayer.copyLocationAndAnglesFrom(mc.player);
         clonedPlayer.rotationYawHead = mc.player.rotationYawHead;
         clonedPlayer.rotationYaw = mc.player.rotationYaw;
         clonedPlayer.rotationPitch = mc.player.rotationPitch;
         clonedPlayer.setGameType(GameType.SURVIVAL);
         clonedPlayer.setHealth(20);
-        mc.world.addEntityToWorld(-1234, clonedPlayer);
+        mc.world.addEntityToWorld((-1234 - incr), clonedPlayer);
+        incr++;
         // If enchants
         if (playerStacked.getValue()) {
             // ITerate
@@ -52,18 +59,28 @@ public class FakePlayer extends Module {
                 ItemStack item = armors[i];
                 // Add enchants
                 item.addEnchantment(
-                    i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
-                    4);
+                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                        4);
                 // Add it to the player
                 clonedPlayer.inventory.armorInventory.set(i, item);
             }
         }
         clonedPlayer.onLivingUpdate();
     }
+    boolean beforePressed;
+    @Override
+    public void onUpdate() {
+        if (onShift.getValue() && mc.gameSettings.keyBindSneak.isPressed() && !beforePressed) {
+            beforePressed = true;
+            spawnPlayer();
+        } else beforePressed = false;
+    }
 
     public void onDisable() {
         if (mc.world != null) {
-            mc.world.removeEntityFromWorld(-1234);
+            for(int i = 0; i < incr; i++) {
+                mc.world.removeEntityFromWorld((-1234 - i));
+            }
         }
     }
 }
