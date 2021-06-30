@@ -35,7 +35,7 @@ public class ACUtil {
 
         if (best != null) {
             if (bestDamage >= settings.minDamage || ((target.health <= settings.facePlaceHealth || target.lowArmour) && bestDamage >= settings.minFacePlaceDamage)) {
-                return new CrystalInfo.PlaceInfo(bestDamage, target, best);
+                return new CrystalInfo.PlaceInfo(bestDamage, target, best, 0d);
             }
         }
 

@@ -24,10 +24,12 @@ public class CrystalInfo {
 
     public static class PlaceInfo extends CrystalInfo {
         public final BlockPos crystal;
+        public final double distance;
 
-        public PlaceInfo(float damage, PlayerInfo target, BlockPos crystal) {
+        public PlaceInfo(float damage, PlayerInfo target, BlockPos crystal, double distance) {
             super(damage, target);
             this.crystal = crystal;
+            this.distance = distance;
         }
     }
 }
