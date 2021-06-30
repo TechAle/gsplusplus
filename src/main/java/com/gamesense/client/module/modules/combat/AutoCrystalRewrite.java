@@ -97,78 +97,113 @@ public class AutoCrystalRewrite extends Module {
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * 2;
-        PlayerInfo player;
+        PlayerInfo player = new PlayerInfo(mc.player, false);;
         List<List<PositionInfo>> possibleCrystals = null;
+        best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        PlayerInfo target;
         switch (mode) {
             case "Lowest":
+            case "Nearest":
+                EntityPlayer targetEP;
+                if (mode.equals("Lowest"))
+                    targetEP = getBasicPlayers().min((x, y) -> (int) x.getHealth()).orElse(null);
+                else targetEP = getBasicPlayers().min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null);
+
+                if (targetEP == null)
+                    return;
+
+                // If we are placing
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage.getValue(), antiSuicide.getValue());
+
+                // If nothing is possible
+                if (possibleCrystals == null)
+                    return;
+
+                target = new PlayerInfo(targetEP, armourPercent);
+
+                calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
+
                 return;
                 /*
                 return new ArrayList<Object>() {{
                     add(getBasicPlayers().min((x, y) -> (int) x.getHealth()).orElse(null));
                     add(null);
                 }};*/
-            case "Nearest":
-                return;
                 /*
                 return new ArrayList<Object>() {{
                     add(getBasicPlayers().min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null));
                     add(null);
                 }};*/
             case "Damage":
-                // If we are placing
-                player = new PlayerInfo(mc.player, false);
+                List<EntityPlayer> players = getBasicPlayers().collect(Collectors.toList());
+                Collections.sort(players, new Sortbyroll());
 
+                if (players.size() == 0)
+                    return;
+                // If we are placing
                 possibleCrystals = getPossibleCrystals(player, maxSelfDamage.getValue(), antiSuicide.getValue());
 
                 // If nothing is possible
                 if (possibleCrystals == null)
                     return;
-                List<EntityPlayer> players = getBasicPlayers().collect(Collectors.toList());
-                Collections.sort(players, new Sortbyroll());
+
                 // For every players
                 int count = 0;
-                best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+
                 for (EntityPlayer playerTemp : players) {
                     if (count++ >= maxTarget.getValue())
                         break;
-                    ExecutorService executor = Executors.newCachedThreadPool();
-                    long inizio = System.currentTimeMillis();
-                    PlayerInfo target = new PlayerInfo(playerTemp, armourPercent);
-                    result.clear();
 
-                    Thread[] th = new Thread[nThread];
+                    target = new PlayerInfo(playerTemp, armourPercent);
 
-                    for(int i = 0; i < nThread; i++) {
-                        int finalI = i;
-                        th[i] = new CaratteriThread(possibleCrystals.get(finalI), mc.player.posX, mc.player.posY, mc.player.posZ,
-                                target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
-                        th[i].start();
-                    }
-
-                    try {
-                        for(int i = 0; i < nThread; i++)
-                            th[i].join();
-                        long fine = System.currentTimeMillis();
-                        long durata = fine - inizio;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    while (!result.isEmpty()) {
-                        CrystalInfo.PlaceInfo now = result.pop();
-                        if (now.damage == best.damage) {
-                            if (now.distance < best.distance) {
-                                best = now;
-                            }
-
-                        }
-                        if (now.damage > best.damage)
-                            best = now;
-                    }
+                    calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
+                                minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
                 }
                 return;
         }
         return;
+    }
+
+    void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
+                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ) {
+        result.clear();
+
+        Thread[] th = new Thread[nThread];
+
+        for(int i = 0; i < nThread; i++) {
+            int finalI = i;
+            th[i] = new CaratteriThread(possibleCrystals.get(finalI), posX, posY, posZ,
+                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
+            th[i].start();
+        }
+
+        try {
+            for(int i = 0; i < nThread; i++)
+                th[i].join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        best = getResult();
+    }
+
+    CrystalInfo.PlaceInfo getResult() {
+        CrystalInfo.PlaceInfo returnValue = new CrystalInfo.PlaceInfo(0, null, null, 100);
+        // Check the best of everything
+        while (!result.isEmpty()) {
+            CrystalInfo.PlaceInfo now = result.pop();
+            if (now.damage == returnValue.damage) {
+                if (now.distance < returnValue.distance) {
+                    returnValue = now;
+                }
+
+            }
+            if (now.damage > returnValue.damage)
+                returnValue = now;
+        }
+
+        return returnValue;
     }
 
 
