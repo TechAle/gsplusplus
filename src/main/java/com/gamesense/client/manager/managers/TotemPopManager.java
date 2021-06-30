@@ -10,6 +10,7 @@ import com.gamesense.client.module.modules.misc.PvPInfo;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.server.SPacketEntityStatus;
@@ -56,7 +57,7 @@ public enum TotemPopManager implements Manager {
         }
 
         for (EntityPlayer entityPlayer : getWorld().playerEntities) {
-            if (entityPlayer.getHealth() <= 0 && playerPopCount.containsKey(entityPlayer.getName())) {
+            if (entityPlayer.getHealth() <= 0 && playerPopCount.containsKey(entityPlayer.getName()) && entityPlayer != Minecraft.getMinecraft().player) {
                 if (sendMsgs && pvp.isEnabled()) {
                     MessageBus.sendClientPrefixMessage(chatFormatting + entityPlayer.getName() + " died after popping " + ChatFormatting.GREEN + getPlayerPopCount(entityPlayer.getName()) + chatFormatting + " totems!");
                 }
@@ -92,6 +93,8 @@ public enum TotemPopManager implements Manager {
 
         String entityName = event.getEntity().getName();
 
+        if (getMinecraft().player.gameProfile.getName().equals(entityName))
+            return;
         ++countPops;
 
         if (sendCountPops && pvp.isEnabled())
