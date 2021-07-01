@@ -17,10 +17,8 @@ import com.gamesense.api.util.world.combat.ac.PlayerInfo;
 import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import javafx.geometry.Pos;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
@@ -82,13 +80,16 @@ public class AutoCrystalRewrite extends Module {
         }
 
     }
-
-    void placeCrystals() {
+    /*
         long inizio = System.currentTimeMillis();
-        getTarget(targetPlacing.getValue(), true);
+        *****
         long fine = System.currentTimeMillis();
         long durata = fine - inizio;
         System.out.format("Esecuzione terminata. Tempo impiegato: %d ms%n", durata);
+     */
+
+    void placeCrystals() {
+        getTarget(targetPlacing.getValue(), true);
     }
 
     void breakCrystals() {
@@ -101,7 +102,9 @@ public class AutoCrystalRewrite extends Module {
         double minDamage = this.minDamage.getValue();
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
-        double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * 2;
+        double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
+        double enemyRangeSQ = rangeEnemy.getValue() * rangeEnemy.getValue();
+        double maxSelfDamage = this.maxSelfDamage.getValue();
         PlayerInfo player = new PlayerInfo(mc.player, false);;
         List<List<PositionInfo>> possibleCrystals = null;
         best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
@@ -109,45 +112,40 @@ public class AutoCrystalRewrite extends Module {
         switch (mode) {
             case "Lowest":
             case "Nearest":
+                // Get the target
                 EntityPlayer targetEP;
                 if (mode.equals("Lowest"))
-                    targetEP = getBasicPlayers().min((x, y) -> (int) x.getHealth()).orElse(null);
-                else targetEP = getBasicPlayers().min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null);
+                    targetEP = getBasicPlayers(enemyRangeSQ).min((x, y) -> (int) x.getHealth()).orElse(null);
+                else targetEP = getBasicPlayers(enemyRangeSQ).min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null);
 
                 if (targetEP == null)
                     return;
 
-                // If we are placing
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage.getValue(), antiSuicide.getValue());
+                // Get every possible crystals
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, antiSuicide.getValue());
 
                 // If nothing is possible
                 if (possibleCrystals == null)
                     return;
 
+                // Get target info
                 target = new PlayerInfo(targetEP, armourPercent);
 
+                // Calcualte best cr
                 calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage);
 
                 return;
-                /*
-                return new ArrayList<Object>() {{
-                    add(getBasicPlayers().min((x, y) -> (int) x.getHealth()).orElse(null));
-                    add(null);
-                }};*/
-                /*
-                return new ArrayList<Object>() {{
-                    add(getBasicPlayers().min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null));
-                    add(null);
-                }};*/
             case "Damage":
-                List<EntityPlayer> players = getBasicPlayers().collect(Collectors.toList());
+                // Get every possible players
+                List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).collect(Collectors.toList());
+                // Sort them
                 Collections.sort(players, new Sortbyroll());
 
                 if (players.size() == 0)
                     return;
                 // If we are placing
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage.getValue(), antiSuicide.getValue());
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, antiSuicide.getValue());
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -156,14 +154,17 @@ public class AutoCrystalRewrite extends Module {
                 // For every players
                 int count = 0;
 
+                // Iterate for every players
                 for (EntityPlayer playerTemp : players) {
+                    // If we reached max
                     if (count++ >= maxTarget.getValue())
                         break;
 
+                    // Get target
                     target = new PlayerInfo(playerTemp, armourPercent);
-
+                    // Calculate
                     calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
-                                minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ);
+                                minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage);
                 }
                 return;
         }
@@ -171,38 +172,52 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
-                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ) {
-        result.clear();
-
+                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ, double maxSelfDamage) {
+        // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<Future<?>>();
+        // Iterate for every thread we have
         for(int i = 0; i < nThread; i++) {
             int finalI = i;
+            // Add them
             futures.add(executor.submit(() -> prova(possibleCrystals.get(finalI), posX, posY, posZ,
-                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ)));
+                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage)));
         }
+        // Get stack for then collecting the results
+        Stack<CrystalInfo.PlaceInfo> results = new Stack<>();
         try {
+            // For every thread
             for (Future<?> future : futures) {
-                future.get();
+                // Get it
+                CrystalInfo.PlaceInfo temp;
+                temp = (CrystalInfo.PlaceInfo) future.get();
+                // If not null, add
+                if (temp != null)
+                    results.add(temp);
             }
         }catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
-
-        best = getResult();
+        // Get best result
+        results.add(best);
+        best = getResult(results);
     }
 
-    CrystalInfo.PlaceInfo getResult() {
+    CrystalInfo.PlaceInfo getResult(Stack<CrystalInfo.PlaceInfo> result) {
+        // Init returnValue
         CrystalInfo.PlaceInfo returnValue = new CrystalInfo.PlaceInfo(0, null, null, 100);
         // Check the best of everything
         while (!result.isEmpty()) {
+            // Get value
             CrystalInfo.PlaceInfo now = result.pop();
+            // If damage is the same
             if (now.damage == returnValue.damage) {
+                // Check for distance
                 if (now.distance < returnValue.distance) {
                     returnValue = now;
                 }
-
-            }
-            if (now.damage > returnValue.damage)
+            // If damage is higher
+            } else if (now.damage > returnValue.damage)
+                // Return
                 returnValue = now;
         }
 
@@ -261,62 +276,8 @@ public class AutoCrystalRewrite extends Module {
     }
 
 
-    class CaratteriThread extends Thread {
-        List<PositionInfo> possibleLocations;
-        double x, y, z, minDamage, minFacePlaceHealth, minFacePlaceDamage, enemyRangeSq;
-        PlayerInfo target;
-        public CaratteriThread(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
-                               double minDamage, double minFacePlaceHealth, double miNFacePlaceDamage, double enemyRangeSq) {
-            this.possibleLocations = possibleLocations;
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.minDamage = minDamage;
-            this.minFacePlaceHealth = minFacePlaceHealth;
-            this.minFacePlaceDamage = miNFacePlaceDamage;
-            this.target = target;
-            this.enemyRangeSq = enemyRangeSq;
-        }
-
-
-        @Override
-        public void run() {
-
-            // Start calculating damage
-            PositionInfo best = new PositionInfo();
-            for (PositionInfo crystal : possibleLocations) {
-                double distance;
-                // if player is out of range of this crystal, do nothing
-                if ((distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d)) <= enemyRangeSq) {
-                    float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
-                    if (currentDamage == best.damage) {
-                        // this new crystal is closer
-                        // higher chance of being able to break it
-                        if (best.pos == null || crystal.pos.distanceSq(x, y, z) < best.pos.distanceSq(x, y, z)) {
-                            best = crystal;
-                            best.setEnemyDamage(currentDamage);
-                            best.distance = distance;
-                        }
-                    } else if (currentDamage > best.damage) {
-                        if (crystal.rapp < best.rapp) {
-                            best = crystal;
-                            best.setEnemyDamage(currentDamage);
-                            best.distance = distance;
-                        }
-                    }
-                }
-            }
-
-            if (best.pos != null) {
-                if (best.damage >= minDamage || ((target.health <= minFacePlaceHealth || target.lowArmour) && best.damage >= minFacePlaceDamage)) {
-                    result.add(new CrystalInfo.PlaceInfo((float) best.damage, target, best.pos, best.distance));
-                }
-            }
-        }
-    }
-
-    void prova(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
-               double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double enemyRangeSq) {
+    CrystalInfo.PlaceInfo prova(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
+                                double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double enemyRangeSq, double maxSelfDamage) {
         // Start calculating damage
         PositionInfo best = new PositionInfo();
         for (PositionInfo crystal : possibleLocations) {
@@ -327,31 +288,34 @@ public class AutoCrystalRewrite extends Module {
                 if (currentDamage == best.damage) {
                     // this new crystal is closer
                     // higher chance of being able to break it
-                    if (best.pos == null || crystal.pos.distanceSq(x, y, z) < best.pos.distanceSq(x, y, z)) {
+                    double temp;
+                    if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance ||  (currentDamage / maxSelfDamage) > best.rapp ) || temp < best.distance) {
                         best = crystal;
                         best.setEnemyDamage(currentDamage);
                         best.distance = distance;
                     }
                 } else if (currentDamage > best.damage) {
-                    if (crystal.rapp < best.rapp) {
-                        best = crystal;
-                        best.setEnemyDamage(currentDamage);
-                        best.distance = distance;
-                    }
+                    best = crystal;
+                    best.setEnemyDamage(currentDamage);
+                    best.distance = distance;
+                    best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                 }
             }
         }
 
+        // If we found something
         if (best.pos != null) {
             if (best.damage >= minDamage || ((target.health <= minFacePlaceHealth || target.lowArmour) && best.damage >= minFacePlaceDamage)) {
-                result.add(new CrystalInfo.PlaceInfo((float) best.damage, target, best.pos, best.distance));
+                // Return
+                return new CrystalInfo.PlaceInfo((float) best.damage, target, best.pos, best.distancePlayer);
             }
         }
+        return null;
     }
 
-    Stream<EntityPlayer> getBasicPlayers() {
+    Stream<EntityPlayer> getBasicPlayers(double rangeEnemySQ) {
         return mc.world.playerEntities.stream()
-                .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemy.getValue())
+                .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
                 .filter(entity -> !EntityUtil.basicChecksEntity(entity))
                 .filter(entity -> entity.getHealth() > 0.0f);
     }

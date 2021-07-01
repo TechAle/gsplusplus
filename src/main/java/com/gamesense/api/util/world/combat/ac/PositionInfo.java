@@ -15,6 +15,7 @@ public class PositionInfo {
     public double rapp;
     public double damage;
     public double distance;
+    public double distancePlayer;
 
     public PositionInfo(BlockPos pos, double selfDamage) {
         this.pos = pos;
@@ -27,6 +28,7 @@ public class PositionInfo {
         this.selfDamage = 100;
         this.damage = 0;
         this.rapp = 100;
+        this.distancePlayer = 100;
     }
 
     public void setEnemyDamage(double damage) {
