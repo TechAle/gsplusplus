@@ -94,9 +94,9 @@ public class DiscordRPCModule extends Module {
     ModeSetting Line1Option2 = registerMode("Opt 2: ", Arrays.asList(options.toArray(new String[0])), "Server");
     ModeSetting Line1Option3 = registerMode("Opt 3: ", Arrays.asList(options.toArray(new String[0])), "None");
     BooleanSetting secondLine = registerBoolean("Second Line", true);
-    ModeSetting Line2Option1 = registerMode("Opt 1: ", Arrays.asList(options.toArray(new String[0])), "Status");
-    ModeSetting Line2Option2 = registerMode("Opt 2: ", Arrays.asList(options.toArray(new String[0])), "Health");
-    ModeSetting Line2Option3 = registerMode("Opt 3: ", Arrays.asList(options.toArray(new String[0])), "Speed");
+    ModeSetting Line2Option1 = registerMode("Opt 1; ", Arrays.asList(options.toArray(new String[0])), "Status");
+    ModeSetting Line2Option2 = registerMode("Opt 2; ", Arrays.asList(options.toArray(new String[0])), "Health");
+    ModeSetting Line2Option3 = registerMode("Opt 3; ", Arrays.asList(options.toArray(new String[0])), "Speed");
 
     String getSpeed() {
         return (int) calcSpeed(mc.player, speedUnit.getValue()) + speedUnit.getValue();
