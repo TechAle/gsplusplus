@@ -7,9 +7,7 @@ import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
-import com.gamesense.api.util.world.BlockUtil;
-import com.gamesense.api.util.world.GeometryMasks;
-import com.gamesense.api.util.world.Offsets;
+import com.gamesense.api.util.world.*;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -50,6 +48,8 @@ public class predict extends Module {
     BooleanSetting justOnce = registerBoolean("Just Once", false);
     BooleanSetting debug = registerBoolean("Debug", false);
     BooleanSetting showPredictions = registerBoolean("Show Predictions", false);
+    BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false);
+    BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false, () -> manualOutHole.getValue());
     ColorSetting mainColor = registerColor("Color");
 
 
@@ -69,6 +69,20 @@ public class predict extends Module {
             int up = 0, down = 0;
             if (debug.getValue())
                 PistonCrystal.printDebug(String.format("Values: %f %f %f", newPosVec[0], newPosVec[1], newPosVec[2]), false);
+
+            // If he want manual out hole
+            boolean isHole = false;
+            if (manualOutHole.getValue() && motionY > 0) {
+                if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE)
+                    isHole = true;
+                else if (aboveHoleManual.getValue() && HoleUtil.isHole(EntityUtil.getPosition(entity).add(0, -1, 0), false, true).getType() != HoleUtil.HoleType.NONE)
+                    isHole = true;
+
+                if (isHole)
+                    posVec[1] += 1;
+
+            }
+
             for(int i = 0; i < tickPredict.getValue(); i++) {
                 RayTraceResult result;
                 // Here we can choose if calculating XZ separated or not
@@ -124,7 +138,7 @@ public class predict extends Module {
                     i think this y prediction is usefull for detecting, in short distance, if we are going up or down
                     on a block
                     */
-                if (calculateYPredict.getValue()) {
+                if (calculateYPredict.getValue() && !isHole) {
                     newPosVec = posVec.clone();
                     // If the enemy is not on the ground. We also be sure that it's not -0.078
                     // Because -0.078 is the motion we have when standing in a block.

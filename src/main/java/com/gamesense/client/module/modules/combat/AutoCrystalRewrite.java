@@ -19,7 +19,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 
@@ -31,6 +30,7 @@ import java.util.stream.Stream;
 @Module.Declaration(name = "AutoCrystalRewrite", category = Category.Combat, priority = 100)
 public class AutoCrystalRewrite extends Module {
 
+    ModeSetting pages = registerMode("Pages", Arrays.asList("Target", "Place", "Break", "Predict", "Misc", "Threading"), "");
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break");
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest");
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest");
@@ -45,18 +45,16 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10);
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true);
     DoubleSetting rangeEnemy = registerDouble("RangeEnemy", 7, 0, 12);
-    IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20);
+    IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> pages.getValue().equals("Threading"));
+    IntegerSetting nCalc = registerInteger("N Calc Aver", 100, 1, 1000, () -> pages.getValue().equals("Threading"));
 
     public static boolean stopAC = false;
 
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
-    Stack<CrystalInfo.PlaceInfo> result = new Stack<>();
-    CrystalInfo.PlaceInfo best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
 
-    EntityPlayer target = null;
-    EntityEnderCrystal crystCalc;
+    CrystalInfo.PlaceInfo best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
 
     @Override
     public void onUpdate() {
@@ -88,8 +86,21 @@ public class AutoCrystalRewrite extends Module {
         System.out.format("Esecuzione terminata. Tempo impiegato: %d ms%n", durata);
      */
 
+    ArrayList<Long> durations = new ArrayList<>();
+
     void placeCrystals() {
+        long inizio = System.currentTimeMillis();
         getTarget(targetPlacing.getValue(), true);
+        long fine = System.currentTimeMillis();
+        durations.add(fine - inizio);
+        if (durations.size() > nCalc.getValue()) {
+            double sum = durations.stream()
+                    .mapToDouble(a -> a)
+                    .sum();
+            sum /= nCalc.getValue();
+            durations.clear();
+            PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
+        }
     }
 
     void breakCrystals() {
@@ -105,8 +116,8 @@ public class AutoCrystalRewrite extends Module {
         double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
         double enemyRangeSQ = rangeEnemy.getValue() * rangeEnemy.getValue();
         double maxSelfDamage = this.maxSelfDamage.getValue();
-        PlayerInfo player = new PlayerInfo(mc.player, false);;
-        List<List<PositionInfo>> possibleCrystals = null;
+        PlayerInfo player = new PlayerInfo(mc.player, false);
+        List<List<PositionInfo>> possibleCrystals;
         best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         PlayerInfo target;
         switch (mode) {
@@ -122,7 +133,7 @@ public class AutoCrystalRewrite extends Module {
                     return;
 
                 // Get every possible crystals
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, antiSuicide.getValue());
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -138,14 +149,11 @@ public class AutoCrystalRewrite extends Module {
                 return;
             case "Damage":
                 // Get every possible players
-                List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).collect(Collectors.toList());
-                // Sort them
-                Collections.sort(players, new Sortbyroll());
-
+                List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
                     return;
                 // If we are placing
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, antiSuicide.getValue());
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -168,13 +176,12 @@ public class AutoCrystalRewrite extends Module {
                 }
                 return;
         }
-        return;
     }
 
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
                        PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ, double maxSelfDamage) {
         // For getting output of threading
-        Collection<Future<?>> futures = new LinkedList<Future<?>>();
+        Collection<Future<?>> futures = new LinkedList<>();
         // Iterate for every thread we have
         for(int i = 0; i < nThread; i++) {
             int finalI = i;
@@ -225,27 +232,19 @@ public class AutoCrystalRewrite extends Module {
     }
 
 
-    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean antiSuicide) {
+    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage) {
         // Get every possibilites
         List<BlockPos> possibilites = CrystalUtil.findCrystalBlocks(placeRange.getValue().floatValue(), newPlace.getValue());
+        // Output with position and damage
         List<PositionInfo> damagePos = new ArrayList<>();
         for(BlockPos crystal : possibilites) {
             float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
+            // Exclude useless crystals
             if (damage < maxSelfDamage) {
                 damagePos.add(new PositionInfo(crystal, damage));
             }
         }
         // Remove every crystals that deal more damage to us
-        /*
-        possibilites.removeIf(crystal -> {
-            float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
-            if (damage > maxSelfDamage) {
-                return true;
-            } else {
-                return antiSuicide && damage > self.health;
-            }
-        });*/
-        // Return splitted
         return splitList(damagePos, nThread.getValue());
     }
 
@@ -290,11 +289,14 @@ public class AutoCrystalRewrite extends Module {
                     // higher chance of being able to break it
                     double temp;
                     if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance ||  (currentDamage / maxSelfDamage) > best.rapp ) || temp < best.distance) {
+                        // Set new values
                         best = crystal;
                         best.setEnemyDamage(currentDamage);
                         best.distance = distance;
+                        best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                     }
                 } else if (currentDamage > best.damage) {
+                    // Set new values
                     best = crystal;
                     best.setEnemyDamage(currentDamage);
                     best.distance = distance;
@@ -320,7 +322,7 @@ public class AutoCrystalRewrite extends Module {
                 .filter(entity -> entity.getHealth() > 0.0f);
     }
 
-    class Sortbyroll implements Comparator<EntityPlayer>
+    static class Sortbyroll implements Comparator<EntityPlayer>
     {
 
         @Override
