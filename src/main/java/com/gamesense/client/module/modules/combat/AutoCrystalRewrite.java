@@ -32,26 +32,32 @@ import java.util.stream.Stream;
 @Module.Declaration(name = "AutoCrystalRewrite", category = Category.Combat, priority = 100)
 public class AutoCrystalRewrite extends Module {
 
-    ModeSetting pages = registerMode("Pages", Arrays.asList("Target", "Place", "Break", "Predict", "Misc", "Threading"), "");
-    ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break");
-    ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest");
-    ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest");
-    DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8);
-    BooleanSetting newPlace = registerBoolean("1.13 mode", false);
-    DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 30);
-    DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 12, 0, 30);
-    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey", 6, 0, 8);
-    IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100);
-    IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36);
-    IntegerSetting maxYTarget = registerInteger("Max Y Target", 1, 0, 3);
-    IntegerSetting minYTarget = registerInteger("Min Y Target", 3, 0, 5);
-    IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30);
-    DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10);
-    BooleanSetting raytrace = registerBoolean("Raytrace", false);
-    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true);
-    DoubleSetting rangeEnemy = registerDouble("RangeEnemy", 7, 0, 12);
-    IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> pages.getValue().equals("Threading"));
-    IntegerSetting nCalc = registerInteger("N Calc Aver", 100, 1, 1000, () -> pages.getValue().equals("Threading"));
+    BooleanSetting logicTarget = registerBoolean("Logic Target", true);
+    ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
+    ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
+    ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
+    BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
+    BooleanSetting ranges = registerBoolean("Ranges", false);
+    DoubleSetting rangeEnemy = registerDouble("RangeEnemy", 7, 0, 12, () -> ranges.getValue());
+    DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
+    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey", 6, 0, 8, () -> ranges.getValue());
+    IntegerSetting maxYTarget = registerInteger("Max Y Target", 1, 0, 3, () -> ranges.getValue());
+    IntegerSetting minYTarget = registerInteger("Min Y Target", 3, 0, 5, () -> ranges.getValue());
+    BooleanSetting damages = registerBoolean("Damages", false);
+    DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 30, () -> damages.getValue());
+    DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 12, 0, 30, () -> damages.getValue());
+    IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> damages.getValue());
+    IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> damages.getValue());
+    DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> damages.getValue());
+    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> damages.getValue());
+    BooleanSetting threading = registerBoolean("Threading", false);
+    IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> threading.getValue());
+    IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
+    BooleanSetting strict = registerBoolean("Strict", false);
+    BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
+    BooleanSetting debugMenu = registerBoolean("Debug Menu", false);
+    BooleanSetting timeCalcPlacement = registerBoolean("Calc Placement Time", false, () -> debugMenu.getValue());
+    IntegerSetting nCalc = registerInteger("N Calc", 100, 1, 1000, () -> debugMenu.getValue());
 
     public static boolean stopAC = false;
 
@@ -83,28 +89,31 @@ public class AutoCrystalRewrite extends Module {
         }
 
     }
-    /*
-        long inizio = System.currentTimeMillis();
-        *****
-        long fine = System.currentTimeMillis();
-        long durata = fine - inizio;
-        System.out.format("Esecuzione terminata. Tempo impiegato: %d ms%n", durata);
-     */
 
     ArrayList<Long> durations = new ArrayList<>();
 
     void placeCrystals() {
-        long inizio = System.currentTimeMillis();
+        // For debugging timeCalcPlacement
+        long inizio = 0;
+        if (timeCalcPlacement.getValue())
+            // Get time
+            inizio = System.currentTimeMillis();
+        // Get target
         getTarget(targetPlacing.getValue(), true);
-        long fine = System.currentTimeMillis();
-        durations.add(fine - inizio);
-        if (durations.size() > nCalc.getValue()) {
-            double sum = durations.stream()
-                    .mapToDouble(a -> a)
-                    .sum();
-            sum /= nCalc.getValue();
-            durations.clear();
-            PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
+        // For debugging timeCalcPlacemetn
+        if (timeCalcPlacement.getValue()) {
+            // Get duration
+            long fine = System.currentTimeMillis();
+            durations.add(fine - inizio);
+            // If we reached last
+            if (durations.size() > nCalc.getValue()) {
+                double sum = durations.stream()
+                        .mapToDouble(a -> a)
+                        .sum();
+                sum /= nCalc.getValue();
+                durations.clear();
+                PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
+            }
         }
     }
 

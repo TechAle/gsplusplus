@@ -34,21 +34,24 @@ import java.util.Arrays;
 @Module.Declaration(name = "AntiCrystal", category = Category.Combat)
 public class AntiCrystal extends Module {
 
-    ModeSetting pages = registerMode("Page", Arrays.asList("Target", "Delay", "Misc", "Damage"), "Target");
-    DoubleSetting rangePlace = registerDouble("Range Place", 5.9, 0, 6, () -> this.pages.getValue().equals("Target"));
-    DoubleSetting enemyRange = registerDouble("Enemy Range", 12, 0, 20, () -> this.pages.getValue().equals("Target"));
-    DoubleSetting damageMin = registerDouble("Damage Min", 4, 0, 15, () -> this.pages.getValue().equals("Damage"));
-    DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> this.pages.getValue().equals("Damage"));
-    ModeSetting blockPlaced = registerMode("Block Place", Arrays.asList("Pressure", "String"), "String", () -> this.pages.getValue().equals("Delay"));
-    IntegerSetting tickDelay = registerInteger("Tick Delay", 5, 0, 10, () -> this.pages.getValue().equals("Delay"));
-    IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 0, 8, () -> this.pages.getValue().equals("Delay"));
-    BooleanSetting offHandMode = registerBoolean("OffHand Mode", true, () -> this.pages.getValue().equals("Misc"));
-    BooleanSetting rotate = registerBoolean("Rotate", false, () -> this.pages.getValue().equals("Misc"));
-    BooleanSetting onlyIfEnemy = registerBoolean("Only If Enemy", true, () -> this.pages.getValue().equals("Target"));
-    BooleanSetting nonAbusive = registerBoolean("Non Abusive", true, () -> this.pages.getValue().equals("Misc"));
-    BooleanSetting checkDamage = registerBoolean("Damage Check", true, () -> this.pages.getValue().equals("Damage"));
-    BooleanSetting switchBack = registerBoolean("Switch Back", true, () -> this.pages.getValue().equals("Misc"));
-    BooleanSetting notOurCrystals = registerBoolean("Ignore AutoCrystal", true, () -> this.pages.getValue().equals("Damage"));
+    BooleanSetting targetSection = registerBoolean("Target Section", true);
+    DoubleSetting rangePlace = registerDouble("Range Place", 5.9, 0, 6, () -> targetSection.getValue());
+    DoubleSetting enemyRange = registerDouble("Enemy Range", 12, 0, 20, () -> targetSection.getValue());
+    BooleanSetting onlyIfEnemy = registerBoolean("Only If Enemy", true, () -> targetSection.getValue());
+    BooleanSetting damageSection = registerBoolean("Damage Section", true);
+    DoubleSetting damageMin = registerDouble("Damage Min", 4, 0, 15, () -> damageSection.getValue());
+    DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> damageSection.getValue());
+    BooleanSetting checkDamage = registerBoolean("Damage Check", true, () -> damageSection.getValue());
+    BooleanSetting notOurCrystals = registerBoolean("Ignore AutoCrystal", true, () -> damageSection.getValue());
+    BooleanSetting delaySection = registerBoolean("Delay Section", true);
+    ModeSetting blockPlaced = registerMode("Block Place", Arrays.asList("Pressure", "String"), "String", () -> delaySection.getValue());
+    IntegerSetting tickDelay = registerInteger("Tick Delay", 5, 0, 10, () -> delaySection.getValue());
+    IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 0, 8, () -> delaySection.getValue());
+    BooleanSetting miscSection = registerBoolean("Misc Section", true);
+    BooleanSetting offHandMode = registerBoolean("OffHand Mode", true, () -> miscSection.getValue());
+    BooleanSetting rotate = registerBoolean("Rotate", false, () -> miscSection.getValue());
+    BooleanSetting nonAbusive = registerBoolean("Non Abusive", true, () -> miscSection.getValue());
+    BooleanSetting switchBack = registerBoolean("Switch Back", true, () -> miscSection.getValue());
 
     private int delayTimeTicks;
     private boolean isSneaking = false;

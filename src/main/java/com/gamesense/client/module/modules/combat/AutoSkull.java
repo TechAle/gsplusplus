@@ -39,26 +39,29 @@ import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 @Module.Declaration(name = "AutoSkull", category = Category.Combat)
 public class AutoSkull extends Module {
 
-    ModeSetting pages = registerMode("Page", Arrays.asList("Delay", "Rotation", "Placement", "Phase"), "Delay");
-    BooleanSetting rotate = registerBoolean("Rotate", true, () -> pages.getValue().equals("Rotation"));
-    BooleanSetting offHandSkull = registerBoolean("OffHand Skull", false, () -> pages.getValue().equals("Placement"));
-    BooleanSetting onShift = registerBoolean("On Shift", false, () -> pages.getValue().equals("Delay"));
-    BooleanSetting instaActive = registerBoolean("Insta Active", true, () -> pages.getValue().equals("Delay"));
-    BooleanSetting disableAfter = registerBoolean("Disable After", true, () -> pages.getValue().equals("Delay"));
-    BooleanSetting forceRotation = registerBoolean("Force Rotation", false, () -> pages.getValue().equals("Rotation"));
-    BooleanSetting noUp = registerBoolean("No Up", false, () -> pages.getValue().equals("Placement"));
-    BooleanSetting onlyHoles = registerBoolean("Only Holes", false, () -> pages.getValue().equals("Placement"));
-    IntegerSetting tickDelay = registerInteger("Tick Delay", 5, 0, 10, () -> pages.getValue().equals("Delay"));
-    IntegerSetting preSwitch = registerInteger("Pre Switch", 0, 0, 20, () -> pages.getValue().equals("Delay"));
-    IntegerSetting afterSwitch = registerInteger("After Switch", 0, 0, 20, () -> pages.getValue().equals("Delay"));
-    DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 6, () -> pages.getValue().equals("Placement"));
-    BooleanSetting autoTrap = registerBoolean("AutoTrap", false, () -> pages.getValue().equals("Placement"));
-    IntegerSetting BlocksPerTick = registerInteger("Blocks Per Tick", 4, 0, 10, () -> pages.getValue().equals("Placement"));
-    BooleanSetting phase = registerBoolean("Phase", true, () -> pages.getValue().equals("Phase"));
-    BooleanSetting ServerRespond = registerBoolean("Server Respond", true, () -> pages.getValue().equals("Phase"));
-    BooleanSetting predictPhase = registerBoolean("Predict Phase", true, () -> pages.getValue().equals("Phase"));
-    IntegerSetting maxTickTries = registerInteger("Max Tick Try", 100, 1, 200, () -> pages.getValue().equals("Phase"));
-    BooleanSetting centerPlayer = registerBoolean("Center Player", false, () -> pages.getValue().equals("Placement"));
+    BooleanSetting placementSection = registerBoolean("Placement Section", true);
+    BooleanSetting offHandSkull = registerBoolean("OffHand Skull", false, () -> placementSection.getValue());
+    DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 6, () -> placementSection.getValue());
+    IntegerSetting BlocksPerTick = registerInteger("Blocks Per Tick", 4, 0, 10, () -> placementSection.getValue());
+    BooleanSetting autoTrap = registerBoolean("AutoTrap", false, () -> placementSection.getValue());
+    BooleanSetting noUp = registerBoolean("No Up", false, () -> placementSection.getValue());
+    BooleanSetting onlyHoles = registerBoolean("Only Holes", false, () -> placementSection.getValue());
+    BooleanSetting centerPlayer = registerBoolean("Center Player", false, () -> placementSection.getValue());
+    BooleanSetting delaySection = registerBoolean("Delay Section", true);
+    BooleanSetting onShift = registerBoolean("On Shift", false, () -> delaySection.getValue());
+    BooleanSetting instaActive = registerBoolean("Insta Active", true, () -> delaySection.getValue());
+    BooleanSetting disableAfter = registerBoolean("Disable After", true, () -> delaySection.getValue());
+    IntegerSetting tickDelay = registerInteger("Tick Delay", 5, 0, 10, () -> delaySection.getValue());
+    IntegerSetting preSwitch = registerInteger("Pre Switch", 0, 0, 20, () -> delaySection.getValue());
+    IntegerSetting afterSwitch = registerInteger("After Switch", 0, 0, 20, () -> delaySection.getValue());
+    BooleanSetting rotationSection = registerBoolean("Rotation Section", true);
+    BooleanSetting forceRotation = registerBoolean("Force Rotation", false, () -> rotationSection.getValue());
+    BooleanSetting rotate = registerBoolean("Rotate", true, () -> rotationSection.getValue());
+    BooleanSetting phaseSection = registerBoolean("Phase Section", true);
+    BooleanSetting phase = registerBoolean("Phase", true, () -> phaseSection.getValue());
+    BooleanSetting ServerRespond = registerBoolean("Server Respond", true, () -> phaseSection.getValue());
+    BooleanSetting predictPhase = registerBoolean("Predict Phase", true, () -> phaseSection.getValue());
+    IntegerSetting maxTickTries = registerInteger("Max Tick Try", 100, 1, 200, () -> phaseSection.getValue());
 
     private static final Vec3d[] AIR = {
         // Supports

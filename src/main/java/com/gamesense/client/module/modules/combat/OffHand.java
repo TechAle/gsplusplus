@@ -39,36 +39,38 @@ import java.util.Map;
 @Module.Declaration(name = "Offhand", category = Category.Combat)
 public class OffHand extends Module {
 
-    ModeSetting pages = registerMode("Pages", Arrays.asList("Item", "Switch", "Misc"), "Item");
+    BooleanSetting itemSection = registerBoolean("Item Section", true);
     ModeSetting defaultItem = registerMode("Default", Arrays.asList("Totem", "Crystal", "Gapple", "Plates", "Obby", "Pot", "Exp"),
-            "Totem", () -> pages.getValue().equals("Item"));
+            "Totem", () -> itemSection.getValue());
     ModeSetting nonDefaultItem = registerMode("Non Default", Arrays.asList("Totem", "Crystal", "Gapple", "Obby", "Pot", "Exp", "Plates", "String", "Skull"),
-            "Crystal", () -> pages.getValue().equals("Item"));
+            "Crystal", () -> itemSection.getValue());
     ModeSetting noPlayerItem = registerMode("No Player", Arrays.asList("Totem", "Crystal", "Gapple", "Plates", "Obby", "Pot", "Exp"),
-            "Gapple", () -> pages.getValue().equals("Item"));
+            "Gapple", () -> itemSection.getValue());
     ModeSetting potionChoose = registerMode("Potion", Arrays.asList("first", "strength", "swiftness"),
-            "first", () -> pages.getValue().equals("Item"));
-    IntegerSetting healthSwitch = registerInteger("Health Switch", 14, 0, 36, () -> pages.getValue().equals("Switch"));
-    IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20, () -> pages.getValue().equals("Switch"));
-    BooleanSetting fallDistanceBol = registerBoolean("Fall Distance", true, () -> pages.getValue().equals("Switch"));
-    IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30, () -> (pages.getValue().equals("Switch") && fallDistanceBol.getValue()));
-    IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> pages.getValue().equals("Switch"));
-    DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> pages.getValue().equals("Switch"));
-    BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting rightGap = registerBoolean("Right Click Gap", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting shiftPot = registerBoolean("Shift Pot", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting swordCheck = registerBoolean("Only Sword", true, () -> pages.getValue().equals("Misc"));
-    BooleanSetting swordCrystal = registerBoolean("Sword Crystal", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting pickCrystal = registerBoolean("Pick Crystal", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting crystalCheck = registerBoolean("Crystal Check", false, () -> pages.getValue().equals("Switch"));
-    IntegerSetting startingBiasDamage= registerInteger("Bias Health", 22, 0, 36, () -> (pages.getValue().equals("Switch") && crystalCheck.getValue()));
-    DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> (pages.getValue().equals("Switch") && crystalCheck.getValue()));
-    BooleanSetting noHotBar = registerBoolean("No HotBar", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting onlyHotBar = registerBoolean("Only HotBar", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting antiWeakness = registerBoolean("AntiWeakness", false, () -> pages.getValue().equals("Misc"));
-    BooleanSetting hotBarTotem = registerBoolean("HotBar Totem", false, () -> pages.getValue().equals("Misc"));
+            "first", () -> itemSection.getValue());
+    BooleanSetting switchSection = registerBoolean("Switch Section", true);
+    IntegerSetting healthSwitch = registerInteger("Health Switch", 14, 0, 36, () -> switchSection.getValue());
+    IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20, () -> switchSection.getValue());
+    BooleanSetting fallDistanceBol = registerBoolean("Fall Distance", true, () -> switchSection.getValue());
+    IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30, () -> (switchSection.getValue() && fallDistanceBol.getValue()));
+    IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
+    DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
+    BooleanSetting miscSection = registerBoolean("Misc Section", true);
+    BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
+    BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
+    BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> miscSection.getValue());
+    BooleanSetting rightGap = registerBoolean("Right Click Gap", false, () -> miscSection.getValue());
+    BooleanSetting shiftPot = registerBoolean("Shift Pot", false, () -> miscSection.getValue());
+    BooleanSetting swordCheck = registerBoolean("Only Sword", true, () -> miscSection.getValue());
+    BooleanSetting swordCrystal = registerBoolean("Sword Crystal", false, () -> miscSection.getValue());
+    BooleanSetting pickCrystal = registerBoolean("Pick Crystal", false, () -> miscSection.getValue());
+    BooleanSetting crystalCheck = registerBoolean("Crystal Check", false, () -> switchSection.getValue());
+    BooleanSetting onlyHotBar = registerBoolean("Only HotBar", false, () -> miscSection.getValue());
+    BooleanSetting antiWeakness = registerBoolean("AntiWeakness", false, () -> miscSection.getValue());
+    BooleanSetting hotBarTotem = registerBoolean("HotBar Totem", false, () -> miscSection.getValue());
+    IntegerSetting startingBiasDamage= registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
+    DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> (switchSection.getValue() && crystalCheck.getValue()));
+    BooleanSetting noHotBar = registerBoolean("No HotBar", false, () -> miscSection.getValue());
 
     int prevSlot,
         tickWaited,
