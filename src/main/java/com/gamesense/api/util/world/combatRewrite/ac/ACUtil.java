@@ -21,7 +21,7 @@ public class ACUtil {
         final double enemyRangeSq = settings.enemyRange * settings.enemyRange;
         final float fullHealth = target.getHealth() + target.getAbsorption();
         for (BlockPos crystal : possibleLocations) {
-            if (!canFakeCrystalBeSeen(crystal, settings.player) && !(settings.player.position.squareDistanceTo(crystal.getX(), crystal.getY(), crystal.getZ()) < settings.wallsRange)) {
+            if (!(canFakeCrystalBeSeen(crystal, settings.player) || (settings.player.position.squareDistanceTo(crystal.getX() + 0.5d, crystal.getY() + 1.0d, crystal.getZ() + 0.5d) < settings.wallsRange))) {
                 continue;
             }
             // if player is out of range of this crystal, do nothing
@@ -60,7 +60,7 @@ public class ACUtil {
         final boolean smart = settings.breakMode.equalsIgnoreCase("Smart");
         final float fullHealth = target.getHealth() + target.getAbsorption();
         for (EntityInfo crystal : crystals) {
-            if (!canCrystalBeSeen(crystal, settings.player) && !(settings.player.position.distanceTo(crystal.position) < settings.wallsRange)) {
+            if (!(canCrystalBeSeen(crystal, settings.player) || (settings.player.position.distanceTo(crystal.position) < settings.wallsRange))) {
                 continue;
             }
             float currentDamage = DamageUtil.calculateDamageThreaded(crystal.position.x, crystal.position.y, crystal.position.z, target);
@@ -100,6 +100,6 @@ public class ACUtil {
     }
 
     public static boolean canFakeCrystalBeSeen(BlockPos pos, PlayerInfo player) {
-        return DamageUtil.rayTraceBlocks(player.position.add(0, player.getEyeHeight(), 0), new Vec3d(pos.getX(), (double)pos.getY() + 1.7D, pos.getZ()), WorldCopyManager.INSTANCE) == null;
+        return DamageUtil.rayTraceBlocks(player.position.add(0, player.getEyeHeight(), 0), new Vec3d(pos.getX() + 0.5d, (double)pos.getY() + 2.7D, pos.getZ() + 0.5d), WorldCopyManager.INSTANCE) == null;
     }
 }

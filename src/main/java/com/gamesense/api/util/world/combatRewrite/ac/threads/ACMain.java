@@ -26,7 +26,10 @@ import me.zero.alpine.listener.Listenable;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Items;
+import net.minecraft.init.MobEffects;
 import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.item.ItemSword;
+import net.minecraft.item.ItemTool;
 import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.network.play.client.CPacketUseEntity;
@@ -181,7 +184,6 @@ public class ACMain extends Thread implements Listenable {
         }
 
         EntityInfo crystal = possibleCrystals.last().crystal;
-        /*
         if (settings.antiWeakness && mc.player.isPotionActive(MobEffects.WEAKNESS)) {
             // search for sword and tools in hotbar
             int toolSlot = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
@@ -194,7 +196,6 @@ public class ACMain extends Thread implements Listenable {
                 return true;
             }
         }
-         */
 
         this.rotating = settings.rotate;
         this.lastHitVec = crystal.position;

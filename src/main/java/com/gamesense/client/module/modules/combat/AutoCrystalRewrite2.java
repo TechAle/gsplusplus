@@ -269,7 +269,6 @@ public class AutoCrystalRewrite2 extends Module {
     }
      */
 
-    /*
     public void onWorldRender(RenderEvent event) {
         CrystalInfo.PlaceInfo renderInfo = AutoCrystalManager.INSTANCE.getRenderInfo();
         if (renderInfo != null) {
@@ -282,7 +281,7 @@ public class AutoCrystalRewrite2 extends Module {
                 RenderUtil.drawNametag((double) block.getX() + 0.5d,(double) block.getY() + 0.5d,(double) block.getZ() + 0.5d, damageText, new GSColor(255,255,255),1);
             }
         }
-    } */
+    }
 
     public ACSettings getSettings() {
         int armour = armourFacePlace.getValue();
