@@ -325,7 +325,8 @@ public class LoadConfig {
                     "0b00101010",
                     "a2h",
                     "hoosier",
-                    "aven"
+                    "aven",
+                    "eighttwosix"
             }) {
                 SocialManager.addSpecialName(defaultValue);
             }
