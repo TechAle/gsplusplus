@@ -317,12 +317,15 @@ public class LoadConfig {
                     "doogie13",
                     "soulbond",
                     "vqk",
-                    "gaynal",
                     "anonymousplayer",
                     "lambdaclient",
                     // This is for special colors
                     "\u2063",
-                    "\u0262\ua731"
+                    "\u0262\ua731",
+                    "0b00101010",
+                    "a2h",
+                    "hoosier",
+                    "aven"
             }) {
                 SocialManager.addSpecialName(defaultValue);
             }
