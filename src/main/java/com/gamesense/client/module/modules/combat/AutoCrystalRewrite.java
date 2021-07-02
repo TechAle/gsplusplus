@@ -3,13 +3,11 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
+import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.api.util.world.combat.ac.CrystalInfo;
@@ -17,9 +15,12 @@ import com.gamesense.api.util.world.combat.ac.PlayerInfo;
 import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.mojang.authlib.GameProfile;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
@@ -32,32 +33,80 @@ import java.util.stream.Stream;
 @Module.Declaration(name = "AutoCrystalRewrite", category = Category.Combat, priority = 100)
 public class AutoCrystalRewrite extends Module {
 
-    BooleanSetting logicTarget = registerBoolean("Logic Target", true);
+    // Logic
+    BooleanSetting logicTarget = registerBoolean("Logic Section", true);
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
-    BooleanSetting ranges = registerBoolean("Ranges", false);
+    BooleanSetting ranges = registerBoolean("Range Section", false);
+
+    // Ranges
     DoubleSetting rangeEnemy = registerDouble("RangeEnemy", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey", 6, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTarget = registerInteger("Max Y Target", 1, 0, 3, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y Target", 3, 0, 5, () -> ranges.getValue());
-    BooleanSetting damages = registerBoolean("Damages", false);
-    DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 30, () -> damages.getValue());
+
+    // Damages
+    BooleanSetting damages = registerBoolean("Damage Section", false);
+    DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> damages.getValue());
     DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 12, 0, 30, () -> damages.getValue());
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> damages.getValue());
     IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> damages.getValue());
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> damages.getValue());
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> damages.getValue());
-    BooleanSetting threading = registerBoolean("Threading", false);
+
+    // Misc
+    BooleanSetting misc = registerBoolean("Misc Section", false);
+    ColorSetting colorPlace = registerColor("Color Place", new GSColor(255, 255, 255), () -> misc.getValue());
+    IntegerSetting alphaPlace = registerInteger("Alpha place", 55, 0, 255, () -> misc.getValue());
+
+    // Predict
+    BooleanSetting predictSection = registerBoolean("Predict Section", false);
+    BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
+    BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
+            () -> predictSection.getValue() && predictSelfPlace.getValue() );
+    ColorSetting colorSelf = registerColor("Color Self Place", new GSColor(0, 255, 255),
+            () -> predictSection.getValue() && predictSelfPlace.getValue() && showSelfPredict.getValue());
+    BooleanSetting predictPlaceEnemy = registerBoolean("Predict Place Enemy", false, () -> predictSection.getValue());
+    ColorSetting showColorPredictEnemy = registerColor("Color Place Predict Enemy", new GSColor(255, 160, 0),
+            () -> predictSection.getValue() && predictPlaceEnemy.getValue());
+    IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30, () -> predictSection.getValue());
+    BooleanSetting calculateYPredict = registerBoolean("Calculate Y Predict", true, () -> predictSection.getValue());
+    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200, () -> predictSection.getValue() && calculateYPredict.getValue());
+    IntegerSetting expnentStartDecrease = registerInteger("Exponent Start", 2, 1, 5,
+            () -> predictSection.getValue() && calculateYPredict.getValue());
+    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5,
+            () -> predictSection.getValue() && calculateYPredict.getValue());
+    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3,
+            () -> predictSection.getValue() && calculateYPredict.getValue());
+    IntegerSetting increaseY = registerInteger("Increase Y", 3, 1, 5,
+            () -> predictSection.getValue() && calculateYPredict.getValue());
+    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3,
+            () -> predictSection.getValue() && calculateYPredict.getValue());
+    BooleanSetting splitXZ = registerBoolean("Split XZ", true, () -> predictSection.getValue());
+    IntegerSetting width = registerInteger("Line Width", 2, 1, 5, () -> predictSection.getValue());
+    BooleanSetting justOnce = registerBoolean("Just Once", false, () -> predictSection.getValue());
+    BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> predictSection.getValue());
+    BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false,
+            () -> predictSection.getValue() && manualOutHole.getValue() && manualOutHole.getValue());
+
+    // Threading
+    BooleanSetting threading = registerBoolean("Threading Section", false);
     IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> threading.getValue());
     IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
-    BooleanSetting strict = registerBoolean("Strict", false);
+
+    // Strict
+    BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
-    BooleanSetting debugMenu = registerBoolean("Debug Menu", false);
+
+    // Debug
+    BooleanSetting debugMenu = registerBoolean("Debug Section", false);
     BooleanSetting timeCalcPlacement = registerBoolean("Calc Placement Time", false, () -> debugMenu.getValue());
     IntegerSetting nCalc = registerInteger("N Calc", 100, 1, 1000, () -> debugMenu.getValue());
+    BooleanSetting debugPredict = registerBoolean("Debug Predict", false, () -> debugMenu.getValue());
+    BooleanSetting showPredictions = registerBoolean("Show Predictions", false, () -> debugMenu.getValue() && debugPredict.getValue());
 
     public static boolean stopAC = false;
 
@@ -67,9 +116,46 @@ public class AutoCrystalRewrite extends Module {
 
     CrystalInfo.PlaceInfo best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
 
+    class display {
+
+        AxisAlignedBB box;
+        BlockPos block;
+        final GSColor color;
+        int width;
+        int type;
+
+        public display(AxisAlignedBB box, GSColor color, int width) {
+            this.box = box;
+            this.color = color;
+            this.width = width;
+            this.type = 0;
+        }
+
+        public display(BlockPos box, GSColor color) {
+            block = box;
+            this.color = color;
+            this.type = 1;
+        }
+
+        void draw() {
+            switch (type) {
+                case 0:
+                    RenderUtil.drawBoundingBox(box, width, color);
+                    break;
+                case 1:
+                    RenderUtil.drawBox(block, 1, color, 63);
+                    breakCrystals();
+            }
+        }
+    }
+
+    ArrayList<display> toDisplay = new ArrayList<>();
+
     @Override
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
+
+        toDisplay.clear();
 
         switch (logic.getValue()) {
             case "Place->Break":
@@ -115,6 +201,15 @@ public class AutoCrystalRewrite extends Module {
                 PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
             }
         }
+
+        // Display crystal
+        if (best.crystal != null) {
+            toDisplay.add(new display(best.crystal, new GSColor(colorPlace.getValue(), alphaPlace.getValue())));
+            toDisplay.add(new display(best.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
+        }
+
+
+
     }
 
     void breakCrystals() {
@@ -124,7 +219,7 @@ public class AutoCrystalRewrite extends Module {
     void getTarget(String mode, boolean placing) {
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
-        double minDamage = this.minDamage.getValue();
+        double minDamage = this.minDamagePlace.getValue();
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
@@ -133,7 +228,8 @@ public class AutoCrystalRewrite extends Module {
         boolean raytraceValue = raytrace.getValue();
         int maxYTarget = this.maxYTarget.getValue();
         int minYTarget = this.minYTarget.getValue();
-        PlayerInfo player = new PlayerInfo(mc.player, false);
+        PlayerInfo player;
+
         List<List<PositionInfo>> possibleCrystals;
         best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         PlayerInfo target;
@@ -150,6 +246,11 @@ public class AutoCrystalRewrite extends Module {
                 if (targetEP == null)
                     return;
 
+                player = new PlayerInfo( predictSelfPlace.getValue() ? predictPlayer(mc.player) : mc.player, false);
+
+                if (predictSelfPlace.getValue() && showSelfPredict.getValue())
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
+
                 // Get every possible crystals
                 possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
 
@@ -161,7 +262,7 @@ public class AutoCrystalRewrite extends Module {
                 target = new PlayerInfo(targetEP, armourPercent);
 
                 // Calcualte best cr
-                calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
+                calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                         minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget);
 
                 return;
@@ -170,6 +271,44 @@ public class AutoCrystalRewrite extends Module {
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
                     return;
+                // If predict
+                if (predictPlaceEnemy.getValue()) {
+                    List<List<EntityPlayer>> list = splitListEntity(players, nThread);
+
+                    players.clear();
+
+                    Collection<Future<?>> futures = new LinkedList<>();
+
+                    for (int i = 0; i < nThread; i++) {
+                        int finalI = i;
+                        // Add them
+                        futures.add(executor.submit(() -> getPredicts(list.get(finalI)) ));
+                    }
+
+                    try {
+                        // For every thread
+                        for (Future<?> future : futures) {
+                            // Get it
+                            List<EntityPlayer> temp;
+                            temp = (List<EntityPlayer>) future.get();
+                            // If not null, add
+                            if (temp != null)
+                                players.addAll(temp);
+                        }
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    //players.replaceAll(entity -> predictPlayer(entity));
+                }
+
+
+                player = new PlayerInfo( predictSelfPlace.getValue() ? predictPlayer(mc.player) : mc.player, false);
+
+                if (predictSelfPlace.getValue() && showSelfPredict.getValue())
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
+
+
                 // If we are placing
                 possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
 
@@ -189,11 +328,16 @@ public class AutoCrystalRewrite extends Module {
                     // Get target
                     target = new PlayerInfo(playerTemp, armourPercent);
                     // Calculate
-                    calcualteBest(nThread, possibleCrystals, mc.player.posX, mc.player.posY, mc.player.posZ, target,
+                    calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                             minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget);
                 }
                 return;
         }
+    }
+
+    List<EntityPlayer> getPredicts(List<EntityPlayer> players) {
+        players.replaceAll(entity -> predictPlayer(entity));
+        return players;
     }
 
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
@@ -296,6 +440,178 @@ public class AutoCrystalRewrite extends Module {
         return output;
     }
 
+    List<List<EntityPlayer>> splitListEntity(List<EntityPlayer> start, int nThreads) {
+        // If we have only1  thread, return only 1 thing
+        if (nThreads == 1)
+            return new ArrayList<List<EntityPlayer>>() {
+                {
+                    add(start);
+                }
+            };
+        // Get n^Possibilites
+        int count;
+        if ((count = start.size()) == 0)
+            return null;
+        // Output
+        List<List<EntityPlayer>> output = new ArrayList<>(nThreads);
+        for (int i = 0; i < nThreads; i++) output.add(new ArrayList<>());
+
+        // Add everything
+        for (int i = 0; i < count; i++) {
+            output.get(i % nThreads).add(start.get(i));
+        }
+
+        // Return
+        return output;
+    }
+
+    EntityPlayer predictPlayer(EntityPlayer entity) {
+        // Position of the player
+        double[] posVec = new double[] {entity.posX, entity.posY, entity.posZ};
+        // This is likely a temp variable that is going to replace posVec
+        double[] newPosVec = posVec.clone();
+        // entity motions
+        double motionX = entity.posX - entity.prevPosX;
+        double motionY = entity.posY - entity.prevPosY;
+        double motionZ = entity.posZ - entity.prevPosZ;
+        // Y Prediction stuff
+        boolean goingUp = false;
+        boolean start = true;
+        int up = 0, down = 0;
+        if (debugPredict.getValue())
+            PistonCrystal.printDebug(String.format("Values: %f %f %f", newPosVec[0], newPosVec[1], newPosVec[2]), false);
+
+        // If he want manual out hole
+        boolean isHole = false;
+        if (manualOutHole.getValue() && motionY > 0) {
+            if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE)
+                isHole = true;
+            else if (aboveHoleManual.getValue() && HoleUtil.isHole(EntityUtil.getPosition(entity).add(0, -1, 0), false, true).getType() != HoleUtil.HoleType.NONE)
+                isHole = true;
+
+            if (isHole)
+                posVec[1] += 1;
+
+        }
+
+        for(int i = 0; i < tickPredict.getValue(); i++) {
+            RayTraceResult result;
+            // Here we can choose if calculating XZ separated or not
+            if (splitXZ.getValue()) {
+                // Clone posVec
+                newPosVec = posVec.clone();
+                // Add X
+                newPosVec[0] += motionX;
+                // Check collisions
+                result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], posVec[2]));
+                if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
+                    posVec = newPosVec.clone();
+                }
+                // Calculate Z
+                newPosVec = posVec.clone();
+                newPosVec[2] += motionZ;
+                // Check collisions
+                result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], newPosVec[2]));
+                if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
+                    posVec = newPosVec.clone();
+                }
+                // In case of calculating them toogheter
+            } else {
+                // Add XZ and check collisions
+                newPosVec = posVec.clone();
+                newPosVec[0] += motionX;
+                newPosVec[2] += motionZ;
+                result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], newPosVec[2]));
+                if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
+                    posVec = newPosVec.clone();
+                }
+            }
+
+                /*
+                    The y predict is a little bit complex:
+                    1) We have to understand if we are going up or down
+                    2) We have to understand when going up and going down and when switching it
+                    3) Implement a physic to the y transiction
+                    So,
+                    1) We understand if we are going up or down by the default motionY: If it's > 0, we are going up.
+                        This was the intention, then i decided to set it always to false because of strange bugs
+                        it predict nicely so no problem
+                    2) We understand when switch:
+                        a) from down to up when we collide with something under us, if we collide with something
+                        b) From up to down when the motionY become from positive to negative
+                    and this open the 3 point about the physyc:
+                    3) For making everything simpler and not overcomplex, when going up the motionY become
+                    a little bit bigger untill the reach a value that is called Exponent Start.
+                    Meanwhile, for going down, it's a little bit easier: we just do like before
+                    but until we collide with something.
+                    Yes, this is a unprecise but, this error of imprecision, is noticable only in
+                    long tick predict, and you dont use long tick prediction lol.
+                    i think this y prediction is usefull for detecting, in short distance, if we are going up or down
+                    on a block
+                    */
+            if (calculateYPredict.getValue() && !isHole) {
+                newPosVec = posVec.clone();
+                // If the enemy is not on the ground. We also be sure that it's not -0.078
+                // Because -0.078 is the motion we have when standing in a block.
+                // I dont know if we have antiHunger the server say we are onGround or not, i'll keep it here
+                if (!entity.onGround && motionY != -0.0784000015258789) {
+                    if (start) {
+                        // If it's the first time, we have to check first if our motionY is == 0.
+                        // MotionY is == 0 when we are jumping at the moment when we are going down
+                        if (motionY == 0)
+                            motionY = startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue());
+                        // Check if we are going up or down. We say > because of motionY
+                        goingUp = false;
+                        start = false;
+                        if (debugPredict.getValue())
+                            PistonCrystal.printDebug("Start motionY: " + motionY, false);
+                    }
+                    // Lets just add values to our motionY
+                    motionY += goingUp ? increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()) : decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                    // If the motionY is going too far, go down
+                    if (Math.abs(motionY) > startDecrease.getValue() / Math.pow(10, expnentStartDecrease.getValue())) {
+                        goingUp = false;
+                        if (debugPredict.getValue())
+                            up++;
+                        motionY = decreaseY.getValue() / Math.pow(10, exponentDecreaseY.getValue());
+                    }
+                    // Lets add motionY
+                    newPosVec[1] += (goingUp ? 1 : -1) * motionY;
+                    // Get result
+                    result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]),
+                            new Vec3d(newPosVec[0], newPosVec[1], newPosVec[2]));
+
+                    if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
+                        posVec = newPosVec.clone();
+                    } else {
+                        if (!goingUp) {
+                            goingUp = true;
+                            // Add this for deleting before motion
+                            newPosVec[1] += (increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue()));
+                            motionY = increaseY.getValue() / Math.pow(10, exponentIncreaseY.getValue());
+                            newPosVec[1] += motionY;
+                            if (debugPredict.getValue())
+                                down++;
+                        }
+                    }
+
+
+                }
+            }
+
+
+            if (showPredictions.getValue())
+                PistonCrystal.printDebug(String.format("Values: %f %f %f", posVec[0], posVec[1], posVec[2]), false);
+
+        }
+        if (debugPredict.getValue()) {
+            PistonCrystal.printDebug(String.format("Player: %s Total ticks: %d Up: %d Down: %d", ((EntityPlayer) entity).getGameProfile().getName(), tickPredict.getValue(), up, down), false);
+        }
+        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit"));
+        clonedPlayer.setPosition(posVec[0], posVec[1], posVec[2]);
+        return clonedPlayer;
+    }
+
 
     CrystalInfo.PlaceInfo calculateBestPositionTarget(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
                                                       double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double enemyRangeSq, double maxSelfDamage,
@@ -360,8 +676,7 @@ public class AutoCrystalRewrite extends Module {
 
 
     public void onWorldRender(RenderEvent event) {
-        if (best.crystal != null)
-            RenderUtil.drawBox(best.crystal, 1, new GSColor(255, 255, 255, 50), 63);
+        toDisplay.forEach(display -> display.draw());
     }
 
 
