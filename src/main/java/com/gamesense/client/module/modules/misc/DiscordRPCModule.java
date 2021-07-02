@@ -18,6 +18,7 @@ import net.minecraft.init.Items;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 @Module.Declaration(name = "DiscordRPC", category = Category.Misc, drawn = false)
 public class DiscordRPCModule extends Module {
@@ -35,6 +36,7 @@ public class DiscordRPCModule extends Module {
             add("Speed");
             add("Status");
             add("Version");
+            add("Ping");
         }
     };
 
@@ -68,7 +70,18 @@ public class DiscordRPCModule extends Module {
     }
 
     String getServer() {
-        return mc.serverName == null ? "Singleplayer" : mc.serverName;
+        return mc.getCurrentServerData() == null ? "Singleplayer" : mc.getCurrentServerData().serverIP;
+    }
+
+    String getPing() {
+        String p;
+        if (mc.player == null || mc.getConnection() == null || mc.getConnection().getPlayerInfo(mc.player.getName()) == null) {
+            p = "-1";
+        } else {
+            p = String.valueOf(Objects.requireNonNull(mc.getConnection().getPlayerInfo(mc.player.getName())).getResponseTime());
+        }
+        p = p + " ping";
+        return p;
     }
 
     String getMcName() {
@@ -222,6 +235,9 @@ public class DiscordRPCModule extends Module {
                     break;
                 case "Version":
                     out.append(getVersion());
+                    break;
+                case "Ping":
+                    out.append(getPing());
                     break;
             }
             if (!value.equalsIgnoreCase("none"))
