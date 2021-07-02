@@ -1,6 +1,8 @@
 package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.util.world.combatRewrite.ac.entityData.PlayerInfo;
+import com.gamesense.client.manager.managers.EntityTrackerManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.authlib.GameProfile;
@@ -66,6 +68,7 @@ public class FakePlayer extends Module {
             }
         }
         clonedPlayer.onLivingUpdate();
+        EntityTrackerManager.INSTANCE.addPlayer(new PlayerInfo(clonedPlayer, 0));
     }
     boolean beforePressed;
     @Override
@@ -80,6 +83,7 @@ public class FakePlayer extends Module {
         if (mc.world != null) {
             for(int i = 0; i < incr; i++) {
                 mc.world.removeEntityFromWorld((-1234 - i));
+                EntityTrackerManager.INSTANCE.removePlayer(-1234 - i);
             }
         }
     }

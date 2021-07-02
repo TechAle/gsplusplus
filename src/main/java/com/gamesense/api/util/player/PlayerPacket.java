@@ -23,7 +23,7 @@ public class PlayerPacket {
         this(module.getPriority(), position, rotation);
     }
 
-    private PlayerPacket(int priority, Vec3d position, Vec2f rotation) {
+    public PlayerPacket(int priority, Vec3d position, Vec2f rotation) {
         this.priority = priority;
         this.position = position;
         this.rotation = rotation;

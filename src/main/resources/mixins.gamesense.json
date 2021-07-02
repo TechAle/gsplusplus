@@ -27,6 +27,18 @@
     "MixinRenderManager",
     "MixinRenderPlayer",
     "MixinWorld",
-    "accessor.AccessorEntityPlayerSP"
+    "accessor.AccessorEntityPlayerSP",
+    "accessor.ICPacketUseEntity",
+    "accessor.IEntityAgeable",
+    "accessor.IEntityAreaEffectCloud",
+    "accessor.IEntityLivingBase",
+    "accessor.IEntityShulker",
+    "accessor.IEntitySlime",
+    "accessor.IEntityZombie",
+    "accessor.ISPacketChunkData",
+    "accessor.ISPacketEntity",
+    "accessor.ISPacketEntityStatus",
+    "accessor.ISPacketMultiBlockChange",
+    "accessor.ISPacketUseBed"
   ]
 }
