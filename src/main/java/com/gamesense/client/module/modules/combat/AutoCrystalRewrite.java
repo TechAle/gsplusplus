@@ -68,6 +68,11 @@ public class AutoCrystalRewrite extends Module {
 
     //region Place
     BooleanSetting place = registerBoolean("Place Section", false);
+    ModeSetting placeDelay = registerMode("Place Delay", Arrays.asList("Tick", "Time"), "Tick", () -> place.getValue());
+    IntegerSetting tickDelayPlace = registerInteger("Tick Delay Place", 0, 0, 20,
+            () -> place.getValue() && placeDelay.getValue().equals("Tick"));
+    IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
+            () -> place.getValue() && placeDelay.getValue().equals("Time"));
     DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
     DoubleSetting maxSelfDamagePlace = registerDouble("Max Self Damage Place", 12, 0, 30, () -> place.getValue());
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
@@ -75,6 +80,12 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
+    ModeSetting limitPacketPlace = registerMode("Limit Packet Place", Arrays.asList("None", "Tick", "Time"), "None",
+            () -> place.getValue());
+    IntegerSetting limitTickPlace = registerInteger("Limit Tick Place", 0, 0, 20,
+            () -> place.getValue() && limitPacketPlace.getValue().equals("Tick"));
+    IntegerSetting limitTickTime = registerInteger("Limit Time Place", 0, 0, 2000,
+            () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
     //endregion
 
@@ -143,6 +154,7 @@ public class AutoCrystalRewrite extends Module {
 
     //region Global variables
 
+    // This is for comparing the distance between two players
     static class Sortbyroll implements Comparator<EntityPlayer> {
 
         @Override
@@ -151,7 +163,8 @@ public class AutoCrystalRewrite extends Module {
         }
     }
 
-    class display {
+    // This class is for displaying things
+    static class display {
 
         AxisAlignedBB box;
         BlockPos block;
@@ -179,23 +192,98 @@ public class AutoCrystalRewrite extends Module {
                     break;
                 case 1:
                     RenderUtil.drawBox(block, 1, color, 63);
-                    breakCrystals();
             }
         }
     }
 
-    public static boolean stopAC = false;
-    boolean isSilentSwitching;
+    class crystalPlaceWait {
 
-    int oldSlot, tick = 0;
+        ArrayList<crystalTime> listWait = new ArrayList<>();
+
+        void addCrystal(BlockPos cryst, int finish) {
+            listWait.add(new crystalTime(cryst,  finish));
+        }
+
+        void addCrystal(BlockPos cryst, int tick, int tickFinish) {
+            listWait.add(new crystalTime(cryst,  tick, tickFinish));
+        }
+
+        void removeCrystal(BlockPos pos) {
+            int i = CrystalExists(pos);
+            if (i != -1)
+                listWait.remove(i);
+        }
+
+        int CrystalExists(BlockPos pos) {
+            for(int i = 0; i < listWait.size(); i++)
+                if (sameBlockPos(pos, listWait.get(i).posCrystal))
+                    return i;
+            return -1;
+        }
+
+        void updateCrystals() {
+            for(int i = 0; i < listWait.size(); i++) {
+                if (listWait.get(i).isReady()) {
+                    listWait.remove(i);
+                    i--;
+                }
+            }
+        }
+
+    }
+
+    static class crystalTime {
+        final BlockPos posCrystal;
+        final int type;
+        int tick;
+        int finishTick;
+        long start;
+        int finish;
+
+        public crystalTime(BlockPos posCrystal, int tick, int finishTick) {
+            this.posCrystal = posCrystal;
+            this.tick = tick;
+            this.type = 0;
+            this.finishTick = finishTick;
+        }
+
+        public crystalTime(BlockPos posCrystal, int finish) {
+            this.posCrystal = posCrystal;
+            this.start = System.currentTimeMillis();
+            this.finish = finish;
+            this.type = 1;
+        }
+
+        boolean isReady() {
+            switch (type) {
+                case 0:
+                    return ++tick >= this.finishTick;
+                case 1:
+                    return System.currentTimeMillis() - this.start >= this.finish;
+            }
+            return true;
+        }
+
+
+    }
+
+    public static boolean stopAC = false;
+    boolean isSilentSwitching, checkTime;
+
+    int oldSlot, tick = 0, tickBeforePlace = 0;
+
+    long time = 0;
 
     Vec3d lastHitVec;
 
-    ArrayList<BlockPos> waitingPlace = new ArrayList<>();
+    crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
+
 
     ArrayList<display> toDisplay = new ArrayList<>();
 
     ArrayList<Long> durations = new ArrayList<>();
+
+
 
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
@@ -205,6 +293,12 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     //region Gamesense call
+
+    public void onEnable() {
+        tickBeforePlace = tick = 0;
+        time = 0;
+        checkTime = false;
+    }
 
     // Simple onUpdate
     public void onUpdate() {
@@ -523,9 +617,34 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     //region Place Crystal
+    boolean canStartPlacing() {
+
+        switch (placeDelay.getValue()) {
+            case "Tick":
+                if (tickBeforePlace == 0)
+                    return true;
+                else tickBeforePlace--;
+                break;
+            case "Time":
+                if (!checkTime)
+                    return true;
+                else if (System.currentTimeMillis() - time >= timeDelayPlace.getValue()) {
+                    checkTime = false;
+                    return true;
+                }
+                break;
+        }
+
+        return false;
+    }
 
     // Main function for placing crystals
     void placeCrystals() {
+
+        listCrystalsPlaced.updateCrystals();
+
+        if (!canStartPlacing())
+            return;
 
         // Get crystal hand
         EnumHand hand = getHandCrystal();
@@ -608,6 +727,10 @@ public class AutoCrystalRewrite extends Module {
         if (!isCrystalHere(pos))
             return;
 
+        // If this pos is in wait
+        if (listCrystalsPlaced.CrystalExists(pos) != -1)
+            return;
+
         // Rotate
         if (rotate.getValue()) {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
@@ -645,6 +768,17 @@ public class AutoCrystalRewrite extends Module {
         if (isSilentSwitching)
             mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
+        tickBeforePlace = tickDelayPlace.getValue();
+        checkTime = true;
+        time = System.currentTimeMillis();
+        switch (limitPacketPlace.getValue()) {
+            case "Tick":
+                listCrystalsPlaced.addCrystal(pos, 0, limitTickPlace.getValue());
+                break;
+            case "Time":
+                listCrystalsPlaced.addCrystal(pos, limitTickTime.getValue());
+                break;
+        }
     }
 
     // Given a pos, say if there is a crystal
