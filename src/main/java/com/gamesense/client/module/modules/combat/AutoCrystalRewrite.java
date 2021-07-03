@@ -1,11 +1,16 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.Phase;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.player.InventoryUtil;
+import com.gamesense.api.util.player.PlayerPacket;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.combat.CrystalUtil;
@@ -13,17 +18,22 @@ import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.api.util.world.combat.ac.CrystalInfo;
 import com.gamesense.api.util.world.combat.ac.PlayerInfo;
 import com.gamesense.api.util.world.combat.ac.PositionInfo;
+import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.authlib.GameProfile;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -48,19 +58,23 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting maxYTarget = registerInteger("Max Y Target", 1, 0, 3, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y Target", 3, 0, 5, () -> ranges.getValue());
 
-    // Damages
-    BooleanSetting damages = registerBoolean("Damage Section", false);
-    DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> damages.getValue());
-    DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 12, 0, 30, () -> damages.getValue());
-    IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> damages.getValue());
-    IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> damages.getValue());
-    DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> damages.getValue());
-    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> damages.getValue());
+    // Place
+    BooleanSetting place = registerBoolean("Place Section", false);
+    DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
+    DoubleSetting maxSelfDamagePlace = registerDouble("Max Self Damage Place", 12, 0, 30, () -> place.getValue());
+    IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
+    IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> place.getValue());
+    DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
+    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
+    BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
 
     // Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
     ColorSetting colorPlace = registerColor("Color Place", new GSColor(255, 255, 255), () -> misc.getValue());
     IntegerSetting alphaPlace = registerInteger("Alpha place", 55, 0, 255, () -> misc.getValue());
+    BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
+    BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
+            () -> misc.getValue() && switchHotbar.getValue());
 
     // Predict
     BooleanSetting predictSection = registerBoolean("Predict Section", false);
@@ -100,6 +114,11 @@ public class AutoCrystalRewrite extends Module {
     // Strict
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
+    BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
+    BooleanSetting forceRotation = registerBoolean("Force rotation", false,
+            () -> strict.getValue() && rotate.getValue());
+    IntegerSetting tickForceRotation = registerInteger("Tick Force Rotation", 3, 0, 10,
+            () -> strict.getValue() && forceRotation.getValue());
 
     // Debug
     BooleanSetting debugMenu = registerBoolean("Debug Section", false);
@@ -114,7 +133,11 @@ public class AutoCrystalRewrite extends Module {
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
 
-    CrystalInfo.PlaceInfo best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+    CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+
+    int oldSlot;
+
+
 
     class display {
 
@@ -174,11 +197,19 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
+        oldSlot = mc.player.inventory.currentItem;
+
     }
 
     ArrayList<Long> durations = new ArrayList<>();
 
     void placeCrystals() {
+
+        // Get crystal hand
+        EnumHand hand = getHandCrystal();
+        if (hand == null)
+            return;
+
         // For debugging timeCalcPlacement
         long inizio = 0;
         if (timeCalcPlacement.getValue())
@@ -203,17 +234,124 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Display crystal
-        if (best.crystal != null) {
-            toDisplay.add(new display(best.crystal, new GSColor(colorPlace.getValue(), alphaPlace.getValue())));
-            toDisplay.add(new display(best.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
+        if (bestPlace.crystal != null) {
+            toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), alphaPlace.getValue())));
+            toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
+
+            placeCrystal(bestPlace.crystal, hand);
+
         }
-
-
 
     }
 
+    boolean isSilentSwitching;
+
+    EnumHand getHandCrystal() {
+        isSilentSwitching = false;
+        // Check offhand
+        if (mc.player.getHeldItemOffhand().getItem() instanceof ItemEndCrystal)
+            return EnumHand.MAIN_HAND;
+        else {
+            // Check mainhand
+            if (mc.player.getHeldItemMainhand().getItem() instanceof ItemEndCrystal) {
+                // If you switch, it will place the block you had in your hand before
+                if (oldSlot != mc.player.inventory.currentItem)
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                return EnumHand.MAIN_HAND;
+            }
+            else if (switchHotbar.getValue()) {
+                // Get slot
+                int slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
+                // If found
+                if (slot != -1) {
+                    // Silent switch
+                    if (silentSwitch.getValue()) {
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                        isSilentSwitching = true;
+                    }
+                    // Normal switch
+                    else {
+                        mc.player.inventory.currentItem = slot;
+                        mc.playerController.updateController();
+                    }
+                    return EnumHand.MAIN_HAND;
+                }
+            }
+        }
+        return null;
+    }
+
+    void placeCrystal(BlockPos pos, EnumHand handSwing) {
+        // If there is a crystal, stop
+        if (!isCrystalHere(pos))
+            return;
+
+        // Rotate
+        if (rotate.getValue()) {
+            BlockUtil.faceVectorPacketInstant(new Vec3d(pos).add(0.5, 0.5, 0.5), true);
+        }
+
+        // Force rotation
+        if (forceRotation.getValue()) {
+            lastHitVec = new Vec3d(pos).add(0.5, 0.5, 0.5);
+            tick = 0;
+        }
+
+        // Raytrace
+        if (raytrace.getValue()) {
+
+            EnumFacing enumFacing = null;
+            if (raytrace.getValue()) {
+                RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ),
+                        new Vec3d((double) pos.getX() + 0.5d, (double) pos.getY() - 0.5d, (double) pos.getZ() + 0.5d));
+                if (result == null || result.sideHit == null) {
+                    return;
+                } else {
+                    enumFacing = result.sideHit;
+                }
+            }
+
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
+        } else {
+            // Normal placing
+            if (pos.getY() == 255) {
+                // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
+                mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.DOWN, handSwing, 0, 0, 0));
+            } else {
+                mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.UP, handSwing, 0, 0, 0));
+            }
+
+        }
+
+        mc.player.swingArm(handSwing);
+
+        // Return back in case of silent switch
+        if (isSilentSwitching)
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+
+        /*
+        idk why i thought this would be a good idea
+        if (instaPlace.getValue()) {
+            mc.world.spawnEntity(new EntityEnderCrystal(mc.world, pos.getX() + .5, pos.getY() + 1, pos.getZ() + .5));
+        }*/
+
+    }
+
+
+
     void breakCrystals() {
 
+    }
+
+    boolean isCrystalHere(BlockPos pos) {
+        BlockPos posUp = pos.up();
+
+        AxisAlignedBB box = new AxisAlignedBB(
+                posUp.getX(), posUp.getY(), posUp.getZ(),
+                posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
+        );
+
+        return mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal).isEmpty();
     }
 
     void getTarget(String mode, boolean placing) {
@@ -224,14 +362,14 @@ public class AutoCrystalRewrite extends Module {
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
         double enemyRangeSQ = rangeEnemy.getValue() * rangeEnemy.getValue();
-        double maxSelfDamage = this.maxSelfDamage.getValue();
+        double maxSelfDamage = this.maxSelfDamagePlace.getValue();
         boolean raytraceValue = raytrace.getValue();
         int maxYTarget = this.maxYTarget.getValue();
         int minYTarget = this.minYTarget.getValue();
         PlayerInfo player;
 
         List<List<PositionInfo>> possibleCrystals;
-        best = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         PlayerInfo target;
         switch (mode) {
             case "Lowest":
@@ -368,8 +506,8 @@ public class AutoCrystalRewrite extends Module {
             e.printStackTrace();
         }
         // Get best result
-        results.add(best);
-        best = getResult(results);
+        results.add(bestPlace);
+        bestPlace = getResult(results);
     }
 
     CrystalInfo.PlaceInfo getResult(Stack<CrystalInfo.PlaceInfo> result) {
@@ -394,10 +532,13 @@ public class AutoCrystalRewrite extends Module {
         return returnValue;
     }
 
-
     List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean raytrace) {
         // Get every possibilites
-        List<BlockPos> possibilites = CrystalUtil.findCrystalBlocks(placeRange.getValue().floatValue(), newPlace.getValue());
+        List<BlockPos> possibilites =
+                includeCrystalMapping.getValue() ?
+                CrystalUtil.findCrystalBlocksExcludingCrystals(placeRange.getValue().floatValue(), newPlace.getValue())
+                        :
+                CrystalUtil.findCrystalBlocks(placeRange.getValue().floatValue(), newPlace.getValue());
         // Output with position and damage
         List<PositionInfo> damagePos = new ArrayList<>();
         for (BlockPos crystal : possibilites) {
@@ -413,7 +554,6 @@ public class AutoCrystalRewrite extends Module {
         // Remove every crystals that deal more damage to us
         return splitList(damagePos, nThread.getValue());
     }
-
 
     List<List<PositionInfo>> splitList(List<PositionInfo> start, int nThreads) {
         // If we have only1  thread, return only 1 thing
@@ -554,7 +694,7 @@ public class AutoCrystalRewrite extends Module {
                 // If the enemy is not on the ground. We also be sure that it's not -0.078
                 // Because -0.078 is the motion we have when standing in a block.
                 // I dont know if we have antiHunger the server say we are onGround or not, i'll keep it here
-                if (!entity.onGround && motionY != -0.0784000015258789) {
+                if (!entity.onGround && motionY != -0.0784000015258789 && motionY != 0) {
                     if (start) {
                         // If it's the first time, we have to check first if our motionY is == 0.
                         // MotionY is == 0 when we are jumping at the moment when we are going down
@@ -674,16 +814,26 @@ public class AutoCrystalRewrite extends Module {
         }
     }
 
-
     public void onWorldRender(RenderEvent event) {
         toDisplay.forEach(display -> display.draw());
     }
 
-
+    Vec3d lastHitVec;
+    int tick = 0;
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
+        if (event.getPhase() != Phase.PRE || !forceRotation.getValue() || lastHitVec == null) return;
 
+        if (tick++ >= tickForceRotation.getValue()) {
+            tick = 0;
+            lastHitVec = null;
+            return;
+        }
+
+        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
+        PlayerPacket packet = new PlayerPacket(this, rotation);
+        PlayerPacketManager.INSTANCE.addPacket(packet);
     });
 
     @SuppressWarnings("unused")
