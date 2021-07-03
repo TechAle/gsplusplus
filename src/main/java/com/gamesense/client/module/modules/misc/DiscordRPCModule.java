@@ -37,6 +37,7 @@ public class DiscordRPCModule extends Module {
             add("Status");
             add("Version");
             add("Ping");
+            add("Fps");
         }
     };
 
@@ -51,6 +52,10 @@ public class DiscordRPCModule extends Module {
                 ? "Overworld"
             : mc.world.provider.getDimension() == 1 ?
                 "End" : "Nether");
+    }
+
+    String getFps() {
+        return String.valueOf(mc.fpsCounter);
     }
 
     String getHealth() {
@@ -238,6 +243,9 @@ public class DiscordRPCModule extends Module {
                     break;
                 case "Ping":
                     out.append(getPing());
+                    break;
+                case "Fps":
+                    out.append(getFps());
                     break;
             }
             if (!value.equalsIgnoreCase("none"))
