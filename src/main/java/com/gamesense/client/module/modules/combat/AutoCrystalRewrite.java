@@ -67,6 +67,7 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
+    BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
 
     // Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
@@ -115,10 +116,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
-    BooleanSetting forceRotation = registerBoolean("Force rotation", false,
-            () -> strict.getValue() && rotate.getValue());
     IntegerSetting tickForceRotation = registerInteger("Tick Force Rotation", 3, 0, 10,
-            () -> strict.getValue() && forceRotation.getValue());
+            () -> strict.getValue() && rotate.getValue());
 
     // Debug
     BooleanSetting debugMenu = registerBoolean("Debug Section", false);
@@ -250,7 +249,7 @@ public class AutoCrystalRewrite extends Module {
         isSilentSwitching = false;
         // Check offhand
         if (mc.player.getHeldItemOffhand().getItem() instanceof ItemEndCrystal)
-            return EnumHand.MAIN_HAND;
+            return EnumHand.OFF_HAND;
         else {
             // Check mainhand
             if (mc.player.getHeldItemMainhand().getItem() instanceof ItemEndCrystal) {
@@ -288,12 +287,7 @@ public class AutoCrystalRewrite extends Module {
 
         // Rotate
         if (rotate.getValue()) {
-            BlockUtil.faceVectorPacketInstant(new Vec3d(pos).add(0.5, 0.5, 0.5), true);
-        }
-
-        // Force rotation
-        if (forceRotation.getValue()) {
-            lastHitVec = new Vec3d(pos).add(0.5, 0.5, 0.5);
+            lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             tick = 0;
         }
 
@@ -301,15 +295,13 @@ public class AutoCrystalRewrite extends Module {
         if (raytrace.getValue()) {
 
             EnumFacing enumFacing = null;
-            if (raytrace.getValue()) {
-                RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ),
-                        new Vec3d((double) pos.getX() + 0.5d, (double) pos.getY() - 0.5d, (double) pos.getZ() + 0.5d));
-                if (result == null || result.sideHit == null) {
-                    return;
-                } else {
-                    enumFacing = result.sideHit;
-                }
+            RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ), new Vec3d(pos.getX() + 0.5d, pos.getY() + .5d, pos.getZ() + 0.5d));
+            if (result == null || result.sideHit == null) {
+                return;
+            } else {
+                enumFacing = result.sideHit;
             }
+
 
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
         } else {
@@ -323,17 +315,12 @@ public class AutoCrystalRewrite extends Module {
 
         }
 
-        mc.player.swingArm(handSwing);
+        if (swingPlace.getValue())
+            mc.player.swingArm(handSwing);
 
         // Return back in case of silent switch
         if (isSilentSwitching)
             mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
-
-        /*
-        idk why i thought this would be a good idea
-        if (instaPlace.getValue()) {
-            mc.world.spawnEntity(new EntityEnderCrystal(mc.world, pos.getX() + .5, pos.getY() + 1, pos.getZ() + .5));
-        }*/
 
     }
 
@@ -507,7 +494,8 @@ public class AutoCrystalRewrite extends Module {
         }
         // Get best result
         results.add(bestPlace);
-        bestPlace = getResult(results);
+        if (results.size() != 1)
+            bestPlace = getResult(results);
     }
 
     CrystalInfo.PlaceInfo getResult(Stack<CrystalInfo.PlaceInfo> result) {
@@ -544,10 +532,11 @@ public class AutoCrystalRewrite extends Module {
         for (BlockPos crystal : possibilites) {
             float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
             RayTraceResult result;
-            // Exclude useless crystals and non-visible in case of raytrace
+            // Exclude useless crystals and non-visible in case of raytrace   (1276 56 996) (-1275, 56, 996)
             if (damage < maxSelfDamage
-                    && (!raytrace || !((result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
-                    new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d))) != null && result.typeOfHit != RayTraceResult.Type.ENTITY))) {
+                    && (!raytrace || (!((result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
+                    new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d))) != null && result.typeOfHit != RayTraceResult.Type.ENTITY
+                        ) || sameBlockPos(result.getBlockPos(), crystal)))) {
                 damagePos.add(new PositionInfo(crystal, damage));
             }
         }
@@ -578,6 +567,10 @@ public class AutoCrystalRewrite extends Module {
 
         // Return
         return output;
+    }
+
+    boolean sameBlockPos(BlockPos first, BlockPos second) {
+        return first.getX() == second.getX() && first.getY() == second.getY() && first.getZ() == second.getZ();
     }
 
     List<List<EntityPlayer>> splitListEntity(List<EntityPlayer> start, int nThreads) {
@@ -823,13 +816,7 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
-        if (event.getPhase() != Phase.PRE || !forceRotation.getValue() || lastHitVec == null) return;
-
-        if (tick++ >= tickForceRotation.getValue()) {
-            tick = 0;
-            lastHitVec = null;
-            return;
-        }
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
 
         Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
         PlayerPacket packet = new PlayerPacket(this, rotation);
