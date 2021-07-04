@@ -36,6 +36,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.*;
@@ -208,8 +209,8 @@ public class AutoCrystalRewrite extends Module {
             listWait.add(new crystalTime(cryst,  tick, tickFinish));
         }
 
-        void removeCrystal(BlockPos pos) {
-            int i = CrystalExists(pos);
+        void removeCrystal(Double x, Double y, Double z) {
+            int i = CrystalExists(new BlockPos(x - .5, y - .5, z - .5));
             if (i != -1)
                 listWait.remove(i);
         }
@@ -1032,7 +1033,13 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-
+        if (event.getPacket() instanceof SPacketSpawnObject) {
+            SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
+            if (SpawnObject.getType() == 51 ) {
+                if (!limitPacketPlace.getValue().equals("None"))
+                    listCrystalsPlaced.removeCrystal(SpawnObject.getX(), SpawnObject.getY(), SpawnObject.getZ());
+            }
+        }
     });
 
     //endregion
