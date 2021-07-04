@@ -41,7 +41,6 @@ import javax.annotation.Nonnull;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.gamesense.client.module.modules.combat.AutoCrystal.stopAC;
@@ -49,8 +48,6 @@ import static com.gamesense.client.module.modules.combat.AutoCrystal.stopAC;
 public class ACMain extends Thread implements Listenable {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
-
-    private final AtomicBoolean killSwitch;
 
     private final Timer breakTimer = new Timer();
     private final Timer placeTimer = new Timer();
@@ -65,18 +62,13 @@ public class ACMain extends Thread implements Listenable {
     private volatile boolean rotating = false;
     private volatile Vec3d lastHitVec = null;
 
-    public ACMain(@Nonnull AtomicBoolean killSwitch) {
+    public ACMain() {
         this.setDaemon(true);
-        this.killSwitch = killSwitch;
     }
 
     @Override
     public void run() {
-        while (!killSwitch.get()) {
-            if (this.isInterrupted()) {
-                return;
-            }
-
+        while (!this.isInterrupted()) {
             if (mc.player == null || mc.world == null || mc.player.isDead) {
                 continue;
             }
@@ -146,13 +138,15 @@ public class ACMain extends Thread implements Listenable {
 
     public boolean breakCrystal() {
         List<EntityInfo> crystals = EntityTrackerManager.INSTANCE.getEntitiesInRange(settings.player.position, settings.breakRange);
+
         // remove all crystals that deal more than max self damage
         // and all crystals outside of break range
         // no point in checking these
         final PlayerInfo self = settings.player;
         final double breakRangeSq = settings.breakRange * settings.breakRange;
+        final boolean own = settings.breakMode.equalsIgnoreCase("Own");
         crystals.removeIf(crystal -> {
-            if (!crystal.isCrystal) {
+            if (!(crystal.isCrystal || (own && AutoCrystalManager.INSTANCE.isOwn(new BlockPos(crystal.position))))) {
                 return true;
             }
             float damage = DamageUtil.calculateDamageThreaded(crystal.position.x, crystal.position.y, crystal.position.z, self);
@@ -264,28 +258,28 @@ public class ACMain extends Thread implements Listenable {
         }
 
         this.rotating = settings.rotate;
-        this.lastHitVec = new Vec3d(crystal.crystal).add(0.5, 1.0, 0.5);
 
         RayTraceResult result = DamageUtil.rayTraceBlocks(settings.player.position.add(0, settings.player.getEyeHeight(), 0), new Vec3d((double) crystal.crystal.getX() + 0.5d, (double) crystal.crystal.getY() - 0.5D, (double) crystal.crystal.getZ() + 0.5d), WorldCopyManager.INSTANCE);
         EnumFacing enumFacing = null;
-        if (result != null) {
-            enumFacing = result.sideHit;
-            this.lastHitVec = result.hitVec;
-        } else {
+        if (result == null) {
+            this.lastHitVec = new Vec3d(crystal.crystal).add(0.5, 1.0, 0.5);
             if (settings.raytrace) {
                 AutoCrystalManager.INSTANCE.setRenderInfo(null);
                 return false;
             }
+        } else {
+            this.lastHitVec = result.hitVec;
+            enumFacing = result.sideHit;
         }
 
-        //AutoCrystalManager.INSTANCE.onPlaceCrystal(crystal.crystal);
+        AutoCrystalManager.INSTANCE.onPlaceCrystal(crystal.crystal);
 
         mc.player.connection.sendPacket(new CPacketAnimation(offhand ? EnumHand.OFF_HAND : EnumHand.MAIN_HAND));
-        if (enumFacing != null) {
-            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(crystal.crystal, enumFacing, offhand ? EnumHand.OFF_HAND : EnumHand.MAIN_HAND, 0, 0, 0));
-        } else if (crystal.crystal.getY() == 255) {
+        if (crystal.crystal.getY() == 255) {
             // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(crystal.crystal, EnumFacing.DOWN, offhand ? EnumHand.OFF_HAND : EnumHand.MAIN_HAND, 0, 0, 0));
+        } else if (enumFacing != null) {
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(crystal.crystal, enumFacing, offhand ? EnumHand.OFF_HAND : EnumHand.MAIN_HAND, 0, 0, 0));
         } else {
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(crystal.crystal, EnumFacing.UP, offhand ? EnumHand.OFF_HAND : EnumHand.MAIN_HAND, 0, 0, 0));
         }

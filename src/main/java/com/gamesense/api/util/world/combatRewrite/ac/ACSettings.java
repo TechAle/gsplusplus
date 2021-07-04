@@ -5,7 +5,6 @@ import com.gamesense.api.util.world.combatRewrite.ac.entityData.PlayerInfo;
 public class ACSettings {
     public final String breakMode;
     public final String handBreak;
-    public final String breakType;
     public final String crystalPriority;
     public final boolean breakCrystal;
     public final boolean placeCrystal;
@@ -32,10 +31,9 @@ public class ACSettings {
 
     public final PlayerInfo player;
 
-    public ACSettings(String breakMode, String handBreak, String breakType, String crystalPriority, boolean breakCrystal, boolean placeCrystal, int breakSpeed, int placeSpeed, double breakRange, double placeRange, double wallsRange, double enemyRange, boolean antiWeakness, boolean antiSuicide, int antiSuicideValue, boolean autoSwitch, boolean noGapSwitch, boolean endCrystalMode, double minDmg, double minBreakDmg, double maxSelfDmg, int facePlaceValue, int armourFacePlace, double minFacePlaceDmg, boolean rotate, boolean raytrace, PlayerInfo player) {
+    public ACSettings(String breakMode, String handBreak, String crystalPriority, boolean breakCrystal, boolean placeCrystal, int breakSpeed, int placeSpeed, double breakRange, double placeRange, double wallsRange, double enemyRange, boolean antiWeakness, boolean antiSuicide, int antiSuicideValue, boolean autoSwitch, boolean noGapSwitch, boolean endCrystalMode, double minDmg, double minBreakDmg, double maxSelfDmg, int facePlaceValue, int armourFacePlace, double minFacePlaceDmg, boolean rotate, boolean raytrace, PlayerInfo player) {
         this.breakMode = breakMode;
         this.handBreak = handBreak;
-        this.breakType = breakType;
         this.crystalPriority = crystalPriority;
         this.breakCrystal = breakCrystal;
         this.placeCrystal = placeCrystal;

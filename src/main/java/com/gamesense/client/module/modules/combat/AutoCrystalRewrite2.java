@@ -16,14 +16,12 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Module.Declaration(name = "AutoCrystalRewrite2", category = Category.Combat, priority = 100)
 public class AutoCrystalRewrite2 extends Module {
 
     ModeSetting breakMode = registerMode("Target", Arrays.asList("All", "Smart", "Own"), "All");
     ModeSetting handBreak = registerMode("Hand", Arrays.asList("Main", "Offhand", "Both"), "Main");
-    ModeSetting breakType = registerMode("Type", Arrays.asList("Swing", "Packet"), "Swing");
     ModeSetting crystalPriority = registerMode("Prioritise", Arrays.asList("Damage", "Closest", "Health"), "Damage");
     BooleanSetting breakCrystal = registerBoolean("Break", true);
     BooleanSetting placeCrystal = registerBoolean("Place", true);
@@ -53,7 +51,6 @@ public class AutoCrystalRewrite2 extends Module {
     ColorSetting color = registerColor("Color", new GSColor(0, 255, 0, 50));
 
     public static volatile boolean stopAC = false;
-    private final AtomicBoolean killSwitch = new AtomicBoolean(false);
 
     private ACMain thread = null;
 
@@ -286,45 +283,21 @@ public class AutoCrystalRewrite2 extends Module {
     public ACSettings getSettings() {
         int armour = armourFacePlace.getValue();
         PlayerInfo self = new PlayerInfo(mc.player, armour);
-        return new ACSettings(breakMode.getValue(), handBreak.getValue(), breakType.getValue(), crystalPriority.getValue(), breakCrystal.getValue(), placeCrystal.getValue(), breakSpeed.getValue(), placeSpeed.getValue(), breakRange.getValue(), placeRange.getValue(), wallsRange.getValue(), enemyRange.getValue(), antiWeakness.getValue(), antiSuicide.getValue(), antiSuicideValue.getValue(), autoSwitch.getValue(), noGapSwitch.getValue(), endCrystalMode.getValue(), minDmg.getValue(), minBreakDmg.getValue(), maxSelfDmg.getValue(), facePlaceValue.getValue(), armour, minFacePlaceDmg.getValue(), rotate.getValue(), raytrace.getValue(), self);
+        return new ACSettings(breakMode.getValue(), handBreak.getValue(), crystalPriority.getValue(), breakCrystal.getValue(), placeCrystal.getValue(), breakSpeed.getValue(), placeSpeed.getValue(), breakRange.getValue(), placeRange.getValue(), wallsRange.getValue(), enemyRange.getValue(), antiWeakness.getValue(), antiSuicide.getValue(), antiSuicideValue.getValue(), autoSwitch.getValue(), noGapSwitch.getValue(), endCrystalMode.getValue(), minDmg.getValue(), minBreakDmg.getValue(), maxSelfDmg.getValue(), facePlaceValue.getValue(), armour, minFacePlaceDmg.getValue(), rotate.getValue(), raytrace.getValue(), self);
     }
 
-    /*
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-        Packet<?> packet = event.getPacket();
-        if (packet instanceof SPacketSoundEffect) {
-            final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) packet;
-            if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
-                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
-                    if (entity instanceof EntityEnderCrystal) {
-                        if (entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
-                            entity.setDead();
-                        }
-                    }
-                }
-            }
-        }
-    });
-     */
-
     protected void onEnable() {
-        killSwitch.set(false);
-
-        thread = new ACMain(killSwitch);
+        thread = new ACMain();
         thread.start();
         GameSense.EVENT_BUS.subscribe(thread);
     }
 
     public void onDisable() {
-        killSwitch.set(true);
-
         GameSense.EVENT_BUS.unsubscribe(thread);
         thread.interrupt();
         thread = null;
 
-        AutoCrystalManager.INSTANCE.setRenderInfo(null);
+        AutoCrystalManager.INSTANCE.onDisable();
     }
 
     public String getHudInfo() {

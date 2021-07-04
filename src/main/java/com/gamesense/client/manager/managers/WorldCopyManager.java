@@ -106,7 +106,7 @@ public enum WorldCopyManager implements Manager, IBlockAccess {
 
     @SuppressWarnings("unused")
     @EventHandler
-    private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
+    private final Listener<PacketEvent.PostReceive> packetReceiveListener = new Listener<>(event -> {
         Packet<?> packet = event.getPacket();
         if (packet instanceof SPacketRespawn) {
             dimension = ((SPacketRespawn) packet).getDimensionID();

@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 
 import java.util.HashMap;
 
@@ -23,8 +24,12 @@ public class HoleUtil {
     }
 
     public static HoleInfo isHole(BlockPos centreBlock, boolean onlyOneWide, boolean ignoreDown) {
+        return isHole(centreBlock, onlyOneWide, ignoreDown, mc.world);
+    }
+
+    public static HoleInfo isHole(BlockPos centreBlock, boolean onlyOneWide, boolean ignoreDown, IBlockAccess world) {
         HoleInfo output = new HoleInfo();
-        HashMap<HoleUtil.BlockOffset, HoleUtil.BlockSafety> unsafeSides = HoleUtil.getUnsafeSides(centreBlock);
+        HashMap<HoleUtil.BlockOffset, HoleUtil.BlockSafety> unsafeSides = HoleUtil.getUnsafeSides(centreBlock, world);
 
         if (unsafeSides.containsKey(HoleUtil.BlockOffset.DOWN)) {
             if (unsafeSides.remove(HoleUtil.BlockOffset.DOWN, HoleUtil.BlockSafety.BREAKABLE)) {
@@ -54,17 +59,17 @@ public class HoleUtil {
         }
         // have one open side
         else if (size == 1 && !onlyOneWide) {
-            return isDoubleHole(output, centreBlock, unsafeSides.keySet().stream().findFirst().get());
+            return isDoubleHole(output, centreBlock, unsafeSides.keySet().stream().findFirst().get(), world);
         } else {
             output.setSafety(BlockSafety.BREAKABLE);
             return output;
         }
     }
 
-    private static HoleInfo isDoubleHole(HoleInfo info, BlockPos centreBlock, BlockOffset weakSide) {
+    private static HoleInfo isDoubleHole(HoleInfo info, BlockPos centreBlock, BlockOffset weakSide, IBlockAccess world) {
         BlockPos unsafePos = weakSide.offset(centreBlock);
 
-        HashMap<HoleUtil.BlockOffset, HoleUtil.BlockSafety> unsafeSides = HoleUtil.getUnsafeSides(unsafePos);
+        HashMap<HoleUtil.BlockOffset, HoleUtil.BlockSafety> unsafeSides = HoleUtil.getUnsafeSides(unsafePos, world);
 
         int size = unsafeSides.size();
 
@@ -101,26 +106,30 @@ public class HoleUtil {
     }
 
     public static HashMap<BlockOffset, BlockSafety> getUnsafeSides(BlockPos pos) {
+        return getUnsafeSides(pos, mc.world);
+    }
+
+    private static HashMap<BlockOffset, BlockSafety> getUnsafeSides(BlockPos pos, IBlockAccess world) {
         HashMap<BlockOffset, BlockSafety> output = new HashMap<>();
         BlockSafety temp;
 
-        temp = isBlockSafe(mc.world.getBlockState(BlockOffset.DOWN.offset(pos)).getBlock());
+        temp = isBlockSafe(world.getBlockState(BlockOffset.DOWN.offset(pos)).getBlock());
         if (temp != BlockSafety.UNBREAKABLE)
             output.put(BlockOffset.DOWN, temp);
 
-        temp = isBlockSafe(mc.world.getBlockState(BlockOffset.NORTH.offset(pos)).getBlock());
+        temp = isBlockSafe(world.getBlockState(BlockOffset.NORTH.offset(pos)).getBlock());
         if (temp != BlockSafety.UNBREAKABLE)
             output.put(BlockOffset.NORTH, temp);
 
-        temp = isBlockSafe(mc.world.getBlockState(BlockOffset.SOUTH.offset(pos)).getBlock());
+        temp = isBlockSafe(world.getBlockState(BlockOffset.SOUTH.offset(pos)).getBlock());
         if (temp != BlockSafety.UNBREAKABLE)
             output.put(BlockOffset.SOUTH, temp);
 
-        temp = isBlockSafe(mc.world.getBlockState(BlockOffset.EAST.offset(pos)).getBlock());
+        temp = isBlockSafe(world.getBlockState(BlockOffset.EAST.offset(pos)).getBlock());
         if (temp != BlockSafety.UNBREAKABLE)
             output.put(BlockOffset.EAST, temp);
 
-        temp = isBlockSafe(mc.world.getBlockState(BlockOffset.WEST.offset(pos)).getBlock());
+        temp = isBlockSafe(world.getBlockState(BlockOffset.WEST.offset(pos)).getBlock());
         if (temp != BlockSafety.UNBREAKABLE)
             output.put(BlockOffset.WEST, temp);
 

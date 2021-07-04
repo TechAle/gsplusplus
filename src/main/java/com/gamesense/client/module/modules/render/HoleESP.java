@@ -8,6 +8,7 @@ import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.client.manager.managers.WorldCopyManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.google.common.collect.Sets;
@@ -15,13 +16,13 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.IBlockAccess;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.lwjgl.opengl.GL11.*;
+import java.util.concurrent.*;
 
 /**
  * @reworked by 0b00101010 on 14/01/2021
@@ -30,7 +31,7 @@ import static org.lwjgl.opengl.GL11.*;
 @Module.Declaration(name = "HoleESP", category = Category.Render)
 public class HoleESP extends Module {
 
-    public IntegerSetting range = registerInteger("Range", 5, 1, 20);
+    public IntegerSetting range = registerInteger("Range", 5, 1, 50);
     ModeSetting customHoles = registerMode("Show", Arrays.asList("Single", "Double", "Custom"), "Single");
     ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
     BooleanSetting fillRaytrace = registerBoolean("Fill raytrace", false);
@@ -44,82 +45,42 @@ public class HoleESP extends Module {
     ColorSetting customColor = registerColor("Custom Color", new GSColor(0, 0, 255));
     IntegerSetting ufoAlpha = registerInteger("UFOAlpha", 255, 0, 255);
 
-    private ConcurrentHashMap<AxisAlignedBB, GSColor> holes;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    private Future<HashMap<AxisAlignedBB, GSColor>> output;
+    private HashMap<AxisAlignedBB, GSColor> current;
 
     public void onUpdate() {
         if (mc.player == null || mc.world == null) {
             return;
         }
 
-        if (holes == null) {
-            holes = new ConcurrentHashMap<>();
-        } else {
-            holes.clear();
+        if (output == null) {
+            output = executor.submit(new HoleESPExecutor(this, PlayerUtil.getPlayerPos()));
         }
-
-        int range = (int) Math.ceil(this.range.getValue());
-
-        HashSet<BlockPos> possibleHoles = Sets.newHashSet();
-        List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range, range, false, true, 0);
-
-        for (BlockPos pos : blockPosList) {
-
-            if (!mc.world.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-
-            if (mc.world.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-            if (!mc.world.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-
-            if (mc.world.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
-                possibleHoles.add(pos);
-            }
-        }
-
-        possibleHoles.forEach(pos -> {
-            HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
-            HoleUtil.HoleType holeType = holeInfo.getType();
-            if (holeType != HoleUtil.HoleType.NONE) {
-
-                HoleUtil.BlockSafety holeSafety = holeInfo.getSafety();
-                AxisAlignedBB centreBlocks = holeInfo.getCentre();
-
-                if (centreBlocks == null)
-                    return;
-
-                GSColor colour;
-
-                if (holeSafety == HoleUtil.BlockSafety.UNBREAKABLE) {
-                    colour = new GSColor(bedrockColor.getValue(), 255);
-                } else {
-                    colour = new GSColor(obsidianColor.getValue(), 255);
-                }
-                if (holeType == HoleUtil.HoleType.CUSTOM) {
-                    colour = new GSColor(customColor.getValue(), 255);
-                }
-
-                String mode = customHoles.getValue();
-                if (mode.equalsIgnoreCase("Custom") && (holeType == HoleUtil.HoleType.CUSTOM || holeType == HoleUtil.HoleType.DOUBLE)) {
-                    holes.put(centreBlocks, colour);
-                } else if (mode.equalsIgnoreCase("Double") && holeType == HoleUtil.HoleType.DOUBLE) {
-                    holes.put(centreBlocks, colour);
-                } else if (holeType == HoleUtil.HoleType.SINGLE) {
-                    holes.put(centreBlocks, colour);
-                }
-            }
-        });
     }
 
     public void onWorldRender(RenderEvent event) {
-        if (mc.player == null || mc.world == null || holes == null || holes.isEmpty()) {
+        if (mc.player == null || mc.world == null) {
             return;
         }
 
-        holes.forEach(this::renderHoles);
+        if (output != null)
+        {
+            if (output.isCancelled()) {
+                output = null;
+            } else if (output.isDone()) {
+                try {
+                    current = output.get();
+                } catch (InterruptedException | ExecutionException ignored) {
+                }
+                output = null;
+            }
+        }
+
+        if (current != null) {
+            current.forEach(this::renderHoles);
+        }
     }
 
     private void renderHoles(AxisAlignedBB hole, GSColor color) {
@@ -221,6 +182,83 @@ public class HoleESP extends Module {
                 }
                 break;
             }
+        }
+    }
+
+    private static class HoleESPExecutor implements Callable<HashMap<AxisAlignedBB, GSColor>> {
+        private static final IBlockAccess world = WorldCopyManager.INSTANCE;
+
+        private final HoleESP parent;
+        private final BlockPos player;
+
+        public HoleESPExecutor(HoleESP parent, BlockPos player) {
+            this.parent = parent;
+            this.player = player;
+        }
+
+        @Override
+        public HashMap<AxisAlignedBB, GSColor> call() {
+            HashMap<AxisAlignedBB, GSColor> holes = new HashMap<>();
+            int range = (int) Math.ceil(parent.range.getValue());
+
+            HashSet<BlockPos> possibleHoles = Sets.newHashSet();
+            List<BlockPos> blockPosList = EntityUtil.getSphere(player, range, range, false, true, 0);
+
+            WorldCopyManager.INSTANCE.lock.readLock().lock();
+            try {
+                for (BlockPos pos : blockPosList) {
+                    if (!world.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
+                        continue;
+                    }
+                    if (world.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
+                        continue;
+                    }
+                    if (!world.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
+                        continue;
+                    }
+
+                    if (world.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
+                        possibleHoles.add(pos);
+                    }
+                }
+
+                possibleHoles.forEach(pos -> {
+                    HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false, world);
+                    HoleUtil.HoleType holeType = holeInfo.getType();
+                    if (holeType != HoleUtil.HoleType.NONE) {
+
+                        HoleUtil.BlockSafety holeSafety = holeInfo.getSafety();
+                        AxisAlignedBB centreBlocks = holeInfo.getCentre();
+
+                        if (centreBlocks == null)
+                            return;
+
+                        GSColor colour;
+
+                        if (holeSafety == HoleUtil.BlockSafety.UNBREAKABLE) {
+                            colour = new GSColor(parent.bedrockColor.getValue(), 255);
+                        } else {
+                            colour = new GSColor(parent.obsidianColor.getValue(), 255);
+                        }
+                        if (holeType == HoleUtil.HoleType.CUSTOM) {
+                            colour = new GSColor(parent.customColor.getValue(), 255);
+                        }
+
+                        String mode = parent.customHoles.getValue();
+                        if (mode.equalsIgnoreCase("Custom") && (holeType == HoleUtil.HoleType.CUSTOM || holeType == HoleUtil.HoleType.DOUBLE)) {
+                            holes.put(centreBlocks, colour);
+                        } else if (mode.equalsIgnoreCase("Double") && holeType == HoleUtil.HoleType.DOUBLE) {
+                            holes.put(centreBlocks, colour);
+                        } else if (holeType == HoleUtil.HoleType.SINGLE) {
+                            holes.put(centreBlocks, colour);
+                        }
+                    }
+                });
+            } finally {
+                WorldCopyManager.INSTANCE.lock.readLock().unlock();
+            }
+
+            return holes;
         }
     }
 }

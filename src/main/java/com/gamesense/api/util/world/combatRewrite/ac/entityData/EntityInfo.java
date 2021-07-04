@@ -1,5 +1,6 @@
 package com.gamesense.api.util.world.combatRewrite.ac.entityData;
 
+import com.gamesense.client.manager.managers.AutoCrystalManager;
 import com.google.common.collect.Lists;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
@@ -7,6 +8,7 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -95,6 +97,7 @@ public class EntityInfo {
     }
 
     public void onRemove() {
+        AutoCrystalManager.INSTANCE.onBreakCrystal(new BlockPos(this.position));
         this.removeAllPassengers();
     }
 

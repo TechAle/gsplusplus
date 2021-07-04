@@ -19,9 +19,10 @@ public class ACUtil {
         BlockPos best = null;
         float bestDamage = 0f;
         final double enemyRangeSq = settings.enemyRange * settings.enemyRange;
+        final double wallRangeSq = settings.wallsRange * settings.wallsRange;
         final float fullHealth = target.getHealth() + target.getAbsorption();
         for (BlockPos crystal : possibleLocations) {
-            if (!(canFakeCrystalBeSeen(crystal, settings.player) || (settings.player.position.squareDistanceTo(crystal.getX() + 0.5d, crystal.getY() + 1.0d, crystal.getZ() + 0.5d) < settings.wallsRange))) {
+            if (!(canFakeCrystalBeSeen(crystal, settings.player) || (settings.player.position.squareDistanceTo(crystal.getX() + 0.5d, crystal.getY() + 1.0d, crystal.getZ() + 0.5d) < wallRangeSq))) {
                 continue;
             }
             // if player is out of range of this crystal, do nothing
@@ -58,9 +59,10 @@ public class ACUtil {
         EntityInfo best = null;
         float bestDamage = 0f;
         final boolean smart = settings.breakMode.equalsIgnoreCase("Smart");
+        final double wallRangeSq = settings.wallsRange * settings.wallsRange;
         final float fullHealth = target.getHealth() + target.getAbsorption();
         for (EntityInfo crystal : crystals) {
-            if (!(canCrystalBeSeen(crystal, settings.player) || (settings.player.position.distanceTo(crystal.position) < settings.wallsRange))) {
+            if (!(canCrystalBeSeen(crystal, settings.player) || (settings.player.position.squareDistanceTo(crystal.position) < wallRangeSq))) {
                 continue;
             }
             float currentDamage = DamageUtil.calculateDamageThreaded(crystal.position.x, crystal.position.y, crystal.position.z, target);
