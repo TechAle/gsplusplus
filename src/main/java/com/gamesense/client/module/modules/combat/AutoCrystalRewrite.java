@@ -15,7 +15,6 @@ import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
-import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.combat.CrystalUtil;
@@ -56,15 +55,15 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
-    BooleanSetting ranges = registerBoolean("Range Section", false);
     //endregion
 
     //region Ranges
-    DoubleSetting rangeEnemy = registerDouble("RangeEnemy", 7, 0, 12, () -> ranges.getValue());
+    BooleanSetting ranges = registerBoolean("Range Section", false);
+    DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
-    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey", 6, 0, 8, () -> ranges.getValue());
-    IntegerSetting maxYTarget = registerInteger("Max Y Target", 1, 0, 3, () -> ranges.getValue());
-    IntegerSetting minYTarget = registerInteger("Min Y Target", 3, 0, 5, () -> ranges.getValue());
+    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey Place", 6, 0, 8, () -> ranges.getValue());
+    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 1, 0, 3, () -> ranges.getValue());
+    IntegerSetting minYTargetPlace = registerInteger("Min Y Place", 3, 0, 5, () -> ranges.getValue());
     //endregion
 
     //region Place
@@ -134,6 +133,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting threading = registerBoolean("Threading Section", false);
     IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> threading.getValue());
     IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
+    IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000);
+    IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000);
     //endregion
 
     //region Strict
@@ -347,11 +348,12 @@ public class AutoCrystalRewrite extends Module {
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
-        double enemyRangeSQ = rangeEnemy.getValue() * rangeEnemy.getValue();
+        double enemyRangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
         double maxSelfDamage = this.maxSelfDamagePlace.getValue();
         boolean raytraceValue = raytrace.getValue();
-        int maxYTarget = this.maxYTarget.getValue();
-        int minYTarget = this.minYTarget.getValue();
+        int maxYTarget = this.maxYTargetPlace.getValue();
+        int minYTarget = this.minYTargetPlace.getValue();
+        int placeTimeout = this.placeTimeout.getValue();
         PlayerInfo player;
 
         List<List<PositionInfo>> possibleCrystals;
@@ -387,7 +389,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // Calcualte best cr
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
                 return;
             case "Damage":
@@ -403,24 +405,26 @@ public class AutoCrystalRewrite extends Module {
 
                     Collection<Future<?>> futures = new LinkedList<>();
 
+                    int predictPlaceTimeout = this.predictPlaceTimeout.getValue();
+
                     for (int i = 0; i < nThread; i++) {
                         int finalI = i;
                         // Add them
                         futures.add(executor.submit(() -> getPredicts(list.get(finalI)) ));
                     }
 
-                    try {
-                        // For every thread
-                        for (Future<?> future : futures) {
+                    // For every thread
+                    for (Future<?> future : futures) {
+                        try {
                             // Get it
                             List<EntityPlayer> temp;
-                            temp = (List<EntityPlayer>) future.get();
+                            temp = (List<EntityPlayer>) future.get(predictPlaceTimeout, TimeUnit.MILLISECONDS);
                             // If not null, add
                             if (temp != null)
                                 players.addAll(temp);
+                        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                            e.printStackTrace();
                         }
-                    } catch (ExecutionException | InterruptedException e) {
-                        e.printStackTrace();
                     }
 
                     //players.replaceAll(entity -> predictPlayer(entity));
@@ -453,7 +457,7 @@ public class AutoCrystalRewrite extends Module {
                     target = new PlayerInfo(playerTemp, armourPercent);
                     // Calculate
                     calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                            minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget);
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
                 return;
         }
@@ -463,7 +467,7 @@ public class AutoCrystalRewrite extends Module {
     // + return the best place
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
                        PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ, double maxSelfDamage,
-                       int maxYTarget, int minYTarget) {
+                       int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<>();
         // Iterate for every thread we have
@@ -475,18 +479,18 @@ public class AutoCrystalRewrite extends Module {
         }
         // Get stack for then collecting the results
         Stack<CrystalInfo.PlaceInfo> results = new Stack<>();
-        try {
-            // For every thread
-            for (Future<?> future : futures) {
+        // For every thread
+        for (Future<?> future : futures) {
+            try {
                 // Get it
                 CrystalInfo.PlaceInfo temp;
-                temp = (CrystalInfo.PlaceInfo) future.get();
+                temp = (CrystalInfo.PlaceInfo) future.get(placeTimeout, TimeUnit.MILLISECONDS);
                 // If not null, add
                 if (temp != null)
                     results.add(temp);
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                e.printStackTrace();
             }
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
         }
         // Get best result
         results.add(bestPlace);
