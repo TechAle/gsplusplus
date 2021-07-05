@@ -430,7 +430,7 @@ public class NewChat extends GuiNewChat {
         // Transform it into a char array
         for(char c : word.toCharArray()) {
             // If it's colored
-            if (c == '§') {
+            if (c == 167) {
                 // Lets check the color after
                 before$ = true;
                 // Check if we have to append a new text
