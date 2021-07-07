@@ -17,6 +17,13 @@ public class ColorSetting extends Setting<GSColor> {
         this.alphaEnabled = false;
     }
 
+    public ColorSetting(String name, Module module, boolean rainbow, GSColor value, boolean alphaEnabled) {
+        super(value, name, module);
+        this.rainbow = rainbow;
+        this.rainbowEnabled = true;
+        this.alphaEnabled = alphaEnabled;
+    }
+
     public ColorSetting(String name, String configName, Module module, Supplier<Boolean> isVisible, boolean rainbow, boolean rainbowEnabled, boolean alphaEnabled, GSColor value) {
         super(value, name, configName, module, isVisible);
         this.rainbow = rainbow;

@@ -220,6 +220,15 @@ public abstract class Module implements Listenable {
     protected ColorSetting registerColor(String name, GSColor color, Supplier<Boolean> dipendent) {
         ColorSetting colorSetting = new ColorSetting(name, this, false, color);
         colorSetting.setVisible(dipendent);
+        colorSetting.alphaEnabled();
+        SettingsManager.addSetting(colorSetting);
+        return colorSetting;
+    }
+
+    protected ColorSetting registerColor(String name, GSColor color, Supplier<Boolean> dipendent, Boolean alphaEnabled) {
+        ColorSetting colorSetting = new ColorSetting(name, this, false, color, alphaEnabled);
+        colorSetting.setVisible(dipendent);
+        colorSetting.alphaEnabled();
         SettingsManager.addSetting(colorSetting);
         return colorSetting;
     }
