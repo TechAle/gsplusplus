@@ -186,46 +186,46 @@ public class HoleESP extends Module {
     BooleanSetting oFillSection = registerBoolean("Fill Section Obsidian", false,
             () ->  type.getValue().equals("Fill") || type.getValue().equals("Both"));
     // Bottom
-    ModeSetting oNVerticesFillBot = registerMode("N^ Vertices Fill Bot", Arrays.asList("1", "2", "4"), "4",
+    ModeSetting oNVerticesFillBot = registerMode("oN^ Vertices Fill Bot", Arrays.asList("1", "2", "4"), "4",
             () -> (type.getValue().equals("Fill") || type.getValue().equals("Both")) && oFillSection.getValue());
-    ModeSetting odirection2FillBot = registerMode("Direction Fill Bot", Arrays.asList("X", "Z"), "X",
+    ModeSetting odirection2FillBot = registerMode("oDirection Fill Bot", Arrays.asList("X", "Z"), "X",
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue() && oNVerticesFillBot.getValue().equals("2"));
-    ColorSetting ofirstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 255),
+    ColorSetting ofirstVerticeFillBot = registerColor("o1 Vert Fill Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     , true);
-    ColorSetting osecondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 255),
+    ColorSetting osecondVerticeFillBot = registerColor("o2 Vert Fill Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && (oNVerticesFillBot.getValue().equals("2") || oNVerticesFillBot.getValue().equals("4")), true);
-    ColorSetting othirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 255),
+    ColorSetting othirdVerticeFillBot = registerColor("o3 Vert Fill Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && oNVerticesFillBot.getValue().equals("4"), true);
-    ColorSetting ofourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 255),
+    ColorSetting ofourVerticeFillBot = registerColor("o4 Vert Fill Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && oNVerticesFillBot.getValue().equals("4"), true);
     // Top
-    ModeSetting oNVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
+    ModeSetting oNVerticesFillTop = registerMode("oN^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue());
-    ModeSetting odirection2FillTop = registerMode("Direction Fill Top", Arrays.asList("X", "Z"), "X",
+    ModeSetting odirection2FillTop = registerMode("oDirection Fill Top", Arrays.asList("X", "Z"), "X",
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue() && oNVerticesFillTop.getValue().equals("2"));
-    ColorSetting ofirstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 255),
+    ColorSetting ofirstVerticeFillTop = registerColor("o1 Vert Fill Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue(), true);
-    ColorSetting osecondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 255),
+    ColorSetting osecondVerticeFillTop = registerColor("o2 Vert Fill Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && (oNVerticesFillTop.getValue().equals("2") || oNVerticesFillTop.getValue().equals("4")), true);
-    ColorSetting othirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 255),
+    ColorSetting othirdVerticeFillTop = registerColor("o3 Vert Fill Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && oNVerticesFillTop.getValue().equals("4"), true);
-    ColorSetting ofourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 255),
+    ColorSetting ofourVerticeFillTop = registerColor("o4 Vert Fill Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
                     oFillSection.getValue()
                     && oNVerticesFillTop.getValue().equals("4"), true);
