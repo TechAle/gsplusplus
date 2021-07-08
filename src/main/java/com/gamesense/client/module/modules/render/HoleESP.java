@@ -676,7 +676,7 @@ public class HoleESP extends Module {
                         colors.add(firstVerticeOutlineBot.getValue());
                         break;
                     case "2":
-                        if (odirection2OutLineBot.getValue().equals("X")) {
+                        if (direction2OutLineBot.getValue().equals("X")) {
                             colors.add(firstVerticeOutlineBot.getValue());
                             colors.add(secondVerticeOutlineBot.getValue());
                             colors.add(firstVerticeOutlineBot.getValue());
@@ -749,7 +749,7 @@ public class HoleESP extends Module {
                 break;
         }
 
-        RenderUtil.drawBoundingBox(hole, width.getValue(), ufoAlpha.getValue(), colors.toArray(new GSColor[7]));
+        RenderUtil.drawBoundingBox(hole, width.getValue(), colors.toArray(new GSColor[7]));
     }
 
     void renderFillCustom(AxisAlignedBB hole, int typeHole) {
@@ -881,7 +881,7 @@ public class HoleESP extends Module {
                         colors.add(firstVerticeFillBot.getValue());
                         break;
                     case "2":
-                        if (odirection2FillBot.getValue().equals("X")) {
+                        if (direction2FillBot.getValue().equals("X")) {
                             colors.add(firstVerticeFillBot.getValue());
                             colors.add(secondVerticeFillBot.getValue());
                             colors.add(firstVerticeFillBot.getValue());
@@ -954,6 +954,6 @@ public class HoleESP extends Module {
                 break;
         }
 
-        RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), (this.ufoAlpha.getValue() * 50) / 255, mask);
+        RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);
     }
 }
