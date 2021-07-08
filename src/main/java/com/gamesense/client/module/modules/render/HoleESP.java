@@ -33,6 +33,7 @@ public class HoleESP extends Module {
     public IntegerSetting range = registerInteger("Range", 5, 1, 20);
     ModeSetting customHoles = registerMode("Show", Arrays.asList("Single", "Double", "Custom"), "Single");
     ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
+
     //region outline bedrock
     // Custom outline
     BooleanSetting bOutLineSection = registerBoolean("OutLine Section Bedrock", false,
@@ -45,19 +46,19 @@ public class HoleESP extends Module {
                     bOutLineSection.getValue() && bNVerticesOutlineBot.getValue().equals("2"));
     ColorSetting bfirstVerticeOutlineBot = registerColor("b1 Vert Out Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    bOutLineSection.getValue()
                     , true);
     ColorSetting bsecondVerticeOutlineBot = registerColor("b2 Vert Out Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    bOutLineSection.getValue()
                     && (bNVerticesOutlineBot.getValue().equals("2") || bNVerticesOutlineBot.getValue().equals("4")), true);
     ColorSetting bthirdVerticeOutlineBot = registerColor("b3 Vert Out Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    bOutLineSection.getValue()
                     && bNVerticesOutlineBot.getValue().equals("4"), true);
     ColorSetting bfourVerticeOutlineBot = registerColor("b4 Vert Out Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    bOutLineSection.getValue()
                     && bNVerticesOutlineBot.getValue().equals("4"), true);
     // Top
     ModeSetting bNVerticesOutlineTop = registerMode("bN^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
@@ -68,20 +69,19 @@ public class HoleESP extends Module {
                     bOutLineSection.getValue() && bNVerticesOutlineTop.getValue().equals("2"));
     ColorSetting bfirstVerticeOutlineTop = registerColor("b1 Vert Out Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (bNVerticesOutlineBot.getValue().equals("2") || bNVerticesOutlineBot.getValue().equals("4")), true);
+                    bOutLineSection.getValue(), true);
     ColorSetting bsecondVerticeOutlineTop = registerColor("b2 Vert Out Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (bNVerticesOutlineBot.getValue().equals("2") || bNVerticesOutlineBot.getValue().equals("4")), true);
+                    bOutLineSection.getValue()
+                    && (bNVerticesOutlineTop.getValue().equals("2") || bNVerticesOutlineTop.getValue().equals("4")), true);
     ColorSetting bthirdVerticeOutlineTop = registerColor("b3 Vert Out Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && bNVerticesOutlineBot.getValue().equals("4"), true);
+                    bOutLineSection.getValue()
+                    && bNVerticesOutlineTop.getValue().equals("4"), true);
     ColorSetting bfourVerticeOutlineTop = registerColor("b4 Vert Out Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    bOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && bNVerticesOutlineBot.getValue().equals("4"), true);
+                    bOutLineSection.getValue()
+                    && bNVerticesOutlineTop.getValue().equals("4"), true);
     //endregion
     // region fill bedrock
     BooleanSetting bFillSection = registerBoolean("Fill Section Bedrock", false,
@@ -94,19 +94,19 @@ public class HoleESP extends Module {
                     bFillSection.getValue() && bNVerticesFillBot.getValue().equals("2"));
     ColorSetting bfirstVerticeFillBot = registerColor("b1 Vert Fill Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    bFillSection.getValue()
                     , true);
     ColorSetting bsecondVerticeFillBot = registerColor("b2 Vert Fill Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    bFillSection.getValue()
                     && (bNVerticesFillBot.getValue().equals("2") || bNVerticesFillBot.getValue().equals("4")), true);
     ColorSetting bthirdVerticeFillBot = registerColor("b3 Vert Fill Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    bFillSection.getValue()
                     && bNVerticesFillBot.getValue().equals("4"), true);
     ColorSetting bfourVerticeFillBot = registerColor("b4 Vert Fill Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    bFillSection.getValue()
                     && bNVerticesFillBot.getValue().equals("4"), true);
     // Top
     ModeSetting bNVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
@@ -117,20 +117,20 @@ public class HoleESP extends Module {
                     bFillSection.getValue() && bNVerticesFillTop.getValue().equals("2"));
     ColorSetting bfirstVerticeFillTop = registerColor("b1 Vert Fill Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (bNVerticesFillBot.getValue().equals("2") || bNVerticesFillBot.getValue().equals("4")), true);
+                    bFillSection.getValue()
+            , true);
     ColorSetting bsecondVerticeFillTop = registerColor("b2 Vert Fill Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (bNVerticesFillBot.getValue().equals("2") || bNVerticesFillBot.getValue().equals("4")), true);
+                    bFillSection.getValue()
+                    && (bNVerticesFillTop.getValue().equals("2") || bNVerticesFillTop.getValue().equals("4")), true);
     ColorSetting bthirdVerticeFillTop = registerColor("b3 Vert Fill Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && bNVerticesFillBot.getValue().equals("4"), true);
+                    bFillSection.getValue()
+                    && bNVerticesFillTop.getValue().equals("4"), true);
     ColorSetting bfourVerticeFillTop = registerColor("b4 Vert Fill Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    bFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && bNVerticesFillBot.getValue().equals("4"), true);
+                    bFillSection.getValue()
+                    && bNVerticesFillTop.getValue().equals("4"), true);
     //endregion
 
     //region outline obby
@@ -145,19 +145,19 @@ public class HoleESP extends Module {
                     oOutLineSection.getValue() && oNVerticesOutlineBot.getValue().equals("2"));
     ColorSetting ofirstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    oOutLineSection.getValue()
                     , true);
     ColorSetting osecondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    oOutLineSection.getValue()
                     && (oNVerticesOutlineBot.getValue().equals("2") || oNVerticesOutlineBot.getValue().equals("4")), true);
     ColorSetting othirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    oOutLineSection.getValue()
                     && oNVerticesOutlineBot.getValue().equals("4"), true);
     ColorSetting ofourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    oOutLineSection.getValue()
                     && oNVerticesOutlineBot.getValue().equals("4"), true);
     // Top
     ModeSetting oNVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
@@ -168,20 +168,19 @@ public class HoleESP extends Module {
                     oOutLineSection.getValue() && oNVerticesOutlineTop.getValue().equals("2"));
     ColorSetting ofirstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (oNVerticesOutlineBot.getValue().equals("2") || oNVerticesOutlineBot.getValue().equals("4")), true);
+                    oOutLineSection.getValue(), true);
     ColorSetting osecondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (oNVerticesOutlineBot.getValue().equals("2") || oNVerticesOutlineBot.getValue().equals("4")), true);
+                    oOutLineSection.getValue()
+                    && (oNVerticesOutlineTop.getValue().equals("2") || oNVerticesOutlineTop.getValue().equals("4")), true);
     ColorSetting othirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && oNVerticesOutlineBot.getValue().equals("4"), true);
+                    oOutLineSection.getValue()
+                    && oNVerticesOutlineTop.getValue().equals("4"), true);
     ColorSetting ofourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    oOutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && oNVerticesOutlineBot.getValue().equals("4"), true);
+                    oOutLineSection.getValue()
+                    && oNVerticesOutlineTop.getValue().equals("4"), true);
     //endregion
     // region fill obby
     BooleanSetting oFillSection = registerBoolean("Fill Section Obsidian", false,
@@ -194,19 +193,19 @@ public class HoleESP extends Module {
                     oFillSection.getValue() && oNVerticesFillBot.getValue().equals("2"));
     ColorSetting ofirstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    oFillSection.getValue()
                     , true);
     ColorSetting osecondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    oFillSection.getValue()
                     && (oNVerticesFillBot.getValue().equals("2") || oNVerticesFillBot.getValue().equals("4")), true);
     ColorSetting othirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    oFillSection.getValue()
                     && oNVerticesFillBot.getValue().equals("4"), true);
     ColorSetting ofourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    oFillSection.getValue()
                     && oNVerticesFillBot.getValue().equals("4"), true);
     // Top
     ModeSetting oNVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
@@ -217,20 +216,19 @@ public class HoleESP extends Module {
                     oFillSection.getValue() && oNVerticesFillTop.getValue().equals("2"));
     ColorSetting ofirstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (oNVerticesFillBot.getValue().equals("2") || oNVerticesFillBot.getValue().equals("4")), true);
+                    oFillSection.getValue(), true);
     ColorSetting osecondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (oNVerticesFillBot.getValue().equals("2") || oNVerticesFillBot.getValue().equals("4")), true);
+                    oFillSection.getValue()
+                    && (oNVerticesFillTop.getValue().equals("2") || oNVerticesFillTop.getValue().equals("4")), true);
     ColorSetting othirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && oNVerticesFillBot.getValue().equals("4"), true);
+                    oFillSection.getValue()
+                    && oNVerticesFillTop.getValue().equals("4"), true);
     ColorSetting ofourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    oFillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && oNVerticesFillBot.getValue().equals("4"), true);
+                    oFillSection.getValue()
+                    && oNVerticesFillTop.getValue().equals("4"), true);
     //endregion
 
     //region outline custom
@@ -245,19 +243,19 @@ public class HoleESP extends Module {
                     OutLineSection.getValue() && NVerticesOutlineBot.getValue().equals("2"));
     ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    OutLineSection.getValue()
                     , true);
     ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    OutLineSection.getValue()
                     && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
     ColorSetting thirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    OutLineSection.getValue()
                     && NVerticesOutlineBot.getValue().equals("4"), true);
     ColorSetting fourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
+                    OutLineSection.getValue()
                     && NVerticesOutlineBot.getValue().equals("4"), true);
     // Top
     ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
@@ -268,20 +266,19 @@ public class HoleESP extends Module {
                     OutLineSection.getValue() && NVerticesOutlineTop.getValue().equals("2"));
     ColorSetting firstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
+                    OutLineSection.getValue(), true);
     ColorSetting secondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
+                    OutLineSection.getValue()
+                    && (NVerticesOutlineTop.getValue().equals("2") || NVerticesOutlineTop.getValue().equals("4")), true);
     ColorSetting thirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && NVerticesOutlineBot.getValue().equals("4"), true);
+                    OutLineSection.getValue()
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
     ColorSetting fourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
-                    OutLineSection.getValue() && (type.getValue().equals("Outline") || type.getValue().equals("Both"))
-                    && NVerticesOutlineBot.getValue().equals("4"), true);
+                    OutLineSection.getValue()
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
     //endregion
     // region fill custom
     BooleanSetting FillSection = registerBoolean("Fill Section Custom", false,
@@ -294,19 +291,19 @@ public class HoleESP extends Module {
                     FillSection.getValue() && NVerticesFillBot.getValue().equals("2"));
     ColorSetting firstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    FillSection.getValue()
                     , true);
     ColorSetting secondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    FillSection.getValue()
                     && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
     ColorSetting thirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    FillSection.getValue()
                     && NVerticesFillBot.getValue().equals("4"), true);
     ColorSetting fourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
+                    FillSection.getValue()
                     && NVerticesFillBot.getValue().equals("4"), true);
     // Top
     ModeSetting NVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
@@ -317,20 +314,19 @@ public class HoleESP extends Module {
                     FillSection.getValue() && NVerticesFillTop.getValue().equals("2"));
     ColorSetting firstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
+                    FillSection.getValue(), true);
     ColorSetting secondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
+                    FillSection.getValue()
+                    && (NVerticesFillTop.getValue().equals("2") || NVerticesFillTop.getValue().equals("4")), true);
     ColorSetting thirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && NVerticesFillBot.getValue().equals("4"), true);
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
     ColorSetting fourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
-                    FillSection.getValue() && (type.getValue().equals("Fill") || type.getValue().equals("Both"))
-                    && NVerticesFillBot.getValue().equals("4"), true);
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
     //endregion
 
     BooleanSetting fillRaytrace = registerBoolean("Fill raytrace", false);
@@ -381,7 +377,6 @@ public class HoleESP extends Module {
             HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
             HoleUtil.HoleType holeType = holeInfo.getType();
             if (holeType != HoleUtil.HoleType.NONE) {
-                int type;
                 HoleUtil.BlockSafety holeSafety = holeInfo.getSafety();
                 AxisAlignedBB centreBlocks = holeInfo.getCentre();
 
@@ -418,10 +413,27 @@ public class HoleESP extends Module {
         holes.forEach(this::renderHoles);
     }
 
+    boolean isOne(Integer typeHole, boolean outline) {
+        return outline ?
+            (
+                typeHole == 0 ?
+                (bNVerticesOutlineBot.getValue().equals("1") && bNVerticesOutlineTop.getValue().equals("1"))
+            : typeHole == 1 ?
+                (oNVerticesOutlineBot.getValue().equals("1") && oNVerticesOutlineTop.getValue().equals("1"))
+            :   (NVerticesOutlineBot.getValue().equals("1") && NVerticesOutlineTop.getValue().equals("1"))
+            ) : (
+                typeHole == 0 ?
+                (bNVerticesFillBot.getValue().equals("1") && bNVerticesFillTop.getValue().equals("1"))
+                : typeHole == 1 ?
+                (oNVerticesFillBot.getValue().equals("1") && oNVerticesFillTop.getValue().equals("1"))
+                :   (NVerticesFillBot.getValue().equals("1") && NVerticesFillTop.getValue().equals("1"))
+            );
+    }
+
     private void renderHoles(AxisAlignedBB hole, Integer typeHole) {
         switch (type.getValue()) {
             case "Outline": {
-                if (bNVerticesOutlineBot.getValue().equals("1") && bNVerticesOutlineTop.getValue().equals("1"))
+                if (isOne(typeHole, true))
                     renderOutline(hole, typeHole == 0 ? bfirstVerticeOutlineBot.getColor()
                                         : typeHole == 1 ? ofirstVerticeOutlineBot.getColor()
                                         : firstVerticeOutlineBot.getColor());
@@ -429,7 +441,7 @@ public class HoleESP extends Module {
                 break;
             }
             case "Fill": {
-                if (bNVerticesFillBot.getValue().equals("1") && bNVerticesFillTop.getValue().equals("1"))
+                if (isOne(typeHole, false))
                     renderFill(hole, typeHole == 0 ? bfirstVerticeFillBot.getColor()
                                     : typeHole == 1 ? ofirstVerticeFillBot.getColor()
                                     : firstVerticeFillBot.getColor());
@@ -438,12 +450,12 @@ public class HoleESP extends Module {
             }
             case "Both": {
                 if ( !fillRaytrace.getValue() || mc.world.rayTraceBlocks(hole.getCenter(), new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight() + 1, mc.player.posZ)) == null)
-                    if (bNVerticesFillBot.getValue().equals("1") && bNVerticesFillTop.getValue().equals("1"))
+                    if (isOne(typeHole, false))
                         renderFill(hole, typeHole == 0 ? bfirstVerticeFillBot.getColor()
                                         : typeHole == 1 ? ofirstVerticeFillBot.getColor()
                                         : firstVerticeFillBot.getColor());
                     else renderFillCustom(hole, typeHole);
-                if (bNVerticesOutlineBot.getValue().equals("1") && bNVerticesOutlineTop.getValue().equals("1"))
+                if (isOne(typeHole, true))
                     renderOutline(hole, typeHole == 0 ? bfirstVerticeOutlineBot.getColor()
                                         : typeHole == 1 ? ofirstVerticeOutlineBot.getColor()
                                         : firstVerticeOutlineBot.getColor());
