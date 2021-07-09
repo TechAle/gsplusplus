@@ -270,7 +270,7 @@ public class AutoCrystalRewrite extends Module {
     }
 
     public static boolean stopAC = false;
-    boolean isSilentSwitching, checkTime;
+    boolean checkTime;
 
     int oldSlot, tick = 0, tickBeforePlace = 0;
 
@@ -690,9 +690,11 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
+    int slotChange;
+
     // Get hand of breaking. Return null if no crystals
     EnumHand getHandCrystal() {
-        isSilentSwitching = false;
+        slotChange = -1;
         // Check offhand
         if (mc.player.getHeldItemOffhand().getItem() instanceof ItemEndCrystal)
             return EnumHand.OFF_HAND;
@@ -700,8 +702,6 @@ public class AutoCrystalRewrite extends Module {
             // Check mainhand
             if (mc.player.getHeldItemMainhand().getItem() instanceof ItemEndCrystal) {
                 // If you switch, it will place the block you had in your hand before
-                if (oldSlot != mc.player.inventory.currentItem)
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
                 return EnumHand.MAIN_HAND;
             }
             else if (switchHotbar.getValue()) {
@@ -709,16 +709,7 @@ public class AutoCrystalRewrite extends Module {
                 int slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
                 // If found
                 if (slot != -1) {
-                    // Silent switch
-                    if (silentSwitch.getValue()) {
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                        isSilentSwitching = true;
-                    }
-                    // Normal switch
-                    else {
-                        mc.player.inventory.currentItem = slot;
-                        mc.playerController.updateController();
-                    }
+                    slotChange = slot;
                     return EnumHand.MAIN_HAND;
                 }
             }
@@ -740,6 +731,17 @@ public class AutoCrystalRewrite extends Module {
         if (rotate.getValue()) {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             tick = 0;
+        }
+        if (slotChange != -1) {
+            if (silentSwitch.getValue()) {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
+            } else {
+                if (slotChange != mc.player.inventory.currentItem) {
+                    mc.player.inventory.currentItem = slotChange;
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
+                }
+
+            }
         }
 
         // Raytrace
@@ -769,9 +771,10 @@ public class AutoCrystalRewrite extends Module {
         if (swingPlace.getValue())
             mc.player.swingArm(handSwing);
 
-        // Return back in case of silent switch
-        if (isSilentSwitching)
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+        if (slotChange != -1) {
+            if (silentSwitch.getValue())
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+        }
 
         tickBeforePlace = tickDelayPlace.getValue();
         checkTime = true;
