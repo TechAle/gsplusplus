@@ -141,8 +141,13 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
-    IntegerSetting tickForceRotation = registerInteger("Tick Force Rotation", 3, 0, 10,
-            () -> strict.getValue() && rotate.getValue());
+    ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
+    , () -> strict.getValue());
+    IntegerSetting tickWaitFocusPlace = registerInteger("Tick Wait Focus Pl", 4, 0, 20,
+            () -> strict.getValue() && focusPlaceType.getValue().equals("Tick"));
+    IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
+            () -> strict.getValue() && focusPlaceType.getValue().equals("Time"));
+
     //endregion
 
     //region Debug
@@ -279,6 +284,7 @@ public class AutoCrystalRewrite extends Module {
     Vec3d lastHitVec;
 
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
+    crystalTime crystalPlace = null;
 
 
     ArrayList<display> toDisplay = new ArrayList<>();
@@ -646,6 +652,8 @@ public class AutoCrystalRewrite extends Module {
     // Main function for placing crystals
     void placeCrystals() {
 
+        lastHitVec = null;
+
         listCrystalsPlaced.updateCrystals();
 
         if (!canStartPlacing())
@@ -655,6 +663,16 @@ public class AutoCrystalRewrite extends Module {
         EnumHand hand = getHandCrystal();
         if (hand == null)
             return;
+
+        // If we have to look a block
+        if (crystalPlace != null) {
+            if (crystalPlace.isReady())
+                crystalPlace = null;
+            else {
+                placeCrystal(crystalPlace.posCrystal, hand);
+                return;
+            }
+        }
 
         // For debugging timeCalcPlacement
         long inizio = 0;
@@ -732,13 +750,16 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             tick = 0;
         }
+
+        if (oldSlot != mc.player.inventory.currentItem)
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+
         if (slotChange != -1) {
             if (silentSwitch.getValue()) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
             } else {
                 if (slotChange != mc.player.inventory.currentItem) {
                     mc.player.inventory.currentItem = slotChange;
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
                 }
 
             }
@@ -768,14 +789,17 @@ public class AutoCrystalRewrite extends Module {
 
         }
 
+        // If he want to swing lol
         if (swingPlace.getValue())
             mc.player.swingArm(handSwing);
 
+        // For silent switch
         if (slotChange != -1) {
             if (silentSwitch.getValue())
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
         }
 
+        // For limiting place packets
         tickBeforePlace = tickDelayPlace.getValue();
         checkTime = true;
         time = System.currentTimeMillis();
@@ -787,6 +811,18 @@ public class AutoCrystalRewrite extends Module {
                 listCrystalsPlaced.addCrystal(pos, limitTickTime.getValue());
                 break;
         }
+
+        // For continuing facing the crystal
+        if (crystalPlace == null)
+            switch(focusPlaceType.getValue()) {
+                case "Tick":
+                    crystalPlace = new crystalTime(pos, 0, tickWaitFocusPlace.getValue());
+                    break;
+                case "Time":
+                    crystalPlace = new crystalTime(pos, timeWaitFocusPlace.getValue());
+                    break;
+            }
+
     }
 
     // Given a pos, say if there is a crystal
@@ -1026,12 +1062,6 @@ public class AutoCrystalRewrite extends Module {
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
         if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
 
-        if (tick++ >= tickForceRotation.getValue()) {
-            tick = 0;
-            lastHitVec = null;
-            return;
-        }
-
         Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
         PlayerPacket packet = new PlayerPacket(this, rotation);
         PlayerPacketManager.INSTANCE.addPacket(packet);
@@ -1045,6 +1075,10 @@ public class AutoCrystalRewrite extends Module {
             if (SpawnObject.getType() == 51 ) {
                 if (!limitPacketPlace.getValue().equals("None"))
                     listCrystalsPlaced.removeCrystal(SpawnObject.getX(), SpawnObject.getY(), SpawnObject.getZ());
+                if (crystalPlace != null)
+                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5, SpawnObject.getY() - .5), crystalPlace.posCrystal)) {
+                        crystalPlace = null;
+                    }
             }
         }
     });
