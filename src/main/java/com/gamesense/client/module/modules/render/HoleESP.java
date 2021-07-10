@@ -138,46 +138,46 @@ public class HoleESP extends Module {
     BooleanSetting oOutLineSection = registerBoolean("OutLine Section Obsidian", false,
             () ->  type.getValue().equals("Outline") || type.getValue().equals("Both"));
     // Bottom
-    ModeSetting oNVerticesOutlineBot = registerMode("N^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
+    ModeSetting oNVerticesOutlineBot = registerMode("oN^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
             () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && oOutLineSection.getValue());
-    ModeSetting odirection2OutLineBot = registerMode("Direction Outline Bot", Arrays.asList("X", "Z"), "X",
+    ModeSetting odirection2OutLineBot = registerMode("oDirection Outline Bot", Arrays.asList("X", "Z"), "X",
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue() && oNVerticesOutlineBot.getValue().equals("2"));
-    ColorSetting ofirstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 255),
+    ColorSetting ofirstVerticeOutlineBot = registerColor("o1 Vert Out Bot", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     , true);
-    ColorSetting osecondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 255),
+    ColorSetting osecondVerticeOutlineBot = registerColor("o2 Vert Out Bot", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && (oNVerticesOutlineBot.getValue().equals("2") || oNVerticesOutlineBot.getValue().equals("4")), true);
-    ColorSetting othirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 255),
+    ColorSetting othirdVerticeOutlineBot = registerColor("o3 Vert Out Bot", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && oNVerticesOutlineBot.getValue().equals("4"), true);
-    ColorSetting ofourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 255),
+    ColorSetting ofourVerticeOutlineBot = registerColor("o4 Vert Out Bot", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && oNVerticesOutlineBot.getValue().equals("4"), true);
     // Top
-    ModeSetting oNVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
+    ModeSetting oNVerticesOutlineTop = registerMode("oN^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue());
-    ModeSetting odirection2OutLineTop = registerMode("Direction Outline Top", Arrays.asList("X", "Z"), "X",
+    ModeSetting odirection2OutLineTop = registerMode("oDirection Outline Top", Arrays.asList("X", "Z"), "X",
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue() && oNVerticesOutlineTop.getValue().equals("2"));
-    ColorSetting ofirstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 255),
+    ColorSetting ofirstVerticeOutlineTop = registerColor("o1 Vert Out Top", new GSColor(255, 16, 19, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue(), true);
-    ColorSetting osecondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 255),
+    ColorSetting osecondVerticeOutlineTop = registerColor("o2 Vert Out Top", new GSColor(0, 0, 255, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && (oNVerticesOutlineTop.getValue().equals("2") || oNVerticesOutlineTop.getValue().equals("4")), true);
-    ColorSetting othirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 255),
+    ColorSetting othirdVerticeOutlineTop = registerColor("o3 Vert Out Top", new GSColor(0, 255, 128, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && oNVerticesOutlineTop.getValue().equals("4"), true);
-    ColorSetting ofourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 255),
+    ColorSetting ofourVerticeOutlineTop = registerColor("o4 Vert Out Top", new GSColor(255, 255, 2, 255),
             () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
                     oOutLineSection.getValue()
                     && oNVerticesOutlineTop.getValue().equals("4"), true);
