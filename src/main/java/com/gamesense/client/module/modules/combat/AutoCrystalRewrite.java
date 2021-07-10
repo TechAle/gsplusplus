@@ -143,6 +143,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
     ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
     , () -> strict.getValue());
+    BooleanSetting recalculateDamage = registerBoolean("Recalculate Damage", true,
+            () -> strict.getValue() && !focusPlaceType.getValue().equals("Disabled"));
     IntegerSetting tickWaitFocusPlace = registerInteger("Tick Wait Focus Pl", 4, 0, 20,
             () -> strict.getValue() && focusPlaceType.getValue().equals("Tick"));
     IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
@@ -666,11 +668,30 @@ public class AutoCrystalRewrite extends Module {
 
         // If we have to look a block
         if (crystalPlace != null) {
-            if (crystalPlace.isReady())
-                crystalPlace = null;
-            else {
-                placeCrystal(crystalPlace.posCrystal, hand);
-                return;
+
+            // First, lets calculate the raytrace in case
+            if (raytrace.getValue()) {
+                RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ),
+                        new Vec3d(crystalPlace.posCrystal.getX() + 0.5d, crystalPlace.posCrystal.getY() + .5d, crystalPlace.posCrystal.getZ() + 0.5d));
+
+                // If blocked
+                if (result == null || result.sideHit == null) {
+                    crystalPlace = null;
+                }
+            }
+
+            if ( crystalPlace != null && recalculateDamage.getValue()) {
+                if (!isCrystalGood(crystalPlace.posCrystal));
+                    crystalPlace = null;
+            }
+
+            if (crystalPlace != null) {
+                if (crystalPlace.isReady())
+                    crystalPlace = null;
+                else {
+                    placeCrystal(crystalPlace.posCrystal, hand);
+                    return;
+                }
             }
         }
 
@@ -706,6 +727,21 @@ public class AutoCrystalRewrite extends Module {
 
         }
 
+    }
+
+    boolean isCrystalGood(BlockPos crystal) {
+
+        if (DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player)
+                >= maxSelfDamagePlace.getValue())
+            return false;
+
+        double distanceSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
+        return mc.world.playerEntities.stream()
+                .filter(entity -> entity.getDistanceSq(crystal) <= distanceSQ)
+                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
+                .filter(entity -> entity.getHealth() > 0.0f)
+                .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity) >= minDamagePlace.getValue())
+                .findAny().isPresent();
     }
 
     int slotChange;
