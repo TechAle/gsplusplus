@@ -27,7 +27,8 @@ public class FakePlayer extends Module {
         new ItemStack(Items.DIAMOND_HELMET)
     };
 
-    BooleanSetting playerStacked = registerBoolean("Player Stacked", false);
+    BooleanSetting copyInventory = registerBoolean("Copy Inventory", false);
+    BooleanSetting playerStacked = registerBoolean("Player Stacked", false, () -> !copyInventory.getValue());
     BooleanSetting onShift = registerBoolean("On Shift", false);
     int incr;
     public void onEnable() {
@@ -51,6 +52,9 @@ public class FakePlayer extends Module {
         clonedPlayer.setHealth(20);
         mc.world.addEntityToWorld((-1234 - incr), clonedPlayer);
         incr++;
+        if (copyInventory.getValue())
+            clonedPlayer.inventory.copyInventory(mc.player.inventory);
+        else
         // If enchants
         if (playerStacked.getValue()) {
             // ITerate
