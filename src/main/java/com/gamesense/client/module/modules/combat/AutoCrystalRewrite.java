@@ -16,6 +16,7 @@ import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
+import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
@@ -61,7 +62,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting ranges = registerBoolean("Range Section", false);
     DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
-    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey Place", 6, 0, 8, () -> ranges.getValue());
+    DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 1, 0, 3, () -> ranges.getValue());
     IntegerSetting minYTargetPlace = registerInteger("Min Y Place", 3, 0, 5, () -> ranges.getValue());
     //endregion
@@ -91,8 +92,107 @@ public class AutoCrystalRewrite extends Module {
 
     //region Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
-    ColorSetting colorPlace = registerColor("Color Place", new GSColor(255, 255, 255), () -> misc.getValue());
-    IntegerSetting alphaPlace = registerInteger("Alpha place", 55, 0, 255, () -> misc.getValue());
+    ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+    
+    //region outline custom
+    // Custom outline
+    BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom", false,
+            () ->  (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue());
+    // Bottom
+    ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
+            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineBot = registerMode("Direction Outline Bot", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineBot.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+            , true);
+    ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineBot.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineBot.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineTop = registerMode("Direction Outline Top", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineTop.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()), true);
+    ColorSetting secondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && (NVerticesOutlineTop.getValue().equals("2") || NVerticesOutlineTop.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
+    //endregion
+    // region fill custom
+    BooleanSetting FillSection = registerBoolean("Fill Section Custom", false,
+            () ->  (type.getValue().equals("Fill") || type.getValue().equals("Both")) && misc.getValue());
+    // Bottom
+    ModeSetting NVerticesFillBot = registerMode("N^ Vertices Fill Bot", Arrays.asList("1", "2", "4"), "4",
+            () -> (type.getValue().equals("Fill") || type.getValue().equals("Both")) && FillSection.getValue());
+    ModeSetting direction2FillBot = registerMode("Direction Fill Bot", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue() && NVerticesFillBot.getValue().equals("2"));
+    ColorSetting firstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+            , true);
+    ColorSetting secondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillBot.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillBot.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue());
+    ModeSetting direction2FillTop = registerMode("Direction Fill Top", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue() && NVerticesFillTop.getValue().equals("2"));
+    ColorSetting firstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue(), true);
+    ColorSetting secondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && (NVerticesFillTop.getValue().equals("2") || NVerticesFillTop.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
+    //endregion
+    
+    ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255, 40), () -> misc.getValue(), true);
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
@@ -180,6 +280,7 @@ public class AutoCrystalRewrite extends Module {
         final GSColor color;
         int width;
         int type;
+        String[] text;
 
         public display(AxisAlignedBB box, GSColor color, int width) {
             this.box = box;
@@ -194,6 +295,13 @@ public class AutoCrystalRewrite extends Module {
             this.type = 1;
         }
 
+        public display(String text, BlockPos block, GSColor color) {
+            this.text = new String[]{text};
+            this.block = block;
+            this.color = color;
+            this.type = 2;
+        }
+
         void draw() {
             switch (type) {
                 case 0:
@@ -201,6 +309,10 @@ public class AutoCrystalRewrite extends Module {
                     break;
                 case 1:
                     RenderUtil.drawBox(block, 1, color, 63);
+                    break;
+                case 2:
+                    RenderUtil.drawNametag((double) this.block.getX() + 0.5d, (double) this.block.getY() + 0.5d, (double) this.block.getZ() + 0.5d, this.text, this.color, 1);
+                    break;
             }
         }
     }
@@ -355,9 +467,9 @@ public class AutoCrystalRewrite extends Module {
         double minDamage = this.minDamagePlace.getValue();
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
-        double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
         double enemyRangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
         double maxSelfDamage = this.maxSelfDamagePlace.getValue();
+        double wallRangePlaceSQ = this.crystalWallPlace.getValue() * this.crystalWallPlace.getValue();
         boolean raytraceValue = raytrace.getValue();
         int maxYTarget = this.maxYTargetPlace.getValue();
         int minYTarget = this.minYTargetPlace.getValue();
@@ -386,7 +498,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
 
                 // Get every possible crystals
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue, wallRangePlaceSQ);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -397,7 +509,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // Calcualte best cr
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
                 return;
             case "Damage":
@@ -446,7 +558,7 @@ public class AutoCrystalRewrite extends Module {
 
 
                 // If we are placing
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue, wallRangePlaceSQ);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -465,7 +577,7 @@ public class AutoCrystalRewrite extends Module {
                     target = new PlayerInfo(playerTemp, armourPercent);
                     // Calculate
                     calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                            minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
                 return;
         }
@@ -474,7 +586,7 @@ public class AutoCrystalRewrite extends Module {
     // Function that call every thread for the calculating of the crystals
     // + return the best place
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
-                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ, double maxSelfDamage,
+                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
                        int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<>();
@@ -483,7 +595,7 @@ public class AutoCrystalRewrite extends Module {
             int finalI = i;
             // Add them
             futures.add(executor.submit(() -> calculateBestPositionTarget(possibleCrystals.get(finalI), posX, posY, posZ,
-                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget)));
+                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget)));
         }
         // Get stack for then collecting the results
         Stack<CrystalInfo.PlaceInfo> results = new Stack<>();
@@ -530,7 +642,7 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This return a list of possible positions of the crystals
-    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean raytrace) {
+    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
         // Get every possibilites
         List<BlockPos> possibilites =
                 includeCrystalMapping.getValue() ?
@@ -541,12 +653,13 @@ public class AutoCrystalRewrite extends Module {
         List<PositionInfo> damagePos = new ArrayList<>();
         for (BlockPos crystal : possibilites) {
             float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
-            RayTraceResult result;
+            RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
+                    new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d));
+
+            if (result != null && !sameBlockPos(result.getBlockPos(), crystal) && (raytrace && mc.player.getDistanceSq(crystal) > wallRangeSQ))
+                continue;
             // Exclude useless crystals and non-visible in case of raytrace   (1276 56 996) (-1275, 56, 996)
-            if (damage < maxSelfDamage
-                    && (!raytrace || (!((result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
-                    new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d))) != null && result.typeOfHit != RayTraceResult.Type.ENTITY
-            ) || sameBlockPos(result.getBlockPos(), crystal)))) {
+            if (damage < maxSelfDamage) {
                 damagePos.add(new PositionInfo(crystal, damage));
             }
         }
@@ -582,7 +695,7 @@ public class AutoCrystalRewrite extends Module {
 
     // This calculate the best crystal given a list of possible positions and the enemy
     CrystalInfo.PlaceInfo calculateBestPositionTarget(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
-                                                      double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double enemyRangeSq, double maxSelfDamage,
+                                                      double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double maxSelfDamage,
                                                       int maxYTarget, int minYTarget) {
         // Start calculating damage
         PositionInfo best = new PositionInfo();
@@ -593,29 +706,27 @@ public class AutoCrystalRewrite extends Module {
             if ((temp = target.entity.posY - crystal.pos.getY() - 1) > 0 ? temp > minYTarget : temp < -maxYTarget)
                 continue;
 
-            double distance;
             // if player is out of range of this crystal, do nothing
-            if ((distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d)) <= enemyRangeSq) {
-                float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
-                if (currentDamage == best.damage) {
-                    // this new crystal is closer
-                    // higher chance of being able to break it
-                    if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance || (currentDamage / maxSelfDamage) > best.rapp) || temp < best.distance) {
-                        // Set new values
-                        best = crystal;
-                        best.setEnemyDamage(currentDamage);
-                        best.distance = distance;
-                        best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
-                    }
-                } else if (currentDamage > best.damage) {
+            float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
+            if (currentDamage == best.damage) {
+                // this new crystal is closer
+                // higher chance of being able to break it
+                if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance || (currentDamage / maxSelfDamage) > best.rapp) || temp < best.distance) {
                     // Set new values
                     best = crystal;
                     best.setEnemyDamage(currentDamage);
-                    best.distance = distance;
+                    best.distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                     best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                 }
+            } else if (currentDamage > best.damage) {
+                // Set new values
+                best = crystal;
+                best.setEnemyDamage(currentDamage);
+                best.distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
+                best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
             }
         }
+
 
         // If we found something
         if (best.pos != null) {
@@ -720,9 +831,10 @@ public class AutoCrystalRewrite extends Module {
 
         // Display crystal
         if (bestPlace.crystal != null) {
-            toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), alphaPlace.getValue())));
-            toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
-
+            //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
+            toDisplay.add(new display(String.valueOf(bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
+            if (showPredictions.getValue())
+                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
             placeCrystal(bestPlace.crystal, hand);
 
         }
@@ -735,9 +847,7 @@ public class AutoCrystalRewrite extends Module {
                 >= maxSelfDamagePlace.getValue())
             return false;
 
-        double distanceSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
         return mc.world.playerEntities.stream()
-                .filter(entity -> entity.getDistanceSq(crystal) <= distanceSQ)
                 .filter(entity -> !EntityUtil.basicChecksEntity(entity))
                 .filter(entity -> entity.getHealth() > 0.0f)
                 .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity) >= minDamagePlace.getValue())
@@ -1084,9 +1194,177 @@ public class AutoCrystalRewrite extends Module {
         return first.getX() == second.getX() && first.getY() == second.getY() && first.getZ() == second.getZ();
     }
 
+    boolean isOne(boolean outline) {
+        return outline ?
+            NVerticesOutlineBot.getValue().equals("1") && NVerticesOutlineTop.getValue().equals("1")
+                 :
+            NVerticesFillBot.getValue().equals("1") && NVerticesFillTop.getValue().equals("1");
+    }
+
+    AxisAlignedBB getBox(BlockPos centreBlock) {
+        double minX = centreBlock.getX();
+        double maxX = centreBlock.getX() + 1;
+        double minZ = centreBlock.getZ();
+        double maxZ = centreBlock.getZ() + 1;
+        return new AxisAlignedBB(minX, centreBlock.getY(), minZ, maxX, centreBlock.getY() + 1, maxZ);
+    }
+
     // This function is for displaying things
     public void onWorldRender(RenderEvent event) {
+
+        if (bestPlace != null && bestPlace.crystal != null) {
+            switch (type.getValue()) {
+                case "Outline": {
+                    if (isOne(true))
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), width.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Fill": {
+                    if (isOne(false))
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Both": {
+                    if (isOne(false))
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    if (isOne(true))
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), width.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+            }
+        }
+
         toDisplay.forEach(display -> display.draw());
+    }
+
+    private void renderCustomOutline(AxisAlignedBB hole) {
+
+        ArrayList<GSColor> colors = new ArrayList<>();
+
+        switch (NVerticesOutlineBot.getValue()) {
+            case "1":
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                break;
+            case "2":
+                if (direction2OutLineBot.getValue().equals("X")) {
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                } else {
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(secondVerticeOutlineBot.getValue());
+                colors.add(thirdVerticeOutlineBot.getValue());
+                colors.add(fourVerticeOutlineBot.getValue());
+                break;
+        }
+        switch (NVerticesOutlineTop.getValue()) {
+            case "1":
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                break;
+            case "2":
+                if (direction2OutLineTop.getValue().equals("X")) {
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                } else {
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(secondVerticeOutlineTop.getValue());
+                colors.add(thirdVerticeOutlineTop.getValue());
+                colors.add(fourVerticeOutlineTop.getValue());
+                break;
+        }
+
+        RenderUtil.drawBoundingBox(hole, width.getValue(), colors.toArray(new GSColor[7]));
+    }
+
+    void renderFillCustom(AxisAlignedBB hole) {
+
+        int mask = GeometryMasks.Quad.ALL;
+
+
+        ArrayList<GSColor> colors = new ArrayList<>();
+        switch (NVerticesFillBot.getValue()) {
+            case "1":
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                break;
+            case "2":
+                if (direction2FillBot.getValue().equals("X")) {
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                } else {
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(secondVerticeFillBot.getValue());
+                colors.add(thirdVerticeFillBot.getValue());
+                colors.add(fourVerticeFillBot.getValue());
+                break;
+        }
+        switch (NVerticesFillTop.getValue()) {
+            case "1":
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                break;
+            case "2":
+                if (direction2FillTop.getValue().equals("X")) {
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                } else {
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(secondVerticeFillTop.getValue());
+                colors.add(thirdVerticeFillTop.getValue());
+                colors.add(fourVerticeFillTop.getValue());
+                break;
+        }
+
+        RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);
     }
 
     //endregion
