@@ -241,6 +241,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
+    IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10);
     ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
     , () -> strict.getValue());
     BooleanSetting recalculateDamage = registerBoolean("Recalculate Damage", true,
@@ -656,9 +657,9 @@ public class AutoCrystalRewrite extends Module {
             RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
                     new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d));
 
-            if (result != null && !sameBlockPos(result.getBlockPos(), crystal) && (raytrace && mc.player.getDistanceSq(crystal) > wallRangeSQ))
+            if (result != null && !sameBlockPos(result.getBlockPos(), crystal) && (raytrace || mc.player.getDistanceSq(crystal) > wallRangeSQ))
                 continue;
-            // Exclude useless crystals and non-visible in case of raytrace   (1276 56 996) (-1275, 56, 996)
+
             if (damage < maxSelfDamage) {
                 damagePos.add(new PositionInfo(crystal, damage));
             }
@@ -764,8 +765,6 @@ public class AutoCrystalRewrite extends Module {
 
     // Main function for placing crystals
     void placeCrystals() {
-
-        lastHitVec = null;
 
         listCrystalsPlaced.updateCrystals();
 
@@ -1377,9 +1376,14 @@ public class AutoCrystalRewrite extends Module {
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
         if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
 
-        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
-        PlayerPacket packet = new PlayerPacket(this, rotation);
-        PlayerPacketManager.INSTANCE.addPacket(packet);
+        if (tick++ == tickAfterRotation.getValue()) {
+            lastHitVec = null;
+            tick = 0;
+        } else {
+            Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
+            PlayerPacket packet = new PlayerPacket(this, rotation);
+            PlayerPacketManager.INSTANCE.addPacket(packet);
+        }
     });
 
     @SuppressWarnings("unused")
