@@ -98,6 +98,8 @@ public class AutoCrystalRewrite extends Module {
     // Custom outline
     BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom", false,
             () ->  (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue());
+    IntegerSetting outlineWidth = registerInteger("Outline Width", 1, 1, 5,
+            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue() && OutLineSection.getValue());
     // Bottom
     ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
             () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
@@ -191,8 +193,10 @@ public class AutoCrystalRewrite extends Module {
                     FillSection.getValue()
                     && NVerticesFillTop.getValue().equals("4"), true);
     //endregion
-    
-    ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255, 40), () -> misc.getValue(), true);
+
+    BooleanSetting showText = registerBoolean("Show text", true, () -> misc.getValue());
+    ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255),
+            () -> misc.getValue() && showText.getValue(), true);
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
@@ -222,8 +226,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3,
             () -> predictSection.getValue() && calculateYPredict.getValue());
     BooleanSetting splitXZ = registerBoolean("Split XZ", true, () -> predictSection.getValue());
-    IntegerSetting width = registerInteger("Line Width", 2, 1, 5, () -> predictSection.getValue());
-    BooleanSetting justOnce = registerBoolean("Just Once", false, () -> predictSection.getValue());
+    IntegerSetting widthPredict = registerInteger("Line Width", 2, 1, 5, () -> predictSection.getValue());
     BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> predictSection.getValue());
     BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false,
             () -> predictSection.getValue() && manualOutHole.getValue() && manualOutHole.getValue());
@@ -496,7 +499,7 @@ public class AutoCrystalRewrite extends Module {
                 player = new PlayerInfo( predictSelfPlace.getValue() ? predictPlayer(mc.player) : mc.player, false);
 
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
-                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), widthPredict.getValue()));
 
                 // Get every possible crystals
                 possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue, wallRangePlaceSQ);
@@ -555,7 +558,7 @@ public class AutoCrystalRewrite extends Module {
                 player = new PlayerInfo( predictSelfPlace.getValue() ? predictPlayer(mc.player) : mc.player, false);
 
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
-                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), widthPredict.getValue()));
 
 
                 // If we are placing
@@ -831,9 +834,9 @@ public class AutoCrystalRewrite extends Module {
         // Display crystal
         if (bestPlace.crystal != null) {
             //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
-            toDisplay.add(new display(String.valueOf(bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
+            toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
             if (showPredictions.getValue())
-                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
+                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
             placeCrystal(bestPlace.crystal, hand);
 
         }
@@ -1215,7 +1218,7 @@ public class AutoCrystalRewrite extends Module {
             switch (type.getValue()) {
                 case "Outline": {
                     if (isOne(true))
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), width.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
                     else renderCustomOutline(getBox(bestPlace.crystal));
                     break;
                 }
@@ -1230,7 +1233,7 @@ public class AutoCrystalRewrite extends Module {
                         RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
                     else renderFillCustom(getBox(bestPlace.crystal));
                     if (isOne(true))
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), width.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
                     else renderCustomOutline(getBox(bestPlace.crystal));
                     break;
                 }
@@ -1299,7 +1302,7 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
-        RenderUtil.drawBoundingBox(hole, width.getValue(), colors.toArray(new GSColor[7]));
+        RenderUtil.drawBoundingBox(hole, widthPredict.getValue(), colors.toArray(new GSColor[7]));
     }
 
     void renderFillCustom(AxisAlignedBB hole) {
