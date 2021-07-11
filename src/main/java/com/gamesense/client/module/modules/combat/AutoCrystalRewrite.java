@@ -133,8 +133,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting threading = registerBoolean("Threading Section", false);
     IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> threading.getValue());
     IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
-    IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000);
-    IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000);
+    IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000, () -> threading.getValue());
+    IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000, () -> threading.getValue());
     //endregion
 
     //region Strict
@@ -1063,6 +1063,7 @@ public class AutoCrystalRewrite extends Module {
         }
         EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit"));
         clonedPlayer.setPosition(posVec[0], posVec[1], posVec[2]);
+        clonedPlayer.inventory.copyInventory(entity.inventory);
         return clonedPlayer;
     }
 
