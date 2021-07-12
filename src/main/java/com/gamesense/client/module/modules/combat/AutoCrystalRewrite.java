@@ -6,6 +6,7 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.BlockChangeEvent;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
@@ -15,6 +16,7 @@ import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
@@ -33,9 +35,14 @@ import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.network.play.server.SPacketBlockChange;
+import net.minecraft.network.play.server.SPacketEntityTeleport;
+import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -204,6 +211,8 @@ public class AutoCrystalRewrite extends Module {
 
     //region Predict
     BooleanSetting predictSection = registerBoolean("Predict Section", false);
+    ModeSetting predictTeleport = registerMode("Predict Teleport", Arrays.asList("Disabled", "Packet", "Sound"), "Disabled",
+            () -> predictSection.getValue());
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
     BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
             () -> predictSection.getValue() && predictSelfPlace.getValue() );
@@ -244,7 +253,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
-    IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10);
+    IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10,
+            () -> strict.getValue() && rotate.getValue());
     ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
     , () -> strict.getValue());
     BooleanSetting recalculateDamage = registerBoolean("Recalculate Damage", true,
@@ -393,7 +403,7 @@ public class AutoCrystalRewrite extends Module {
     }
 
     public static boolean stopAC = false;
-    boolean checkTime;
+    boolean checkTime, placedCrystal = false;
 
     int oldSlot, tick = 0, tickBeforePlace = 0;
 
@@ -771,6 +781,11 @@ public class AutoCrystalRewrite extends Module {
 
         listCrystalsPlaced.updateCrystals();
 
+        if (placedCrystal) {
+            placedCrystal = false;
+            return;
+        }
+
         if (!canStartPlacing())
             return;
 
@@ -794,7 +809,7 @@ public class AutoCrystalRewrite extends Module {
             }
 
             if ( crystalPlace != null && recalculateDamage.getValue()) {
-                if (!isCrystalGood(crystalPlace.posCrystal));
+                if (isCrystalGood(crystalPlace.posCrystal) == null);
                     crystalPlace = null;
             }
 
@@ -843,17 +858,25 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
-    boolean isCrystalGood(BlockPos crystal) {
+    EntityPlayer isCrystalGood(BlockPos crystal) {
 
         if (DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player)
                 >= maxSelfDamagePlace.getValue())
-            return false;
+            return null;
 
-        return mc.world.playerEntities.stream()
+        double rangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
+
+        Optional<EntityPlayer> a = mc.world.playerEntities.stream()
                 .filter(entity -> !EntityUtil.basicChecksEntity(entity))
                 .filter(entity -> entity.getHealth() > 0.0f)
+                .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSQ)
                 .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity) >= minDamagePlace.getValue())
-                .findAny().isPresent();
+                .findAny();
+
+        if (a.isPresent())
+            return a.get();
+        else return null;
+
     }
 
     int slotChange;
@@ -885,6 +908,7 @@ public class AutoCrystalRewrite extends Module {
 
     // This actually place the crystal
     void placeCrystal(BlockPos pos, EnumHand handSwing) {
+        PistonCrystal.printDebug("Place Crystal", false);
         // If there is a crystal, stop
         if (!isCrystalHere(pos))
             return;
@@ -1389,6 +1413,7 @@ public class AutoCrystalRewrite extends Module {
         }
     });
 
+    // This is used for packet recive thing
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
@@ -1403,6 +1428,31 @@ public class AutoCrystalRewrite extends Module {
                     }
             }
         }
+
+        // W+3 Moment
+        if (event.getPacket() instanceof SPacketEntityTeleport) {
+            SPacketEntityTeleport p = (SPacketEntityTeleport) event.getPacket();
+            Entity e = mc.world.getEntityByID(p.getEntityId());
+            if (e instanceof EntityPlayer && predictTeleport.getValue().equals("Packet")) {
+                e.setEntityBoundingBox(e.getEntityBoundingBox().offset(p.getX(), p.getY(), p.getZ()));
+            }
+        }
+
+        if (event.getPacket() instanceof SPacketSoundEffect) {
+            SPacketSoundEffect p = (SPacketSoundEffect) event.getPacket();
+            if (p.getSound() == SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT && predictTeleport.getValue().equals("Sound")) {
+                SPacketSoundEffect pa = (SPacketSoundEffect) event.getPacket();
+                mc.world.loadedEntityList.spliterator().forEachRemaining(player -> {
+                    if (player instanceof EntityPlayer) {
+                        if (player.getDistance(pa.getX(), pa.getY(), pa.getZ()) <= rangeEnemyPlace.getValue()) {
+                            player.setEntityBoundingBox(player.getEntityBoundingBox().offset(pa.getX(), pa.getY(), pa.getZ()));
+                        }
+                    }
+                });
+            }
+        }
+
+
     });
 
     //endregion
