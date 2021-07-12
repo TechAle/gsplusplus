@@ -13,6 +13,7 @@ import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerPacket;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
@@ -36,6 +37,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -62,6 +64,7 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
+    BooleanSetting stopGapple = registerBoolean("Stop Gapple", false);
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     //endregion
 
@@ -70,7 +73,7 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
-    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 1, 0, 3, () -> ranges.getValue());
+    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTargetPlace = registerInteger("Min Y Place", 3, 0, 5, () -> ranges.getValue());
     //endregion
 
@@ -441,6 +444,14 @@ public class AutoCrystalRewrite extends Module {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
 
         toDisplay.clear();
+
+        if (stopGapple.getValue()) {
+            if ((mc.player.getHeldItemMainhand().getItem() == Items.GOLDEN_APPLE
+                || mc.player.getHeldItemOffhand().getItem() == Items.GOLDEN_APPLE)
+                && mc.player.isHandActive()) {
+                return;
+            }
+        }
 
         switch (logic.getValue()) {
             case "Place->Break":
