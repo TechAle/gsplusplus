@@ -204,6 +204,9 @@ public class AutoCrystalRewrite extends Module {
     ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255),
             () -> misc.getValue() && showText.getValue(), true);
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
+    BooleanSetting switchBack = registerBoolean("Switch Back", false,
+            () -> misc.getValue() && switchHotbar.getValue());
+
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
     //endregion
@@ -975,25 +978,23 @@ public class AutoCrystalRewrite extends Module {
             tick = 0;
         }
 
-        boolean silentSwitched = false;
         // If the slot is different, we have to silent switch first because, else, we'll place or obby
         // Or we wont place (We are working with packet, mc.player.inventory is too slow)
-        if (oldSlot != slotChange) {
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
-            silentSwitched = true;
-        }
+        if (handSwing == EnumHand.MAIN_HAND) {
 
-        // If we have to change
-        if (slotChange != -1) {
-            // Silent switch
-            if (silentSwitch.getValue() && !silentSwitched) {
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
-            } else {
-                // Normal switch
-                if (slotChange != mc.player.inventory.currentItem) {
-                    mc.player.inventory.currentItem = slotChange;
+            // If we have to change
+            if (slotChange != -1) {
+                // Silent switch
+                if (silentSwitch.getValue()) {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
+                } else {
+                    // Normal switch
+                    if (slotChange != mc.player.inventory.currentItem) {
+                        mc.player.inventory.currentItem = slotChange;
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                    }
+
                 }
-
             }
         }
 
