@@ -1526,6 +1526,15 @@ public class AutoCrystalRewrite extends Module {
             Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
             PlayerPacket packet = new PlayerPacket(this, rotation);
             PlayerPacketManager.INSTANCE.addPacket(packet);
+            PistonCrystal.printDebug(String.format("Yaw: %f Pitch: %f",
+                    rotation.x - RotationUtil.normalizeAngle(mc.player.getPitchYaw().y), rotation.y - mc.player.getPitchYaw().x), false);
+
+            /*
+            Nel rotation, yaw-pitch
+            Nel pitchYaw, pitch-yaw
+            Sono invertiti
+            mc.player.setPositionAndRotation(mc.player.posX, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch)
+             */
         }
     });
 
