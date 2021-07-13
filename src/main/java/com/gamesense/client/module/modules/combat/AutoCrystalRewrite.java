@@ -60,7 +60,7 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
-    BooleanSetting stopGapple = registerBoolean("Stop Gapple", false);
+    BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     //endregion
 
@@ -206,7 +206,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
     BooleanSetting switchBack = registerBoolean("Switch Back", false,
             () -> misc.getValue() && switchHotbar.getValue());
-
+    IntegerSetting tickSwitchBack = registerInteger("Tick Switch Back", 5, 0, 50);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
     //endregion
@@ -443,6 +443,7 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tick = 0;
         time = 0;
+        oldSlotBack = -1;
         checkTime = false;
     }
 
@@ -814,6 +815,8 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
+    int tickSwitch = -1;
+    int oldSlotBack = -1;
     // Main function for placing crystals
     void placeCrystals() {
 
@@ -901,7 +904,15 @@ public class AutoCrystalRewrite extends Module {
             if (showPredictions.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
             placeCrystal(bestPlace.crystal, hand);
-
+        } else {
+            if (switchBack.getValue() && oldSlotBack != -1)
+                if (tickSwitch > 0)
+                    --tickSwitch;
+                else
+                    if (tickSwitch == 0) {
+                        mc.player.inventory.currentItem = oldSlotBack;
+                        tickSwitch = -1;
+                    }
         }
 
     }
@@ -990,6 +1001,10 @@ public class AutoCrystalRewrite extends Module {
                 } else {
                     // Normal switch
                     if (slotChange != mc.player.inventory.currentItem) {
+                        if (switchBack.getValue()) {
+                            tickSwitch = tickSwitchBack.getValue();
+                            oldSlotBack = mc.player.inventory.currentItem;
+                        }
                         mc.player.inventory.currentItem = slotChange;
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
                     }
