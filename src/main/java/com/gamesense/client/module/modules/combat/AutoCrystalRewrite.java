@@ -19,7 +19,6 @@ import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
-import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.api.util.world.combat.ac.CrystalInfo;
@@ -205,7 +204,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
     BooleanSetting switchBack = registerBoolean("Switch Back", false,
             () -> misc.getValue() && switchHotbar.getValue());
-    IntegerSetting tickSwitchBack = registerInteger("Tick Switch Back", 5, 0, 50);
+    IntegerSetting tickSwitchBack = registerInteger("Tick Switch Back", 5, 0, 50,
+            () -> misc.getValue() && switchHotbar.getValue() && switchBack.getValue());
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
     //endregion
@@ -268,9 +268,9 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue());
     IntegerSetting yawStep = registerInteger("Yaw Step", 40, 0, 180,
             () -> strict.getValue() && yawCheck.getValue());
-    BooleanSetting pitchCheck = registerBoolean("Yaw Check", false,
+    BooleanSetting pitchCheck = registerBoolean("Pitch Check", false,
             () -> strict.getValue());
-    IntegerSetting pitchStep = registerInteger("Yaw Step", 40, 0, 180,
+    IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
             () -> strict.getValue() && pitchCheck.getValue());
 
 
@@ -508,8 +508,8 @@ public class AutoCrystalRewrite extends Module {
     //region Calculate Place Crystal
 
     // Main function for calculating the best crystal
-    void getTarget(String mode, boolean placing) {
-        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
+    void getTargetPlacing(String mode) {
+        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
         double minDamage = this.minDamagePlace.getValue();
@@ -909,7 +909,7 @@ public class AutoCrystalRewrite extends Module {
         if (bestPlace.crystal != null) {
             //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
             toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
-            if (showPredictions.getValue())
+            if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
             placeCrystal(bestPlace.crystal, hand);
         } else {
