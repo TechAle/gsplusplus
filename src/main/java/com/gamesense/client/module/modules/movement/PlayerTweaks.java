@@ -45,7 +45,9 @@ public class PlayerTweaks extends Module {
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
-    IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40);
+    BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
+    IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40,
+            () -> pistonPush.getValue());
 
 
     int ticksBef;

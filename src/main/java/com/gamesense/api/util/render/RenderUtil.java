@@ -103,6 +103,10 @@ public class RenderUtil {
         }
     }
 
+    public static void drawBoxProva2(AxisAlignedBB bb, boolean check, double height, GSColor[] color, int sides, boolean five) {
+        drawBoxProva(bb.minX, bb.minY, bb.minZ, bb.maxX - bb.minX, bb.maxY - bb.minY, bb.maxZ - bb.minZ, color, sides, five);
+    }
+
     public static void drawBox(double x, double y, double z, double w, double h, double d, GSColor color, int alpha, int sides) {
         GlStateManager.disableAlpha();
         Tessellator tessellator = Tessellator.getInstance();
@@ -113,6 +117,71 @@ public class RenderUtil {
         tessellator.draw();
         GlStateManager.enableAlpha();
     }
+
+    public static void drawBoxProva(double x, double y, double z, double w, double h, double d, GSColor[] color, int sides, boolean five) {
+        GlStateManager.disableAlpha();
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        doVerticiesProva(new AxisAlignedBB(x, y, z, x + w, y + h, z + d), color, bufferbuilder, sides, false);
+        tessellator.draw();
+        GlStateManager.enableAlpha();
+    }
+
+    private static void doVerticiesProva(AxisAlignedBB axisAlignedBB, GSColor[] color, BufferBuilder bufferbuilder, int sides, boolean five) {
+        if ((sides & GeometryMasks.Quad.EAST) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[6], color[6].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+        }
+
+        if ((sides & GeometryMasks.Quad.WEST) != 0) {
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[4], color[4].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.NORTH) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[4], color[4].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.SOUTH) != 0) {
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[6], color[6].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.UP) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[6], color[6].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[4], color[4].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.DOWN) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+        }
+    }
+
+
+
 
     public static void drawBoundingBox(BlockPos bp, double height, float width, GSColor color) {
         drawBoundingBox(getBoundingBox(bp, 1, height, 1), width, color, color.getAlpha());
@@ -144,6 +213,108 @@ public class RenderUtil {
         colorVertex(bb.maxX, bb.minY, bb.minZ, color, color.getAlpha(), bufferbuilder);
         colorVertex(bb.maxX, bb.maxY, bb.minZ, color, alpha, bufferbuilder);
         colorVertex(bb.minX, bb.maxY, bb.minZ, color, alpha, bufferbuilder);
+        tessellator.draw();
+    }
+
+    public static void drawBoundingBox(AxisAlignedBB bb, double width,
+                                       GSColor[] otherPos) {
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        GlStateManager.glLineWidth((float) width);
+        bufferbuilder.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+        colorVertex(bb.minX, bb.minY, bb.minZ, otherPos[0], otherPos[0].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.maxZ, otherPos[1], otherPos[1].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.maxZ, otherPos[2], otherPos[2].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.minZ, otherPos[3], otherPos[3].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.minZ, otherPos[0], otherPos[0].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.minZ, otherPos[4], otherPos[4].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.maxZ, otherPos[5], otherPos[5].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.maxZ, otherPos[1], otherPos[1].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.maxZ, otherPos[2], otherPos[2].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.maxZ, otherPos[6], otherPos[6].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.maxZ, otherPos[5], otherPos[5].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.maxZ, otherPos[6], otherPos[6].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.minZ, otherPos[7], otherPos[7].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.minZ, otherPos[3], otherPos[3].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.minZ, otherPos[7], otherPos[7].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.minZ, otherPos[4], otherPos[4].getAlpha(), bufferbuilder);
+        tessellator.draw();
+    }
+
+    public static void drawBoundingBox(AxisAlignedBB axisAlignedBB, double width,
+                                       GSColor[] color, boolean five, int sides) {
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        GlStateManager.glLineWidth((float) width);
+        bufferbuilder.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        if ((sides & GeometryMasks.Quad.EAST) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[6], color[6].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+        }
+
+        if ((sides & GeometryMasks.Quad.WEST) != 0) {
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[4], color[4].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.NORTH) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[4], color[4].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.SOUTH) != 0) {
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[6], color[6].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.UP) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[6], color[6].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[5], color[5].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ, color[4], color[4].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.minZ, color[7], color[7].getAlpha(), bufferbuilder);
+        }
+        if ((sides & GeometryMasks.Quad.DOWN) != 0) {
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[2], color[2].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.maxZ, color[1], color[1].getAlpha(), bufferbuilder);
+            colorVertex(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, color[0], color[0].getAlpha(), bufferbuilder);
+            if (five)
+                colorVertex(axisAlignedBB.maxX, axisAlignedBB.minY, axisAlignedBB.minZ, color[3], color[3].getAlpha(), bufferbuilder);
+        }
+
+        /*
+        colorVertex(bb.minX, bb.minY, bb.minZ, otherPos[0], otherPos[0].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.maxZ, otherPos[1], otherPos[1].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.maxZ, otherPos[2], otherPos[2].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.minZ, otherPos[3], otherPos[3].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.minZ, otherPos[0], otherPos[0].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.minZ, otherPos[4], otherPos[4].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.maxZ, otherPos[5], otherPos[5].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.minY, bb.maxZ, otherPos[1], otherPos[1].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.maxZ, otherPos[2], otherPos[2].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.maxZ, otherPos[6], otherPos[6].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.maxZ, otherPos[5], otherPos[5].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.maxZ, otherPos[6], otherPos[6].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.minZ, otherPos[7], otherPos[7].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.minY, bb.minZ, otherPos[3], otherPos[3].getAlpha(), bufferbuilder);
+        colorVertex(bb.maxX, bb.maxY, bb.minZ, otherPos[7], otherPos[7].getAlpha(), bufferbuilder);
+        colorVertex(bb.minX, bb.maxY, bb.minZ, otherPos[4], otherPos[4].getAlpha(), bufferbuilder);*/
         tessellator.draw();
     }
 
