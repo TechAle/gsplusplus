@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.api.util.misc.Timer;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemEnderPearl;
@@ -30,11 +31,14 @@ public class MCP extends Module {
 
     ModeSetting button = registerMode("Button", Arrays.asList("MOUSE3", "MOUSE4", "MOUSE5"), "MOUSE3");
     BooleanSetting clipRotate = registerBoolean("clipRotate", false);
-    IntegerSetting pearlPitch = registerInteger("Pitch", 85, -90, 90);
-    BooleanSetting onGroundCheck = registerBoolean("onGround", true);
-    BooleanSetting silentSwitch = registerBoolean("silentSwitch", false);
+    IntegerSetting pearlPitch = registerInteger("Pitch", 85, -90, 90,() -> clipRotate.getValue());
+    BooleanSetting onGroundCheck = registerBoolean("onGround", true,() -> clipRotate.getValue());
+    BooleanSetting silentSwitch = registerBoolean("silentSwitch", false,() -> clipRotate.getValue());
+    IntegerSetting delaySwitch = registerInteger("silentReturnDelay", 1, 0, 10,() -> silentSwitch.getValue());
 
     public void onUpdate() {
+
+        final Timer MCPdelayTimer = new Timer();
 
         float pearlPitchFloat = pearlPitch.getValue().floatValue();
 
@@ -90,6 +94,11 @@ public class MCP extends Module {
                     mc.playerController.processRightClick(mc.player, mc.world, EnumHand.MAIN_HAND);
                     if (!silentSwitch.getValue()){
                         mc.player.inventory.currentItem = oldSlot;
+                    }else{ //Undo desync?
+                        if (MCPdelayTimer.getTimePassed() / 50L >= delaySwitch.getValue()) {
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                            MCPdelayTimer.reset();
+                        }
                     }
                 }
             }
