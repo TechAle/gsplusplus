@@ -162,6 +162,7 @@ public class PredictUtil {
         }
         EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit"));
         clonedPlayer.setPosition(posVec[0], posVec[1], posVec[2]);
+        clonedPlayer.inventory.copyInventory(entity.inventory);
         return clonedPlayer;
     }
 
