@@ -482,7 +482,7 @@ public class AutoCrystalRewrite extends Module {
 
     int tickEat = 0;
 
-    boolean stopGapple() {
+    boolean stopGapple(boolean decrease) {
         // If we are eating, stop
         if (stopGapple.getValue()) {
             Item item;
@@ -490,11 +490,12 @@ public class AutoCrystalRewrite extends Module {
                     mc.player.isHandActive() && (
                             (item = mc.player.getHeldItemMainhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT
                                     || (item = mc.player.getHeldItemOffhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT)) {
-                tickEat = tickWaitEat.getValue();
+                if (decrease)   tickEat = tickWaitEat.getValue();
                 return true;
             }
             if (tickEat > 0) {
-                tickEat--;
+                if (decrease)
+                    tickEat--;
                 return true;
             }
         }
@@ -508,7 +509,7 @@ public class AutoCrystalRewrite extends Module {
         // Clear what we are displaying
         toDisplay.clear();
 
-        if (stopGapple())
+        if (stopGapple(true))
             return;
 
         // Start ca
@@ -1314,6 +1315,18 @@ public class AutoCrystalRewrite extends Module {
         if (predictSurround.getValue())
             // Check every damaged blocks
             mc.renderGlobal.damagedBlocks.forEach((integer, destroyBlockProgress) -> {
+
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return;
+
                 // Minecraft is strange
                 if (destroyBlockProgress != null) {
 
@@ -1326,6 +1339,7 @@ public class AutoCrystalRewrite extends Module {
                     if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
                         // If percent
                         if ( destroyBlockProgress.getPartialBlockDamage() / 2 * 25 >= percentSurround.getValue() ) {
+                            float armourPercent = armourFacePlace.getValue() / 100.0f;
                             // Get the position of some enemy near
                             ArrayList<EntityPlayer> possiblePlayers = new ArrayList<>();
 
@@ -1346,15 +1360,19 @@ public class AutoCrystalRewrite extends Module {
                                         null, new AxisAlignedBB(blockPos.add(surround)))
                                         .stream().collect(Collectors.toList());
 
-                                boolean place = false;
+                                PlayerInfo info = null;
                                 for(Entity pl : players) {
                                     if (pl instanceof EntityPlayer && (EntityPlayer) pl != mc.player && pl.posY + .5 >= blockPos.y) {
-                                        place = true;
+                                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
                                         break;
                                     }
                                 }
                                 boolean quit = false;
-                                if (place) {
+                                if (info != null) {
+                                    BlockPos coords = null;
+                                    double damage = Double.MIN_VALUE;
+                                    Block toReplace = BlockUtil.getBlock(blockPos);
+                                    mc.world.setBlockToAir(blockPos);
                                     for (Vec3i placement : new Vec3i[]{
                                             new Vec3i(1, -1, 0),
                                             new Vec3i(-1, -1, 0),
@@ -1373,28 +1391,28 @@ public class AutoCrystalRewrite extends Module {
                                                 break;
                                             }
 
-                                            if (stopGapple()) {
+                                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                                    info);
+                                            if (damagePlayer > damage) {
+                                                damage = damagePlayer;
+                                                coords = temp;
                                                 quit = true;
-                                                break;
                                             }
-                                            // -1286 15 997
-                                            // Get crystal hand
-                                            EnumHand hand = getHandCrystal();
-                                            // If no hand found
-                                            if (hand == null)
-                                                return;
-
-                                            placeCrystal(temp, hand);
-
-                                            placedCrystal = true;
-                                            quit = true;
-                                            break;
                                         }
                                     }
+
+                                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                                    if (coords != null) {
+                                        placeCrystal(coords, hand);
+                                        placedCrystal = true;
+                                    }
+
+                                    if (quit)
+                                        break;
+
                                 }
 
-                                if (quit)
-                                    break;
 
                             }
 
