@@ -84,6 +84,8 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && placeDelay.getValue().equals("Tick"));
     IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
             () -> place.getValue() && placeDelay.getValue().equals("Time"));
+    BooleanSetting placeOnCrystal = registerBoolean("Place On Crystal", false,
+            () -> place.getValue());
     DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
     DoubleSetting maxSelfDamagePlace = registerDouble("Max Self Damage Place", 12, 0, 30, () -> place.getValue());
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
@@ -997,7 +999,7 @@ public class AutoCrystalRewrite extends Module {
     // This actually place the crystal
     void placeCrystal(BlockPos pos, EnumHand handSwing) {
         // If there is a crystal, stop
-        if (!isCrystalHere(pos))
+        if ( !placeOnCrystal.getValue() && !isCrystalHere(pos))
             return;
 
         // If this pos is in wait
