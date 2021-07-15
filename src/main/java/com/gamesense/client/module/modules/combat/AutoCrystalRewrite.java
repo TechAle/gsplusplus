@@ -34,7 +34,9 @@ import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
@@ -59,6 +61,10 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
+    IntegerSetting tickWaitEat = registerInteger("Tick Wait Eat", 4, 0, 10,
+            () -> logicTarget.getValue() && stopGapple.getValue());
+    BooleanSetting chorusFruit = registerBoolean("Stop Chorus", false,
+            () -> logicTarget.getValue() && stopGapple.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     //endregion
 
@@ -272,7 +278,8 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue());
     IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
             () -> strict.getValue() && pitchCheck.getValue());
-
+    BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
+            () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
 
     //endregion
 
@@ -457,6 +464,8 @@ public class AutoCrystalRewrite extends Module {
         checkTime = isRotating = false;
     }
 
+    int tickEat = 0;
+
     // Simple onUpdate
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
@@ -466,9 +475,16 @@ public class AutoCrystalRewrite extends Module {
 
         // If we are eating, stop
         if (stopGapple.getValue()) {
-            if ((mc.player.getHeldItemMainhand().getItem() == Items.GOLDEN_APPLE
-                || mc.player.getHeldItemOffhand().getItem() == Items.GOLDEN_APPLE)
-                && mc.player.isHandActive()) {
+            Item item;
+            if (
+                mc.player.isHandActive() && (
+                    (item = mc.player.getHeldItemMainhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT
+                    || (item = mc.player.getHeldItemOffhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT)) {
+                tickEat = tickWaitEat.getValue();
+                return;
+            }
+            if (tickEat > 0) {
+                tickEat--;
                 return;
             }
         }
@@ -922,7 +938,6 @@ public class AutoCrystalRewrite extends Module {
                         tickSwitch = -1;
                     }
         }
-
     }
 
     EntityPlayer isCrystalGood(BlockPos crystal) {
@@ -996,6 +1011,7 @@ public class AutoCrystalRewrite extends Module {
             // New tick
             tick = 0;
             if (yawCheck.getValue() || pitchCheck.getValue()) {
+                Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 if (!isRotating) {
                     yPlayer = pitchCheck.getValue()
                             ? mc.player.getPitchYaw().x
@@ -1005,6 +1021,36 @@ public class AutoCrystalRewrite extends Module {
                             : Double.MIN_VALUE;
                     isRotating = true;
                 }
+
+                if (placeStrictPredict.getValue()) {
+
+                    if (yawCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.x - xPlayer;
+                        if (Math.abs(distanceDo) > 180) {
+                            distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                        }
+                        int direction = distanceDo > 0 ? 1 : -1;
+                        // Check if distance is > of what we want
+
+                        if (Math.abs(distanceDo) > yawStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                    if (pitchCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.y - yPlayer;
+                        int direction = distanceDo > 0 ? 1 : -1;
+                        // Check if distance is > of what we want
+
+                        if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                    return;
             }
         }
 
