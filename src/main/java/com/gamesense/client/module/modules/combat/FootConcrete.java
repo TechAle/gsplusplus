@@ -1,30 +1,23 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
-import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.client.module.Category;
-import com.gamesense.client.module.modules.combat.Elevatot;
 import com.gamesense.client.module.Module;
-import com.gamesense.api.util.misc.Timer;
-import com.gamesense.api.util.player.PlacementUtil;
-import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenCustomHashMap;
-import net.minecraft.block.*;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
+import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.gui.ColorMain;
+import net.minecraft.block.BlockEnderChest;
+import net.minecraft.block.BlockObsidian;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import scala.Int;
+import com.gamesense.client.module.modules.movement.Blink;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -34,20 +27,25 @@ import java.util.Arrays;
 
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
-    ModeSetting mode = registerMode("Jump", Arrays.asList("jump", "clip"), "jump");
-    IntegerSetting clipHeight = registerInteger("clipHeight", 5, 0, 25);
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump");
+    BooleanSetting useBlink = registerBoolean("useBlink", true);
+    IntegerSetting clipHeight = registerInteger("clipHeight", 1, 0, 25);
     IntegerSetting clipDelay = registerInteger("rubberbandDelay", 10, 0, 50);
-    IntegerSetting placeDelay = registerInteger("placeDelay", 7, 0, 1000);
+    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250);
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true);
     BooleanSetting rotate = registerBoolean("rotate", true);
-    BooleanSetting offHandObby = registerBoolean("offHandObby", false);
-    DoubleSetting yOffset = registerDouble("yOffset", 1, 0, 5);
 
     private boolean activedOff;
 
     boolean doGlitch;
 
     float oldPitch;
+
+    int targetBlockSlot;
+
+    int targetBlockSlotObby;
+
+    int targetBlockSlotEchest;
 
     boolean hasPlaced;
 
@@ -58,18 +56,31 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
     final Timer glitchTimer = new Timer();
 
-    private final ArrayList<EnumFacing> exd = new ArrayList<EnumFacing>() {
-        {
-            add(EnumFacing.DOWN);
-            add(EnumFacing.UP);
-        }
-    };
-
     public void onEnable() {
+
+        if (useBlink.getValue()){
+            ModuleManager.getModule(Blink.class).enable();
+        }
+
+            targetBlockSlotObby = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0,8);
+
+            targetBlockSlotEchest = InventoryUtil.findFirstBlockSlot(BlockEnderChest.class, 0, 8);
+
+            if (targetBlockSlotEchest > targetBlockSlotObby){
+                targetBlockSlot = targetBlockSlotObby;
+            } else {
+                targetBlockSlot = targetBlockSlotEchest;
+            }
+
+        if (targetBlockSlot > 8 || targetBlockSlot < 0) {
+    MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar!");
+    disable();
+        }
 
         if (mc.player.onGround) {
 
-            BlockPos burrowBlockPos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ);
+            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX)-1,Math.ceil(mc.player.posY-1)+1.5,Math.ceil(mc.player.posZ)-1);
+            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Placed at " + burrowBlockPos + " with " + placeDelay +" delay!");
 
             mc.player.jump();
             concreteTimer.reset();
@@ -88,9 +99,26 @@ public class FootConcrete extends Module {
 
         if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
 
+            if (useBlink.getValue()){
+
+                ModuleManager.getModule(Blink.class).disable();
+            }
+
+            if (!silentSwitch.getValue()) {
+
+                mc.player.inventory.currentItem = targetBlockSlot;
+
+            }else{
+
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+            }
+
             oldPitch = mc.player.rotationPitch;
 
-            placeBlock(burrowBlockPos);
+            PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+
+            oldslot = mc.player.inventory.currentItem;
 
             doGlitch = true;
 
@@ -98,76 +126,37 @@ public class FootConcrete extends Module {
 
         if (glitchTimer.getTimePassed() >= clipDelay.getValue() && mode.getValue().equals("clip") && doGlitch) {
 
+            if (!silentSwitch.getValue()) {
+                mc.player.inventory.currentItem = oldslot;
+            }else{
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+            }
+
             mc.player.setPosition(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ);
 
             glitchTimer.reset();
 
             doGlitch = false;
 
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
             disable();
 
         } else if (mode.getValue().equals("jump") && glitchTimer.getTimePassed() >= clipDelay.getValue() && doGlitch) {
+
+            if (!silentSwitch.getValue()) {
+                mc.player.inventory.currentItem = oldslot;
+            }else{
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+            }
 
             mc.player.jump();
 
             glitchTimer.reset();
 
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
             disable();
         }
     }
-
-    private boolean placeBlock(BlockPos pos) {
-        EnumHand handSwing = EnumHand.MAIN_HAND;
-        if (offHandObby.getValue()) {
-            int obsidianSlot = InventoryUtil.findObsidianSlot(offHandObby.getValue(), activedOff);
-
-            if (obsidianSlot == -1) {
-                return false;
-            }
-
-            if (obsidianSlot == 9) {
-                activedOff = true;
-                if (mc.player.getHeldItemOffhand().getItem() instanceof ItemBlock && ((ItemBlock) mc.player.getHeldItemOffhand().getItem()).getBlock() instanceof BlockObsidian) {
-                    // We can continue
-                    handSwing = EnumHand.OFF_HAND;
-                } else return false;
-            }
-        }
-
-        if (true || silentSwitch.getValue()) {
-            //int oldHand = mc.player.inventory.currentItem;
-            int newHand = findRightBlock();
-
-            if (newHand != -1) {
-                if (mc.player.inventory.currentItem != newHand) {
-                    if (silentSwitch.getValue()) {
-                        if (!hasPlaced) {
-                            mc.player.connection.sendPacket(new CPacketHeldItemChange(newHand));
-                            hasPlaced = true;
-                            oldslot = mc.player.inventory.currentItem;
-                        }
-                    } else {
-                        mc.player.inventory.currentItem = newHand;
-                        mc.playerController.syncCurrentPlayItem();
-                    }
-                }
-            } else {
-                return false;
-            }
-        }
-
-        return mode.getValue().equalsIgnoreCase("skull") ?
-                PlacementUtil.place(pos, handSwing, rotate.getValue(), exd)
-                : PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
-
-    }
-
-    private int findRightBlock() {
-        return InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0, 8);
-    }
 }
-
-
-
-
-
