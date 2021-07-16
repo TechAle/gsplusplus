@@ -246,8 +246,7 @@ public class AutoCrystalRewrite extends Module {
             () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
     DoubleSetting maxSelfDamageSur = registerDouble("Max Self Dam Sur", 7, 0, 20,
             () -> predictSection.getValue() && predictSurround.getValue());
-    ModeSetting predictTeleport = registerMode("Predict Teleport", Arrays.asList("Disabled", "Packet", "Sound"), "Disabled",
-            () -> predictSection.getValue());
+    BooleanSetting predictChorus = registerBoolean("Predict Chorus", false);
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
     BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
             () -> predictSection.getValue() && predictSelfPlace.getValue() );
@@ -308,7 +307,6 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && pitchCheck.getValue());
     BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
-
     //endregion
 
     //region Debug
@@ -1920,19 +1918,10 @@ public class AutoCrystalRewrite extends Module {
         }
 
         /// W+3 Moment
-        // Teleportation predict
-        if (event.getPacket() instanceof SPacketEntityTeleport) {
-            SPacketEntityTeleport p = (SPacketEntityTeleport) event.getPacket();
-            Entity e = mc.world.getEntityByID(p.getEntityId());
-            if (e instanceof EntityPlayer && predictTeleport.getValue().equals("Packet")) {
-                e.setEntityBoundingBox(e.getEntityBoundingBox().offset(p.getX(), p.getY(), p.getZ()));
-            }
-        }
-
         // Chorus predict
-        if (event.getPacket() instanceof SPacketSoundEffect) {
+        if ( predictChorus.getValue() && event.getPacket() instanceof SPacketSoundEffect) {
             SPacketSoundEffect p = (SPacketSoundEffect) event.getPacket();
-            if (p.getSound() == SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT && predictTeleport.getValue().equals("Sound")) {
+            if (p.getSound() == SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT) {
                 SPacketSoundEffect pa = (SPacketSoundEffect) event.getPacket();
                 mc.world.loadedEntityList.spliterator().forEachRemaining(player -> {
                     if (player instanceof EntityPlayer) {
