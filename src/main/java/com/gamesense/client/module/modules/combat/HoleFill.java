@@ -52,6 +52,7 @@ public class HoleFill extends Module {
     BooleanSetting offHandObby = registerBoolean("Off Hand Obby", false);
     BooleanSetting disableOnFinish = registerBoolean("Disable on Finish", true);
     BooleanSetting SilentSwitch = registerBoolean("Silent Switch", false);
+    BooleanSetting doubleHole = registerBoolean("Double Hole", false);
 
     private int delayTicks = 0;
     private int oldHandEnable = -1;
@@ -229,7 +230,8 @@ public class HoleFill extends Module {
         List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range.getValue().floatValue(), range.getValue().intValue(), false, true, 0);
 
         for (BlockPos blockPos : blockPosList) {
-            if (HoleUtil.isHole(blockPos, true, true).getType() == HoleUtil.HoleType.SINGLE) {
+            HoleUtil.HoleType temp;
+            if ((temp = HoleUtil.isHole(blockPos, true, true).getType()) == HoleUtil.HoleType.SINGLE || ( doubleHole.getValue() && temp == HoleUtil.HoleType.DOUBLE)) {
                 holes.add(blockPos);
             }
         }
