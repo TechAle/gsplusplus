@@ -72,10 +72,13 @@ public class AutoWeb extends Module {
     }
 
     public void onUpdate() {
-        if (mc.player == null || mc.world == null || (disableOnCa.getValue() && ModuleManager.isModuleEnabled(AutoCrystalRewrite.class))) {
+        if (mc.player == null || mc.world == null) {
             disable();
             return;
         }
+
+        if (disableOnCa.getValue() && ModuleManager.isModuleEnabled(AutoCrystalRewrite.class))
+            return;
 
         if (sneakOnly.getValue() && !mc.player.isSneaking()) {
             return;

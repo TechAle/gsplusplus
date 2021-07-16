@@ -105,6 +105,7 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
     BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
+    BooleanSetting stopCrystal = registerBoolean("Stop Crystal", true, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting rotateWeb = registerBoolean("Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting onlyAutoWebActive = registerBoolean("On AutoWeb active", true, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting switchWeb = registerBoolean("Switch Web", false, () -> place.getValue() && autoWeb.getValue());
@@ -644,9 +645,9 @@ public class AutoCrystalRewrite extends Module {
                 if (targetEP == null)
                     return;
 
-                if (BlockUtil.getBlock(targetEP.getPosition()) instanceof BlockWeb) {
-                    mc.world.setBlockToAir(targetEP.getPosition());
-                    webRemoved.add(targetEP.getPosition());
+                if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
+                    mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                    webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
                 }
 
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
@@ -677,9 +678,9 @@ public class AutoCrystalRewrite extends Module {
                     return;
 
                 for(EntityPlayer et : players) {
-                    if (BlockUtil.getBlock(et.getPosition()) instanceof BlockWeb) {
-                        mc.world.setBlockToAir(et.getPosition());
-                        webRemoved.add(et.getPosition());
+                    if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
+                        mc.world.setBlockToAir(new BlockPos(et.posX, et.posY, et.posZ));
+                        webRemoved.add(new BlockPos(et.posX, et.posY, et.posZ));
                     }
                 }
 
@@ -1000,6 +1001,15 @@ public class AutoCrystalRewrite extends Module {
                 if (crystalPlace.isReady())
                     crystalPlace = null;
                 else {
+                    // AutoWeb
+                    if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+                        // If the enemy is in air
+                        if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
+                            // Place it
+                            if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ), rotateWeb.getValue()) && stopCrystal.getValue())
+                                return;
+                        }
+                    }
                     // Else, place it
                     placeCrystal(crystalPlace.posCrystal, hand);
                     return;
@@ -1042,7 +1052,7 @@ public class AutoCrystalRewrite extends Module {
                 // If the enemy is in air
                 if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
                     // Place it
-                    if (placeWeb(bestPlace.getTarget().getPosition(), rotateWeb.getValue()))
+                    if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ), rotateWeb.getValue()) && stopCrystal.getValue())
                         return;
                 }
             }
