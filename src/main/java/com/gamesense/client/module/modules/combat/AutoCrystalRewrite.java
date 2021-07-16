@@ -25,9 +25,12 @@ import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockWeb;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
@@ -36,7 +39,10 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
@@ -98,6 +104,15 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting limitTickTime = registerInteger("Limit Time Place", 0, 0, 2000,
             () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
+    BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
+    BooleanSetting rotateWeb = registerBoolean("Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting onlyAutoWebActive = registerBoolean("On AutoWeb active", true, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting switchWeb = registerBoolean("Switch Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting silentSwitchWeb = registerBoolean("Silent Switch Web", false,
+            () -> place.getValue() && autoWeb.getValue() );
+    BooleanSetting switchBackWeb = registerBoolean("Switch Back Web", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
+    BooleanSetting onExplosion = registerBoolean("On Explosion", false, () -> place.getValue() && autoWeb.getValue());
     //endregion
 
     //region Misc
@@ -612,6 +627,7 @@ public class AutoCrystalRewrite extends Module {
         PlayerInfo target;
         // Our result
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
             // Lowest and Nearest use the same code with just 1 difference.
             case "Lowest":
@@ -627,6 +643,11 @@ public class AutoCrystalRewrite extends Module {
                 // If nobody found, return
                 if (targetEP == null)
                     return;
+
+                if (BlockUtil.getBlock(targetEP.getPosition()) instanceof BlockWeb) {
+                    mc.world.setBlockToAir(targetEP.getPosition());
+                    webRemoved.add(targetEP.getPosition());
+                }
 
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
 
@@ -648,12 +669,20 @@ public class AutoCrystalRewrite extends Module {
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                         minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
-                return;
+                break;
             case "Damage":
                 // Get every possible players
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
                     return;
+
+                for(EntityPlayer et : players) {
+                    if (BlockUtil.getBlock(et.getPosition()) instanceof BlockWeb) {
+                        mc.world.setBlockToAir(et.getPosition());
+                        webRemoved.add(et.getPosition());
+                    }
+                }
+
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
                     // Split list of entity
@@ -718,6 +747,10 @@ public class AutoCrystalRewrite extends Module {
                             minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
         }
+
+        for(BlockPos web : webRemoved)
+            mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
     }
 
     // Function that call every thread for the calculating of the crystals
@@ -1003,6 +1036,16 @@ public class AutoCrystalRewrite extends Module {
             toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
             if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
+
+            // AutoWeb
+            if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+                // If the enemy is in air
+                if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
+                    // Place it
+                    if (placeWeb(bestPlace.getTarget().getPosition(), rotateWeb.getValue()))
+                        return;
+                }
+            }
             placeCrystal(bestPlace.crystal, hand);
         } else {
             if (switchBack.getValue() && oldSlotBack != -1)
@@ -1014,6 +1057,58 @@ public class AutoCrystalRewrite extends Module {
                         tickSwitch = -1;
                     }
         }
+    }
+
+    boolean placeWeb(BlockPos target, boolean rotate) {
+
+        EnumFacing side = BlockUtil.getPlaceableSide(target);
+
+        if (side == null)
+            return false;
+
+        BlockPos neighbour = target.offset(side);
+        EnumFacing opposite = side.getOpposite();
+
+        if (!BlockUtil.canBeClicked(neighbour)) {
+            return false;
+        }
+
+        int oldSlot = -1;
+        if (!(mc.player.inventory.getCurrentItem().getItem() instanceof ItemBlock &&
+                ((ItemBlock) mc.player.inventory.getCurrentItem().getItem()).getBlock() == Blocks.WEB)) {
+            int slot = InventoryUtil.findFirstBlockSlot(Blocks.WEB.getClass(), 0, 8);
+            oldSlot = mc.player.inventory.currentItem;
+            if (slot == -1)
+                return false;
+            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else mc.player.inventory.currentItem = slot;
+        }
+
+        Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+        Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
+
+        if (rotate) {
+            lastHitVec = hitVec;
+        }
+
+        boolean isSneaking = false;
+        if (BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+            isSneaking = true;
+        }
+
+
+        mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
+        mc.player.swingArm(EnumHand.MAIN_HAND);
+
+        if (isSneaking)
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+
+        if (oldSlot != -1)
+            if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            else mc.player.inventory.currentItem = oldSlot;
+
+        return true;
     }
 
     EntityPlayer isCrystalGood(BlockPos crystal) {
