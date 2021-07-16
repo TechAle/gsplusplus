@@ -6,6 +6,7 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
@@ -32,6 +33,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockObsidian;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
@@ -55,6 +57,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.gamesense.api.util.world.combat.CrystalUtil.notValidBlock;
+import static com.gamesense.api.util.world.combat.CrystalUtil.notValidMaterial;
 
 @Module.Declaration(name = "AutoCrystalRewrite", category = Category.Combat, priority = 100)
 public class AutoCrystalRewrite extends Module {
@@ -227,13 +232,16 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting predictSection = registerBoolean("Predict Section", false);
     BooleanSetting predictSurround = registerBoolean("Predict Surround", false,
             () -> predictSection.getValue());
-    IntegerSetting percentSurround = registerInteger("Percent Surround", 80, 0, 100,
-            () -> predictSection.getValue() && predictSurround.getValue());
-    DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 7, 0, 20);
     BooleanSetting predictPacketSurround = registerBoolean("Predict Packet Surround", false,
             () -> predictSection.getValue() && predictSurround.getValue());
+    IntegerSetting percentSurround = registerInteger("Percent Surround", 80, 0, 100,
+            () -> predictSection.getValue() && predictSurround.getValue() && !predictPacketSurround.getValue());
     IntegerSetting tickPacketBreak = registerInteger("Tick Packet Break", 40, 0, 100,
             () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    IntegerSetting tickMaxPacketBreak = registerInteger("Tick Max Packet Break", 40, 0, 150,
+            () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    DoubleSetting maxSelfDamageSur = registerDouble("Max Self Dam Sur", 7, 0, 20,
+            () -> predictSection.getValue() && predictSurround.getValue());
     ModeSetting predictTeleport = registerMode("Predict Teleport", Arrays.asList("Disabled", "Packet", "Sound"), "Disabled",
             () -> predictSection.getValue());
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
@@ -870,6 +878,14 @@ public class AutoCrystalRewrite extends Module {
         // Update every crystals timers
         listCrystalsPlaced.updateCrystals();
 
+        for(int i = 0; i < packetsBlocks.size(); i++) {
+            if (!packetsBlocks.get(i).update()) {
+                packetsBlocks.remove(i);
+                i--;
+            }
+
+        }
+
         // If we have placed a crystal before
         if (placedCrystal) {
             // Stop
@@ -1312,7 +1328,7 @@ public class AutoCrystalRewrite extends Module {
         // Display everything else
         toDisplay.forEach(display::draw);
 
-        if (predictSurround.getValue())
+        if (predictSurround.getValue() && !predictPacketSurround.getValue())
             // Check every damaged blocks
             mc.renderGlobal.damagedBlocks.forEach((integer, destroyBlockProgress) -> {
 
@@ -1339,87 +1355,249 @@ public class AutoCrystalRewrite extends Module {
                     if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
                         // If percent
                         if ( destroyBlockProgress.getPartialBlockDamage() / 2 * 25 >= percentSurround.getValue() ) {
-                            float armourPercent = armourFacePlace.getValue() / 100.0f;
-                            // Get the position of some enemy near
-                            ArrayList<EntityPlayer> possiblePlayers = new ArrayList<>();
-
-                            possiblePlayers.addAll(getBasicPlayers(
-                                    rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue()
-                                    ).collect(Collectors.toList()));
-
-                            // mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(new BlockPos(x, y, z))).stream().anyMatch(entity -> entity instanceof EntityPlayer);
-
-                            for (Vec3i surround : new Vec3i[]{
-                                    new Vec3i(1, 0, 0),
-                                    new Vec3i(-1, 0, 0),
-                                    new Vec3i(0, 0, 1),
-                                    new Vec3i(0, 0, -1)
-                            }) {
-                                List<Entity> players =
-                                        mc.world.getEntitiesWithinAABBExcludingEntity(
-                                        null, new AxisAlignedBB(blockPos.add(surround)))
-                                        .stream().collect(Collectors.toList());
-
-                                PlayerInfo info = null;
-                                for(Entity pl : players) {
-                                    if (pl instanceof EntityPlayer && (EntityPlayer) pl != mc.player && pl.posY + .5 >= blockPos.y) {
-                                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
-                                        break;
-                                    }
-                                }
-                                boolean quit = false;
-                                if (info != null) {
-                                    BlockPos coords = null;
-                                    double damage = Double.MIN_VALUE;
-                                    Block toReplace = BlockUtil.getBlock(blockPos);
-                                    mc.world.setBlockToAir(blockPos);
-                                    for (Vec3i placement : new Vec3i[]{
-                                            new Vec3i(1, -1, 0),
-                                            new Vec3i(-1, -1, 0),
-                                            new Vec3i(0, -1, 1),
-                                            new Vec3i(0, -1, -1)
-                                    }) {
-                                        BlockPos temp;
-                                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
-
-                                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamage.getValue() )
-                                                continue;
-
-                                            // If there is a crystal, stop
-                                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
-                                                quit = true;
-                                                break;
-                                            }
-
-                                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
-                                                    info);
-                                            if (damagePlayer > damage) {
-                                                damage = damagePlayer;
-                                                coords = temp;
-                                                quit = true;
-                                            }
-                                        }
-                                    }
-
-                                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
-
-                                    if (coords != null) {
-                                        placeCrystal(coords, hand);
-                                        placedCrystal = true;
-                                    }
-
-                                    if (quit)
-                                        break;
-
-                                }
-
-
-                            }
-
+                            placeSurroundBlock(blockPos, hand);
                         }
                     }
                 }
             });
+    }
+
+    private boolean canBreak(BlockPos pos) {
+        final IBlockState blockState = mc.world.getBlockState(pos);
+        final Block block = blockState.getBlock();
+        return block.getBlockHardness(blockState, mc.world, pos) != -1;
+    }
+
+    class packetBlock {
+        public final BlockPos block;
+        public int tick;
+        public final int startTick;
+        public final int finishTish;
+
+        public packetBlock(BlockPos block, int startTick, int finishTick) {
+            this.block = block;
+            this.tick = 0;
+            this.startTick = startTick;
+            this.finishTish = finishTick;
+        }
+
+        boolean update() {
+            tick++;
+            if (tick > startTick) {
+                if (tick > finishTish)
+                    return false;
+
+                // Check for the placement
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return true;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return true;
+
+                if (!CrystalUtil.canPlaceCrystal(block, newPlace.getValue()))
+                    return true;
+
+                // If there is a crystal, stop
+                if ( !placeOnCrystal.getValue() && !isCrystalHere(block)) {
+                    return true;
+                }
+
+                placeCrystal(block, hand);
+                placedCrystal = true;
+
+            }
+            return true;
+        }
+    }
+    ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
+
+    @EventHandler
+    private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
+
+        if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
+        if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
+
+        // If air (Minecraft is strange)
+        BlockPos blockPos = event.getBlockPos();
+
+        if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+
+        if (packetsBlocks.stream().filter(e -> sameBlockPos(e.block, blockPos)).findAny().isPresent())
+            return;
+
+        // Check distance
+        if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+            // If percent
+            float armourPercent = armourFacePlace.getValue() / 100.0f;
+
+            // mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(new BlockPos(x, y, z))).stream().anyMatch(entity -> entity instanceof EntityPlayer);
+
+            for (Vec3i surround : new Vec3i[]{
+                    new Vec3i(1, 0, 0),
+                    new Vec3i(-1, 0, 0),
+                    new Vec3i(0, 0, 1),
+                    new Vec3i(0, 0, -1)
+            }) {
+                List<Entity> players =
+                        new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                                null, new AxisAlignedBB(blockPos.add(surround))));
+
+                PlayerInfo info = null;
+                for(Entity pl : players) {
+                    if (pl instanceof EntityPlayer && (EntityPlayer) pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                        break;
+                    }
+                }
+                boolean quit = false;
+                if (info != null) {
+                    BlockPos coords = null;
+                    double damage = Double.MIN_VALUE;
+                    Block toReplace = BlockUtil.getBlock(blockPos);
+                    mc.world.setBlockToAir(blockPos);
+                    for (Vec3i placement : new Vec3i[]{
+                            new Vec3i(1, -1, 0),
+                            new Vec3i(-1, -1, 0),
+                            new Vec3i(0, -1, 1),
+                            new Vec3i(0, -1, -1)
+                    }) {
+                        BlockPos temp;
+                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
+
+                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                                continue;
+
+                            // If there is a crystal, stop
+                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                                quit = true;
+                                break;
+                            }
+
+                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                    info);
+                            if (damagePlayer > damage) {
+                                damage = damagePlayer;
+                                coords = temp;
+                                quit = true;
+                            }
+                        }
+                    }
+
+                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                    if (coords != null) {
+                        packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                    }
+
+                    if (quit)
+                        break;
+
+                }
+
+
+            }
+
+        }
+
+
+    });
+
+    boolean canPlaceCrystal(BlockPos blockPos, boolean newPlacement) {
+        if (notValidBlock(mc.world.getBlockState(blockPos).getBlock())) return false;
+
+        BlockPos posUp = blockPos.up();
+
+        if (newPlacement) {
+            return mc.world.isAirBlock(posUp);
+        } else {
+            return !notValidMaterial(mc.world.getBlockState(posUp).getMaterial())
+                    && !notValidMaterial(mc.world.getBlockState(posUp.up()).getMaterial());
+        }
+    }
+
+
+    void placeSurroundBlock(BlockPos blockPos, EnumHand hand) {
+        float armourPercent = armourFacePlace.getValue() / 100.0f;
+        // Get the position of some enemy near
+        ArrayList<EntityPlayer> possiblePlayers = new ArrayList<>();
+
+        possiblePlayers.addAll(getBasicPlayers(
+                rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue()
+        ).collect(Collectors.toList()));
+
+        // mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(new BlockPos(x, y, z))).stream().anyMatch(entity -> entity instanceof EntityPlayer);
+
+        for (Vec3i surround : new Vec3i[]{
+                new Vec3i(1, 0, 0),
+                new Vec3i(-1, 0, 0),
+                new Vec3i(0, 0, 1),
+                new Vec3i(0, 0, -1)
+        }) {
+            List<Entity> players =
+                    mc.world.getEntitiesWithinAABBExcludingEntity(
+                            null, new AxisAlignedBB(blockPos.add(surround)))
+                            .stream().collect(Collectors.toList());
+
+            PlayerInfo info = null;
+            for(Entity pl : players) {
+                if (pl instanceof EntityPlayer && (EntityPlayer) pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                    info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                    break;
+                }
+            }
+            boolean quit = false;
+            if (info != null) {
+                BlockPos coords = null;
+                double damage = Double.MIN_VALUE;
+                Block toReplace = BlockUtil.getBlock(blockPos);
+                mc.world.setBlockToAir(blockPos);
+                for (Vec3i placement : new Vec3i[]{
+                        new Vec3i(1, -1, 0),
+                        new Vec3i(-1, -1, 0),
+                        new Vec3i(0, -1, 1),
+                        new Vec3i(0, -1, -1)
+                }) {
+                    BlockPos temp;
+                    if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue()) ) {
+
+                        if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                            continue;
+
+                        // If there is a crystal, stop
+                        if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                            quit = true;
+                            break;
+                        }
+
+                        float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                info);
+                        if (damagePlayer > damage) {
+                            damage = damagePlayer;
+                            coords = temp;
+                            quit = true;
+                        }
+                    }
+                }
+
+                mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                if (coords != null) {
+                    placeCrystal(coords, hand);
+                    placedCrystal = true;
+                }
+
+                if (quit)
+                    break;
+
+            }
+
+
+        }
     }
 
     // This is used for creating the box gradient
