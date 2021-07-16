@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
@@ -11,7 +12,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import net.minecraft.block.BlockEnderChest;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -31,6 +31,7 @@ public class FootConcrete extends Module {
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump");
     BooleanSetting useBlink = registerBoolean("useBlink", true);
     BooleanSetting useTimer = registerBoolean("useTimer", true);
+    DoubleSetting timerSpeed = registerDouble("timerSpeed",20,1,50,()-> useTimer.getValue() );
     IntegerSetting clipHeight = registerInteger("clipHeight", 1, 0, 25);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250);
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true);
@@ -44,6 +45,8 @@ public class FootConcrete extends Module {
 
     BlockPos burrowBlockPos;
 
+    float timerSpeedVal;
+
     int oldslot;
 
     final Timer concreteTimer = new Timer();
@@ -56,8 +59,10 @@ public class FootConcrete extends Module {
             ModuleManager.getModule(Blink.class).enable();
         }
 
+        timerSpeedVal = timerSpeed.getValue().floatValue();
+
         if (useTimer.getValue()) {
-            Minecraft.getMinecraft().timer.tickLength = 50.0f / 20;
+            Minecraft.getMinecraft().timer.tickLength = 50.0f / timerSpeedVal;
         }
 
         // FIND SLOT
@@ -67,6 +72,14 @@ public class FootConcrete extends Module {
         if (targetBlockSlot == -1) {
 
             MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar, disabling");
+
+            if (useBlink.getValue()) {
+                ModuleManager.getModule(Blink.class).disable();
+            }
+
+            if (useTimer.getValue()) {
+                Minecraft.getMinecraft().timer.tickLength = 50;
+            }
 
             disable();
 
