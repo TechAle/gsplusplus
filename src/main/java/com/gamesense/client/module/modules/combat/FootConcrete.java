@@ -13,6 +13,7 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.BlockEnderChest;
 import net.minecraft.block.BlockObsidian;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -29,13 +30,11 @@ import java.util.Arrays;
 public class FootConcrete extends Module {
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump");
     BooleanSetting useBlink = registerBoolean("useBlink", true);
+    BooleanSetting useTimer = registerBoolean("useTimer", true);
     IntegerSetting clipHeight = registerInteger("clipHeight", 1, 0, 25);
-    IntegerSetting clipDelay = registerInteger("rubberbandDelay", 10, 0, 50);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250);
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true);
     BooleanSetting rotate = registerBoolean("rotate", true);
-
-    private boolean activedOff;
 
     boolean doGlitch;
 
@@ -43,48 +42,44 @@ public class FootConcrete extends Module {
 
     int targetBlockSlot;
 
-    int targetBlockSlotObby;
-
-    int targetBlockSlotEchest;
-
-    boolean hasPlaced;
-
     BlockPos burrowBlockPos;
 
     int oldslot;
 
     final Timer concreteTimer = new Timer();
-    final Timer glitchTimer = new Timer();
 
     public void onEnable() {
 
-        if (useBlink.getValue()){
+        //BLINK AND TIMER
+
+        if (useBlink.getValue()) {
             ModuleManager.getModule(Blink.class).enable();
         }
 
-            targetBlockSlotObby = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0,8);
-
-            targetBlockSlotEchest = InventoryUtil.findFirstBlockSlot(BlockEnderChest.class, 0, 8);
-
-            if (targetBlockSlotEchest > targetBlockSlotObby){
-                targetBlockSlot = targetBlockSlotObby;
-            } else {
-                targetBlockSlot = targetBlockSlotEchest;
-            }
-
-        if (targetBlockSlot > 8 || targetBlockSlot < 0) {
-    MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar!");
-    disable();
+        if (useTimer.getValue()) {
+            Minecraft.getMinecraft().timer.tickLength = 50.0f / 20;
         }
+
+        // FIND SLOT
+
+        targetBlockSlot = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0, 8);
+
+        if (targetBlockSlot == -1) {
+
+            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar, disabling");
+
+            disable();
+
+        }
+
+        // JUMP
 
         if (mc.player.onGround) {
 
-            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX)-1,Math.ceil(mc.player.posY-1)+1.5,Math.ceil(mc.player.posZ)-1);
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Placed at " + burrowBlockPos + " with " + placeDelay +" delay!");
+            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
 
             mc.player.jump();
             concreteTimer.reset();
-            glitchTimer.reset();
 
             doGlitch = false;
 
@@ -97,18 +92,20 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
+        // PLACE
+
         if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
 
-            if (useBlink.getValue()){
+            if (useBlink.getValue()) {
 
                 ModuleManager.getModule(Blink.class).disable();
             }
 
-            if (!silentSwitch.getValue()) {
+            if (!silentSwitch.getValue()) { //Silent switch check
 
                 mc.player.inventory.currentItem = targetBlockSlot;
 
-            }else{
+            } else {
 
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
@@ -122,19 +119,25 @@ public class FootConcrete extends Module {
 
             doGlitch = true;
 
+            //DISABLE TIMER
+
+            if (useTimer.getValue()) {
+                Minecraft.getMinecraft().timer.tickLength = 50;
+            }
+
         }
 
-        if (glitchTimer.getTimePassed() >= clipDelay.getValue() && mode.getValue().equals("clip") && doGlitch) {
+        // RUBBERBAND
+
+        if (mode.getValue().equals("clip") && doGlitch) {
 
             if (!silentSwitch.getValue()) {
                 mc.player.inventory.currentItem = oldslot;
-            }else{
+            } else {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
             }
 
             mc.player.setPosition(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ);
-
-            glitchTimer.reset();
 
             doGlitch = false;
 
@@ -142,17 +145,17 @@ public class FootConcrete extends Module {
 
             disable();
 
-        } else if (mode.getValue().equals("jump") && glitchTimer.getTimePassed() >= clipDelay.getValue() && doGlitch) {
+        } else if (mode.getValue().equals("jump") && doGlitch) {
 
             if (!silentSwitch.getValue()) {
                 mc.player.inventory.currentItem = oldslot;
-            }else{
+            } else {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
             }
 
             mc.player.jump();
 
-            glitchTimer.reset();
+            doGlitch = false;
 
             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
