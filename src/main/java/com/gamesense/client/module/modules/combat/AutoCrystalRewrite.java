@@ -6,17 +6,15 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
-import com.gamesense.api.util.player.InventoryUtil;
-import com.gamesense.api.util.player.PlayerPacket;
-import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.player.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.combat.CrystalUtil;
@@ -27,17 +25,25 @@ import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockWeb;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
-import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
@@ -59,6 +65,8 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
+    IntegerSetting tickWaitEat = registerInteger("Tick Wait Eat", 4, 0, 10,
+            () -> logicTarget.getValue() && stopGapple.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     //endregion
 
@@ -78,6 +86,8 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && placeDelay.getValue().equals("Tick"));
     IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
             () -> place.getValue() && placeDelay.getValue().equals("Time"));
+    BooleanSetting placeOnCrystal = registerBoolean("Place On Crystal", false,
+            () -> place.getValue());
     DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
     DoubleSetting maxSelfDamagePlace = registerDouble("Max Self Damage Place", 12, 0, 30, () -> place.getValue());
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
@@ -92,6 +102,20 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting limitTickTime = registerInteger("Limit Time Place", 0, 0, 2000,
             () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
+    BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
+    BooleanSetting stopCrystal = registerBoolean("Stop Crystal", true, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting preRotateWeb = registerBoolean("Pre Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting focusWebRotate = registerBoolean("Focus Ber Rotate", false,
+            () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting onlyAutoWebActive = registerBoolean("On AutoWeb active", true, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting switchWeb = registerBoolean("Switch Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting silentSwitchWeb = registerBoolean("Silent Switch Web", false,
+            () -> place.getValue() && autoWeb.getValue() );
+    BooleanSetting switchBackWeb = registerBoolean("Switch Back Web", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
+    BooleanSetting switchBackEnd = registerBoolean("Switch Back Web End", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue() && switchBackWeb.getValue());
+    BooleanSetting onExplosion = registerBoolean("On Explosion", false, () -> place.getValue() && autoWeb.getValue());
     //endregion
 
     //region Misc
@@ -212,8 +236,18 @@ public class AutoCrystalRewrite extends Module {
 
     //region Predict
     BooleanSetting predictSection = registerBoolean("Predict Section", false);
-    ModeSetting predictTeleport = registerMode("Predict Teleport", Arrays.asList("Disabled", "Packet", "Sound"), "Disabled",
+    BooleanSetting predictSurround = registerBoolean("Predict Surround", false,
             () -> predictSection.getValue());
+    BooleanSetting predictPacketSurround = registerBoolean("Predict Packet Surround", false,
+            () -> predictSection.getValue() && predictSurround.getValue());
+    IntegerSetting percentSurround = registerInteger("Percent Surround", 80, 0, 100,
+            () -> predictSection.getValue() && predictSurround.getValue() && !predictPacketSurround.getValue());
+    IntegerSetting tickPacketBreak = registerInteger("Tick Packet Break", 40, 0, 100,
+            () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    IntegerSetting tickMaxPacketBreak = registerInteger("Tick Max Packet Break", 40, 0, 150,
+            () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    DoubleSetting maxSelfDamageSur = registerDouble("Max Self Dam Sur", 7, 0, 20,
+            () -> predictSection.getValue() && predictSurround.getValue());
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
     BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
             () -> predictSection.getValue() && predictSelfPlace.getValue() );
@@ -254,6 +288,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
+    BooleanSetting preRotate = registerBoolean("Pre Rotate", false, () -> strict.getValue() && rotate.getValue());
     IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10,
             () -> strict.getValue() && rotate.getValue());
     ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
@@ -265,15 +300,15 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
             () -> strict.getValue() && focusPlaceType.getValue().equals("Time"));
     BooleanSetting yawCheck = registerBoolean("Yaw Check", false,
-            () -> strict.getValue());
+            () -> strict.getValue() && !preRotate.getValue());
     IntegerSetting yawStep = registerInteger("Yaw Step", 40, 0, 180,
-            () -> strict.getValue() && yawCheck.getValue());
+            () -> strict.getValue() && yawCheck.getValue() && !preRotate.getValue());
     BooleanSetting pitchCheck = registerBoolean("Pitch Check", false,
-            () -> strict.getValue());
+            () -> strict.getValue() && !preRotate.getValue());
     IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
-            () -> strict.getValue() && pitchCheck.getValue());
-
-
+            () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
+    BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
+            () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     //endregion
 
     //region Debug
@@ -419,12 +454,60 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
+    // This is used by packet surround
+    class packetBlock {
+        public final BlockPos block;
+        public int tick;
+        public final int startTick;
+        public final int finishTish;
+
+        public packetBlock(BlockPos block, int startTick, int finishTick) {
+            this.block = block;
+            this.tick = 0;
+            this.startTick = startTick;
+            this.finishTish = finishTick;
+        }
+
+        boolean update() {
+            tick++;
+            if (tick > startTick) {
+                if (tick > finishTish)
+                    return false;
+
+                // Check for the placement
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return true;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return true;
+
+                if (!CrystalUtil.canPlaceCrystal(block, newPlace.getValue()))
+                    return true;
+
+                // If there is a crystal, stop
+                if ( !placeOnCrystal.getValue() && !isCrystalHere(block)) {
+                    return true;
+                }
+
+                placeCrystal(block, hand);
+                placedCrystal = true;
+
+            }
+            return true;
+        }
+    }
+
     /// Global variables sorted by type
     public static boolean stopAC = false;
 
     boolean checkTime, placedCrystal = false, isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack;
+    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack, slotWebBack;
 
     double xPlayer, yPlayer;
 
@@ -439,6 +522,7 @@ public class AutoCrystalRewrite extends Module {
 
     ArrayList<display> toDisplay = new ArrayList<>();
     ArrayList<Long> durations = new ArrayList<>();
+    ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
 
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
@@ -453,8 +537,30 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tick = 0;
         time = 0;
-        oldSlotBack = tickSwitch = -1;
+        oldSlotBack = tickSwitch = slotWebBack = -1;
         checkTime = isRotating = false;
+    }
+
+    int tickEat = 0;
+
+    boolean stopGapple(boolean decrease) {
+        // If we are eating, stop
+        if (stopGapple.getValue()) {
+            Item item;
+            if (
+                    mc.player.isHandActive() && (
+                            (item = mc.player.getHeldItemMainhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT
+                                    || (item = mc.player.getHeldItemOffhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT)) {
+                if (decrease)   tickEat = tickWaitEat.getValue();
+                return true;
+            }
+            if (tickEat > 0) {
+                if (decrease)
+                    tickEat--;
+                return true;
+            }
+        }
+        return false;
     }
 
     // Simple onUpdate
@@ -464,14 +570,8 @@ public class AutoCrystalRewrite extends Module {
         // Clear what we are displaying
         toDisplay.clear();
 
-        // If we are eating, stop
-        if (stopGapple.getValue()) {
-            if ((mc.player.getHeldItemMainhand().getItem() == Items.GOLDEN_APPLE
-                || mc.player.getHeldItemOffhand().getItem() == Items.GOLDEN_APPLE)
-                && mc.player.isHandActive()) {
-                return;
-            }
-        }
+        if (stopGapple(true))
+            return;
 
         // Start ca
         switch (logic.getValue()) {
@@ -528,6 +628,7 @@ public class AutoCrystalRewrite extends Module {
         PlayerInfo target;
         // Our result
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
             // Lowest and Nearest use the same code with just 1 difference.
             case "Lowest":
@@ -543,6 +644,11 @@ public class AutoCrystalRewrite extends Module {
                 // If nobody found, return
                 if (targetEP == null)
                     return;
+
+                if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
+                    mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                    webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                }
 
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
 
@@ -564,12 +670,20 @@ public class AutoCrystalRewrite extends Module {
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                         minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
-                return;
+                break;
             case "Damage":
                 // Get every possible players
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
                     return;
+
+                for(EntityPlayer et : players) {
+                    if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
+                        mc.world.setBlockToAir(new BlockPos(et.posX, et.posY, et.posZ));
+                        webRemoved.add(new BlockPos(et.posX, et.posY, et.posZ));
+                    }
+                }
+
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
                     // Split list of entity
@@ -634,6 +748,10 @@ public class AutoCrystalRewrite extends Module {
                             minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
         }
+
+        for(BlockPos web : webRemoved)
+            mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
     }
 
     // Function that call every thread for the calculating of the crystals
@@ -831,6 +949,14 @@ public class AutoCrystalRewrite extends Module {
         // Update every crystals timers
         listCrystalsPlaced.updateCrystals();
 
+        for(int i = 0; i < packetsBlocks.size(); i++) {
+            if (!packetsBlocks.get(i).update()) {
+                packetsBlocks.remove(i);
+                i--;
+            }
+
+        }
+
         // If we have placed a crystal before
         if (placedCrystal) {
             // Stop
@@ -875,6 +1001,10 @@ public class AutoCrystalRewrite extends Module {
                 if (crystalPlace.isReady())
                     crystalPlace = null;
                 else {
+                    // AutoWeb
+                    if (isPlacingWeb())
+                        return;
+
                     // Else, place it
                     placeCrystal(crystalPlace.posCrystal, hand);
                     return;
@@ -911,6 +1041,10 @@ public class AutoCrystalRewrite extends Module {
             toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
             if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
+
+            if (isPlacingWeb())
+                return;
+
             placeCrystal(bestPlace.crystal, hand);
         } else {
             if (switchBack.getValue() && oldSlotBack != -1)
@@ -922,7 +1056,89 @@ public class AutoCrystalRewrite extends Module {
                         tickSwitch = -1;
                     }
         }
+    }
 
+    boolean isPlacingWeb() {
+        // AutoWeb
+        if (autoWeb.getValue() && bestPlace != null && bestPlace.target != null && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+            // If the enemy is in air
+            if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
+                // Place it
+                if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
+                    return true;
+            }
+        } else if (oldSlotBack != -1) {
+            mc.player.inventory.currentItem = oldSlotBack;
+            oldSlotBack = -1;
+        }
+
+        return false;
+    }
+
+    boolean placeWeb(BlockPos target) {
+
+        EnumFacing side = BlockUtil.getPlaceableSide(target);
+
+        if (side == null)
+            return false;
+
+        BlockPos neighbour = target.offset(side);
+        EnumFacing opposite = side.getOpposite();
+
+        if (!BlockUtil.canBeClicked(neighbour)) {
+            return false;
+        }
+
+        int oldSlot = -1;
+        if (!(mc.player.inventory.getCurrentItem().getItem() instanceof ItemBlock &&
+                ((ItemBlock) mc.player.inventory.getCurrentItem().getItem()).getBlock() == Blocks.WEB)) {
+            int slot = InventoryUtil.findFirstBlockSlot(Blocks.WEB.getClass(), 0, 8);
+            oldSlot = mc.player.inventory.currentItem;
+            if (slot == -1)
+                return false;
+            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else if (switchBackEnd.getValue()) {
+                oldSlotBack = oldSlot;
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            }
+            else if (switchBackWeb.getValue()) mc.player.inventory.currentItem = slot;
+            else if (switchWeb.getValue()) {
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            } else return false;
+        }
+
+        Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+        Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
+
+        if (preRotateWeb.getValue()) {
+            BlockUtil.faceVectorPacketInstant(hitVec, true);
+        }
+
+        if (focusWebRotate.getValue()) {
+            lastHitVec = hitVec;
+            tick = 0;
+        }
+
+        boolean isSneaking = false;
+        if (BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+            isSneaking = true;
+        }
+
+
+        mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
+        mc.player.swingArm(EnumHand.MAIN_HAND);
+
+        if (isSneaking)
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+
+        if (oldSlot != -1)
+            if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            else mc.player.inventory.currentItem = oldSlot;
+
+        return true;
     }
 
     EntityPlayer isCrystalGood(BlockPos crystal) {
@@ -982,7 +1198,7 @@ public class AutoCrystalRewrite extends Module {
     // This actually place the crystal
     void placeCrystal(BlockPos pos, EnumHand handSwing) {
         // If there is a crystal, stop
-        if (!isCrystalHere(pos))
+        if ( !placeOnCrystal.getValue() && !isCrystalHere(pos))
             return;
 
         // If this pos is in wait
@@ -995,7 +1211,11 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             // New tick
             tick = 0;
+            if (preRotate.getValue()) {
+                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
+            } else
             if (yawCheck.getValue() || pitchCheck.getValue()) {
+                Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 if (!isRotating) {
                     yPlayer = pitchCheck.getValue()
                             ? mc.player.getPitchYaw().x
@@ -1005,6 +1225,33 @@ public class AutoCrystalRewrite extends Module {
                             : Double.MIN_VALUE;
                     isRotating = true;
                 }
+
+                if (placeStrictPredict.getValue()) {
+
+                    if (yawCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.x - xPlayer;
+                        if (Math.abs(distanceDo) > 180) {
+                            distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                        }
+                        // Check if distance is > of what we want
+                        if (Math.abs(distanceDo) > yawStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                    if (pitchCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.y - yPlayer;
+                        // Check if distance is > of what we want
+
+                        if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                    return;
             }
         }
 
@@ -1242,6 +1489,241 @@ public class AutoCrystalRewrite extends Module {
 
         // Display everything else
         toDisplay.forEach(display::draw);
+
+        if (predictSurround.getValue() && !predictPacketSurround.getValue())
+            // Check every damaged blocks
+            mc.renderGlobal.damagedBlocks.forEach((integer, destroyBlockProgress) -> {
+
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return;
+
+                // Minecraft is strange
+                if (destroyBlockProgress != null) {
+
+                    // If air (Minecraft is strange)
+                    BlockPos blockPos = destroyBlockProgress.getPosition();
+
+                    if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+
+                    // Check distance
+                    if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+                        // If percent
+                        if ( destroyBlockProgress.getPartialBlockDamage() / 2 * 25 >= percentSurround.getValue() ) {
+                            placeSurroundBlock(blockPos, hand);
+                        }
+                    }
+                }
+            });
+    }
+
+    private boolean canBreak(BlockPos pos) {
+        final IBlockState blockState = mc.world.getBlockState(pos);
+        final Block block = blockState.getBlock();
+        return block.getBlockHardness(blockState, mc.world, pos) != -1;
+    }
+
+    @EventHandler
+    private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
+
+        if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
+        if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
+
+        // If air (Minecraft is strange)
+        BlockPos blockPos = event.getBlockPos();
+
+        if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+
+        if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
+            return;
+
+        // Check distance
+        if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+            // If percent
+            float armourPercent = armourFacePlace.getValue() / 100.0f;
+
+            // Check around the block
+            for (Vec3i surround : new Vec3i[]{
+                    new Vec3i(1, 0, 0),
+                    new Vec3i(-1, 0, 0),
+                    new Vec3i(0, 0, 1),
+                    new Vec3i(0, 0, -1)
+            }) {
+                // Get possible players that collide
+                List<Entity> players =
+                        new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                                null, new AxisAlignedBB(blockPos.add(surround))));
+
+                PlayerInfo info = null;
+                // Iterate
+                for(Entity pl : players) {
+                    // Remove us and remove players above
+                    if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                        // If we found 1, we are fine
+                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                        break;
+                    }
+                }
+
+                // This is for force quitting. Is used for not multiPlacing
+                boolean quit = false;
+                if (info != null) {
+                    // Best values
+                    BlockPos coords = null;
+                    double damage = Double.MIN_VALUE;
+                    // Set to air the block for calculating the damage
+                    Block toReplace = BlockUtil.getBlock(blockPos);
+                    mc.world.setBlockToAir(blockPos);
+                    // Check around
+                    for (Vec3i placement : new Vec3i[]{
+                            new Vec3i(1, -1, 0),
+                            new Vec3i(-1, -1, 0),
+                            new Vec3i(0, -1, 1),
+                            new Vec3i(0, -1, -1)
+                    }) {
+                        // If it's placable
+                        BlockPos temp;
+                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
+
+                            // Check the damage on us
+                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                                continue;
+
+                            // If there is a crystal, stop
+                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                                quit = true;
+                                break;
+                            }
+
+                            // Check damage on the target
+                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                    info);
+
+                            // IF >, add
+                            if (damagePlayer > damage) {
+                                damage = damagePlayer;
+                                coords = temp;
+                                quit = true;
+                            }
+                        }
+                    }
+
+                    // Reset block
+                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                    // Add to packet block
+                    if (coords != null) {
+                        packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                    }
+
+                    // Quit
+                    if (quit)
+                        break;
+
+                }
+
+
+            }
+
+        }
+
+
+    });
+
+
+    void placeSurroundBlock(BlockPos blockPos, EnumHand hand) {
+        float armourPercent = armourFacePlace.getValue() / 100.0f;
+
+        // Check around block
+        for (Vec3i surround : new Vec3i[]{
+                new Vec3i(1, 0, 0),
+                new Vec3i(-1, 0, 0),
+                new Vec3i(0, 0, 1),
+                new Vec3i(0, 0, -1)
+        }) {
+
+            // Get possible players
+            List<Entity> players =
+                    new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                            null, new AxisAlignedBB(blockPos.add(surround))));
+
+            // Find
+            PlayerInfo info = null;
+            for(Entity pl : players) {
+                // If it's not us and if it's not above
+                if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                    // Add
+                    info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                    break;
+                }
+            }
+
+            // For force quitting. Is used for non multiPlacing
+            boolean quit = false;
+            if (info != null) {
+                // Best
+                BlockPos coords = null;
+                double damage = Double.MIN_VALUE;
+                // For calculating the damage, set to air
+                Block toReplace = BlockUtil.getBlock(blockPos);
+                mc.world.setBlockToAir(blockPos);
+                // Check around
+                for (Vec3i placement : new Vec3i[]{
+                        new Vec3i(1, -1, 0),
+                        new Vec3i(-1, -1, 0),
+                        new Vec3i(0, -1, 1),
+                        new Vec3i(0, -1, -1)
+                }) {
+                    // If we can place the crystal
+                    BlockPos temp;
+                    if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue()) ) {
+
+                        // Check damage
+                        if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                            continue;
+
+                        // If there is a crystal, stop
+                        if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                            quit = true;
+                            break;
+                        }
+
+                        // Calculate damage
+                        float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                info);
+                        // If best
+                        if (damagePlayer > damage) {
+                            damage = damagePlayer;
+                            coords = temp;
+                            quit = true;
+                        }
+                    }
+                }
+
+                // Reset surround
+                mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                // Place crystal
+                if (coords != null) {
+                    placeCrystal(coords, hand);
+                    placedCrystal = true;
+                }
+
+                // Quit
+                if (quit)
+                    break;
+
+            }
+
+
+        }
     }
 
     // This is used for creating the box gradient
@@ -1377,7 +1859,6 @@ public class AutoCrystalRewrite extends Module {
     //region Packet management
 
     // This function is used for the rotation
-    double xPlayerRotation, yPlayerRotation;
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
@@ -1434,16 +1915,6 @@ public class AutoCrystalRewrite extends Module {
 
             PlayerPacket packet = new PlayerPacket(this, nowRotation);
             PlayerPacketManager.INSTANCE.addPacket(packet);
-            /*
-            PistonCrystal.printDebug(String.format("Yaw go: %f Yaw player: %f",
-                    rotation.x, RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)), false);*/
-
-            /*
-            Nel rotation, yaw-pitch
-            Nel pitchYaw, pitch-yaw
-            Sono invertiti
-            mc.player.setPositionAndRotation(mc.player.posX, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch)
-             */
         }
     });
 
@@ -1464,35 +1935,10 @@ public class AutoCrystalRewrite extends Module {
                 // If crystalPlace is not null
                 if (crystalPlace != null)
                     // Check if it's it
-                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5, SpawnObject.getY() - .5), crystalPlace.posCrystal)) {
+                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5D, SpawnObject.getZ() - .5), crystalPlace.posCrystal)) {
                         // If yes, remove it
                         crystalPlace = null;
                     }
-            }
-        }
-
-        /// W+3 Moment
-        // Teleportation predict
-        if (event.getPacket() instanceof SPacketEntityTeleport) {
-            SPacketEntityTeleport p = (SPacketEntityTeleport) event.getPacket();
-            Entity e = mc.world.getEntityByID(p.getEntityId());
-            if (e instanceof EntityPlayer && predictTeleport.getValue().equals("Packet")) {
-                e.setEntityBoundingBox(e.getEntityBoundingBox().offset(p.getX(), p.getY(), p.getZ()));
-            }
-        }
-
-        // Chorus predict
-        if (event.getPacket() instanceof SPacketSoundEffect) {
-            SPacketSoundEffect p = (SPacketSoundEffect) event.getPacket();
-            if (p.getSound() == SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT && predictTeleport.getValue().equals("Sound")) {
-                SPacketSoundEffect pa = (SPacketSoundEffect) event.getPacket();
-                mc.world.loadedEntityList.spliterator().forEachRemaining(player -> {
-                    if (player instanceof EntityPlayer) {
-                        if (player.getDistance(pa.getX(), pa.getY(), pa.getZ()) <= rangeEnemyPlace.getValue()) {
-                            player.setEntityBoundingBox(player.getEntityBoundingBox().offset(pa.getX(), pa.getY(), pa.getZ()));
-                        }
-                    }
-                });
             }
         }
 

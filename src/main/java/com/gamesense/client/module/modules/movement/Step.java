@@ -20,6 +20,8 @@ public class Step extends Module {
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
     BooleanSetting timer = registerBoolean("Timer", false);
     BooleanSetting reverse = registerBoolean("Reverse", false);
+    BooleanSetting stopOnSpeed = registerBoolean("Stop On Speed", true);
+    BooleanSetting onGround = registerBoolean("On Ground", false);
     ModeSetting mode = registerMode("Modes", Arrays.asList("Normal", "Vanilla"), "Normal");
 
     private int ticks = 0;
@@ -33,7 +35,7 @@ public class Step extends Module {
             return;
         }
 
-        if (ModuleManager.isModuleEnabled(Speed.class))
+        if ( stopOnSpeed.getValue() && ModuleManager.isModuleEnabled(Speed.class))
             return;
 
         if (mode.getValue().equalsIgnoreCase("Normal")) {
@@ -69,7 +71,7 @@ public class Step extends Module {
             if (mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(dir[0], 1.0, dir[1])).isEmpty() && !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(dir[0], 0.6, dir[1])).isEmpty()) {
                 one = true;
             }
-            if (mc.player.collidedHorizontally && (mc.player.moveForward != 0.0f || mc.player.moveStrafing != 0.0f) && mc.player.onGround) {
+            if (mc.player.collidedHorizontally && (mc.player.moveForward != 0.0f || mc.player.moveStrafing != 0.0f) && ( !onGround.getValue() || mc.player.onGround)) {
                 if (one && this.height.getValue() >= 1.0) {
                     final double[] oneOffset = {0.42, 0.753};
                     for (int i = 0; i < oneOffset.length; i++) {
