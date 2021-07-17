@@ -1060,7 +1060,7 @@ public class AutoCrystalRewrite extends Module {
 
     boolean isPlacingWeb() {
         // AutoWeb
-        if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+        if (autoWeb.getValue() && bestPlace != null && bestPlace.target != null && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
             // If the enemy is in air
             if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
                 // Place it
