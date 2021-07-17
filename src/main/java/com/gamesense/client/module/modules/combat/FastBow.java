@@ -15,7 +15,7 @@ public class FastBow extends Module {
     IntegerSetting drawLength = registerInteger("Draw Length", 3, 0, 21);
 
     public void onUpdate() {
-        if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive() && mc.player.getItemInUseMaxCount() >= drawLength.getValue() && ModuleManager.isModuleEnabled("Quiver")) {
+        if (mc.player.getHeldItemMainhand().getItem() instanceof ItemBow && mc.player.isHandActive() && mc.player.getItemInUseMaxCount() >= drawLength.getValue() && !ModuleManager.isModuleEnabled("Quiver")) {
             mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, mc.player.getHorizontalFacing()));
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(mc.player.getActiveHand()));
             mc.player.stopActiveHand();
