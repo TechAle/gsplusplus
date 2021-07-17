@@ -15,6 +15,7 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import com.gamesense.client.module.modules.movement.Blink;
@@ -28,18 +29,22 @@ import java.util.Arrays;
 
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump");
-    BooleanSetting useBlink = registerBoolean("useBlink", true);
-    BooleanSetting useTimer = registerBoolean("useTimer", true);
-    DoubleSetting timerSpeed = registerDouble("timerSpeed",20,1,50,()-> useTimer.getValue() );
-    IntegerSetting clipHeight = registerInteger("clipHeight", 1, 0, 25);
-    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250);
-    BooleanSetting silentSwitch = registerBoolean("silentSwitch", true);
+    ModeSetting jumpMode = registerMode("jumpMode",Arrays.asList("real","fake"),"real");
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real"));
+    BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real"));
+    BooleanSetting useTimer = registerBoolean("useTimer", true, () -> jumpMode.getValue().equals("real"));
+    DoubleSetting timerSpeed = registerDouble("timerSpeed",20,1,50,()-> useTimer.getValue() && jumpMode.getValue().equals("real"));
+    BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight",false);
+    IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
+    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
+    BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting rotate = registerBoolean("rotate", true);
 
     boolean doGlitch;
 
     float oldPitch;
+
+    int oldSlot;
 
     int targetBlockSlot;
 
@@ -89,9 +94,44 @@ public class FootConcrete extends Module {
 
         if (mc.player.onGround) {
 
-            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
 
-            mc.player.jump();
+            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
+            if (jumpMode.getValue() == "real") {
+                mc.player.jump();
+            } else {
+
+                // CIRUU BURROW (not ashamed to admit it)
+
+                targetBlockSlot = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0, 8);
+
+                oldSlot = mc.player.inventory.currentItem;
+
+                if (targetBlockSlot == -1){
+                    disable();
+                }
+
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
+
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+
+                if (!absoluteClipHeight.getValue()) {
+
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ, true));
+
+                } else {
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,clipHeight.getValue(), mc.player.posZ, true));
+                }
+
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
+                disable();
+
+            }
             concreteTimer.reset();
 
             doGlitch = false;
