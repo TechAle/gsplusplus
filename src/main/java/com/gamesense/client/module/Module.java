@@ -7,16 +7,12 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.gamesense.api.setting.values.*;
 import me.zero.alpine.listener.Listenable;
 import org.lwjgl.input.Keyboard;
 
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.SettingsManager;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
@@ -163,6 +159,13 @@ public abstract class Module implements Listenable {
         IntegerSetting integerSetting = new IntegerSetting(name, this, value, min, max);
         SettingsManager.addSetting(integerSetting);
         return integerSetting;
+    }
+
+    protected StringSetting registerString(String name, String value) {
+        StringSetting stringSetting = new StringSetting(name, this, value);
+        SettingsManager.addSetting(stringSetting);
+        return stringSetting;
+
     }
 
     protected IntegerSetting registerInteger(String name, int value, int min, int max, Supplier<Boolean> dipendent) {
