@@ -161,18 +161,24 @@ public abstract class Module implements Listenable {
         return integerSetting;
     }
 
-    protected StringSetting registerString(String name, String value) {
-        StringSetting stringSetting = new StringSetting(name, this, value);
-        SettingsManager.addSetting(stringSetting);
-        return stringSetting;
-
-    }
-
     protected IntegerSetting registerInteger(String name, int value, int min, int max, Supplier<Boolean> dipendent) {
         IntegerSetting integerSetting = new IntegerSetting(name, this, value, min, max);
         integerSetting.setVisible(dipendent);
         SettingsManager.addSetting(integerSetting);
         return integerSetting;
+    }
+
+    protected StringSetting registerString(String name, String value) {
+        StringSetting stringSetting = new StringSetting(name, this, value);
+        SettingsManager.addSetting(stringSetting);
+        return stringSetting;
+    }
+
+    protected StringSetting registerString(String name, String value, Supplier<Boolean> dipendent) {
+        StringSetting stringSetting = new StringSetting(name, this, value);
+        stringSetting.setVisible(dipendent);
+        SettingsManager.addSetting(stringSetting);
+        return stringSetting;
     }
 
     protected DoubleSetting registerDouble(String name, double value, double min, double max) {
