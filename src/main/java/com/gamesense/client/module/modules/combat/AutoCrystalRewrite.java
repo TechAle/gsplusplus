@@ -1002,17 +1002,9 @@ public class AutoCrystalRewrite extends Module {
                     crystalPlace = null;
                 else {
                     // AutoWeb
-                    if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
-                        // If the enemy is in air
-                        if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
-                            // Place it
-                            if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
-                                return;
-                        }
-                    } else if (oldSlotBack != -1)  {
-                        mc.player.inventory.currentItem = oldSlotBack;
-                        oldSlotBack = -1;
-                    }
+                    if (isPlacingWeb())
+                        return;
+
                     // Else, place it
                     placeCrystal(crystalPlace.posCrystal, hand);
                     return;
@@ -1050,18 +1042,9 @@ public class AutoCrystalRewrite extends Module {
             if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
 
-            // AutoWeb
-            if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
-                // If the enemy is in air
-                if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
-                    // Place it
-                    if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
-                        return;
-                }
-            } else if (oldSlotBack != -1) {
-                mc.player.inventory.currentItem = oldSlotBack;
-                oldSlotBack = -1;
-            }
+            if (isPlacingWeb())
+                return;
+
             placeCrystal(bestPlace.crystal, hand);
         } else {
             if (switchBack.getValue() && oldSlotBack != -1)
@@ -1073,6 +1056,23 @@ public class AutoCrystalRewrite extends Module {
                         tickSwitch = -1;
                     }
         }
+    }
+
+    boolean isPlacingWeb() {
+        // AutoWeb
+        if (autoWeb.getValue() && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+            // If the enemy is in air
+            if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
+                // Place it
+                if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
+                    return true;
+            }
+        } else if (oldSlotBack != -1) {
+            mc.player.inventory.currentItem = oldSlotBack;
+            oldSlotBack = -1;
+        }
+
+        return false;
     }
 
     boolean placeWeb(BlockPos target) {
@@ -1103,6 +1103,10 @@ public class AutoCrystalRewrite extends Module {
                 oldSlot = -1;
             }
             else if (switchBackWeb.getValue()) mc.player.inventory.currentItem = slot;
+            else if (switchWeb.getValue()) {
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            } else return false;
         }
 
         Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
