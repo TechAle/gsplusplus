@@ -1910,7 +1910,7 @@ public class AutoCrystalRewrite extends Module {
                 // If crystalPlace is not null
                 if (crystalPlace != null)
                     // Check if it's it
-                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5, SpawnObject.getY() - .5), crystalPlace.posCrystal)) {
+                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5D, SpawnObject.getZ() - .5), crystalPlace.posCrystal)) {
                         // If yes, remove it
                         crystalPlace = null;
                     }
