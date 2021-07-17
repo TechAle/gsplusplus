@@ -1096,7 +1096,7 @@ public class AutoCrystalRewrite extends Module {
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
 
         if (rotate) {
-            lastHitVec = hitVec;
+            BlockUtil.faceVectorPacketInstant(hitVec, true);
         }
 
         boolean isSneaking = false;
