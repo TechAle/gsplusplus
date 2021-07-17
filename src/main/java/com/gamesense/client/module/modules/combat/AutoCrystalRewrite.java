@@ -41,11 +41,9 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
-import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
-import net.minecraft.network.play.server.SPacketEntityTeleport;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
@@ -106,13 +104,17 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
     BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
     BooleanSetting stopCrystal = registerBoolean("Stop Crystal", true, () -> place.getValue() && autoWeb.getValue());
-    BooleanSetting rotateWeb = registerBoolean("Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting preRotateWeb = registerBoolean("Pre Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting focusWebRotate = registerBoolean("Focus Ber Rotate", false,
+            () -> place.getValue() && autoWeb.getValue());
     BooleanSetting onlyAutoWebActive = registerBoolean("On AutoWeb active", true, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting switchWeb = registerBoolean("Switch Web", false, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting silentSwitchWeb = registerBoolean("Silent Switch Web", false,
             () -> place.getValue() && autoWeb.getValue() );
     BooleanSetting switchBackWeb = registerBoolean("Switch Back Web", false,
             () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
+    BooleanSetting switchBackEnd = registerBoolean("Switch Back Web End", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue() && switchBackWeb.getValue());
     BooleanSetting onExplosion = registerBoolean("On Explosion", false, () -> place.getValue() && autoWeb.getValue());
     //endregion
 
@@ -246,7 +248,6 @@ public class AutoCrystalRewrite extends Module {
             () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
     DoubleSetting maxSelfDamageSur = registerDouble("Max Self Dam Sur", 7, 0, 20,
             () -> predictSection.getValue() && predictSurround.getValue());
-    BooleanSetting predictChorus = registerBoolean("Predict Chorus", false);
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
     BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
             () -> predictSection.getValue() && predictSelfPlace.getValue() );
@@ -287,6 +288,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
+    BooleanSetting preRotate = registerBoolean("Pre Rotate", false, () -> strict.getValue() && rotate.getValue());
     IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10,
             () -> strict.getValue() && rotate.getValue());
     ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
@@ -298,13 +300,13 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
             () -> strict.getValue() && focusPlaceType.getValue().equals("Time"));
     BooleanSetting yawCheck = registerBoolean("Yaw Check", false,
-            () -> strict.getValue());
+            () -> strict.getValue() && !preRotate.getValue());
     IntegerSetting yawStep = registerInteger("Yaw Step", 40, 0, 180,
-            () -> strict.getValue() && yawCheck.getValue());
+            () -> strict.getValue() && yawCheck.getValue() && !preRotate.getValue());
     BooleanSetting pitchCheck = registerBoolean("Pitch Check", false,
-            () -> strict.getValue());
+            () -> strict.getValue() && !preRotate.getValue());
     IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
-            () -> strict.getValue() && pitchCheck.getValue());
+            () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
     BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     //endregion
@@ -505,7 +507,7 @@ public class AutoCrystalRewrite extends Module {
 
     boolean checkTime, placedCrystal = false, isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack;
+    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack, slotWebBack;
 
     double xPlayer, yPlayer;
 
@@ -535,7 +537,7 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tick = 0;
         time = 0;
-        oldSlotBack = tickSwitch = -1;
+        oldSlotBack = tickSwitch = slotWebBack = -1;
         checkTime = isRotating = false;
     }
 
@@ -1004,9 +1006,12 @@ public class AutoCrystalRewrite extends Module {
                         // If the enemy is in air
                         if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
                             // Place it
-                            if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ), rotateWeb.getValue()) && stopCrystal.getValue())
+                            if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
                                 return;
                         }
+                    } else if (oldSlotBack != -1)  {
+                        mc.player.inventory.currentItem = oldSlotBack;
+                        oldSlotBack = -1;
                     }
                     // Else, place it
                     placeCrystal(crystalPlace.posCrystal, hand);
@@ -1050,9 +1055,12 @@ public class AutoCrystalRewrite extends Module {
                 // If the enemy is in air
                 if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
                     // Place it
-                    if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ), rotateWeb.getValue()) && stopCrystal.getValue())
+                    if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
                         return;
                 }
+            } else if (oldSlotBack != -1) {
+                mc.player.inventory.currentItem = oldSlotBack;
+                oldSlotBack = -1;
             }
             placeCrystal(bestPlace.crystal, hand);
         } else {
@@ -1067,7 +1075,7 @@ public class AutoCrystalRewrite extends Module {
         }
     }
 
-    boolean placeWeb(BlockPos target, boolean rotate) {
+    boolean placeWeb(BlockPos target) {
 
         EnumFacing side = BlockUtil.getPlaceableSide(target);
 
@@ -1089,14 +1097,24 @@ public class AutoCrystalRewrite extends Module {
             if (slot == -1)
                 return false;
             else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-            else mc.player.inventory.currentItem = slot;
+            else if (switchBackEnd.getValue()) {
+                oldSlotBack = oldSlot;
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            }
+            else if (switchBackWeb.getValue()) mc.player.inventory.currentItem = slot;
         }
 
         Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
 
-        if (rotate) {
+        if (preRotateWeb.getValue()) {
             BlockUtil.faceVectorPacketInstant(hitVec, true);
+        }
+
+        if (focusWebRotate.getValue()) {
+            lastHitVec = hitVec;
+            tick = 0;
         }
 
         boolean isSneaking = false;
@@ -1189,6 +1207,9 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             // New tick
             tick = 0;
+            if (preRotate.getValue()) {
+                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
+            } else
             if (yawCheck.getValue() || pitchCheck.getValue()) {
                 Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 if (!isRotating) {
@@ -1914,22 +1935,6 @@ public class AutoCrystalRewrite extends Module {
                         // If yes, remove it
                         crystalPlace = null;
                     }
-            }
-        }
-
-        /// W+3 Moment
-        // Chorus predict
-        if ( predictChorus.getValue() && event.getPacket() instanceof SPacketSoundEffect) {
-            SPacketSoundEffect p = (SPacketSoundEffect) event.getPacket();
-            if (p.getSound() == SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT) {
-                SPacketSoundEffect pa = (SPacketSoundEffect) event.getPacket();
-                mc.world.loadedEntityList.spliterator().forEachRemaining(player -> {
-                    if (player instanceof EntityPlayer) {
-                        if (player.getDistance(pa.getX(), pa.getY(), pa.getZ()) <= rangeEnemyPlace.getValue()) {
-                            player.setEntityBoundingBox(player.getEntityBoundingBox().offset(pa.getX(), pa.getY(), pa.getZ()));
-                        }
-                    }
-                });
             }
         }
 
