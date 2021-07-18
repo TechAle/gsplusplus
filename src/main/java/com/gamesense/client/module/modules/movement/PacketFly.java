@@ -12,6 +12,7 @@ import net.minecraft.util.math.Vec3d;
 @Module.Declaration(name = "PacketFly", category = Category.Movement)
 public class PacketFly extends Module {
 
+    BooleanSetting yPause = registerBoolean("yPause",true);
     BooleanSetting antiKick = registerBoolean("antiKick", true);
     IntegerSetting antiKickTimer = registerInteger("antiKickTimer", 4, 1, 10);
 
@@ -24,7 +25,7 @@ public class PacketFly extends Module {
             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
             extremeTP();
         }
-        if (mc.gameSettings.keyBindJump.isKeyDown()) {
+        if (mc.gameSettings.keyBindJump.isKeyDown() || mc.player.posY < -1 && yPause.getValue()) {
             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY + 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
             extremeTP();
         }
