@@ -12,7 +12,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import net.minecraft.block.BlockObsidian;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -39,6 +38,7 @@ public class FootConcrete extends Module {
     IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
     BooleanSetting allowEchest = registerBoolean("allowEchest", true);
+    BooleanSetting onlyEchest = registerBoolean("onlyEchest", false, () -> allowEchest.getValue());
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting rotate = registerBoolean("rotate", true);
 
@@ -80,14 +80,14 @@ public class FootConcrete extends Module {
 
         targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
 
-        if (targetBlockSlot == -1) {
+        if (targetBlockSlot == -1 || onlyEchest.getValue()) {
             if (allowEchest.getValue())
                 targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
         }
 
         if (targetBlockSlot == -1) {
 
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar, disabling");
+            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "No burrow blocks in hotbar, disabling");
 
             invalidHotbar = true;
 
@@ -113,6 +113,12 @@ public class FootConcrete extends Module {
 
 
                 burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
+
+                if (mc.world.isOutsideBuildHeight(burrowBlockPos)) {
+                    disable();
+                    MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You are trying to burrow above build limit, disabling.");
+                }
+
                 if (jumpMode.getValue().equals("real")) {
                     mc.player.jump();
                 } else {
@@ -121,7 +127,7 @@ public class FootConcrete extends Module {
 
                     targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
 
-                    if (targetBlockSlot == -1) {
+                    if (targetBlockSlot == -1 || onlyEchest.getValue()) {
                         if (allowEchest.getValue())
                             targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
                     }
@@ -129,6 +135,7 @@ public class FootConcrete extends Module {
                     oldSlot = mc.player.inventory.currentItem;
 
                     if (targetBlockSlot == -1) {
+                        MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You are trying to burrow above build limit, disabling.");
                         disable();
                     }
 
