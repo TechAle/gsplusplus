@@ -1,7 +1,9 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.realmsclient.gui.ChatFormatting;
@@ -12,7 +14,8 @@ public class Timer extends Module {
 
     String arraylistSpeed;
 
-    DoubleSetting speed = registerDouble("speed", 2, 0.1, 50);
+    DoubleSetting speed = registerDouble("speed", 1.08, 0.1, 50);
+    BooleanSetting onMove = registerBoolean("onMove",false);
 
     float speedDouble;
 
@@ -22,6 +25,12 @@ public class Timer extends Module {
 
     @Override
     public void onUpdate() {
+        if (!onMove.getValue() || MotionUtil.isMoving(mc.player)) {
+            doTimer();
+        }
+    }
+
+    public void doTimer() {
         speedDouble = speed.getValue().floatValue();
         Minecraft.getMinecraft().timer.tickLength = 50.0f / speedDouble;
     }
