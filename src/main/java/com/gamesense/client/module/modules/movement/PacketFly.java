@@ -12,12 +12,17 @@ import net.minecraft.util.math.Vec3d;
 @Module.Declaration(name = "PacketFly", category = Category.Movement)
 public class PacketFly extends Module {
 
+    BooleanSetting alsoFly = registerBoolean("fly", false);
     BooleanSetting yPause = registerBoolean("yPause",true);
     BooleanSetting antiKick = registerBoolean("antiKick", true);
     IntegerSetting antiKickTimer = registerInteger("antiKickTimer", 4, 1, 10);
 
     @Override
     public void onUpdate() {
+
+        if (alsoFly.getValue()) {
+            mc.player.capabilities.isFlying = true;
+        }
 
         mc.player.setVelocity(0, 0, 0);
 
@@ -42,5 +47,8 @@ public class PacketFly extends Module {
         if (!mc.player.onGround) {
             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 42069, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, true));
         }
+    }
+    public void onDisable() {
+        mc.player.capabilities.isFlying = false;
     }
 }
