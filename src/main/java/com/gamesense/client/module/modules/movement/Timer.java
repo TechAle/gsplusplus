@@ -2,7 +2,6 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -37,7 +36,7 @@ public class Timer extends Module {
     public String getHudInfo() {
         arraylistSpeed = "";
 
-            arraylistSpeed = "[" + ChatFormatting.WHITE + speed.getValue() + ChatFormatting.GRAY + "]";
+            arraylistSpeed = "[" + ChatFormatting.WHITE + (Math.round(speed.getValue() * 100.0) / 100.0) + ChatFormatting.GRAY + "]";
 
         return arraylistSpeed;
     }
