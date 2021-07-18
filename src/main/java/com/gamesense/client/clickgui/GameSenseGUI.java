@@ -8,16 +8,17 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.gamesense.api.setting.values.*;
+import com.lukflug.panelstudio.component.*;
+import com.lukflug.panelstudio.setting.*;
+import com.lukflug.panelstudio.theme.*;
+import com.lukflug.panelstudio.widget.ColorPickerComponent;
+import com.lukflug.panelstudio.widget.TextField;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import com.gamesense.api.setting.Setting;
 import com.gamesense.api.setting.SettingsManager;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.font.FontUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
@@ -33,10 +34,6 @@ import com.lukflug.panelstudio.base.IBoolean;
 import com.lukflug.panelstudio.base.IToggleable;
 import com.lukflug.panelstudio.base.SettingsAnimation;
 import com.lukflug.panelstudio.base.SimpleToggleable;
-import com.lukflug.panelstudio.component.IFixedComponent;
-import com.lukflug.panelstudio.component.IFixedComponentProxy;
-import com.lukflug.panelstudio.component.IResizable;
-import com.lukflug.panelstudio.component.IScrollSize;
 import com.lukflug.panelstudio.container.IContainer;
 import com.lukflug.panelstudio.hud.HUDGUI;
 import com.lukflug.panelstudio.layout.CSGOLayout;
@@ -52,22 +49,6 @@ import com.lukflug.panelstudio.popup.CenteredPositioner;
 import com.lukflug.panelstudio.popup.MousePositioner;
 import com.lukflug.panelstudio.popup.PanelPositioner;
 import com.lukflug.panelstudio.popup.PopupTuple;
-import com.lukflug.panelstudio.setting.IBooleanSetting;
-import com.lukflug.panelstudio.setting.ICategory;
-import com.lukflug.panelstudio.setting.IClient;
-import com.lukflug.panelstudio.setting.IColorSetting;
-import com.lukflug.panelstudio.setting.IEnumSetting;
-import com.lukflug.panelstudio.setting.IKeybindSetting;
-import com.lukflug.panelstudio.setting.ILabeled;
-import com.lukflug.panelstudio.setting.IModule;
-import com.lukflug.panelstudio.setting.INumberSetting;
-import com.lukflug.panelstudio.setting.ISetting;
-import com.lukflug.panelstudio.setting.Labeled;
-import com.lukflug.panelstudio.theme.ClearTheme;
-import com.lukflug.panelstudio.theme.GameSenseTheme;
-import com.lukflug.panelstudio.theme.IColorScheme;
-import com.lukflug.panelstudio.theme.ITheme;
-import com.lukflug.panelstudio.theme.IThemeMultiplexer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -305,7 +286,25 @@ public class GameSenseGUI extends MinecraftHUDGUI {
         		};
         	}
 		};
-		IComponentGenerator generator=new ComponentGenerator(scancode->scancode==Keyboard.KEY_DELETE);
+		IComponentGenerator generator=new ComponentGenerator(scancode->scancode==Keyboard.KEY_DELETE, character->character>=' ', new TextFieldKeys()){
+			@Override
+			public IComponent getColorComponent(IColorSetting setting, Supplier<Animation> animation, IComponentAdder adder, ThemeTuple theme, int colorLevel, boolean isContainer) {
+				return new ColorPickerComponent(setting,theme);
+			};
+
+			@Override
+			public IComponent getStringComponent (IStringSetting setting, Supplier<Animation> animation, IComponentAdder adder, ThemeTuple theme, int colorLevel, boolean isContainer) {
+				return new TextField(setting,keys,0,new SimpleToggleable(false),theme.getTextRenderer(false,isContainer)) {
+					@Override
+					public boolean allowCharacter(char character) {
+						return charFilter.test(character) && character != 127;
+					}
+				};
+			}
+
+		};
+
+
 		ILayout classicPanelLayout=new PanelLayout(WIDTH,new Point(DISTANCE,DISTANCE),(WIDTH+DISTANCE)/2,HEIGHT+DISTANCE,animation,level->ChildMode.DOWN,level->ChildMode.DOWN,popupType);
 		classicPanelLayout.populateGUI(classicPanelAdder,generator,client,theme);
 		// CSGO Layout!
@@ -339,8 +338,13 @@ public class GameSenseGUI extends MinecraftHUDGUI {
 		};
 		horizontalCSGOLayout.populateGUI(horizontalCSGOAdder,generator,client,theme);
     }
-    
-    private ISetting<?> createSetting (Setting<?> setting) {
+
+	@Override
+	protected HUDGUI getGUI() {
+		return gui;
+	}
+
+	private ISetting<?> createSetting (Setting<?> setting) {
     	if (setting instanceof BooleanSetting) {
     		return new IBooleanSetting() {
 				@Override
@@ -584,7 +588,24 @@ public class GameSenseGUI extends MinecraftHUDGUI {
 					}));
 				}
     		};
-    	}
+    	} else if (setting instanceof StringSetting) {
+    		return new IStringSetting() {
+				@Override
+				public String getValue() {
+					return ((StringSetting) setting).getText();
+				}
+
+				@Override
+				public void setValue(String string) {
+					((StringSetting) setting).setText(string);
+				}
+
+				@Override
+				public String getDisplayName() {
+					return setting.getName();
+				}
+			};
+		}
     	return new ISetting<Void>() {
 			@Override
 			public String getDisplayName() {
@@ -654,11 +675,6 @@ public class GameSenseGUI extends MinecraftHUDGUI {
         GlStateManager.disableDepth();
         GlStateManager.depthMask(false);
         GameSense.INSTANCE.gameSenseGUI.getInterface().begin(false);
-    }
-
-    @Override
-    protected HUDGUI getHUDGUI() {
-        return gui;
     }
 
     @Override

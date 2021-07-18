@@ -10,6 +10,7 @@ import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumHand;
@@ -34,6 +35,7 @@ public class AutoWeb extends Module {
     BooleanSetting rotate = registerBoolean("Rotate", true);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Web", true);
+    BooleanSetting disableOnCa = registerBoolean("Disable on CA", true);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
@@ -74,6 +76,9 @@ public class AutoWeb extends Module {
             disable();
             return;
         }
+
+        if (disableOnCa.getValue() && ModuleManager.isModuleEnabled(AutoCrystalRewrite.class))
+            return;
 
         if (sneakOnly.getValue() && !mc.player.isSneaking()) {
             return;

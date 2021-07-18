@@ -3,11 +3,10 @@ package com.gamesense.client.module.modules.misc;
 import club.minnced.discord.rpc.DiscordEventHandlers;
 import club.minnced.discord.rpc.DiscordRPC;
 import club.minnced.discord.rpc.DiscordRichPresence;
-import club.minnced.discord.rpc.DiscordUser;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.Discord;
+import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.manager.managers.TotemPopManager;
 import com.gamesense.client.module.Category;
@@ -108,10 +107,12 @@ public class DiscordRPCModule extends Module {
     static final String MPH = "mph";
     ModeSetting speedUnit = registerMode("Unit", Arrays.asList(MPS, KMH, MPH), KMH);
     BooleanSetting firstLine = registerBoolean("First Line", true);
+    StringSetting formatFirst = registerString("1Format", "%1 %2 %3");
     ModeSetting Line1Option1 = registerMode("Opt 1: ", Arrays.asList(options.toArray(new String[0])), "Version");
     ModeSetting Line1Option2 = registerMode("Opt 2: ", Arrays.asList(options.toArray(new String[0])), "Server");
     ModeSetting Line1Option3 = registerMode("Opt 3: ", Arrays.asList(options.toArray(new String[0])), "None");
     BooleanSetting secondLine = registerBoolean("Second Line", true);
+    StringSetting formatSecond = registerString("2Format", "%1 %2 %3");
     ModeSetting Line2Option1 = registerMode("Opt 1; ", Arrays.asList(options.toArray(new String[0])), "Status");
     ModeSetting Line2Option2 = registerMode("Opt 2; ", Arrays.asList(options.toArray(new String[0])), "Health");
     ModeSetting Line2Option3 = registerMode("Opt 3; ", Arrays.asList(options.toArray(new String[0])), "Speed");
@@ -192,67 +193,49 @@ public class DiscordRPCModule extends Module {
 
         // First line
         if (firstLine.getValue()) {
-            discordRichPresence.details = getValues(new String[] {
-                    Line1Option1.getValue(),
-                    Line1Option2.getValue(),
-                    Line1Option3.getValue()
-            });
+            discordRichPresence.details =
+                    formatFirst.getText()
+                    .replace("%1", getValues(Line1Option1.getValue()))
+                    .replace("%2", getValues(Line1Option2.getValue()))
+                    .replace("%3", getValues(Line1Option3.getValue()));
         }
 
         // Second line
         if (secondLine.getValue()) {
-            discordRichPresence.state = getValues(new String[] {
-                    Line2Option1.getValue(),
-                    Line2Option2.getValue(),
-                    Line2Option3.getValue()
-            });
+            discordRichPresence.state =
+                    formatSecond.getText()
+                            .replace("%1", getValues(Line2Option1.getValue()))
+                            .replace("%2", getValues(Line2Option2.getValue()))
+                            .replace("%3", getValues(Line2Option3.getValue()));
         }
     }
 
-    String getValues(String[] values) {
-        StringBuilder out = new StringBuilder();
-
-        for(String value : values) {
-            switch (value) {
-                case "Dimension":
-                    out.append(getDimension());
-                    break;
-                case "Health":
-                    out.append(getHealth());
-                    break;
-                case "Kill Counter":
-                    out.append(getKill());
-                    break;
-                case "Pop Counter":
-                    out.append(getPops());
-                    break;
-                case "Name":
-                    out.append(getMcName());
-                    break;
-                case "Server":
-                    out.append(getServer());
-                    break;
-                case "Speed":
-                    out.append(getSpeed());
-                    break;
-                case "Status":
-                    out.append(getStatus());
-                    break;
-                case "Version":
-                    out.append(getVersion());
-                    break;
-                case "Ping":
-                    out.append(getPing());
-                    break;
-                case "Fps":
-                    out.append(getFps());
-                    break;
-            }
-            if (!value.equalsIgnoreCase("none"))
-                out.append(" ");
+    String getValues(String values) {
+        switch (values) {
+            case "Dimension":
+                return getDimension();
+            case "Health":
+                return getHealth();
+            case "Kill Counter":
+                return getKill();
+            case "Pop Counter":
+                return getPops();
+            case "Name":
+                return getMcName();
+            case "Server":
+                return getServer();
+            case "Speed":
+                return getSpeed();
+            case "Status":
+                return getStatus();
+            case "Version":
+                return getVersion();
+            case "Ping":
+                return getPing();
+            case "Fps":
+                return getFps();
         }
-
-        return out.toString();
+        return "";
     }
 
     void updatePicture() {

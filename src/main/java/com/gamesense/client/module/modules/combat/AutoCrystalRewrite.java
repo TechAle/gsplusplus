@@ -6,17 +6,17 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
-import com.gamesense.api.util.player.InventoryUtil;
-import com.gamesense.api.util.player.PlayerPacket;
-import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.player.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
+import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.api.util.world.combat.ac.CrystalInfo;
@@ -25,14 +25,26 @@ import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockWeb;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.init.SoundEvents;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
+import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -52,6 +64,9 @@ public class AutoCrystalRewrite extends Module {
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
+    BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
+    IntegerSetting tickWaitEat = registerInteger("Tick Wait Eat", 4, 0, 10,
+            () -> logicTarget.getValue() && stopGapple.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     //endregion
 
@@ -59,8 +74,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting ranges = registerBoolean("Range Section", false);
     DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
-    DoubleSetting crystalRangeEnemy = registerDouble("Crytal Range Enemey Place", 6, 0, 8, () -> ranges.getValue());
-    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 1, 0, 3, () -> ranges.getValue());
+    DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
+    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTargetPlace = registerInteger("Min Y Place", 3, 0, 5, () -> ranges.getValue());
     //endregion
 
@@ -71,6 +86,8 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && placeDelay.getValue().equals("Tick"));
     IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
             () -> place.getValue() && placeDelay.getValue().equals("Time"));
+    BooleanSetting placeOnCrystal = registerBoolean("Place On Crystal", false,
+            () -> place.getValue());
     DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
     DoubleSetting maxSelfDamagePlace = registerDouble("Max Self Damage Place", 12, 0, 30, () -> place.getValue());
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
@@ -85,19 +102,152 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting limitTickTime = registerInteger("Limit Time Place", 0, 0, 2000,
             () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
     BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
+    BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
+    BooleanSetting stopCrystal = registerBoolean("Stop Crystal", true, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting preRotateWeb = registerBoolean("Pre Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting focusWebRotate = registerBoolean("Focus Ber Rotate", false,
+            () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting onlyAutoWebActive = registerBoolean("On AutoWeb active", true, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting switchWeb = registerBoolean("Switch Web", false, () -> place.getValue() && autoWeb.getValue());
+    BooleanSetting silentSwitchWeb = registerBoolean("Silent Switch Web", false,
+            () -> place.getValue() && autoWeb.getValue() );
+    BooleanSetting switchBackWeb = registerBoolean("Switch Back Web", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
+    BooleanSetting switchBackEnd = registerBoolean("Switch Back Web End", false,
+            () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue() && switchBackWeb.getValue());
+    BooleanSetting onExplosion = registerBoolean("On Explosion", false, () -> place.getValue() && autoWeb.getValue());
     //endregion
 
     //region Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
-    ColorSetting colorPlace = registerColor("Color Place", new GSColor(255, 255, 255), () -> misc.getValue());
-    IntegerSetting alphaPlace = registerInteger("Alpha place", 55, 0, 255, () -> misc.getValue());
+    ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+
+    //region outline custom
+    // Custom outline
+    BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom", false,
+            () ->  (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue());
+    IntegerSetting outlineWidth = registerInteger("Outline Width", 1, 1, 5,
+            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue() && OutLineSection.getValue());
+    // Bottom
+    ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
+            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineBot = registerMode("Direction Outline Bot", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineBot.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+            , true);
+    ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineBot.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineBot.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineTop = registerMode("Direction Outline Top", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineTop.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue()), true);
+    ColorSetting secondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && (NVerticesOutlineTop.getValue().equals("2") || NVerticesOutlineTop.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+                    (OutLineSection.getValue() && misc.getValue())
+                    && NVerticesOutlineTop.getValue().equals("4"), true);
+    //endregion
+    // region fill custom
+    BooleanSetting FillSection = registerBoolean("Fill Section Custom", false,
+            () ->  (type.getValue().equals("Fill") || type.getValue().equals("Both")) && misc.getValue());
+    // Bottom
+    ModeSetting NVerticesFillBot = registerMode("N^ Vertices Fill Bot", Arrays.asList("1", "2", "4"), "4",
+            () -> (type.getValue().equals("Fill") || type.getValue().equals("Both")) && FillSection.getValue());
+    ModeSetting direction2FillBot = registerMode("Direction Fill Bot", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue() && NVerticesFillBot.getValue().equals("2"));
+    ColorSetting firstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+            , true);
+    ColorSetting secondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillBot.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillBot.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue());
+    ModeSetting direction2FillTop = registerMode("Direction Fill Top", Arrays.asList("X", "Z"), "X",
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue() && NVerticesFillTop.getValue().equals("2"));
+    ColorSetting firstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue(), true);
+    ColorSetting secondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && (NVerticesFillTop.getValue().equals("2") || NVerticesFillTop.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 50),
+            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+                    FillSection.getValue()
+                    && NVerticesFillTop.getValue().equals("4"), true);
+    //endregion
+
+    BooleanSetting showText = registerBoolean("Show text", true, () -> misc.getValue());
+    ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255),
+            () -> misc.getValue() && showText.getValue(), true);
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
+    BooleanSetting switchBack = registerBoolean("Switch Back", false,
+            () -> misc.getValue() && switchHotbar.getValue());
+    IntegerSetting tickSwitchBack = registerInteger("Tick Switch Back", 5, 0, 50,
+            () -> misc.getValue() && switchHotbar.getValue() && switchBack.getValue());
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
     //endregion
 
     //region Predict
     BooleanSetting predictSection = registerBoolean("Predict Section", false);
+    BooleanSetting predictSurround = registerBoolean("Predict Surround", false,
+            () -> predictSection.getValue());
+    BooleanSetting predictPacketSurround = registerBoolean("Predict Packet Surround", false,
+            () -> predictSection.getValue() && predictSurround.getValue());
+    IntegerSetting percentSurround = registerInteger("Percent Surround", 80, 0, 100,
+            () -> predictSection.getValue() && predictSurround.getValue() && !predictPacketSurround.getValue());
+    IntegerSetting tickPacketBreak = registerInteger("Tick Packet Break", 40, 0, 100,
+            () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    IntegerSetting tickMaxPacketBreak = registerInteger("Tick Max Packet Break", 40, 0, 150,
+            () -> predictSection.getValue() && predictSurround.getValue() && predictPacketSurround.getValue());
+    DoubleSetting maxSelfDamageSur = registerDouble("Max Self Dam Sur", 7, 0, 20,
+            () -> predictSection.getValue() && predictSurround.getValue());
     BooleanSetting predictSelfPlace = registerBoolean("Predict Self Place", false, () -> predictSection.getValue());
     BooleanSetting showSelfPredict = registerBoolean("Show Self Predict", false,
             () -> predictSection.getValue() && predictSelfPlace.getValue() );
@@ -120,27 +270,45 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3,
             () -> predictSection.getValue() && calculateYPredict.getValue());
     BooleanSetting splitXZ = registerBoolean("Split XZ", true, () -> predictSection.getValue());
-    IntegerSetting width = registerInteger("Line Width", 2, 1, 5, () -> predictSection.getValue());
-    BooleanSetting justOnce = registerBoolean("Just Once", false, () -> predictSection.getValue());
+    IntegerSetting widthPredict = registerInteger("Line Width", 2, 1, 5, () -> predictSection.getValue());
     BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> predictSection.getValue());
     BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false,
-            () -> predictSection.getValue() && manualOutHole.getValue() && manualOutHole.getValue());
+            () -> predictSection.getValue() && manualOutHole.getValue());
     //endregion
 
     //region Threading
     BooleanSetting threading = registerBoolean("Threading Section", false);
     IntegerSetting nThread = registerInteger("N Thread", 4, 1, 20, () -> threading.getValue());
     IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
-    IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000);
-    IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000);
+    IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000, () -> threading.getValue());
+    IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000, () -> threading.getValue());
     //endregion
 
     //region Strict
     BooleanSetting strict = registerBoolean("Strict Section", false);
     BooleanSetting raytrace = registerBoolean("Raytrace", false, () -> strict.getValue());
     BooleanSetting rotate = registerBoolean("Rotate", false, () -> strict.getValue());
-    IntegerSetting tickForceRotation = registerInteger("Tick Force Rotation", 3, 0, 10,
+    BooleanSetting preRotate = registerBoolean("Pre Rotate", false, () -> strict.getValue() && rotate.getValue());
+    IntegerSetting tickAfterRotation = registerInteger("Tick After Rotation", 0, 0, 10,
             () -> strict.getValue() && rotate.getValue());
+    ModeSetting focusPlaceType = registerMode("Focus Place Type", Arrays.asList("Disabled", "Tick", "Time"), "Disabled"
+    , () -> strict.getValue());
+    BooleanSetting recalculateDamage = registerBoolean("Recalculate Damage", true,
+            () -> strict.getValue() && !focusPlaceType.getValue().equals("Disabled"));
+    IntegerSetting tickWaitFocusPlace = registerInteger("Tick Wait Focus Pl", 4, 0, 20,
+            () -> strict.getValue() && focusPlaceType.getValue().equals("Tick"));
+    IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
+            () -> strict.getValue() && focusPlaceType.getValue().equals("Time"));
+    BooleanSetting yawCheck = registerBoolean("Yaw Check", false,
+            () -> strict.getValue() && !preRotate.getValue());
+    IntegerSetting yawStep = registerInteger("Yaw Step", 40, 0, 180,
+            () -> strict.getValue() && yawCheck.getValue() && !preRotate.getValue());
+    BooleanSetting pitchCheck = registerBoolean("Pitch Check", false,
+            () -> strict.getValue() && !preRotate.getValue());
+    IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
+            () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
+    BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
+            () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     //endregion
 
     //region Debug
@@ -171,7 +339,9 @@ public class AutoCrystalRewrite extends Module {
         final GSColor color;
         int width;
         int type;
+        String[] text;
 
+        // Draw box (hitbox)
         public display(AxisAlignedBB box, GSColor color, int width) {
             this.box = box;
             this.color = color;
@@ -179,41 +349,50 @@ public class AutoCrystalRewrite extends Module {
             this.type = 0;
         }
 
-        public display(BlockPos box, GSColor color) {
-            block = box;
+        // Draw text
+        public display(String text, BlockPos block, GSColor color) {
+            this.text = new String[]{text};
+            this.block = block;
             this.color = color;
             this.type = 1;
         }
 
+        // Function for drawing
         void draw() {
             switch (type) {
                 case 0:
                     RenderUtil.drawBoundingBox(box, width, color);
                     break;
                 case 1:
-                    RenderUtil.drawBox(block, 1, color, 63);
+                    RenderUtil.drawNametag((double) this.block.getX() + 0.5d, (double) this.block.getY() + 0.5d, (double) this.block.getZ() + 0.5d, this.text, this.color, 1);
+                    break;
             }
         }
     }
 
     class crystalPlaceWait {
 
+        // Here we have every crystals
         ArrayList<crystalTime> listWait = new ArrayList<>();
 
+        // Add new crystal with time delay
         void addCrystal(BlockPos cryst, int finish) {
             listWait.add(new crystalTime(cryst,  finish));
         }
 
+        // Add new crystal with tickd elay
         void addCrystal(BlockPos cryst, int tick, int tickFinish) {
             listWait.add(new crystalTime(cryst,  tick, tickFinish));
         }
 
+        // If exists, remove crystal at x y z
         void removeCrystal(Double x, Double y, Double z) {
             int i = CrystalExists(new BlockPos(x - .5, y - .5, z - .5));
             if (i != -1)
                 listWait.remove(i);
         }
 
+        // Return the index of the crystal in the array. -1 if it doesnt exists
         int CrystalExists(BlockPos pos) {
             for(int i = 0; i < listWait.size(); i++)
                 if (sameBlockPos(pos, listWait.get(i).posCrystal))
@@ -221,6 +400,7 @@ public class AutoCrystalRewrite extends Module {
             return -1;
         }
 
+        // Update every crystals timers
         void updateCrystals() {
             for(int i = 0; i < listWait.size(); i++) {
                 if (listWait.get(i).isReady()) {
@@ -232,6 +412,7 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
+    // Class of the crystal time
     static class crystalTime {
         final BlockPos posCrystal;
         final int type;
@@ -240,6 +421,7 @@ public class AutoCrystalRewrite extends Module {
         long start;
         int finish;
 
+        // Tick crystal
         public crystalTime(BlockPos posCrystal, int tick, int finishTick) {
             this.posCrystal = posCrystal;
             this.tick = tick;
@@ -247,6 +429,7 @@ public class AutoCrystalRewrite extends Module {
             this.finishTick = finishTick;
         }
 
+        // Time crystal
         public crystalTime(BlockPos posCrystal, int finish) {
             this.posCrystal = posCrystal;
             this.start = System.currentTimeMillis();
@@ -254,36 +437,92 @@ public class AutoCrystalRewrite extends Module {
             this.type = 1;
         }
 
+        // Check if the crystal is ready.
         boolean isReady() {
             switch (type) {
+                // Tick
                 case 0:
                     return ++tick >= this.finishTick;
+                // Time
                 case 1:
                     return System.currentTimeMillis() - this.start >= this.finish;
             }
+            // This should never be reached
             return true;
         }
 
 
     }
 
-    public static boolean stopAC = false;
-    boolean isSilentSwitching, checkTime;
+    // This is used by packet surround
+    class packetBlock {
+        public final BlockPos block;
+        public int tick;
+        public final int startTick;
+        public final int finishTish;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0;
+        public packetBlock(BlockPos block, int startTick, int finishTick) {
+            this.block = block;
+            this.tick = 0;
+            this.startTick = startTick;
+            this.finishTish = finishTick;
+        }
+
+        boolean update() {
+            tick++;
+            if (tick > startTick) {
+                if (tick > finishTish)
+                    return false;
+
+                // Check for the placement
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return true;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return true;
+
+                if (!CrystalUtil.canPlaceCrystal(block, newPlace.getValue()))
+                    return true;
+
+                // If there is a crystal, stop
+                if ( !placeOnCrystal.getValue() && !isCrystalHere(block)) {
+                    return true;
+                }
+
+                placeCrystal(block, hand);
+                placedCrystal = true;
+
+            }
+            return true;
+        }
+    }
+
+    /// Global variables sorted by type
+    public static boolean stopAC = false;
+
+    boolean checkTime, placedCrystal = false, isRotating;
+
+    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack, slotWebBack;
+
+    double xPlayer, yPlayer;
+
 
     long time = 0;
 
     Vec3d lastHitVec;
 
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
+    crystalTime crystalPlace = null;
 
 
     ArrayList<display> toDisplay = new ArrayList<>();
-
     ArrayList<Long> durations = new ArrayList<>();
-
-
+    ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
 
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
@@ -295,17 +534,46 @@ public class AutoCrystalRewrite extends Module {
     //region Gamesense call
 
     public void onEnable() {
+        // Just reset some variables
         tickBeforePlace = tick = 0;
         time = 0;
-        checkTime = false;
+        oldSlotBack = tickSwitch = slotWebBack = -1;
+        checkTime = isRotating = false;
+    }
+
+    int tickEat = 0;
+
+    boolean stopGapple(boolean decrease) {
+        // If we are eating, stop
+        if (stopGapple.getValue()) {
+            Item item;
+            if (
+                    mc.player.isHandActive() && (
+                            (item = mc.player.getHeldItemMainhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT
+                                    || (item = mc.player.getHeldItemOffhand().getItem()) == Items.GOLDEN_APPLE || item == Items.CHORUS_FRUIT)) {
+                if (decrease)   tickEat = tickWaitEat.getValue();
+                return true;
+            }
+            if (tickEat > 0) {
+                if (decrease)
+                    tickEat--;
+                return true;
+            }
+        }
+        return false;
     }
 
     // Simple onUpdate
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
 
+        // Clear what we are displaying
         toDisplay.clear();
 
+        if (stopGapple(true))
+            return;
+
+        // Start ca
         switch (logic.getValue()) {
             case "Place->Break":
                 placeCrystals();
@@ -323,6 +591,7 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
+        // Remember this slot. This is used for preventing the bug with normal switch
         oldSlot = mc.player.inventory.currentItem;
 
     }
@@ -339,45 +608,56 @@ public class AutoCrystalRewrite extends Module {
     //region Calculate Place Crystal
 
     // Main function for calculating the best crystal
-    void getTarget(String mode, boolean placing) {
-        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
+    void getTargetPlacing(String mode) {
+        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
         double minDamage = this.minDamagePlace.getValue();
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
-        double enemyRangeCrystalSQ = crystalRangeEnemy.getValue() * crystalRangeEnemy.getValue();
         double enemyRangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
         double maxSelfDamage = this.maxSelfDamagePlace.getValue();
+        double wallRangePlaceSQ = this.crystalWallPlace.getValue() * this.crystalWallPlace.getValue();
         boolean raytraceValue = raytrace.getValue();
         int maxYTarget = this.maxYTargetPlace.getValue();
         int minYTarget = this.minYTargetPlace.getValue();
         int placeTimeout = this.placeTimeout.getValue();
+        // Prepare for after
         PlayerInfo player;
-
         List<List<PositionInfo>> possibleCrystals;
-        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         PlayerInfo target;
+        // Our result
+        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
+            // Lowest and Nearest use the same code with just 1 difference.
             case "Lowest":
             case "Nearest":
                 // Get the target
-                EntityPlayer targetEP;
-                if (mode.equals("Lowest"))
-                    targetEP = getBasicPlayers(enemyRangeSQ).min((x, y) -> (int) x.getHealth()).orElse(null);
-                else
-                    targetEP = getBasicPlayers(enemyRangeSQ).min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null);
+                EntityPlayer targetEP =
+                        mode.equals("Lowest")
+                        // Lowest
+                        ? getBasicPlayers(enemyRangeSQ).min((x, y) -> (int) x.getHealth()).orElse(null)
+                        // Nearest
+                        : getBasicPlayers(enemyRangeSQ).min(Comparator.comparingDouble(x -> x.getDistanceSq(mc.player))).orElse(null);
 
+                // If nobody found, return
                 if (targetEP == null)
                     return;
 
+                if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
+                    mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                    webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                }
+
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
 
+                // Show self predict
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
-                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), widthPredict.getValue()));
 
                 // Get every possible crystals
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue, wallRangePlaceSQ);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -388,24 +668,34 @@ public class AutoCrystalRewrite extends Module {
 
                 // Calcualte best cr
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
-                return;
+                break;
             case "Damage":
                 // Get every possible players
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
                     return;
+
+                for(EntityPlayer et : players) {
+                    if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
+                        mc.world.setBlockToAir(new BlockPos(et.posX, et.posY, et.posZ));
+                        webRemoved.add(new BlockPos(et.posX, et.posY, et.posZ));
+                    }
+                }
+
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
+                    // Split list of entity
                     List<List<EntityPlayer>> list = splitListEntity(players, nThread);
 
+                    // Clear players, we are going to replace it with the prediciton
                     players.clear();
-
+                    // Output
                     Collection<Future<?>> futures = new LinkedList<>();
 
                     int predictPlaceTimeout = this.predictPlaceTimeout.getValue();
-
+                    // Start multithreading
                     for (int i = 0; i < nThread; i++) {
                         int finalI = i;
                         // Add them
@@ -417,6 +707,7 @@ public class AutoCrystalRewrite extends Module {
                         try {
                             // Get it
                             List<EntityPlayer> temp;
+                            //noinspection unchecked
                             temp = (List<EntityPlayer>) future.get(predictPlaceTimeout, TimeUnit.MILLISECONDS);
                             // If not null, add
                             if (temp != null)
@@ -426,18 +717,16 @@ public class AutoCrystalRewrite extends Module {
                         }
                     }
 
-                    //players.replaceAll(entity -> predictPlayer(entity));
                 }
 
 
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
 
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
-                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), width.getValue()));
-
+                    toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), widthPredict.getValue()));
 
                 // If we are placing
-                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue);
+                possibleCrystals = getPossibleCrystals(player, maxSelfDamage, raytraceValue, wallRangePlaceSQ);
 
                 // If nothing is possible
                 if (possibleCrystals == null)
@@ -456,16 +745,19 @@ public class AutoCrystalRewrite extends Module {
                     target = new PlayerInfo(playerTemp, armourPercent);
                     // Calculate
                     calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                            minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
-                return;
         }
+
+        for(BlockPos web : webRemoved)
+            mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
     }
 
     // Function that call every thread for the calculating of the crystals
     // + return the best place
     void calcualteBest(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
-                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double enemyRangeCrystalSQ, double maxSelfDamage,
+                       PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
                        int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<>();
@@ -474,7 +766,7 @@ public class AutoCrystalRewrite extends Module {
             int finalI = i;
             // Add them
             futures.add(executor.submit(() -> calculateBestPositionTarget(possibleCrystals.get(finalI), posX, posY, posZ,
-                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, enemyRangeCrystalSQ, maxSelfDamage, maxYTarget, minYTarget)));
+                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget)));
         }
         // Get stack for then collecting the results
         Stack<CrystalInfo.PlaceInfo> results = new Stack<>();
@@ -521,33 +813,40 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This return a list of possible positions of the crystals
-    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean raytrace) {
-        // Get every possibilites
-        List<BlockPos> possibilites =
-                includeCrystalMapping.getValue() ?
-                        CrystalUtil.findCrystalBlocksExcludingCrystals(placeRange.getValue().floatValue(), newPlace.getValue())
-                        :
-                        CrystalUtil.findCrystalBlocks(placeRange.getValue().floatValue(), newPlace.getValue());
-        // Output with position and damage
+    List<List<PositionInfo>> getPossibleCrystals(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
+        // Output
         List<PositionInfo> damagePos = new ArrayList<>();
-        for (BlockPos crystal : possibilites) {
-            float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
-            RayTraceResult result;
-            // Exclude useless crystals and non-visible in case of raytrace   (1276 56 996) (-1275, 56, 996)
-            if (damage < maxSelfDamage
-                    && (!raytrace || (!((result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
-                    new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d))) != null && result.typeOfHit != RayTraceResult.Type.ENTITY
-            ) || sameBlockPos(result.getBlockPos(), crystal)))) {
-                damagePos.add(new PositionInfo(crystal, damage));
-            }
-        }
+        // Get crystals
+        (includeCrystalMapping.getValue() ?
+                CrystalUtil.findCrystalBlocksExcludingCrystals(placeRange.getValue().floatValue(), newPlace.getValue())
+                :
+                CrystalUtil.findCrystalBlocks(placeRange.getValue().floatValue(), newPlace.getValue()))
+        // For every crystals, forEach
+        .forEach(
+                crystal -> {
+                    // Get damage
+                    float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
+                    // If we can take that damage
+                    if (damage < maxSelfDamage && (!antiSuicide.getValue() || damage < self.health)) {
+                        // Raytrace. We have to calculate the raytrace for both wall and raytrace option
+                        RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
+                                new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d));
+                        // If null, enter, if it's the same block, enter, if it's not raytrace and the distance is <, enter
+                        if (result == null || sameBlockPos(result.getBlockPos(), crystal) || (!raytrace && mc.player.getDistanceSq(crystal) <= wallRangeSQ)) {
+                            // Add to possible crystals
+                            damagePos.add(new PositionInfo(crystal, damage));
+                        }
+                    }
+
+                }
+        );
         // Remove every crystals that deal more damage to us
         return splitList(damagePos, nThread.getValue());
     }
 
     // This split the list of positions in multiple list. Is used for multithreading
     List<List<PositionInfo>> splitList(List<PositionInfo> start, int nThreads) {
-        // If we have only1  thread, return only 1 thing
+        // If we have only 1  thread, return only 1 thing
         if (nThreads == 1)
             return new ArrayList<List<PositionInfo>>() {
                 {
@@ -564,6 +863,7 @@ public class AutoCrystalRewrite extends Module {
 
         // Add everything
         for (int i = 0; i < count; i++) {
+            // i % nThreads allow us to iterate in an efficent way
             output.get(i % nThreads).add(start.get(i));
         }
 
@@ -573,7 +873,7 @@ public class AutoCrystalRewrite extends Module {
 
     // This calculate the best crystal given a list of possible positions and the enemy
     CrystalInfo.PlaceInfo calculateBestPositionTarget(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
-                                                      double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double enemyRangeSq, double maxSelfDamage,
+                                                      double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double maxSelfDamage,
                                                       int maxYTarget, int minYTarget) {
         // Start calculating damage
         PositionInfo best = new PositionInfo();
@@ -581,32 +881,31 @@ public class AutoCrystalRewrite extends Module {
 
             // Calculate Y
             double temp;
+            //noinspection ConstantConditions
             if ((temp = target.entity.posY - crystal.pos.getY() - 1) > 0 ? temp > minYTarget : temp < -maxYTarget)
                 continue;
 
-            double distance;
             // if player is out of range of this crystal, do nothing
-            if ((distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d)) <= enemyRangeSq) {
-                float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
-                if (currentDamage == best.damage) {
-                    // this new crystal is closer
-                    // higher chance of being able to break it
-                    if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance || (currentDamage / maxSelfDamage) > best.rapp) || temp < best.distance) {
-                        // Set new values
-                        best = crystal;
-                        best.setEnemyDamage(currentDamage);
-                        best.distance = distance;
-                        best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
-                    }
-                } else if (currentDamage > best.damage) {
+            float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
+            if (currentDamage == best.damage) {
+                // this new crystal is closer
+                // higher chance of being able to break it
+                if (best.pos == null || ((temp = crystal.pos.distanceSq(x, y, z)) == best.distance || (currentDamage / maxSelfDamage) > best.rapp) || temp < best.distance) {
                     // Set new values
                     best = crystal;
                     best.setEnemyDamage(currentDamage);
-                    best.distance = distance;
+                    best.distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                     best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
                 }
+            } else if (currentDamage > best.damage) {
+                // Set new values
+                best = crystal;
+                best.setEnemyDamage(currentDamage);
+                best.distance = target.entity.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
+                best.distancePlayer = mc.player.getDistanceSq((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d);
             }
         }
+
 
         // If we found something
         if (best.pos != null) {
@@ -624,12 +923,14 @@ public class AutoCrystalRewrite extends Module {
     boolean canStartPlacing() {
 
         switch (placeDelay.getValue()) {
+            // Tick, check if tick == 0, else -1
             case "Tick":
                 if (tickBeforePlace == 0)
                     return true;
                 else tickBeforePlace--;
                 break;
             case "Time":
+                // Check if the time between time and now is >= timeDelayPlace
                 if (!checkTime)
                     return true;
                 else if (System.currentTimeMillis() - time >= timeDelayPlace.getValue()) {
@@ -638,22 +939,78 @@ public class AutoCrystalRewrite extends Module {
                 }
                 break;
         }
-
+        // If we are not ready
         return false;
     }
 
     // Main function for placing crystals
     void placeCrystals() {
 
+        // Update every crystals timers
         listCrystalsPlaced.updateCrystals();
 
+        for(int i = 0; i < packetsBlocks.size(); i++) {
+            if (!packetsBlocks.get(i).update()) {
+                packetsBlocks.remove(i);
+                i--;
+            }
+
+        }
+
+        // If we have placed a crystal before
+        if (placedCrystal) {
+            // Stop
+            placedCrystal = false;
+            return;
+        }
+
+        // If we cannot place (place delay)
         if (!canStartPlacing())
             return;
 
         // Get crystal hand
         EnumHand hand = getHandCrystal();
+        // If no hand found
         if (hand == null)
             return;
+
+        // If we have to look a block
+        if (crystalPlace != null) {
+
+            // First, lets calculate the raytrace in case
+            if (raytrace.getValue()) {
+                RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ),
+                        new Vec3d(crystalPlace.posCrystal.getX() + 0.5d, crystalPlace.posCrystal.getY() + .5d, crystalPlace.posCrystal.getZ() + 0.5d));
+
+                // If blocked
+                if (result == null || result.sideHit == null) {
+                    crystalPlace = null;
+                }
+            }
+
+            // If we have a crystal and we have to reculculate the damage
+            if ( crystalPlace != null && recalculateDamage.getValue()) {
+                // If nothing found, null
+                if (isCrystalGood(crystalPlace.posCrystal) == null)
+                    crystalPlace = null;
+            }
+
+            // If it's not null
+            if (crystalPlace != null) {
+                // Check if the crystal is ready, if yes, null
+                if (crystalPlace.isReady())
+                    crystalPlace = null;
+                else {
+                    // AutoWeb
+                    if (isPlacingWeb())
+                        return;
+
+                    // Else, place it
+                    placeCrystal(crystalPlace.posCrystal, hand);
+                    return;
+                }
+            }
+        }
 
         // For debugging timeCalcPlacement
         long inizio = 0;
@@ -661,7 +1018,7 @@ public class AutoCrystalRewrite extends Module {
             // Get time
             inizio = System.currentTimeMillis();
         // Get target
-        getTarget(targetPlacing.getValue(), true);
+        getTargetPlacing(targetPlacing.getValue());
         // For debugging timeCalcPlacemetn
         if (timeCalcPlacement.getValue()) {
             // Get duration
@@ -680,27 +1037,149 @@ public class AutoCrystalRewrite extends Module {
 
         // Display crystal
         if (bestPlace.crystal != null) {
-            toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), alphaPlace.getValue())));
-            toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), width.getValue()));
+            //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
+            toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
+            if (predictPlaceEnemy.getValue())
+                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemy.getColor(), outlineWidth.getValue()));
+
+            if (isPlacingWeb())
+                return;
 
             placeCrystal(bestPlace.crystal, hand);
-
+        } else {
+            if (switchBack.getValue() && oldSlotBack != -1)
+                if (tickSwitch > 0)
+                    --tickSwitch;
+                else
+                    if (tickSwitch == 0) {
+                        mc.player.inventory.currentItem = oldSlotBack;
+                        tickSwitch = -1;
+                    }
         }
+    }
+
+    boolean isPlacingWeb() {
+        // AutoWeb
+        if (autoWeb.getValue() && bestPlace != null && bestPlace.target != null && (!onlyAutoWebActive.getValue() || ModuleManager.isModuleEnabled(AutoWeb.class))) {
+            // If the enemy is in air
+            if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
+                // Place it
+                if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
+                    return true;
+            }
+        } else if (oldSlotBack != -1) {
+            mc.player.inventory.currentItem = oldSlotBack;
+            oldSlotBack = -1;
+        }
+
+        return false;
+    }
+
+    boolean placeWeb(BlockPos target) {
+
+        EnumFacing side = BlockUtil.getPlaceableSide(target);
+
+        if (side == null)
+            return false;
+
+        BlockPos neighbour = target.offset(side);
+        EnumFacing opposite = side.getOpposite();
+
+        if (!BlockUtil.canBeClicked(neighbour)) {
+            return false;
+        }
+
+        int oldSlot = -1;
+        if (!(mc.player.inventory.getCurrentItem().getItem() instanceof ItemBlock &&
+                ((ItemBlock) mc.player.inventory.getCurrentItem().getItem()).getBlock() == Blocks.WEB)) {
+            int slot = InventoryUtil.findFirstBlockSlot(Blocks.WEB.getClass(), 0, 8);
+            oldSlot = mc.player.inventory.currentItem;
+            if (slot == -1)
+                return false;
+            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else if (switchBackEnd.getValue()) {
+                oldSlotBack = oldSlot;
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            }
+            else if (switchBackWeb.getValue()) mc.player.inventory.currentItem = slot;
+            else if (switchWeb.getValue()) {
+                mc.player.inventory.currentItem = slot;
+                oldSlot = -1;
+            } else return false;
+        }
+
+        Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+        Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
+
+        if (preRotateWeb.getValue()) {
+            BlockUtil.faceVectorPacketInstant(hitVec, true);
+        }
+
+        if (focusWebRotate.getValue()) {
+            lastHitVec = hitVec;
+            tick = 0;
+        }
+
+        boolean isSneaking = false;
+        if (BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+            isSneaking = true;
+        }
+
+
+        mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
+        mc.player.swingArm(EnumHand.MAIN_HAND);
+
+        if (isSneaking)
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+
+        if (oldSlot != -1)
+            if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            else mc.player.inventory.currentItem = oldSlot;
+
+        return true;
+    }
+
+    EntityPlayer isCrystalGood(BlockPos crystal) {
+
+        // Check for the damafge
+        float damage;
+        if ( (damage = DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player))
+                >= maxSelfDamagePlace.getValue() && (!antiSuicide.getValue() || damage < PlayerUtil.getHealth()))
+            return null;
+
+        // Get rangeSQ
+        double rangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
+
+        // Stream every players
+        Optional<EntityPlayer> a = mc.world.playerEntities.stream()
+                // Basic checks
+                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
+                // Not dead
+                .filter(entity -> entity.getHealth() > 0.0f)
+                // Distance is ok
+                .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSQ)
+                // Damage is ok
+                .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity) >= minDamagePlace.getValue())
+                // Find any. We cares if at least 1 player is affected
+                .findAny();
+
+        // Return a, if not a, null
+        return a.orElse(null);
 
     }
 
     // Get hand of breaking. Return null if no crystals
     EnumHand getHandCrystal() {
-        isSilentSwitching = false;
+        // Reset slotChange (We do this because we are going to switch only when placing, not before)
+        slotChange = -1;
         // Check offhand
         if (mc.player.getHeldItemOffhand().getItem() instanceof ItemEndCrystal)
             return EnumHand.OFF_HAND;
         else {
             // Check mainhand
             if (mc.player.getHeldItemMainhand().getItem() instanceof ItemEndCrystal) {
-                // If you switch, it will place the block you had in your hand before
-                if (oldSlot != mc.player.inventory.currentItem)
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
                 return EnumHand.MAIN_HAND;
             }
             else if (switchHotbar.getValue()) {
@@ -708,16 +1187,7 @@ public class AutoCrystalRewrite extends Module {
                 int slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
                 // If found
                 if (slot != -1) {
-                    // Silent switch
-                    if (silentSwitch.getValue()) {
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                        isSilentSwitching = true;
-                    }
-                    // Normal switch
-                    else {
-                        mc.player.inventory.currentItem = slot;
-                        mc.playerController.updateController();
-                    }
+                    slotChange = slot;
                     return EnumHand.MAIN_HAND;
                 }
             }
@@ -728,7 +1198,7 @@ public class AutoCrystalRewrite extends Module {
     // This actually place the crystal
     void placeCrystal(BlockPos pos, EnumHand handSwing) {
         // If there is a crystal, stop
-        if (!isCrystalHere(pos))
+        if ( !placeOnCrystal.getValue() && !isCrystalHere(pos))
             return;
 
         // If this pos is in wait
@@ -737,22 +1207,92 @@ public class AutoCrystalRewrite extends Module {
 
         // Rotate
         if (rotate.getValue()) {
+            // New lastHitVec
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
+            // New tick
             tick = 0;
+            if (preRotate.getValue()) {
+                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
+            } else
+            if (yawCheck.getValue() || pitchCheck.getValue()) {
+                Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
+                if (!isRotating) {
+                    yPlayer = pitchCheck.getValue()
+                            ? mc.player.getPitchYaw().x
+                            : Double.MIN_VALUE;
+                    xPlayer = yawCheck.getValue()
+                            ? RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                            : Double.MIN_VALUE;
+                    isRotating = true;
+                }
+
+                if (placeStrictPredict.getValue()) {
+
+                    if (yawCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.x - xPlayer;
+                        if (Math.abs(distanceDo) > 180) {
+                            distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                        }
+                        // Check if distance is > of what we want
+                        if (Math.abs(distanceDo) > yawStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                    if (pitchCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.y - yPlayer;
+                        // Check if distance is > of what we want
+
+                        if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                            return;
+                        }
+                    }
+
+                } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                    return;
+            }
+        }
+
+        // If the slot is different, we have to silent switch first because, else, we'll place or obby
+        // Or we wont place (We are working with packet, mc.player.inventory is too slow)
+        if (handSwing == EnumHand.MAIN_HAND) {
+
+            // If we have to change
+            if (slotChange != -1) {
+                // Silent switch
+                if (silentSwitch.getValue()) {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
+                } else {
+                    // Normal switch
+                    if (slotChange != mc.player.inventory.currentItem) {
+                        if (switchBack.getValue()) {
+                            tickSwitch = tickSwitchBack.getValue();
+                            oldSlotBack = mc.player.inventory.currentItem;
+                        }
+                        mc.player.inventory.currentItem = slotChange;
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                    }
+
+                }
+            }
         }
 
         // Raytrace
         if (raytrace.getValue()) {
-
-            EnumFacing enumFacing = null;
+            // get enumFacing
+            EnumFacing enumFacing;
             RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ), new Vec3d(pos.getX() + 0.5d, pos.getY() + .5d, pos.getZ() + 0.5d));
+            // If not, return
             if (result == null || result.sideHit == null) {
                 return;
             } else {
+                // Else, enumFacing is the side we hit
                 enumFacing = result.sideHit;
             }
 
-
+            // Place
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
         } else {
             // Normal placing
@@ -760,40 +1300,66 @@ public class AutoCrystalRewrite extends Module {
                 // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
                 mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.DOWN, handSwing, 0, 0, 0));
             } else {
+                // Normal placing
                 mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.UP, handSwing, 0, 0, 0));
             }
 
         }
 
+        // If he want to swing
         if (swingPlace.getValue())
             mc.player.swingArm(handSwing);
 
-        // Return back in case of silent switch
-        if (isSilentSwitching)
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+        // For silent switch
+        if (slotChange != -1) {
+            if (silentSwitch.getValue())
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+        }
 
+        // For limiting place packets
         tickBeforePlace = tickDelayPlace.getValue();
         checkTime = true;
         time = System.currentTimeMillis();
+        // Switch
         switch (limitPacketPlace.getValue()) {
+            // Tick, add new wait in tick
             case "Tick":
                 listCrystalsPlaced.addCrystal(pos, 0, limitTickPlace.getValue());
                 break;
+            // Time, add new wat as time
             case "Time":
                 listCrystalsPlaced.addCrystal(pos, limitTickTime.getValue());
                 break;
         }
+
+        // For continuing facing the crystal
+        if (crystalPlace == null)
+            // Focus switch
+            switch(focusPlaceType.getValue()) {
+                // If tick
+                case "Tick":
+                    crystalPlace = new crystalTime(pos, 0, tickWaitFocusPlace.getValue());
+                    break;
+                // If time
+                case "Time":
+                    crystalPlace = new crystalTime(pos, timeWaitFocusPlace.getValue());
+                    break;
+            }
+
     }
 
     // Given a pos, say if there is a crystal
     boolean isCrystalHere(BlockPos pos) {
+        // Get position
         BlockPos posUp = pos.up();
 
+        // Get box
         AxisAlignedBB box = new AxisAlignedBB(
                 posUp.getX(), posUp.getY(), posUp.getZ(),
                 posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
         );
 
+        // Check for entity
         return mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal).isEmpty();
     }
 
@@ -859,9 +1425,433 @@ public class AutoCrystalRewrite extends Module {
         return first.getX() == second.getX() && first.getY() == second.getY() && first.getZ() == second.getZ();
     }
 
+    // This is used for the rendering for choosing if it's 1 vertices or multiple
+    boolean isOne(boolean outline) {
+        return outline ?
+            NVerticesOutlineBot.getValue().equals("1") && NVerticesOutlineTop.getValue().equals("1")
+                 :
+            NVerticesFillBot.getValue().equals("1") && NVerticesFillTop.getValue().equals("1");
+    }
+
+    // This is used for getting the box of a block
+    AxisAlignedBB getBox(BlockPos centreBlock) {
+        // Min + Max
+        double minX = centreBlock.getX();
+        double maxX = centreBlock.getX() + 1;
+        double minZ = centreBlock.getZ();
+        double maxZ = centreBlock.getZ() + 1;
+        // Return box
+        return new AxisAlignedBB(minX, centreBlock.getY(), minZ, maxX, centreBlock.getY() + 1, maxZ);
+    }
+
     // This function is for displaying things
     public void onWorldRender(RenderEvent event) {
-        toDisplay.forEach(display -> display.draw());
+
+        // If we have a bestPlace
+        if (bestPlace != null && bestPlace.crystal != null) {
+            // Switch for types
+            switch (type.getValue()) {
+                case "Outline": {
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    // Else, new rendering
+                    else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Fill": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    // Else, new rendering
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Both": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    // Else, new
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    // Else, new
+                    else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+            }
+        }
+
+        // Display everything else
+        toDisplay.forEach(display::draw);
+
+        if (predictSurround.getValue() && !predictPacketSurround.getValue())
+            // Check every damaged blocks
+            mc.renderGlobal.damagedBlocks.forEach((integer, destroyBlockProgress) -> {
+
+                // If we are eating, dont do it lol
+                if (stopGapple(false)) {
+                    return;
+                }
+
+                // Get crystal hand
+                EnumHand hand = getHandCrystal();
+                // If no hand found
+                if (hand == null)
+                    return;
+
+                // Minecraft is strange
+                if (destroyBlockProgress != null) {
+
+                    // If air (Minecraft is strange)
+                    BlockPos blockPos = destroyBlockProgress.getPosition();
+
+                    if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+
+                    // Check distance
+                    if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+                        // If percent
+                        if ( destroyBlockProgress.getPartialBlockDamage() / 2 * 25 >= percentSurround.getValue() ) {
+                            placeSurroundBlock(blockPos, hand);
+                        }
+                    }
+                }
+            });
+    }
+
+    private boolean canBreak(BlockPos pos) {
+        final IBlockState blockState = mc.world.getBlockState(pos);
+        final Block block = blockState.getBlock();
+        return block.getBlockHardness(blockState, mc.world, pos) != -1;
+    }
+
+    @EventHandler
+    private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
+
+        if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
+        if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
+
+        // If air (Minecraft is strange)
+        BlockPos blockPos = event.getBlockPos();
+
+        if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+
+        if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
+            return;
+
+        // Check distance
+        if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+            // If percent
+            float armourPercent = armourFacePlace.getValue() / 100.0f;
+
+            // Check around the block
+            for (Vec3i surround : new Vec3i[]{
+                    new Vec3i(1, 0, 0),
+                    new Vec3i(-1, 0, 0),
+                    new Vec3i(0, 0, 1),
+                    new Vec3i(0, 0, -1)
+            }) {
+                // Get possible players that collide
+                List<Entity> players =
+                        new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                                null, new AxisAlignedBB(blockPos.add(surround))));
+
+                PlayerInfo info = null;
+                // Iterate
+                for(Entity pl : players) {
+                    // Remove us and remove players above
+                    if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                        // If we found 1, we are fine
+                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                        break;
+                    }
+                }
+
+                // This is for force quitting. Is used for not multiPlacing
+                boolean quit = false;
+                if (info != null) {
+                    // Best values
+                    BlockPos coords = null;
+                    double damage = Double.MIN_VALUE;
+                    // Set to air the block for calculating the damage
+                    Block toReplace = BlockUtil.getBlock(blockPos);
+                    mc.world.setBlockToAir(blockPos);
+                    // Check around
+                    for (Vec3i placement : new Vec3i[]{
+                            new Vec3i(1, -1, 0),
+                            new Vec3i(-1, -1, 0),
+                            new Vec3i(0, -1, 1),
+                            new Vec3i(0, -1, -1)
+                    }) {
+                        // If it's placable
+                        BlockPos temp;
+                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
+
+                            // Check the damage on us
+                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                                continue;
+
+                            // If there is a crystal, stop
+                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                                quit = true;
+                                break;
+                            }
+
+                            // Check damage on the target
+                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                    info);
+
+                            // IF >, add
+                            if (damagePlayer > damage) {
+                                damage = damagePlayer;
+                                coords = temp;
+                                quit = true;
+                            }
+                        }
+                    }
+
+                    // Reset block
+                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                    // Add to packet block
+                    if (coords != null) {
+                        packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                    }
+
+                    // Quit
+                    if (quit)
+                        break;
+
+                }
+
+
+            }
+
+        }
+
+
+    });
+
+
+    void placeSurroundBlock(BlockPos blockPos, EnumHand hand) {
+        float armourPercent = armourFacePlace.getValue() / 100.0f;
+
+        // Check around block
+        for (Vec3i surround : new Vec3i[]{
+                new Vec3i(1, 0, 0),
+                new Vec3i(-1, 0, 0),
+                new Vec3i(0, 0, 1),
+                new Vec3i(0, 0, -1)
+        }) {
+
+            // Get possible players
+            List<Entity> players =
+                    new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                            null, new AxisAlignedBB(blockPos.add(surround))));
+
+            // Find
+            PlayerInfo info = null;
+            for(Entity pl : players) {
+                // If it's not us and if it's not above
+                if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                    // Add
+                    info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                    break;
+                }
+            }
+
+            // For force quitting. Is used for non multiPlacing
+            boolean quit = false;
+            if (info != null) {
+                // Best
+                BlockPos coords = null;
+                double damage = Double.MIN_VALUE;
+                // For calculating the damage, set to air
+                Block toReplace = BlockUtil.getBlock(blockPos);
+                mc.world.setBlockToAir(blockPos);
+                // Check around
+                for (Vec3i placement : new Vec3i[]{
+                        new Vec3i(1, -1, 0),
+                        new Vec3i(-1, -1, 0),
+                        new Vec3i(0, -1, 1),
+                        new Vec3i(0, -1, -1)
+                }) {
+                    // If we can place the crystal
+                    BlockPos temp;
+                    if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue()) ) {
+
+                        // Check damage
+                        if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                            continue;
+
+                        // If there is a crystal, stop
+                        if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                            quit = true;
+                            break;
+                        }
+
+                        // Calculate damage
+                        float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                info);
+                        // If best
+                        if (damagePlayer > damage) {
+                            damage = damagePlayer;
+                            coords = temp;
+                            quit = true;
+                        }
+                    }
+                }
+
+                // Reset surround
+                mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                // Place crystal
+                if (coords != null) {
+                    placeCrystal(coords, hand);
+                    placedCrystal = true;
+                }
+
+                // Quit
+                if (quit)
+                    break;
+
+            }
+
+
+        }
+    }
+
+    // This is used for creating the box gradient
+    private void renderCustomOutline(AxisAlignedBB hole) {
+
+        ArrayList<GSColor> colors = new ArrayList<>();
+
+        switch (NVerticesOutlineBot.getValue()) {
+            case "1":
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(firstVerticeOutlineBot.getValue());
+                break;
+            case "2":
+                if (direction2OutLineBot.getValue().equals("X")) {
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                } else {
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                    colors.add(secondVerticeOutlineBot.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeOutlineBot.getValue());
+                colors.add(secondVerticeOutlineBot.getValue());
+                colors.add(thirdVerticeOutlineBot.getValue());
+                colors.add(fourVerticeOutlineBot.getValue());
+                break;
+        }
+        switch (NVerticesOutlineTop.getValue()) {
+            case "1":
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(firstVerticeOutlineTop.getValue());
+                break;
+            case "2":
+                if (direction2OutLineTop.getValue().equals("X")) {
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                } else {
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                    colors.add(secondVerticeOutlineTop.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeOutlineTop.getValue());
+                colors.add(secondVerticeOutlineTop.getValue());
+                colors.add(thirdVerticeOutlineTop.getValue());
+                colors.add(fourVerticeOutlineTop.getValue());
+                break;
+        }
+
+        RenderUtil.drawBoundingBox(hole, widthPredict.getValue(), colors.toArray(new GSColor[7]));
+    }
+
+    // This is used for the filling the box gradient
+    void renderFillCustom(AxisAlignedBB hole) {
+
+        int mask = GeometryMasks.Quad.ALL;
+
+
+        ArrayList<GSColor> colors = new ArrayList<>();
+        switch (NVerticesFillBot.getValue()) {
+            case "1":
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(firstVerticeFillBot.getValue());
+                break;
+            case "2":
+                if (direction2FillBot.getValue().equals("X")) {
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                } else {
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                    colors.add(secondVerticeFillBot.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeFillBot.getValue());
+                colors.add(secondVerticeFillBot.getValue());
+                colors.add(thirdVerticeFillBot.getValue());
+                colors.add(fourVerticeFillBot.getValue());
+                break;
+        }
+        switch (NVerticesFillTop.getValue()) {
+            case "1":
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(firstVerticeFillTop.getValue());
+                break;
+            case "2":
+                if (direction2FillTop.getValue().equals("X")) {
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                } else {
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                    colors.add(secondVerticeFillTop.getValue());
+                }
+                break;
+            case "4":
+                colors.add(firstVerticeFillTop.getValue());
+                colors.add(secondVerticeFillTop.getValue());
+                colors.add(thirdVerticeFillTop.getValue());
+                colors.add(fourVerticeFillTop.getValue());
+                break;
+        }
+
+        RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);
     }
 
     //endregion
@@ -872,29 +1862,87 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
+        // If we dont have to rotate
         if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
 
-        if (tick++ >= tickForceRotation.getValue()) {
-            tick = 0;
+        // If we reached the last point (Delay)
+        if (tick++ > tickAfterRotation.getValue()) {
             lastHitVec = null;
-            return;
-        }
+            tick = 0;
+            isRotating = false;
+        } else {
+            // If we have to rotate
+            Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
+            Vec2f nowRotation;
 
-        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
-        PlayerPacket packet = new PlayerPacket(this, rotation);
-        PlayerPacketManager.INSTANCE.addPacket(packet);
+            if (yawCheck.getValue() || pitchCheck.getValue()) {
+
+                if (yPlayer == Double.MIN_VALUE)
+                    yPlayer = rotationWanted.y;
+                else {
+                    // Get first if + or -
+                    double distanceDo = rotationWanted.y - yPlayer;
+                    int direction = distanceDo > 0 ? 1 : -1;
+                    // Check if distance is > of what we want
+
+                    if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                        yPlayer = RotationUtil.normalizeAngle(yPlayer + pitchStep.getValue() * direction);
+                    } else {
+                        yPlayer = rotationWanted.y;
+                    }
+                }
+                if (xPlayer == Double.MIN_VALUE)
+                    xPlayer = rotationWanted.x;
+                else {
+                    // Get first if + or -
+                    double distanceDo = rotationWanted.x - xPlayer;
+                    if (Math.abs(distanceDo) > 180) {
+                        distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                    }
+                    int direction = distanceDo > 0 ? 1 : -1;
+                    // Check if distance is > of what we want
+
+                    if (Math.abs(distanceDo) > yawStep.getValue()) {
+                        xPlayer = RotationUtil.normalizeAngle(xPlayer + yawStep.getValue() * direction);
+                    } else {
+                        xPlayer = rotationWanted.x;
+                    }
+                }
+                nowRotation = new Vec2f((float) xPlayer, (float) yPlayer);
+            } else {
+                nowRotation = rotationWanted;
+            }
+
+            PlayerPacket packet = new PlayerPacket(this, nowRotation);
+            PlayerPacketManager.INSTANCE.addPacket(packet);
+        }
     });
 
+    // This is used for packet recive thing
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
+
+        // Spawn object
         if (event.getPacket() instanceof SPacketSpawnObject) {
+            // Get it
             SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
+            // Idk why 51
             if (SpawnObject.getType() == 51 ) {
+                // If limitPacketPlace, remove the crystal
                 if (!limitPacketPlace.getValue().equals("None"))
                     listCrystalsPlaced.removeCrystal(SpawnObject.getX(), SpawnObject.getY(), SpawnObject.getZ());
+                // If crystalPlace is not null
+                if (crystalPlace != null)
+                    // Check if it's it
+                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5D, SpawnObject.getZ() - .5), crystalPlace.posCrystal)) {
+                        // If yes, remove it
+                        crystalPlace = null;
+                    }
             }
         }
+
+
     });
 
     //endregion

@@ -7,16 +7,12 @@ import java.lang.annotation.Target;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.gamesense.api.setting.values.*;
 import me.zero.alpine.listener.Listenable;
 import org.lwjgl.input.Keyboard;
 
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.SettingsManager;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
@@ -172,6 +168,19 @@ public abstract class Module implements Listenable {
         return integerSetting;
     }
 
+    protected StringSetting registerString(String name, String value) {
+        StringSetting stringSetting = new StringSetting(name, this, value);
+        SettingsManager.addSetting(stringSetting);
+        return stringSetting;
+    }
+
+    protected StringSetting registerString(String name, String value, Supplier<Boolean> dipendent) {
+        StringSetting stringSetting = new StringSetting(name, this, value);
+        stringSetting.setVisible(dipendent);
+        SettingsManager.addSetting(stringSetting);
+        return stringSetting;
+    }
+
     protected DoubleSetting registerDouble(String name, double value, double min, double max) {
         DoubleSetting doubleSetting = new DoubleSetting(name, this, value, min, max);
         SettingsManager.addSetting(doubleSetting);
@@ -220,6 +229,15 @@ public abstract class Module implements Listenable {
     protected ColorSetting registerColor(String name, GSColor color, Supplier<Boolean> dipendent) {
         ColorSetting colorSetting = new ColorSetting(name, this, false, color);
         colorSetting.setVisible(dipendent);
+        colorSetting.alphaEnabled();
+        SettingsManager.addSetting(colorSetting);
+        return colorSetting;
+    }
+
+    protected ColorSetting registerColor(String name, GSColor color, Supplier<Boolean> dipendent, Boolean alphaEnabled) {
+        ColorSetting colorSetting = new ColorSetting(name, this, false, color, alphaEnabled);
+        colorSetting.setVisible(dipendent);
+        colorSetting.alphaEnabled();
         SettingsManager.addSetting(colorSetting);
         return colorSetting;
     }
