@@ -96,7 +96,7 @@ public class FootConcrete extends Module {
 
 
             burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
-            if (jumpMode.getValue() == "real") {
+            if (jumpMode.getValue().equals("real")) {
                 mc.player.jump();
             } else {
 
