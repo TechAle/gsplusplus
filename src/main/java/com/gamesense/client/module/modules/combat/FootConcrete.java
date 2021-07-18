@@ -30,19 +30,21 @@ import java.util.Arrays;
 
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
-    ModeSetting jumpMode = registerMode("jumpMode",Arrays.asList("real","fake"),"real");
+    ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real"));
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting useTimer = registerBoolean("useTimer", true, () -> jumpMode.getValue().equals("real"));
-    DoubleSetting timerSpeed = registerDouble("timerSpeed",20,1,50,()-> useTimer.getValue() && jumpMode.getValue().equals("real"));
-    BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight",false);
+    DoubleSetting timerSpeed = registerDouble("timerSpeed", 20, 1, 50, () -> useTimer.getValue() && jumpMode.getValue().equals("real"));
+    BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight", false);
     IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
-    BooleanSetting allowEchest = registerBoolean("allowEchest",true);
+    BooleanSetting allowEchest = registerBoolean("allowEchest", true);
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting rotate = registerBoolean("rotate", true);
 
     boolean doGlitch;
+
+    boolean invalidHotbar;
 
     float oldPitch;
 
@@ -59,6 +61,8 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
 
     public void onEnable() {
+
+        invalidHotbar = false;
 
         //BLINK AND TIMER
 
@@ -85,6 +89,10 @@ public class FootConcrete extends Module {
 
             MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "No burrow blocks in hotbar, disabling");
 
+            invalidHotbar = true;
+
+            disable();
+
             if (useBlink.getValue()) {
                 ModuleManager.getModule(Blink.class).disable();
             }
@@ -99,127 +107,138 @@ public class FootConcrete extends Module {
 
         // JUMP
 
-        if (mc.player.onGround) {
+        if (!invalidHotbar) {
+
+            if (mc.player.onGround) {
 
 
-            burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
-            if (jumpMode.getValue().equals("real")) {
-                mc.player.jump();
-            } else {
-
-                // CIRUU BURROW (not ashamed to admit it)
-
-                targetBlockSlot = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0, 8);
-
-                oldSlot = mc.player.inventory.currentItem;
-
-                if (targetBlockSlot == -1){
-                    disable();
-                }
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
-
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
-
-                if (!absoluteClipHeight.getValue()) {
-
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ, true));
-
+                burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
+                if (jumpMode.getValue().equals("real")) {
+                    mc.player.jump();
                 } else {
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,clipHeight.getValue(), mc.player.posZ, true));
-                }
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                    // CIRUU BURROW (not ashamed to admit it)
+
+                    targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
+
+                    if (targetBlockSlot == -1) {
+                        if (allowEchest.getValue())
+                            targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+                    }
+
+                    oldSlot = mc.player.inventory.currentItem;
+
+                    if (targetBlockSlot == -1) {
+                        disable();
+                    }
+
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
+
+                    PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+
+                    if (!absoluteClipHeight.getValue()) {
+
+                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ, true));
+
+                    } else {
+                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, clipHeight.getValue(), mc.player.posZ, true));
+                    }
+
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
+                    disable();
+
+                }
+                concreteTimer.reset();
+
+                doGlitch = false;
+
+            } else {
 
                 disable();
 
             }
-            concreteTimer.reset();
-
-            doGlitch = false;
-
-        } else {
-
-            disable();
-
         }
     }
 
     public void onUpdate() {
 
-        // PLACE
+        if (!invalidHotbar) {
 
-        if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
+            // PLACE
 
-            if (useBlink.getValue()) {
+            if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
 
-                ModuleManager.getModule(Blink.class).disable();
+                if (useBlink.getValue()) {
+
+                    ModuleManager.getModule(Blink.class).disable();
+                }
+
+                if (!silentSwitch.getValue()) { //Silent switch check
+
+                    mc.player.inventory.currentItem = targetBlockSlot;
+
+                } else {
+
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+                }
+
+                oldPitch = mc.player.rotationPitch;
+
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+
+                oldslot = mc.player.inventory.currentItem;
+
+                doGlitch = true;
+
+                //DISABLE TIMER
+
+                if (useTimer.getValue()) {
+                    Minecraft.getMinecraft().timer.tickLength = 50;
+                }
+
             }
 
-            if (!silentSwitch.getValue()) { //Silent switch check
+            // RUBBERBAND
 
-                mc.player.inventory.currentItem = targetBlockSlot;
+            if (mode.getValue().equals("clip") && doGlitch) {
 
-            } else {
+                if (!silentSwitch.getValue()) {
+                    mc.player.inventory.currentItem = oldslot;
+                } else {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                }
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+                mc.player.setPosition(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ);
 
-            }
+                doGlitch = false;
 
-            oldPitch = mc.player.rotationPitch;
-
-            PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
-
-            oldslot = mc.player.inventory.currentItem;
-
-            doGlitch = true;
-
-            //DISABLE TIMER
-
-            if (useTimer.getValue()) {
-                Minecraft.getMinecraft().timer.tickLength = 50;
-            }
-
-        }
-
-        // RUBBERBAND
-
-        if (mode.getValue().equals("clip") && doGlitch) {
-
-            if (!silentSwitch.getValue()) {
-                mc.player.inventory.currentItem = oldslot;
-            } else {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-            }
 
-            mc.player.setPosition(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ);
+                disable();
 
-            doGlitch = false;
+            } else if (mode.getValue().equals("jump") && doGlitch) {
 
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                if (!silentSwitch.getValue()) {
+                    mc.player.inventory.currentItem = oldslot;
+                } else {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                }
 
-            disable();
+                mc.player.jump();
 
-        } else if (mode.getValue().equals("jump") && doGlitch) {
+                doGlitch = false;
 
-            if (!silentSwitch.getValue()) {
-                mc.player.inventory.currentItem = oldslot;
-            } else {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
+                disable();
             }
-
-            mc.player.jump();
-
-            doGlitch = false;
-
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-            disable();
         }
     }
 }
