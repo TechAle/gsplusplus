@@ -14,6 +14,7 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.client.Minecraft;
+import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
@@ -37,6 +38,7 @@ public class FootConcrete extends Module {
     BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight",false);
     IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
+    BooleanSetting allowEchest = registerBoolean("allowEchest",true);
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting rotate = registerBoolean("rotate", true);
 
@@ -72,7 +74,12 @@ public class FootConcrete extends Module {
 
         // FIND SLOT
 
-        targetBlockSlot = InventoryUtil.findFirstBlockSlot(BlockObsidian.class, 0, 8);
+        targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
+
+        if (targetBlockSlot == -1) {
+            if (allowEchest.getValue())
+                targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+        }
 
         if (targetBlockSlot == -1) {
 
