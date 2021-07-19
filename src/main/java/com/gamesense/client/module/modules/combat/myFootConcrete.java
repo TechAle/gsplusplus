@@ -1,11 +1,14 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import net.minecraft.block.BlockAir;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketEntityAction;
@@ -16,6 +19,8 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+
+import java.util.Arrays;
 
 @Module.Declaration(name = "My Foot Concrete", category = Category.Combat)
 public class myFootConcrete extends Module {
@@ -28,6 +33,11 @@ public class myFootConcrete extends Module {
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
     BooleanSetting onShift = registerBoolean("On Shift", true);
     BooleanSetting preRotate = registerBoolean("Pre Rotate", false);
+    BooleanSetting cetnerPlayer = registerBoolean("Center Player", false);
+    ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y"), "+Y");
+    IntegerSetting ym = registerInteger("Y-", -4, -64, 0);
+    IntegerSetting yp = registerInteger("Y+", 128, 0, 200);
+    IntegerSetting addY = registerInteger("Add Y", 10, -40, 40);
 
     public void onEnable() {
         initValues();
@@ -58,6 +68,9 @@ public class myFootConcrete extends Module {
 
         if (mc.player.onGround) {
 
+            if (!(BlockUtil.getBlock(EntityUtil.getPosition(mc.player).add(0,2,0)) instanceof BlockAir))
+                return;
+
             int slotBlock = InventoryUtil.findObsidianSlot(false, false);
 
             if (slotBlock == -1) {
@@ -78,7 +91,9 @@ public class myFootConcrete extends Module {
 
             BlockPos pos = new BlockPos(mc.player.posX, posY, mc.player.posZ);
 
-            if (!mc.world.getBlockState(pos).getMaterial().isReplaceable() || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
+            if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()
+                    || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)
+                    || BlockUtil.getBlock(feet.add(0, -1, 0)) instanceof BlockAir) {
                 if (!alwaysActive.getValue())
                     disable();
                 return;
@@ -93,13 +108,22 @@ public class myFootConcrete extends Module {
             if (preRotate.getValue())
                 mc.player.connection.sendPacket(new CPacketPlayer.Rotation(0, 90, true));
 
+            double posX = mc.player.posX,
+                    posZ = mc.player.posZ;
+
+            if (cetnerPlayer.getValue()) {
+                Vec3d newPos = BlockUtil.getCenterOfBlock(posX, mc.player.posY, posZ);
+                posX = newPos.x;
+                posZ = newPos.z;
+            }
+            // -45.5  184.5
             int oldSlot = mc.player.inventory.currentItem;
             mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16 + (isEchest ? .1 : 0), mc.player.posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.01, posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16 + (isEchest ? .1 : 0), posZ, true));
 
             EnumFacing side = EnumFacing.DOWN;
             BlockPos neighbour = pos.offset(side);
@@ -110,8 +134,20 @@ public class myFootConcrete extends Module {
                     new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5)), EnumHand.MAIN_HAND);
             mc.player.swingArm(EnumHand.MAIN_HAND);
 
+            double newY = -4;
+            switch (rubberbandMode.getValue()) {
+                case "+Y":
+                    newY = yp.getValue();
+                    break;
+                case "-Y":
+                    newY = ym.getValue();
+                    break;
+                case "Add Y":
+                    newY = mc.player.posY + addY.getValue();
+                    break;
+            }
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, -4, mc.player.posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY, posZ, true));
 
             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
