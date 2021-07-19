@@ -66,7 +66,7 @@ public class Surround extends Module {
             mc.player.motionZ = 0;
         }
 
-        centeredBlock = BlockUtil.getCenterOfBlock(mc.player.posX, mc.player.posY, mc.player.posY);
+        centeredBlock = BlockUtil.getCenterOfBlock(mc.player.posX, mc.player.posY, mc.player.posZ);
 
         oldSlot = mc.player.inventory.currentItem;
     }
