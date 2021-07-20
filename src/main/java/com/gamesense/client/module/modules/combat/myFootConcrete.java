@@ -4,6 +4,7 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
@@ -27,14 +28,14 @@ import java.util.Arrays;
 public class myFootConcrete extends Module {
 
     boolean finishOnGround,
-            materials;
+            materials,
+            center;
     BooleanSetting allowEchest = registerBoolean("Allow Echest", true);
     BooleanSetting instaActive = registerBoolean("Insta Active", true);
     BooleanSetting disactiveAfter = registerBoolean("Insta disactive", true);
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
     BooleanSetting onShift = registerBoolean("On Shift", true);
     BooleanSetting preRotate = registerBoolean("Pre Rotate", false);
-    BooleanSetting cetnerPlayer = registerBoolean("Center Player", false);
     ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y"), "+Y");
     IntegerSetting ym = registerInteger("Y-", -4, -64, 0);
     IntegerSetting yp = registerInteger("Y+", 128, 0, 200);
@@ -48,7 +49,7 @@ public class myFootConcrete extends Module {
     }
 
     void initValues() {
-        finishOnGround = false;
+        finishOnGround = center = false;
         materials = true;
     }
 
@@ -70,10 +71,6 @@ public class myFootConcrete extends Module {
         // Only when we are onGround
         if (mc.player.onGround) {
 
-            // If above it's air, returm
-            if (!(BlockUtil.getBlock(EntityUtil.getPosition(mc.player).add(0,2,0)) instanceof BlockAir))
-                return;
-
             // Get block
             int slotBlock = InventoryUtil.findObsidianSlot(false, false);
 
@@ -92,11 +89,10 @@ public class myFootConcrete extends Module {
             }
 
             // Get if we are on a chest
-            BlockPos feet;
-            boolean isEchest = BlockUtil.getBlock( (feet = EntityUtil.getPosition(mc.player))) == Blocks.ENDER_CHEST;
+            boolean isEchest = BlockUtil.getBlock(EntityUtil.getPosition(mc.player)) == Blocks.ENDER_CHEST;
 
             // Get our posY (this is for eChest position)
-            double posY = mc.player.posY + (mc.player.posY % 1 > .2 ? 1 : 0);
+            double posY = mc.player.posY % 1 > .2 ? Math.round(mc.player.posY) : mc.player.posY;
 
             // Create a new pos of us
             BlockPos pos = new BlockPos(mc.player.posX, posY, mc.player.posZ);
@@ -104,18 +100,15 @@ public class myFootConcrete extends Module {
             // If the block is not replacable, if someone is with us or if there are no blocks, return
             if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()
                     || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)
-                    || BlockUtil.getBlock(feet.add(0, -1, 0)) instanceof BlockAir) {
+                    || BlockUtil.getBlock(pos.add(0, -1, 0)) instanceof BlockAir) {
                 if (!alwaysActive.getValue())
                     disable();
                 return;
             }
 
-            // If we are not sneaking, sneak
-            boolean isSneaking = false;
-            if (BlockUtil.canBeClicked(feet) && !mc.player.isSneaking()) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
-                isSneaking = true;
-            }
+            // If above it's air, returm
+            if (!(BlockUtil.getBlock(pos.add(0, 2, 0)) instanceof BlockAir))
+                return;
 
             // if preRotate, rotate
             if (preRotate.getValue())
@@ -124,13 +117,32 @@ public class myFootConcrete extends Module {
             // Get pos
             double posX = mc.player.posX,
                     posZ = mc.player.posZ;
-
-            // If centerPlayer, go center
-            if (cetnerPlayer.getValue()) {
-                Vec3d newPos = BlockUtil.getCenterOfBlock(posX, mc.player.posY, posZ);
-                posX = newPos.x;
-                posZ = newPos.z;
+            Vec3d newPos = BlockUtil.getCenterOfBlock(posX, mc.player.posY, posZ);
+            if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty()) {
+                if (mc.player.getDistanceSq(newPos.x, mc.player.posY, newPos.z) > .2) {
+                    finishOnGround = true;
+                    mc.player.motionX = 0;
+                    mc.player.motionZ = 0;
+                    double  newX = posX + (newPos.x - posX) / 2,
+                            newZ = posZ + (newPos.z - posZ) / 2;
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(newX, mc.player.posY, newZ, true));
+                    mc.player.setPosition(newX, mc.player.posY, newZ);
+                    return;
+                }
             }
+
+            posX = newPos.x;
+            posZ = newPos.z;
+
+
+            // If we are not sneaking, sneak
+            boolean isSneaking = false;
+            if (BlockUtil.canBeClicked(pos.add(0, -1, 0)) && !mc.player.isSneaking()) {
+                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+                isSneaking = true;
+            }
+
+            // mc.player.getDistanceSq(posX, mc.player.posY, posZ)
 
             // Get slot of now
             int oldSlot = mc.player.inventory.currentItem;
@@ -189,7 +201,7 @@ public class myFootConcrete extends Module {
 
         } else finishOnGround = true;
 
-        if (disactive)
+        if (disactive && !center)
             disable();
     }
 
