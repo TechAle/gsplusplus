@@ -25,8 +25,8 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "My Foot Concrete", category = Category.Combat)
-public class myFootConcrete extends Module {
+@Module.Declaration(name = "Foot Walker", category = Category.Combat)
+public class FootWalker extends Module {
 
     boolean finishOnGround,
             materials,
@@ -51,6 +51,7 @@ public class myFootConcrete extends Module {
             () -> phase.getValue());
     IntegerSetting phaseAddY = registerInteger("Phase Add Y", 40, -40, 40,
             () -> phaseRubberband.getValue().equals("AddY") && phase.getValue());
+    BooleanSetting scaffold = registerBoolean("Scaffold", false);
 
 
     public void onEnable() {
@@ -126,11 +127,21 @@ public class myFootConcrete extends Module {
 
             // If the block is not replacable, if someone is with us or if there are no blocks, return
             if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()
-                    || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)
-                    || BlockUtil.getBlock(pos.add(0, -1, 0)) instanceof BlockAir) {
+                    || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
                 if (!alwaysActive.getValue())
                     disable();
                 return;
+            }
+
+            boolean scaf = false;
+            if (BlockUtil.getBlock(pos.add(0, -1, 0)) instanceof BlockAir) {
+                if (scaffold.getValue())
+                    scaf = true;
+                else {
+                    if (!alwaysActive.getValue())
+                        disable();
+                    return;
+                }
             }
 
             // If above it's air, returm
@@ -169,14 +180,16 @@ public class myFootConcrete extends Module {
                 isSneaking = true;
             }
 
-            // mc.player.getDistanceSq(posX, mc.player.posY, posZ)
-
             // Get slot of now
             int oldSlot = mc.player.inventory.currentItem;
 
             // If it's different from what we have now
             if (slotBlock != oldSlot)
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+
+            if (scaf) {
+                placeBlockPacket(null, pos.add(0, -1, 0));
+            }
 
             // Send burrow exploit
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
@@ -185,23 +198,7 @@ public class myFootConcrete extends Module {
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16 + (isEchest ? .1 : 0), posZ, true));
 
             // Start placing
-            EnumFacing side = EnumFacing.DOWN;
-            BlockPos neighbour = pos.offset(side);
-            EnumFacing opposite = side.getOpposite();
-            Vec3d vec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
-
-            // idk why these but PlayerControllerMP use them
-            float f = (float)(vec.x - (double)pos.getX());
-            float f1 = (float)(vec.y - (double)pos.getY());
-            float f2 = (float)(vec.z - (double)pos.getZ());
-
-            // Place
-            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(
-                    neighbour
-                    , opposite, EnumHand.MAIN_HAND, f, f1, f2));
-
-            // Swing (it's needed for placing)
-            mc.player.swingArm(EnumHand.MAIN_HAND);
+            placeBlockPacket(EnumFacing.DOWN, pos);
 
             // Rubberband
             double newY = -4;
@@ -237,6 +234,31 @@ public class myFootConcrete extends Module {
 
         if (disactive && !phase.getValue())
             disable();
+    }
+
+    void placeBlockPacket(EnumFacing side, BlockPos pos) {
+
+        if (side == null) {
+            side = BlockUtil.getPlaceableSide(pos);
+        }
+        assert side != null;
+        BlockPos neighbour = pos.offset(side);
+        EnumFacing opposite = side.getOpposite();
+        Vec3d vec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+
+        // idk why these but PlayerControllerMP use them
+        float f = (float)(vec.x - (double)pos.getX());
+        float f1 = (float)(vec.y - (double)pos.getY());
+        float f2 = (float)(vec.z - (double)pos.getZ());
+
+        // Place
+        mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(
+                neighbour
+                , opposite, EnumHand.MAIN_HAND, f, f1, f2));
+
+        // Swing (it's needed for placing)
+        mc.player.swingArm(EnumHand.MAIN_HAND);
+
     }
 
     // This is kinda phobos
