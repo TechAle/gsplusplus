@@ -11,6 +11,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.block.BlockAir;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketEntityAction;
@@ -31,7 +32,8 @@ public class FootWalker extends Module {
     boolean finishOnGround,
             materials,
             center,
-            havePhase;
+            havePhase,
+            beforeShiftJump;
     BooleanSetting allowEchest = registerBoolean("Allow Echest", true);
     BooleanSetting onlyEchest = registerBoolean("Only Echest", false, () -> allowEchest.getValue());
     BooleanSetting instaActive = registerBoolean("Insta Active", true);
@@ -52,6 +54,7 @@ public class FootWalker extends Module {
     IntegerSetting phaseAddY = registerInteger("Phase Add Y", 40, -40, 40,
             () -> phaseRubberband.getValue().equals("AddY") && phase.getValue());
     BooleanSetting scaffold = registerBoolean("Scaffold", false);
+    BooleanSetting shiftJump = registerBoolean("Shift Jump", false);
 
 
     public void onEnable() {
@@ -64,7 +67,7 @@ public class FootWalker extends Module {
     }
 
     void initValues() {
-        finishOnGround = center = havePhase = false;
+        finishOnGround = center = havePhase = beforeShiftJump = false;
         materials = true;
     }
 
@@ -85,6 +88,14 @@ public class FootWalker extends Module {
                 (onPlayer.getValue() && PlayerUtil.findClosestTarget(rangePlayer.getValue(), null) != null))
             // Active
             instaBurrow(disactiveAfter.getValue());
+
+        if ( shiftJump.getValue() && mc.gameSettings.keyBindJump.isKeyDown() && mc.gameSettings.keyBindSneak.isKeyDown()) {
+            if (!beforeShiftJump) {
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, Math.floor(mc.player.posY) + 1, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY) + 1, mc.player.posZ);
+                KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), false);
+            }
+        }
 
     }
 
@@ -236,12 +247,13 @@ public class FootWalker extends Module {
             disable();
     }
 
-    void placeBlockPacket(EnumFacing side, BlockPos pos) {
+    boolean placeBlockPacket(EnumFacing side, BlockPos pos) {
 
         if (side == null) {
             side = BlockUtil.getPlaceableSide(pos);
         }
-        assert side != null;
+        if (side == null)
+            return false;
         BlockPos neighbour = pos.offset(side);
         EnumFacing opposite = side.getOpposite();
         Vec3d vec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
@@ -258,7 +270,7 @@ public class FootWalker extends Module {
 
         // Swing (it's needed for placing)
         mc.player.swingArm(EnumHand.MAIN_HAND);
-
+        return true;
     }
 
     // This is kinda phobos
