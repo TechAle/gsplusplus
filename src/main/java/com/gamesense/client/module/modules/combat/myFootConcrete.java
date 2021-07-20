@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
@@ -29,17 +30,28 @@ public class myFootConcrete extends Module {
 
     boolean finishOnGround,
             materials,
-            center;
+            center,
+            havePhase;
     BooleanSetting allowEchest = registerBoolean("Allow Echest", true);
+    BooleanSetting onlyEchest = registerBoolean("Only Echest", false, () -> allowEchest.getValue());
     BooleanSetting instaActive = registerBoolean("Insta Active", true);
     BooleanSetting disactiveAfter = registerBoolean("Insta disactive", true);
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
     BooleanSetting onShift = registerBoolean("On Shift", true);
     BooleanSetting preRotate = registerBoolean("Pre Rotate", false);
     ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y"), "+Y");
-    IntegerSetting ym = registerInteger("Y-", -4, -64, 0);
-    IntegerSetting yp = registerInteger("Y+", 128, 0, 200);
-    IntegerSetting addY = registerInteger("Add Y", 10, -40, 40);
+    IntegerSetting ym = registerInteger("Y-", -4, -64, 0, () -> rubberbandMode.getValue().equals("-Y"));
+    IntegerSetting yp = registerInteger("Y+", 128, 0, 200, () -> rubberbandMode.getValue().equals("+Y"));
+    IntegerSetting addY = registerInteger("Rub Add Y", 10, -40, 40, () -> rubberbandMode.getValue().equals("Add Y"));
+    BooleanSetting onPlayer = registerBoolean("On Player", false);
+    DoubleSetting rangePlayer = registerDouble("Range Player", 3, 0, 4, () -> onPlayer.getValue());
+    BooleanSetting phase = registerBoolean("Phase", false);
+    BooleanSetting predictPhase = registerBoolean("Predict Phase", false, () -> phase.getValue());
+    ModeSetting phaseRubberband = registerMode("Phase Rubberband", Arrays.asList("Y+", "Y-", "Y0", "AddY", "X", "Z", "XZ"), "Y+",
+            () -> phase.getValue());
+    IntegerSetting phaseAddY = registerInteger("Phase Add Y", 40, -40, 40,
+            () -> phaseRubberband.getValue().equals("AddY") && phase.getValue());
+
 
     public void onEnable() {
         initValues();
@@ -49,13 +61,21 @@ public class myFootConcrete extends Module {
     }
 
     void initValues() {
-        finishOnGround = center = false;
+        finishOnGround = center = havePhase = false;
         materials = true;
     }
 
     public void onUpdate() {
 
-        if ((onShift.getValue() && mc.player.isSneaking()) || alwaysActive.getValue() || finishOnGround)
+        if (havePhase) {
+            doPhase();
+            havePhase = false;
+            if (disactiveAfter.getValue())
+                disable();
+        }
+
+        if ((onShift.getValue() && mc.player.isSneaking()) || alwaysActive.getValue() || finishOnGround ||
+                (onPlayer.getValue() && PlayerUtil.findClosestTarget(rangePlayer.getValue(), null) != null))
             instaBurrow(disactiveAfter.getValue());
 
     }
@@ -72,7 +92,7 @@ public class myFootConcrete extends Module {
         if (mc.player.onGround) {
 
             // Get block
-            int slotBlock = InventoryUtil.findObsidianSlot(false, false);
+            int slotBlock = onlyEchest.getValue() ? -1 : InventoryUtil.findObsidianSlot(false, false);
 
             // If nothing found
             if (slotBlock == -1) {
@@ -199,10 +219,44 @@ public class myFootConcrete extends Module {
             if (isSneaking)
                 mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
 
+            if (phase.getValue()) {
+                if (predictPhase.getValue())
+                    doPhase();
+                havePhase = true;
+            }
+
         } else finishOnGround = true;
 
-        if (disactive && !center)
+        if (disactive && !phase.getValue())
             disable();
+    }
+
+    void doPhase() {
+        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 0.03125, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+        switch (phaseRubberband.getValue()) {
+            case "Y+":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 1000, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "Y-":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, -1000, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "Y0":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "AddY":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + phaseAddY.getValue(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "X":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + 75, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "Z":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY, mc.player.posZ + 75, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+            case "XZ":
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + 75, mc.player.posY, mc.player.posZ + 75, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+                break;
+        }
+
     }
 
 }
