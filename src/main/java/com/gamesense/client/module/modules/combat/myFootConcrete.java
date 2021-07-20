@@ -54,8 +54,10 @@ public class myFootConcrete extends Module {
 
 
     public void onEnable() {
+        // Reset values
         initValues();
 
+        // If insta active, burrow
         if (instaActive.getValue())
             instaBurrow(disactiveAfter.getValue());
     }
@@ -67,15 +69,20 @@ public class myFootConcrete extends Module {
 
     public void onUpdate() {
 
+        // If we have to phase
         if (havePhase) {
+            // Phase
             doPhase();
+            // Reset
             havePhase = false;
             if (disactiveAfter.getValue())
                 disable();
         }
 
+        // If something here is on
         if ((onShift.getValue() && mc.player.isSneaking()) || alwaysActive.getValue() || finishOnGround ||
                 (onPlayer.getValue() && PlayerUtil.findClosestTarget(rangePlayer.getValue(), null) != null))
+            // Active
             instaBurrow(disactiveAfter.getValue());
 
     }
@@ -219,6 +226,7 @@ public class myFootConcrete extends Module {
             if (isSneaking)
                 mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
 
+            // If phase, active
             if (phase.getValue()) {
                 if (predictPhase.getValue())
                     doPhase();
@@ -231,6 +239,7 @@ public class myFootConcrete extends Module {
             disable();
     }
 
+    // This is kinda phobos
     void doPhase() {
         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 0.03125, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
         switch (phaseRubberband.getValue()) {
