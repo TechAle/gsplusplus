@@ -26,8 +26,10 @@ public class Timer extends Module {
 
     @Override
     public void onUpdate() {
-        if (!onMove.getValue() || MotionUtil.isMoving(mc.player) || !onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class)) {
+        if (!onMove.getValue() && !onSpeedOnly.getValue()|| MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()|| onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class) && !onMove.getValue()) {
             doTimer();
+        } else {
+            mc.timer.tickLength = 50;
         }
     }
 
@@ -38,7 +40,7 @@ public class Timer extends Module {
     public String getHudInfo() {
         arraylistSpeed = "";
 
-            arraylistSpeed = "[" + ChatFormatting.WHITE + (Math.round(speed.getValue() * 100.0) / 100.0) + ChatFormatting.GRAY + "]";
+            arraylistSpeed = "[" + ChatFormatting.WHITE + (Math.round(50 / mc.timer.tickLength * 100.0) / 100.0) + ChatFormatting.GRAY + "]";
 
         return arraylistSpeed;
     }
