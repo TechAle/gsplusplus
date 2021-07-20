@@ -229,12 +229,23 @@ public class HoleFill extends Module {
         //from old HoleFill module, really good way to do this
         List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range.getValue().floatValue(), range.getValue().intValue(), false, true, 0);
 
-        for (BlockPos blockPos : blockPosList) {
-            HoleUtil.HoleType temp;
-            if ((temp = HoleUtil.isHole(blockPos, true, true).getType()) == HoleUtil.HoleType.SINGLE || ( doubleHole.getValue() && temp == HoleUtil.HoleType.DOUBLE)) {
-                holes.add(blockPos);
+        blockPosList.forEach(pos -> {
+            HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
+            HoleUtil.HoleType holeType = holeInfo.getType();
+            if (holeType != HoleUtil.HoleType.NONE) {
+                AxisAlignedBB centreBlocks = holeInfo.getCentre();
+
+                if (centreBlocks == null)
+                    return;
+
+                if (doubleHole.getValue() && holeType == HoleUtil.HoleType.DOUBLE) {
+                    holes.add(pos);
+                } else if (holeType == HoleUtil.HoleType.SINGLE) {
+                    holes.add(pos);
+                }
             }
-        }
+        });
+
         return holes;
     }
 

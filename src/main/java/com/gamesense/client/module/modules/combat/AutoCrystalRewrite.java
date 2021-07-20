@@ -996,17 +996,20 @@ public class AutoCrystalRewrite extends Module {
             }
 
             // If it's not null
-            if (crystalPlace != null) {
+            if (crystalPlace != null && crystalPlace.posCrystal != null) {
                 // Check if the crystal is ready, if yes, null
-                if (crystalPlace.isReady())
+                if (crystalPlace.isReady()) {
                     crystalPlace = null;
+                }
                 else {
                     // AutoWeb
                     if (isPlacingWeb())
                         return;
 
-                    // Else, place it
-                    placeCrystal(crystalPlace.posCrystal, hand);
+                    // Else, place it (dont ask me why but sometimes crystalPlace become null
+                    if (crystalPlace != null)
+                        placeCrystal(crystalPlace.posCrystal, hand);
+
                     return;
                 }
             }
