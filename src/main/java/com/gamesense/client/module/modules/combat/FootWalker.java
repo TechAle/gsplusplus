@@ -41,9 +41,16 @@ public class FootWalker extends Module {
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
     BooleanSetting onShift = registerBoolean("On Shift", true);
     BooleanSetting preRotate = registerBoolean("Pre Rotate", false);
-    ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y"), "+Y");
+    ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y", "Free Y"), "+Y");
     IntegerSetting ym = registerInteger("Y-", -4, -64, 0, () -> rubberbandMode.getValue().equals("-Y"));
     IntegerSetting yp = registerInteger("Y+", 128, 0, 200, () -> rubberbandMode.getValue().equals("+Y"));
+    IntegerSetting minY = registerInteger("Min Y", 9, 0, 30,
+            () -> rubberbandMode.getValue().equals("Free Y"));
+    IntegerSetting yStart = registerInteger("Min Y Start", -9, 0, -20);
+    IntegerSetting maxStartY = registerInteger("Max Start Y", 8, 5, 20,
+            () -> rubberbandMode.getValue().equals("Free Y"));
+    IntegerSetting maxFinishY = registerInteger("Max Finish Y", 15, 10, 40,
+            () -> rubberbandMode.getValue().equals("Free Y"));
     IntegerSetting addY = registerInteger("Rub Add Y", 10, -40, 40, () -> rubberbandMode.getValue().equals("Add Y"));
     BooleanSetting onPlayer = registerBoolean("On Player", false);
     DoubleSetting rangePlayer = registerDouble("Range Player", 3, 0, 4, () -> onPlayer.getValue());
@@ -163,6 +170,37 @@ public class FootWalker extends Module {
             if (preRotate.getValue())
                 mc.player.connection.sendPacket(new CPacketPlayer.Rotation(0, 90, true));
 
+            // If Free Y, lets get the y where we are going to get teleported
+            int y = Integer.MIN_VALUE;
+            if (rubberbandMode.getValue().equals("Free Y")) {
+                boolean bottom = BlockUtil.getBlock(mc.player.posX, mc.player.posY - minY.getValue(), mc.player.posZ) instanceof BlockAir;
+                for(int i = minY.getValue() - 1; i > -1; i--) {
+                    boolean air = BlockUtil.getBlock(mc.player.posX, mc.player.posY - i, mc.player.posZ) instanceof BlockAir;
+                    if (mc.player.posY - i < yStart.getValue())
+                        continue;
+                    if (bottom && air) {
+                        y = -i;
+                        break;
+                    }
+                    else bottom = air;
+                }
+
+                if (y == Integer.MIN_VALUE) {
+                    bottom = BlockUtil.getBlock(mc.player.posX, mc.player.posY + maxStartY.getValue(), mc.player.posZ) instanceof BlockAir;
+                    for(int i = maxStartY.getValue() + 1; i < maxFinishY.getValue(); i++) {
+                        boolean air = BlockUtil.getBlock(mc.player.posX, mc.player.posY + y, mc.player.posZ) instanceof BlockAir;
+                        if (bottom && air) {
+                            y = i;
+                            break;
+                        }
+                        else bottom = air;
+                    }
+                    if (y == Integer.MIN_VALUE)
+                        return;
+                }
+
+            }
+
             // Get pos
             double posX = mc.player.posX,
                     posZ = mc.player.posZ;
@@ -222,6 +260,9 @@ public class FootWalker extends Module {
                     break;
                 case "Add Y":
                     newY = mc.player.posY + addY.getValue();
+                    break;
+                case "Free Y":
+                    newY = mc.player.posY + y;
                     break;
             }
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY, posZ, true));
