@@ -29,7 +29,7 @@ public class ElytraFlight extends Module {
     ModeSetting upMode = registerMode("UpMode", Arrays.asList("jump", "look", "none"), "jump");
     DoubleSetting speed = registerDouble("speed", 1, 0, 25);
     DoubleSetting ySpeed = registerDouble("ySpeed", 1,0,100);
-    //IntegerSetting upLook = registerInteger("upBoostDelay", 35, 0, 250);
+    IntegerSetting upLook = registerInteger("upBoostDelay", 35, 0, 250);
 
     Timer upTimer = new Timer();
 
@@ -50,13 +50,7 @@ public class ElytraFlight extends Module {
 
         if (doFlight) { // if should elytrafly
 
-            mc.player.setVelocity(0,0,0);
 
-            MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() * speed.getValue()); // fly
-
-            PlayerPacket packet;
-            packet = new PlayerPacket(this, new Vec2f(0, 0)); // to set pitch to 0 (yaw matters not at all and will make us bypass on servers)
-            PlayerPacketManager.INSTANCE.addPacket(packet);
 
             if (mc.gameSettings.keyBindJump.isKeyDown() && upMode.getValue() == "jump") {
 
@@ -70,7 +64,27 @@ public class ElytraFlight extends Module {
 
                 doY = false;
 
-            }else {
+            } else if (upTimer.getTimePassed() >= (upLook.getValue() * 50) && mc.player.cameraPitch < 0 && upMode.getValue() == "look") {
+
+                upTimer.reset();
+
+                doY = false;
+
+            } else if (upMode.getValue() == "none"){
+
+
+
+            }
+
+            else {
+
+                mc.player.setVelocity(0,0,0);
+
+                MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() * speed.getValue()); // fly
+
+                PlayerPacket packet;
+                packet = new PlayerPacket(this, new Vec2f(0, 0)); // to set pitch to 0 (yaw matters not at all and will make us bypass on servers)
+                PlayerPacketManager.INSTANCE.addPacket(packet);
 
                 doY = true;
 
