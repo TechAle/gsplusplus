@@ -11,6 +11,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.combat.AntiCrystal;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
@@ -155,7 +156,7 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-        if (noFall.getValue() && event.getPacket() instanceof CPacketPlayer && mc.player.fallDistance >= 3.0) {
+        if (noFall.getValue() && event.getPacket() instanceof CPacketPlayer && mc.player.fallDistance >= 3.0 && !(mc.player.isElytraFlying() && ModuleManager.isModuleEnabled("ElytraFlight"))) {
             CPacketPlayer packet = (CPacketPlayer) event.getPacket();
             packet.onGround = true;
         }
