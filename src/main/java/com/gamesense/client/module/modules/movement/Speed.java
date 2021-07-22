@@ -28,7 +28,6 @@ public class Speed extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "Fake", "YPort"), "Strafe");
     DoubleSetting yPortSpeed = registerDouble("Y Port Speed", 0.06, 0.01, 0.15);
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
-    DoubleSetting timerVal = registerDouble("Timer Speed", 1.15, 1, 1.5);
 
     private boolean slowDown;
     private double playerSpeed;
@@ -40,7 +39,6 @@ public class Speed extends Module {
 
     public void onDisable() {
         timer.reset();
-        EntityUtil.resetTimer();
     }
 
     public void onUpdate() {
@@ -63,12 +61,10 @@ public class Speed extends Module {
         }
 
         if (mc.player.onGround) {
-            EntityUtil.setTimer(1.15f);
             mc.player.jump();
             MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() + yPortSpeed.getValue());
         } else {
             mc.player.motionY = -1;
-            EntityUtil.resetTimer();
         }
     }
 
@@ -83,7 +79,6 @@ public class Speed extends Module {
             double speedY = jumpHeight.getValue();
 
             if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(300)) {
-                EntityUtil.setTimer(timerVal.getValue().floatValue());
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
                     speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
                 }
@@ -93,7 +88,6 @@ public class Speed extends Module {
                 slowDown = true;
                 timer.reset();
             } else {
-                EntityUtil.resetTimer();
                 if (slowDown || mc.player.collidedHorizontally) {
                     playerSpeed -= (EntityUtil.isColliding(0, -0.8, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid()) ? 0.4 : 0.7 * (playerSpeed = MotionUtil.getBaseMoveSpeed());
                     slowDown = false;
