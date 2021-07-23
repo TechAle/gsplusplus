@@ -13,6 +13,7 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -36,6 +37,7 @@ public class AutoWeb extends Module {
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Web", true);
     BooleanSetting disableOnCa = registerBoolean("Disable on CA", true);
+    BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
@@ -61,7 +63,10 @@ public class AutoWeb extends Module {
         if (outOfTargetBlock) setDisabledMessage("No web detected... AutoWeb turned OFF!");
 
         if (oldSlot != mc.player.inventory.currentItem && oldSlot != -1) {
-            mc.player.inventory.currentItem = oldSlot;
+            if (silentSwitch.getValue())
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            else
+                mc.player.inventory.currentItem = oldSlot;
             oldSlot = -1;
         }
 
@@ -171,7 +176,10 @@ public class AutoWeb extends Module {
         }
 
         if (mc.player.inventory.currentItem != targetBlockSlot) {
-            mc.player.inventory.currentItem = targetBlockSlot;
+            if (silentSwitch.getValue())
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+            else
+                mc.player.inventory.currentItem = targetBlockSlot;
         }
 
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), true);
