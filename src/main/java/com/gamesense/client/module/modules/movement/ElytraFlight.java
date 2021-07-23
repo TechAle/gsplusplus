@@ -21,6 +21,7 @@ public class ElytraFlight extends Module {
     ModeSetting mode = registerMode("mode", Arrays.asList("control", "creative", "boost"), "creative");
     BooleanSetting strict = registerBoolean("strict", false, () -> mode.getValue().equals("boost"));
     ModeSetting upMode = registerMode("UpMode", Arrays.asList("jump", "look", "none"), "jump");
+    ModeSetting lookMode = registerMode("lookMode", Arrays.asList("client", "user"), "client", () -> upMode.getValue().equals("look"));
     DoubleSetting yawStep = registerDouble("yawStep", 1.5, 0, 10);
     DoubleSetting speed = registerDouble("speed", 1, 0, 25);
     DoubleSetting ySpeed = registerDouble("ySpeed", 1, 0, 5);
@@ -29,50 +30,32 @@ public class ElytraFlight extends Module {
 
     boolean doFlight;
 
+    boolean returnViewAngle;
+
+    boolean doStuck;
+
+    boolean doGetPitch;
+
+    float oldPitch;
+
     double pitchToSetTo = 0;
 
     boolean doPitch;
 
     boolean doY;
 
-    double playerSpeed;
-
     @Override
     public void onUpdate() {
 
-        double xDiff = mc.player.posX - mc.player.prevPosX;
-        double zDiff = mc.player.posZ - mc.player.prevPosZ;
-        double tps = 1000.0 / mc.timer.tickLength;
-
-        playerSpeed = Math.hypot(xDiff, zDiff) * tps;
-
         if (mc.player.isElytraFlying()) {
-
-            doFlight = true; // do elytrafly
+            doFlight = true;
             mc.timer.tickLength = 50;
-
-        } else if (!mc.player.isElytraFlying() && mc.gameSettings.keyBindJump.isKeyDown()) {
-
-            if (mc.player.onGround) {
-
-                mc.player.jump();
-                doFlight = false;
-
-            } else {
-
-                mc.timer.tickLength = 500;
-
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
-
-                doFlight = false;
-
-            }
         } else {
-
-            mc.timer.tickLength = 50;
+            if(mc.player.onGround){mc.player.jump();}
+            mc.timer.tickLength = 300f;
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
         }
-
 
         if (doFlight) { // if should elytrafly
 
@@ -87,7 +70,7 @@ public class ElytraFlight extends Module {
 
                         doControl();
 
-                    } else if (mc.gameSettings.keyBindSneak.isKeyDown() && upMode.getValue().equals("jump")) {
+                    } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
                         mc.player.motionY = -ySpeed.getValue();
 
@@ -95,17 +78,40 @@ public class ElytraFlight extends Module {
 
                         doControl();
 
-                    } else if (mc.gameSettings.keyBindJump.isKeyDown() && upMode.getValue().equals("look") && mc.gameSettings.keyBindForward.isKeyDown()) {
+                    } else if (upMode.getValue().equals("look")
+                            &&
+                            mc.gameSettings.keyBindJump.isKeyDown() && mc.gameSettings.keyBindForward.isKeyDown()) {
 
-                        doLookBoost();
+                        doLookBoost(lookMode.getValue());
+
+                        if (doGetPitch) {
+
+                            oldPitch = mc.player.rotationPitch;
+                            doGetPitch = false;
+
+                        }
+
+                        returnViewAngle = true;
 
                     } else if (upMode.getValue().equals("none")) {
 
                         doControl();
 
-                    } else if (!(mc.gameSettings.keyBindJump.isKeyDown())) {
+                    } else {
 
                         pitchToSetTo = 0;
+
+                        if (returnViewAngle) {
+
+                            mc.player.rotationPitch = oldPitch;
+
+                            returnViewAngle = false;
+
+                            doGetPitch = true;
+
+                            doY = true;
+
+                        }
 
                         doControl();
 
@@ -114,7 +120,7 @@ public class ElytraFlight extends Module {
                     break;
                 case "creative":
 
-                    if ((mc.player.ticksExisted % upLook.getValue() == 0 && upMode.getValue().equals("look") || upMode.getValue() == "none" || upMode.getValue() == "jump")) {
+                    if ((mc.player.ticksExisted % upLook.getValue() == 0 && upMode.getValue().equals("look") || upMode.getValue().equals("none") || upMode.getValue().equals("jump"))) {
 
                         doCreative();
 
@@ -134,6 +140,7 @@ public class ElytraFlight extends Module {
 
         mc.player.capabilities.isFlying = false;
         mc.timer.tickLength = 50;
+        doFlight = false;
 
     }
 
@@ -143,23 +150,41 @@ public class ElytraFlight extends Module {
         if (doFlight && doY && mode.getValue().equals("control")) { // if should be elytraflying
 
             Double velY = 0d;
-            event.setY(velY); // dont go down
+            event.setY(velY); // don't go down
 
         }
+
+        if (doStuck) { // dont float about at 14 km/h or so if idle
+
+            Double velX = 0d;
+            Double velZ = 0d;
+
+            event.setX(velX);
+            event.setZ(velZ);
+
+        }
+
     });
 
+    // Skiddable flight modes
+
     public void doControl() {
+        // if no keys are down
+        if (!MotionUtil.isMoving(mc.player)) {
+
+            doStuck = true;
+
+        } else {
+            doStuck = false;
+        }
 
         mc.player.setVelocity(0, 0, 0);
 
-        mc.player.motionX = 0;
-        mc.player.motionZ = 0;
+
 
         mc.player.capabilities.isFlying = false;
 
         MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() * speed.getValue()); // fly
-
-        doY = true;
 
     }
 
@@ -183,7 +208,7 @@ public class ElytraFlight extends Module {
         }
     }
 
-    public void doLookBoost() {
+    public void doLookBoost(String kind) {
 
         pitchToSetTo += -yawStep.getValue();
 
@@ -191,17 +216,18 @@ public class ElytraFlight extends Module {
 
         doPitch = true;
 
+        if (kind == "client") {
+            mc.player.rotationPitch = ((float) pitchToSetTo);
+        } else if (kind == "user" && mc.player.rotationPitch > 0) {
+            mc.player.rotationPitch = 0;
+        }
+
         if (!(pitchToSetTo > -91 && pitchToSetTo < -1)) {
 
             pitchToSetTo = 0;
             doPitch = false;
             doControl();
             doY = true;
-
-        } else {
-
-            doY = false;
-
         }
     }
 }
