@@ -641,6 +641,7 @@ public class AutoCrystalRewrite extends Module {
             if ((temp = crystalSecond.countCrystals()) > 0) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: " + temp);
+                    place = true;
                 } else t.append(" c/s: " + temp);
             }
 
