@@ -1,11 +1,13 @@
 package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
@@ -128,7 +130,7 @@ public class FakePlayer extends Module {
         }
 
         boolean update() {
-            return ++tick == tickEnd;
+            return ++tick >= tickEnd;
         }
 
     }
@@ -168,7 +170,7 @@ public class FakePlayer extends Module {
                                             entityPlayer.setHealth(resetHealth.getValue());
                                             mc.effectRenderer.emitParticleAtEntity(entityPlayer, EnumParticleTypes.TOTEM, 30);
                                             mc.world.playSound(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, SoundEvents.ITEM_TOTEM_USE, entity.getSoundCategory(), 1.0F, 1.0F, false);
-                                            PistonCrystal.printDebug(String.format("FakePlayer %s popped", entityPlayer.getName()), false);
+                                            GameSense.EVENT_BUS.post(new TotemPopEvent(entityPlayer));
                                         // Else, setHealth
                                         } else entityPlayer.setHealth(entityPlayer.getHealth() - damage);
 
