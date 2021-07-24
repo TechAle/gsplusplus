@@ -21,7 +21,7 @@ import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.api.util.world.combat.ac.CrystalInfo;
 import com.gamesense.api.util.world.combat.ac.PlayerInfo;
-import com.gamesense.api.util.world.combat.ac.PositionInfo;
+import com.gamesense.api.util.world.combat.ac.PositionInfoPlace;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -595,7 +595,7 @@ public class AutoCrystalRewrite extends Module {
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
     CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
-    CrystalInfo.BreakInfo bestBreak = new CrystalInfo.BreakInfo(-100, null, null);
+    CrystalInfo.NewBreakInfo bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
 
     //endregion
 
@@ -723,7 +723,7 @@ public class AutoCrystalRewrite extends Module {
         int placeTimeout = this.placeTimeout.getValue();
         // Prepare for after
         PlayerInfo player;
-        List<List<PositionInfo>> possibleCrystals;
+        List<List<PositionInfoPlace>> possibleCrystals;
         PlayerInfo target;
         // Our result
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
@@ -864,7 +864,7 @@ public class AutoCrystalRewrite extends Module {
 
     // Function that call every thread for the calculating of the crystals
     // + return the best place
-    void calcualteBestPlace(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
+    void calcualteBestPlace(int nThread, List<List<PositionInfoPlace>> possibleCrystals, double posX, double posY, double posZ,
                             PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
                             int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
@@ -873,7 +873,7 @@ public class AutoCrystalRewrite extends Module {
         for (int i = 0; i < nThread; i++) {
             int finalI = i;
             // Add them
-            futures.add(executor.submit(() -> calculateBestPositionTarget(possibleCrystals.get(finalI), posX, posY, posZ,
+            futures.add(executor.submit(() -> calculateBestPlaceTarget(possibleCrystals.get(finalI), posX, posY, posZ,
                     target, minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget)));
         }
         // Get stack for then collecting the results
@@ -894,11 +894,11 @@ public class AutoCrystalRewrite extends Module {
         // Get best result
         results.add(bestPlace);
         if (results.size() != 1)
-            bestPlace = getResult(results);
+            bestPlace = getResultPlace(results);
     }
 
     // This return the best crystal
-    CrystalInfo.PlaceInfo getResult(Stack<CrystalInfo.PlaceInfo> result) {
+    CrystalInfo.PlaceInfo getResultPlace(Stack<CrystalInfo.PlaceInfo> result) {
         // Init returnValue
         CrystalInfo.PlaceInfo returnValue = new CrystalInfo.PlaceInfo(0, null, null, 100);
         // Check the best of everything
@@ -921,9 +921,9 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This return a list of possible positions of the crystals
-    List<List<PositionInfo>> getPossibleCrystalsPlacing(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
+    List<List<PositionInfoPlace>> getPossibleCrystalsPlacing(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
         // Output
-        List<PositionInfo> damagePos = new ArrayList<>();
+        List<PositionInfoPlace> damagePos = new ArrayList<>();
         // Get crystals
         (includeCrystalMapping.getValue() ?
                 CrystalUtil.findCrystalBlocksExcludingCrystals(placeRange.getValue().floatValue(), newPlace.getValue())
@@ -942,7 +942,7 @@ public class AutoCrystalRewrite extends Module {
                         // If null, enter, if it's the same block, enter, if it's not raytrace and the distance is <, enter
                         if (result == null || sameBlockPos(result.getBlockPos(), crystal) || (!raytrace && mc.player.getDistanceSq(crystal) <= wallRangeSQ)) {
                             // Add to possible crystals
-                            damagePos.add(new PositionInfo(crystal, damage));
+                            damagePos.add(new PositionInfoPlace(crystal, damage));
                         }
                     }
 
@@ -953,10 +953,10 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This split the list of positions in multiple list. Is used for multithreading
-    List<List<PositionInfo>> splitList(List<PositionInfo> start, int nThreads) {
+    List<List<PositionInfoPlace>> splitList(List<PositionInfoPlace> start, int nThreads) {
         // If we have only 1  thread, return only 1 thing
         if (nThreads == 1)
-            return new ArrayList<List<PositionInfo>>() {
+            return new ArrayList<List<PositionInfoPlace>>() {
                 {
                     add(start);
                 }
@@ -966,7 +966,7 @@ public class AutoCrystalRewrite extends Module {
         if ((count = start.size()) == 0)
             return null;
         // Output
-        List<List<PositionInfo>> output = new ArrayList<>(nThreads);
+        List<List<PositionInfoPlace>> output = new ArrayList<>(nThreads);
         for (int i = 0; i < nThreads; i++) output.add(new ArrayList<>());
 
         // Add everything
@@ -980,12 +980,12 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This calculate the best crystal given a list of possible positions and the enemy
-    CrystalInfo.PlaceInfo calculateBestPositionTarget(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
-                                                      double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double maxSelfDamage,
-                                                      int maxYTarget, int minYTarget) {
+    CrystalInfo.PlaceInfo calculateBestPlaceTarget(List<PositionInfoPlace> possibleLocations, double x, double y, double z, PlayerInfo target,
+                                                   double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double maxSelfDamage,
+                                                   int maxYTarget, int minYTarget) {
         // Start calculating damage
-        PositionInfo best = new PositionInfo();
-        for (PositionInfo crystal : possibleLocations) {
+        PositionInfoPlace best = new PositionInfoPlace();
+        for (PositionInfoPlace crystal : possibleLocations) {
 
             // Calculate Y
             double temp;
@@ -1526,7 +1526,7 @@ public class AutoCrystalRewrite extends Module {
         List<List<CrystalInfo.BreakInfo>> possibleCrystals;
         PlayerInfo target;
         // Our result
-        bestBreak = new CrystalInfo.BreakInfo(-100, null, null);
+        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
 

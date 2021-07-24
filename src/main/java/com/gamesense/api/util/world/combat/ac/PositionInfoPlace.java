@@ -1,14 +1,8 @@
 package com.gamesense.api.util.world.combat.ac;
 
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
 
-public class PositionInfo {
+public class PositionInfoPlace {
 
     public final BlockPos pos;
     private final double selfDamage;
@@ -17,13 +11,13 @@ public class PositionInfo {
     public double distance;
     public double distancePlayer;
 
-    public PositionInfo(BlockPos pos, double selfDamage) {
+    public PositionInfoPlace(BlockPos pos, double selfDamage) {
         this.pos = pos;
         this.selfDamage = selfDamage;
     }
 
 
-    public PositionInfo() {
+    public PositionInfoPlace() {
         this.pos = null;
         this.selfDamage = 100;
         this.damage = 0;
