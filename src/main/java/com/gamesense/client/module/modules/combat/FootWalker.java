@@ -7,7 +7,6 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
-import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.block.BlockAir;
@@ -46,7 +45,8 @@ public class FootWalker extends Module {
     IntegerSetting yp = registerInteger("Y+", 128, 0, 200, () -> rubberbandMode.getValue().equals("+Y"));
     IntegerSetting minY = registerInteger("Min Y", 9, 0, 30,
             () -> rubberbandMode.getValue().equals("Free Y"));
-    IntegerSetting yStart = registerInteger("Min Y Start", -9, 0, -20);
+    IntegerSetting yStart = registerInteger("Min Y Start", -9, 0, -20,
+            () -> rubberbandMode.getValue().equals("Free Y"));
     IntegerSetting maxStartY = registerInteger("Max Start Y", 8, 5, 20,
             () -> rubberbandMode.getValue().equals("Free Y"));
     IntegerSetting maxFinishY = registerInteger("Max Finish Y", 15, 10, 40,
@@ -62,6 +62,7 @@ public class FootWalker extends Module {
             () -> phaseRubberband.getValue().equals("AddY") && phase.getValue());
     BooleanSetting scaffold = registerBoolean("Scaffold", false);
     BooleanSetting shiftJump = registerBoolean("Shift Jump", false);
+    BooleanSetting safeMode = registerBoolean("Safe Mode", false);
 
 
     public void onEnable() {
@@ -104,13 +105,17 @@ public class FootWalker extends Module {
             }
         }
 
+        if (center) {
+            PlayerUtil.centerPlayer(BlockUtil.getCenterOfBlock(mc.player.posX, mc.player.posY, mc.player.posZ));
+            center = false;
+        }
+
     }
 
     public void onDisable() {
         if (materials)
             setDisabledMessage("No materials found... FootConcrete disabled");
     }
-
 
     void instaBurrow(boolean disactive) {
 
@@ -135,10 +140,9 @@ public class FootWalker extends Module {
             }
 
             // Get if we are on a chest
-            boolean isEchest = BlockUtil.getBlock(EntityUtil.getPosition(mc.player)) == Blocks.ENDER_CHEST;
 
             // Get our posY (this is for eChest position)
-            double posY = mc.player.posY % 1 > .2 ? Math.round(mc.player.posY) : mc.player.posY;
+            double posY = mc.player.posY % 1 >= .5 ? Math.round(mc.player.posY) : mc.player.posY;
 
             // Create a new pos of us
             BlockPos pos = new BlockPos(mc.player.posX, posY, mc.player.posZ);
@@ -205,8 +209,20 @@ public class FootWalker extends Module {
             double posX = mc.player.posX,
                     posZ = mc.player.posZ;
             Vec3d newPos = BlockUtil.getCenterOfBlock(posX, mc.player.posY, posZ);
-            if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty()) {
-                if (mc.player.getDistanceSq(newPos.x, mc.player.posY, newPos.z) > .2) {
+            // Get slot of now
+            int oldSlot = mc.player.inventory.currentItem;
+            if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty() || safeMode.getValue()) {
+                double distance;
+                if (( distance = mc.player.getDistanceSq(newPos.x, mc.player.posY, newPos.z)) > .1) {
+
+                    if (scaf) {
+
+                        if (slotBlock != oldSlot)
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+
+                        placeBlockPacket(null, pos.add(0, -1, 0));
+                    }
+
                     finishOnGround = true;
                     mc.player.motionX = 0;
                     mc.player.motionZ = 0;
@@ -214,6 +230,27 @@ public class FootWalker extends Module {
                             newZ = posZ + (newPos.z - posZ) / 2;
                     mc.player.connection.sendPacket(new CPacketPlayer.Position(newX, mc.player.posY, newZ, true));
                     mc.player.setPosition(newX, mc.player.posY, newZ);
+
+                    if (slotBlock != oldSlot)
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+
+                    return;
+                } else if (safeMode.getValue() && distance > 0.05) {
+
+                    if (scaf) {
+
+                        if (slotBlock != oldSlot)
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+
+                        placeBlockPacket(null, pos.add(0, -1, 0));
+                    }
+
+
+                    center = true;
+
+                    if (slotBlock != oldSlot)
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+
                     return;
                 }
             }
@@ -229,9 +266,6 @@ public class FootWalker extends Module {
                 isSneaking = true;
             }
 
-            // Get slot of now
-            int oldSlot = mc.player.inventory.currentItem;
-
             // If it's different from what we have now
             if (slotBlock != oldSlot)
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
@@ -244,7 +278,7 @@ public class FootWalker extends Module {
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.01, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16 + (isEchest ? .1 : 0), posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16, posZ, true));
 
             // Start placing
             placeBlockPacket(EnumFacing.DOWN, pos);
@@ -259,10 +293,10 @@ public class FootWalker extends Module {
                     newY = ym.getValue();
                     break;
                 case "Add Y":
-                    newY = mc.player.posY + addY.getValue();
+                    newY = posY+ addY.getValue();
                     break;
                 case "Free Y":
-                    newY = mc.player.posY + y;
+                    newY = posY + y;
                     break;
             }
             mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY, posZ, true));

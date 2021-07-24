@@ -26,6 +26,7 @@ import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
@@ -33,6 +34,7 @@ import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -318,6 +320,15 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting debugPredict = registerBoolean("Debug Predict", false, () -> debugMenu.getValue());
     BooleanSetting showPredictions = registerBoolean("Show Predictions", false, () -> debugMenu.getValue() && debugPredict.getValue());
     //endregion
+
+    //region HudDisplay
+
+    BooleanSetting hudDisplayShow = registerBoolean("Hud Display Section", false);
+    BooleanSetting showPlaceName = registerBoolean("Show Place Name", false, () -> hudDisplayShow.getValue());
+    BooleanSetting showPlaceDamage = registerBoolean("Show Place Damage", false, () -> hudDisplayShow.getValue());
+    BooleanSetting showPlaceCrystalsSecond = registerBoolean("Show c/s place", false, () -> hudDisplayShow.getValue());
+
+    //endregion
     //endregion
 
     //region Global variables
@@ -386,10 +397,13 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // If exists, remove crystal at x y z
-        void removeCrystal(Double x, Double y, Double z) {
-            int i = CrystalExists(new BlockPos(x - .5, y - .5, z - .5));
-            if (i != -1)
+        boolean removeCrystal(Double x, Double y, Double z) {
+            int i = CrystalExists(new BlockPos(x, y, z));
+            if (i != -1) {
                 listWait.remove(i);
+                return true;
+            }
+            return false;
         }
 
         // Return the index of the crystal in the array. -1 if it doesnt exists
@@ -408,6 +422,10 @@ public class AutoCrystalRewrite extends Module {
                     i--;
                 }
             }
+        }
+
+        int countCrystals() {
+            return listWait.size();
         }
 
     }
@@ -450,7 +468,6 @@ public class AutoCrystalRewrite extends Module {
             // This should never be reached
             return true;
         }
-
 
     }
 
@@ -517,6 +534,8 @@ public class AutoCrystalRewrite extends Module {
     Vec3d lastHitVec;
 
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
+    crystalPlaceWait listCrystalsSecondWait = new crystalPlaceWait();
+    crystalPlaceWait crystalSecond = new crystalPlaceWait();
     crystalTime crystalPlace = null;
 
 
@@ -598,9 +617,40 @@ public class AutoCrystalRewrite extends Module {
 
     // Display in the hud
     public String getHudInfo() {
-        String t = "";
+        StringBuilder t = new StringBuilder();
+        boolean place = false;
 
-        return t;
+        if (bestPlace.target != null) {
+            if (showPlaceName.getValue()) {
+                t.append(ChatFormatting.GRAY + "["+ChatFormatting.WHITE+"Place Name: " + bestPlace.target.entity.getName());
+                place = true;
+            }
+
+            if (showPlaceDamage.getValue()) {
+                if (!place) {
+                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE+"Place Damage: " + (int) bestPlace.damage);
+                    place = true;
+                } else t.append(" Damage: " + (int) bestPlace.damage);
+            }
+
+        }
+
+
+        if (showPlaceCrystalsSecond.getValue()) {
+            int temp;
+            if ((temp = crystalSecond.countCrystals()) > 0) {
+                if (!place) {
+                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: " + temp);
+                    place = true;
+                } else t.append(" c/s: " + temp);
+            }
+
+        }
+
+        if (place)
+            t.append(ChatFormatting.GRAY + "]");
+
+        return t.toString();
     }
 
     //endregion
@@ -650,7 +700,9 @@ public class AutoCrystalRewrite extends Module {
                     webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
                 }
 
-                player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
+                player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false,
+                        mc.player.getTotalArmorValue(),
+                        (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
                 // Show self predict
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
@@ -664,7 +716,9 @@ public class AutoCrystalRewrite extends Module {
                     return;
 
                 // Get target info
-                target = new PlayerInfo(targetEP, armourPercent);
+                target = new PlayerInfo(targetEP, armourPercent,
+                        targetEP.getTotalArmorValue(),
+                        (float) targetEP.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
                 // Calcualte best cr
                 calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
@@ -719,8 +773,11 @@ public class AutoCrystalRewrite extends Module {
 
                 }
 
-
-                player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false);
+                player = new PlayerInfo( predictSelfPlace.getValue() ?
+                        PredictUtil.predictPlayer(mc.player, settings)
+                        : mc.player, false,
+                        mc.player.getTotalArmorValue(),
+                        (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
                 if (predictSelfPlace.getValue() && showSelfPredict.getValue())
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelf.getColor(), widthPredict.getValue()));
@@ -742,7 +799,9 @@ public class AutoCrystalRewrite extends Module {
                         break;
 
                     // Get target
-                    target = new PlayerInfo(playerTemp, armourPercent);
+                    target = new PlayerInfo(playerTemp, armourPercent,
+                            playerTemp.getTotalArmorValue(),
+                            (float) playerTemp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
                     // Calculate
                     calcualteBest(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                             minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
@@ -948,6 +1007,8 @@ public class AutoCrystalRewrite extends Module {
 
         // Update every crystals timers
         listCrystalsPlaced.updateCrystals();
+        listCrystalsSecondWait.updateCrystals();
+        crystalSecond.updateCrystals();
 
         for(int i = 0; i < packetsBlocks.size(); i++) {
             if (!packetsBlocks.get(i).update()) {
@@ -1335,6 +1396,9 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
+        if (showPlaceCrystalsSecond.getValue())
+            listCrystalsSecondWait.addCrystal(pos, 2000);
+
         // For continuing facing the crystal
         if (crystalPlace == null)
             // Focus switch
@@ -1569,8 +1633,11 @@ public class AutoCrystalRewrite extends Module {
                 for(Entity pl : players) {
                     // Remove us and remove players above
                     if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                        EntityPlayer temp;
                         // If we found 1, we are fine
-                        info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                        info = new PlayerInfo( (temp = (EntityPlayer) pl), armourPercent,
+                                temp.getTotalArmorValue(),
+                                (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
                         break;
                     }
                 }
@@ -1662,8 +1729,11 @@ public class AutoCrystalRewrite extends Module {
             for(Entity pl : players) {
                 // If it's not us and if it's not above
                 if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                    EntityPlayer temp;
                     // Add
-                    info = new PlayerInfo((EntityPlayer) pl, armourPercent);
+                    info = new PlayerInfo( (temp = (EntityPlayer) pl), armourPercent,
+                            temp.getTotalArmorValue(),
+                            (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
                     break;
                 }
             }
@@ -1932,16 +2002,25 @@ public class AutoCrystalRewrite extends Module {
             SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
             // Idk why 51
             if (SpawnObject.getType() == 51 ) {
+                double[] positions = {
+                        SpawnObject.getX() - .5D,
+                        SpawnObject.getY() - .5D,
+                        SpawnObject.getZ() - .5D
+                };
                 // If limitPacketPlace, remove the crystal
                 if (!limitPacketPlace.getValue().equals("None"))
-                    listCrystalsPlaced.removeCrystal(SpawnObject.getX(), SpawnObject.getY(), SpawnObject.getZ());
+                    listCrystalsPlaced.removeCrystal(positions[0], positions[1], positions[2]);
                 // If crystalPlace is not null
                 if (crystalPlace != null)
                     // Check if it's it
-                    if (sameBlockPos(new BlockPos(SpawnObject.getX() - .5, SpawnObject.getY() - .5D, SpawnObject.getZ() - .5), crystalPlace.posCrystal)) {
+                    if (sameBlockPos(new BlockPos(positions[0], positions[1], positions[2]), crystalPlace.posCrystal)) {
                         // If yes, remove it
                         crystalPlace = null;
                     }
+
+                if (showPlaceCrystalsSecond.getValue())
+                    if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
+                        crystalSecond.addCrystal(null, 1000);
             }
         }
 
@@ -1949,4 +2028,5 @@ public class AutoCrystalRewrite extends Module {
     });
 
     //endregion
+
 }
