@@ -23,6 +23,17 @@ public class CrystalInfo {
         }
     }
 
+    public static class NewBreakInfo extends CrystalInfo {
+        public final EntityEnderCrystal crystal;
+        public final double distance;
+
+        public NewBreakInfo(float damage, PlayerInfo target, EntityEnderCrystal crystal, double distance) {
+            super(damage, target);
+            this.crystal = crystal;
+            this.distance = distance;
+        }
+    }
+
     public static class PlaceInfo extends CrystalInfo {
         public final BlockPos crystal;
         public final double distance;
