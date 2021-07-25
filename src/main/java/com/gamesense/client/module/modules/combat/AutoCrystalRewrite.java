@@ -125,7 +125,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting breakSection = registerBoolean("Break Section", false);
     ModeSetting breakType = registerMode("Break Type", Arrays.asList("Own", "All", "Smart"), "Smart",
             () -> breakSection.getValue());
-    DoubleSetting minDamageBreak = registerDouble("Min Damage Break", 5, 0, 30, () -> place.getValue());
+    DoubleSetting minDamageBreak = registerDouble("Min Damage Break", 5, 0, 30, () -> breakSection.getValue());
     DoubleSetting maxSelfDamageBreak = registerDouble("Max Self Damage Break", 12, 0, 30,
             () -> breakSection.getValue() && breakType.getValue().equals("Smart"));
     DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8,
@@ -134,110 +134,213 @@ public class AutoCrystalRewrite extends Module {
 
     //region Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
-    ModeSetting type = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+    ModeSetting typePlace = registerMode("Render Place", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
 
-    //region outline custom
+    //region outline custom place
     // Custom outline
-    BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom", false,
-            () ->  (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue());
-    IntegerSetting outlineWidth = registerInteger("Outline Width", 1, 1, 5,
-            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && misc.getValue() && OutLineSection.getValue());
+    BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom pl", false,
+            () ->  (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && misc.getValue());
+    IntegerSetting outlineWidth = registerInteger("Outline Width pl", 1, 1, 5,
+            () -> (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && misc.getValue() && OutLineSection.getValue());
     // Bottom
-    ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot", Arrays.asList("1", "2", "4"), "4",
-            () -> (type.getValue().equals("Outline") || type.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
-    ModeSetting direction2OutLineBot = registerMode("Direction Outline Bot", Arrays.asList("X", "Z"), "X",
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot pl", Arrays.asList("1", "2", "4"), "4",
+            () -> (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineBot = registerMode("Direction Outline Bot pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineBot.getValue().equals("2"));
-    ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot", new GSColor(255, 16, 19, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot pl", new GSColor(255, 16, 19, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
             , true);
-    ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot", new GSColor(0, 0, 255, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot pl", new GSColor(0, 0, 255, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && (NVerticesOutlineBot.getValue().equals("2") || NVerticesOutlineBot.getValue().equals("4")), true);
-    ColorSetting thirdVerticeOutlineBot = registerColor("3 Vert Out Bot", new GSColor(0, 255, 128, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting thirdVerticeOutlineBot = registerColor("3 Vert Out Bot pl", new GSColor(0, 255, 128, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && NVerticesOutlineBot.getValue().equals("4"), true);
-    ColorSetting fourVerticeOutlineBot = registerColor("4 Vert Out Bot", new GSColor(255, 255, 2, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting fourVerticeOutlineBot = registerColor("4 Vert Out Bot pl", new GSColor(255, 255, 2, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && NVerticesOutlineBot.getValue().equals("4"), true);
     // Top
-    ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top", Arrays.asList("1", "2", "4"), "4",
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top pl", Arrays.asList("1", "2", "4"), "4",
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue()));
-    ModeSetting direction2OutLineTop = registerMode("Direction Outline Top", Arrays.asList("X", "Z"), "X",
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ModeSetting direction2OutLineTop = registerMode("Direction Outline Top pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineTop.getValue().equals("2"));
-    ColorSetting firstVerticeOutlineTop = registerColor("1 Vert Out Top", new GSColor(255, 16, 19, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting firstVerticeOutlineTop = registerColor("1 Vert Out Top pl", new GSColor(255, 16, 19, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue()), true);
-    ColorSetting secondVerticeOutlineTop = registerColor("2 Vert Out Top", new GSColor(0, 0, 255, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting secondVerticeOutlineTop = registerColor("2 Vert Out Top pl", new GSColor(0, 0, 255, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && (NVerticesOutlineTop.getValue().equals("2") || NVerticesOutlineTop.getValue().equals("4")), true);
-    ColorSetting thirdVerticeOutlineTop = registerColor("3 Vert Out Top", new GSColor(0, 255, 128, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting thirdVerticeOutlineTop = registerColor("3 Vert Out Top pl", new GSColor(0, 255, 128, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && NVerticesOutlineTop.getValue().equals("4"), true);
-    ColorSetting fourVerticeOutlineTop = registerColor("4 Vert Out Top", new GSColor(255, 255, 2, 50),
-            () ->   (type.getValue().equals("Outline") || type.getValue().equals("Both")) &&
+    ColorSetting fourVerticeOutlineTop = registerColor("4 Vert Out Top pl", new GSColor(255, 255, 2, 50),
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue())
                     && NVerticesOutlineTop.getValue().equals("4"), true);
     //endregion
-    // region fill custom
-    BooleanSetting FillSection = registerBoolean("Fill Section Custom", false,
-            () ->  (type.getValue().equals("Fill") || type.getValue().equals("Both")) && misc.getValue());
+    // region fill custom place
+    BooleanSetting FillSection = registerBoolean("Fill Section Custom pl", false,
+            () ->  (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) && misc.getValue());
     // Bottom
-    ModeSetting NVerticesFillBot = registerMode("N^ Vertices Fill Bot", Arrays.asList("1", "2", "4"), "4",
-            () -> (type.getValue().equals("Fill") || type.getValue().equals("Both")) && FillSection.getValue());
-    ModeSetting direction2FillBot = registerMode("Direction Fill Bot", Arrays.asList("X", "Z"), "X",
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ModeSetting NVerticesFillBot = registerMode("N^ Vertices Fill Bot pl", Arrays.asList("1", "2", "4"), "4",
+            () -> (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) && FillSection.getValue());
+    ModeSetting direction2FillBot = registerMode("Direction Fill Bot pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue() && NVerticesFillBot.getValue().equals("2"));
-    ColorSetting firstVerticeFillBot = registerColor("1 Vert Fill Bot", new GSColor(255, 16, 19, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting firstVerticeFillBot = registerColor("1 Vert Fill Bot pl", new GSColor(255, 16, 19, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
             , true);
-    ColorSetting secondVerticeFillBot = registerColor("2 Vert Fill Bot", new GSColor(0, 0, 255, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting secondVerticeFillBot = registerColor("2 Vert Fill Bot pl", new GSColor(0, 0, 255, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && (NVerticesFillBot.getValue().equals("2") || NVerticesFillBot.getValue().equals("4")), true);
-    ColorSetting thirdVerticeFillBot = registerColor("3 Vert Fill Bot", new GSColor(0, 255, 128, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting thirdVerticeFillBot = registerColor("3 Vert Fill Bot pl", new GSColor(0, 255, 128, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && NVerticesFillBot.getValue().equals("4"), true);
-    ColorSetting fourVerticeFillBot = registerColor("4 Vert Fill Bot", new GSColor(255, 255, 2, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting fourVerticeFillBot = registerColor("4 Vert Fill Bot pl", new GSColor(255, 255, 2, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && NVerticesFillBot.getValue().equals("4"), true);
     // Top
-    ModeSetting NVerticesFillTop = registerMode("N^ Vertices Fill Top", Arrays.asList("1", "2", "4"), "4",
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ModeSetting NVerticesFillTop = registerMode("N^ Vertices Fill Top pl", Arrays.asList("1", "2", "4"), "4",
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue());
-    ModeSetting direction2FillTop = registerMode("Direction Fill Top", Arrays.asList("X", "Z"), "X",
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ModeSetting direction2FillTop = registerMode("Direction Fill Top pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue() && NVerticesFillTop.getValue().equals("2"));
-    ColorSetting firstVerticeFillTop = registerColor("1 Vert Fill Top", new GSColor(255, 16, 19, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting firstVerticeFillTop = registerColor("1 Vert Fill Top pl", new GSColor(255, 16, 19, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue(), true);
-    ColorSetting secondVerticeFillTop = registerColor("2 Vert Fill Top", new GSColor(0, 0, 255, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting secondVerticeFillTop = registerColor("2 Vert Fill Top pl", new GSColor(0, 0, 255, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && (NVerticesFillTop.getValue().equals("2") || NVerticesFillTop.getValue().equals("4")), true);
-    ColorSetting thirdVerticeFillTop = registerColor("3 Vert Fill Top", new GSColor(0, 255, 128, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting thirdVerticeFillTop = registerColor("3 Vert Fill Top pl", new GSColor(0, 255, 128, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && NVerticesFillTop.getValue().equals("4"), true);
-    ColorSetting fourVerticeFillTop = registerColor("4 Vert Fill Top", new GSColor(255, 255, 2, 50),
-            () ->   (type.getValue().equals("Fill") || type.getValue().equals("Both")) &&
+    ColorSetting fourVerticeFillTop = registerColor("4 Vert Fill Top pl", new GSColor(255, 255, 2, 50),
+            () ->   (typePlace.getValue().equals("Fill") || typePlace.getValue().equals("Both")) &&
                     FillSection.getValue()
                     && NVerticesFillTop.getValue().equals("4"), true);
+    //endregion
+
+    ModeSetting typeBreak = registerMode("Render Break", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+    //region outline custom place
+    // Custom outline
+    BooleanSetting OutLineSectionbr = registerBoolean("OutLine Section Custom br", false,
+            () ->  (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && misc.getValue());
+    IntegerSetting outlineWidthbr = registerInteger("Outline Width pl", 1, 1, 5,
+            () -> (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && misc.getValue() && OutLineSectionbr.getValue());
+    // Bottom
+    ModeSetting NVerticesOutlineBotbr = registerMode("N^ Vertices Outline Bot pl", Arrays.asList("1", "2", "4"), "4",
+            () -> (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && (OutLineSectionbr.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineBotbr = registerMode("Direction Outline Bot pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue()) && NVerticesOutlineBotbr.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineBotbr = registerColor("1 Vert Out Bot pl", new GSColor(255, 16, 19, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+            , true);
+    ColorSetting secondVerticeOutlineBotbr = registerColor("2 Vert Out Bot pl", new GSColor(0, 0, 255, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && (NVerticesOutlineBotbr.getValue().equals("2") || NVerticesOutlineBotbr.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineBotbr = registerColor("3 Vert Out Bot pl", new GSColor(0, 255, 128, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && NVerticesOutlineBotbr.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineBotbr = registerColor("4 Vert Out Bot pl", new GSColor(255, 255, 2, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && NVerticesOutlineBotbr.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesOutlineTopbr = registerMode("N^ Vertices Outline Top pl", Arrays.asList("1", "2", "4"), "4",
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue()));
+    ModeSetting direction2OutLineTopbr = registerMode("Direction Outline Top pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue()) && NVerticesOutlineTopbr.getValue().equals("2"));
+    ColorSetting firstVerticeOutlineTopbr = registerColor("1 Vert Out Top pl", new GSColor(255, 16, 19, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue()), true);
+    ColorSetting secondVerticeOutlineTopbr = registerColor("2 Vert Out Top pl", new GSColor(0, 0, 255, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && (NVerticesOutlineTopbr.getValue().equals("2") || NVerticesOutlineTopbr.getValue().equals("4")), true);
+    ColorSetting thirdVerticeOutlineTopbr = registerColor("3 Vert Out Top pl", new GSColor(0, 255, 128, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && NVerticesOutlineTopbr.getValue().equals("4"), true);
+    ColorSetting fourVerticeOutlineTopbr = registerColor("4 Vert Out Top pl", new GSColor(255, 255, 2, 50),
+            () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
+                    (OutLineSectionbr.getValue() && misc.getValue())
+                    && NVerticesOutlineTopbr.getValue().equals("4"), true);
+    //endregion
+    // region fill custom Break
+    BooleanSetting FillSectionbr = registerBoolean("Fill Section Custom pl", false,
+            () ->  (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) && misc.getValue());
+    // Bottom
+    ModeSetting NVerticesFillBotbr = registerMode("N^ Vertices Fill Bot pl", Arrays.asList("1", "2", "4"), "4",
+            () -> (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) && FillSectionbr.getValue());
+    ModeSetting direction2FillBotbr = registerMode("Direction Fill Bot pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue() && NVerticesFillBotbr.getValue().equals("2"));
+    ColorSetting firstVerticeFillBotbr = registerColor("1 Vert Fill Bot pl", new GSColor(255, 16, 19, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+            , true);
+    ColorSetting secondVerticeFillBotbr = registerColor("2 Vert Fill Bot pl", new GSColor(0, 0, 255, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && (NVerticesFillBotbr.getValue().equals("2") || NVerticesFillBotbr.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillBotbr = registerColor("3 Vert Fill Bot pl", new GSColor(0, 255, 128, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && NVerticesFillBotbr.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillBotbr = registerColor("4 Vert Fill Bot pl", new GSColor(255, 255, 2, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && NVerticesFillBot.getValue().equals("4"), true);
+    // Top
+    ModeSetting NVerticesFillTopbr = registerMode("N^ Vertices Fill Top pl", Arrays.asList("1", "2", "4"), "4",
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue());
+    ModeSetting direction2FillTopbr = registerMode("Direction Fill Top pl", Arrays.asList("X", "Z"), "X",
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue() && NVerticesFillTopbr.getValue().equals("2"));
+    ColorSetting firstVerticeFillTopbr = registerColor("1 Vert Fill Top pl", new GSColor(255, 16, 19, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue(), true);
+    ColorSetting secondVerticeFillTopbr = registerColor("2 Vert Fill Top pl", new GSColor(0, 0, 255, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && (NVerticesFillTopbr.getValue().equals("2") || NVerticesFillTopbr.getValue().equals("4")), true);
+    ColorSetting thirdVerticeFillTopbr = registerColor("3 Vert Fill Top pl", new GSColor(0, 255, 128, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && NVerticesFillTopbr.getValue().equals("4"), true);
+    ColorSetting fourVerticeFillTopbr = registerColor("4 Vert Fill Top pl", new GSColor(255, 255, 2, 50),
+            () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
+                    FillSectionbr.getValue()
+                    && NVerticesFillTopbr.getValue().equals("4"), true);
     //endregion
 
     BooleanSetting showText = registerBoolean("Show text", true, () -> misc.getValue());
     ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255),
+            () -> misc.getValue() && showText.getValue(), true);
+    ColorSetting colorBreakText = registerColor("Color Break Text", new GSColor(0, 255, 255),
             () -> misc.getValue() && showText.getValue(), true);
     BooleanSetting switchHotbar = registerBoolean("Switch Crystal", false, () -> misc.getValue());
     BooleanSetting switchBack = registerBoolean("Switch Back", false,
@@ -642,6 +745,13 @@ public class AutoCrystalRewrite extends Module {
         listCrystalsSecondWait.updateCrystals();
         crystalSecondPlace.updateCrystals();
         endCrystalPlaced.updateCrystals();
+        for(int i = 0; i < packetsBlocks.size(); i++) {
+            if (!packetsBlocks.get(i).update()) {
+                packetsBlocks.remove(i);
+                i--;
+            }
+
+        }
     }
 
     // Simple onUpdate
@@ -669,9 +779,13 @@ public class AutoCrystalRewrite extends Module {
                 break;
             case "Place":
                 placeCrystals();
+                if (bestBreak.crystal != null)
+                    bestBreak = new CrystalInfo.NewBreakInfo(0, null, null, 0);
                 break;
             case "Break":
                 breakCrystals();
+                if (bestPlace.crystal != null)
+                    bestPlace = new CrystalInfo.PlaceInfo(0, null, null, 0);
                 break;
         }
 
@@ -791,7 +905,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // Calcualte best cr
                 bestPlace = calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout, new CrystalInfo.PlaceInfo(0, null, null, 0));
 
                 break;
             case "Damage":
@@ -846,7 +960,7 @@ public class AutoCrystalRewrite extends Module {
                             (float) playerTemp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
                     // Calculate
                     bestPlace = calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout, bestPlace);
                 }
         }
 
@@ -859,8 +973,8 @@ public class AutoCrystalRewrite extends Module {
     // Function that call every thread for the calculating of the crystals
     // + return the best place
     CrystalInfo.PlaceInfo calcualteBestPlace(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
-                            PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
-                            int maxYTarget, int minYTarget, int placeTimeout) {
+                                             PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
+                                             int maxYTarget, int minYTarget, int placeTimeout, CrystalInfo.PlaceInfo old) {
         // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<>();
         // Iterate for every thread we have
@@ -887,7 +1001,7 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Get best result
-        //results.add(bestPlace); (why this BRUH)
+        results.add(old);
         if (results.size() != 1)
             return getResultPlace(results);
         return new CrystalInfo.PlaceInfo(0, null, null, 0);
@@ -1047,14 +1161,6 @@ public class AutoCrystalRewrite extends Module {
 
     // Main function for placing crystals
     void placeCrystals() {
-
-        for(int i = 0; i < packetsBlocks.size(); i++) {
-            if (!packetsBlocks.get(i).update()) {
-                packetsBlocks.remove(i);
-                i--;
-            }
-
-        }
 
         // If we have placed a crystal before
         if (placedCrystal) {
@@ -1503,33 +1609,6 @@ public class AutoCrystalRewrite extends Module {
 
     //region Calculate Break Crystal
 
-    void breakCrystals() {
-
-        // For debugging timeCalcPlacement
-        long inizio = 0;
-        if (timeCalcBreaking.getValue())
-            // Get time
-            inizio = System.currentTimeMillis();
-        // Get target
-        getTargetBreaking(targetBreaking.getValue());
-        // For debugging timeCalcPlacemetn
-        if (timeCalcBreaking.getValue()) {
-            // Get duration
-            long fine = System.currentTimeMillis();
-            durationsBreaking.add(fine - inizio);
-            // If we reached last
-            if (durationsPlace.size() > nCalc.getValue()) {
-                double sum = durationsBreaking.stream()
-                        .mapToDouble(a -> a)
-                        .sum();
-                sum /= nCalc.getValue();
-                durationsBreaking.clear();
-                PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
-            }
-        }
-
-    }
-
     CrystalInfo.NewBreakInfo getTargetBreaking(String mode) {
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
         int nThread = this.nThread.getValue();
@@ -1598,7 +1677,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // Calcualte best cr
                 calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout);
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout, new CrystalInfo.NewBreakInfo(0, null, null, 0));
 
 
                 break;
@@ -1655,8 +1734,8 @@ public class AutoCrystalRewrite extends Module {
                             (float) playerTemp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
                     // Calculate
-                    calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
-                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout);
+                    bestBreak = calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout, bestBreak);
 
                 }
 
@@ -1741,8 +1820,8 @@ public class AutoCrystalRewrite extends Module {
     // Function that call every thread for the calculating of the crystals
     // + return the best place
     CrystalInfo.NewBreakInfo calcualteBestBreak(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
-                            PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
-                            int maxYTarget, int minYTarget, int placeTimeout) {
+                                                PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
+                                                int maxYTarget, int minYTarget, int placeTimeout, CrystalInfo.NewBreakInfo oldBreak) {
         // For getting output of threading
         Collection<Future<?>> futures = new LinkedList<>();
         // Iterate for every thread we have
@@ -1769,7 +1848,7 @@ public class AutoCrystalRewrite extends Module {
             }
         }
         // Get best result
-        //results.add(bestBreak); (BRUH WHY THIS)
+        results.add(oldBreak);
         // Return the result
         if (results.size() != 1)
             return getResultBreak(results);
@@ -1850,6 +1929,46 @@ public class AutoCrystalRewrite extends Module {
 
     //endregion
 
+    // region Break Crystal
+
+    void breakCrystals() {
+
+        // For debugging timeCalcPlacement
+        long inizio = 0;
+        if (timeCalcBreaking.getValue())
+            // Get time
+            inizio = System.currentTimeMillis();
+        // Get target
+        bestBreak = getTargetBreaking(targetBreaking.getValue());
+        // For debugging timeCalcPlacemetn
+        if (timeCalcBreaking.getValue()) {
+            // Get duration
+            long fine = System.currentTimeMillis();
+            durationsBreaking.add(fine - inizio);
+            // If we reached last
+            if (durationsPlace.size() > nCalc.getValue()) {
+                double sum = durationsBreaking.stream()
+                        .mapToDouble(a -> a)
+                        .sum();
+                sum /= nCalc.getValue();
+                durationsBreaking.clear();
+                PistonCrystal.printDebug(String.format("N: %d Value: %f", nCalc.getValue(), sum), false);
+            }
+        }
+
+        // Display crystal
+        if (bestBreak.crystal != null) {
+            toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue()));
+            if (predictBreakingEnemy.getValue())
+                toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
+
+        }
+
+    }
+
+
+    // endregion
+
     //region predict
 
     // This function is called by a thread and, given a list of entity, it return
@@ -1927,12 +2046,12 @@ public class AutoCrystalRewrite extends Module {
         // If we have a bestPlace
         if (bestPlace != null && bestPlace.crystal != null) {
             // Switch for types
-            switch (type.getValue()) {
+            switch (typePlace.getValue()) {
                 case "Outline": {
                     // If 1 vertice
                     if (isOne(true))
                         // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
                     // Else, new rendering
                     else renderCustomOutline(getBox(bestPlace.crystal));
                     break;
@@ -1956,9 +2075,50 @@ public class AutoCrystalRewrite extends Module {
                     // If 1 vertice
                     if (isOne(true))
                         // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), widthPredict.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
                     // Else, new
                     else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+            }
+        }
+
+        // If we have a bestPlace
+        if (bestBreak != null && bestBreak.crystal != null) {
+            BlockPos pos = bestBreak.crystal.getPosition().add(0, -1, 0);
+            // Switch for types
+            switch (typePlace.getValue()) {
+                case "Outline": {
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(pos), outlineWidthbr.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
+                        // Else, new rendering
+                    else renderCustomOutline(getBox(pos));
+                    break;
+                }
+                case "Fill": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(pos), true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                        // Else, new rendering
+                    else renderFillCustom(getBox(pos));
+                    break;
+                }
+                case "Both": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(pos), true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                        // Else, new
+                    else renderFillCustom(getBox(pos));
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(pos), outlineWidthbr.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
+                        // Else, new
+                    else renderCustomOutline(getBox(pos));
                     break;
                 }
             }
@@ -2217,7 +2377,7 @@ public class AutoCrystalRewrite extends Module {
 
         ArrayList<GSColor> colors = new ArrayList<>();
 
-        switch (NVerticesOutlineBot.getValue()) {
+        switch (NVerticesOutlineBotbr.getValue()) {
             case "1":
                 colors.add(firstVerticeOutlineBot.getValue());
                 colors.add(firstVerticeOutlineBot.getValue());
