@@ -56,12 +56,10 @@ public class PopChams extends Module {
 
         for(int i = 0; i < fakePlayers.size(); i++) {
 
-            if(fakePlayers.size() == 0) return;
-
-            if (mc.world.getEntityByID(-1234 - i).ticksExisted > life.getValue()) {
-                mc.world.removeEntityFromWorld((-1234 - i));
-                fakePlayers.remove(Integer.valueOf((-1234 - i)));
-                i++;
+            if (mc.world.getEntityByID(fakePlayers.get(i)).ticksExisted > life.getValue()) {
+                mc.world.removeEntityFromWorld(fakePlayers.get(i));
+                fakePlayers.remove(fakePlayers.get(i));
+                i--;
             }
         }
 
@@ -79,8 +77,8 @@ public class PopChams extends Module {
         clonedPlayer.rotationYaw = entity.rotationYaw;
         clonedPlayer.rotationPitch = entity.rotationPitch;
         clonedPlayer.setGameType(GameType.CREATIVE);
-        mc.world.addEntityToWorld((-1234 - fpNum), clonedPlayer);
-        fakePlayers.add((-1234 - fpNum));
+        mc.world.addEntityToWorld((-12356 + fpNum), clonedPlayer);
+        fakePlayers.add((-12356 + fpNum));
         fpNum++;
 
     }
