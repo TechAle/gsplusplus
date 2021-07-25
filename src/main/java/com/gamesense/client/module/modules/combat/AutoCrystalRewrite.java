@@ -119,7 +119,6 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
     BooleanSetting switchBackEnd = registerBoolean("Switch Back Web End", false,
             () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue() && switchBackWeb.getValue());
-    BooleanSetting onExplosion = registerBoolean("On Explosion", false, () -> place.getValue() && autoWeb.getValue());
     //endregion
 
     //region break
@@ -417,7 +416,7 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Add new crystal with tickd elay
-        void addCrystal(BlockPos cryst, int tick, int tickFinish) {
+        void addCrystal(BlockPos cryst, @SuppressWarnings("SameParameterValue") int tick, int tickFinish) {
             listWait.add(new crystalTime(cryst,  tick, tickFinish));
         }
 
@@ -688,15 +687,15 @@ public class AutoCrystalRewrite extends Module {
 
         if (bestPlace.target != null) {
             if (showPlaceName.getValue()) {
-                t.append(ChatFormatting.GRAY + "["+ChatFormatting.WHITE+"Place Name: " + bestPlace.target.entity.getName());
+                t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place Name: ").append(bestPlace.target.entity.getName());
                 place = true;
             }
 
             if (showPlaceDamage.getValue()) {
                 if (!place) {
-                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE+"Place Damage: " + (int) bestPlace.damage);
+                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place Damage: ").append((int) bestPlace.damage);
                     place = true;
-                } else t.append(" Damage: " + (int) bestPlace.damage);
+                } else t.append(" Damage: ").append((int) bestPlace.damage);
             }
 
         }
@@ -706,9 +705,9 @@ public class AutoCrystalRewrite extends Module {
             int temp;
             if ((temp = crystalSecondPlace.countCrystals()) > 0) {
                 if (!place) {
-                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: " + temp);
+                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: ").append(temp);
                     place = true;
-                } else t.append(" c/s: " + temp);
+                } else t.append(" c/s: ").append(temp);
             }
 
         }
@@ -744,12 +743,14 @@ public class AutoCrystalRewrite extends Module {
         PlayerInfo target;
         // Our result
         CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        // List of webs to replace
         ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
             // Lowest and Nearest use the same code with just 1 difference.
             case "Lowest":
             case "Nearest":
                 // Get the target
+                //noinspection ComparatorMethodParameterNotUsed
                 EntityPlayer targetEP =
                         mode.equals("Lowest")
                         // Lowest
@@ -761,11 +762,13 @@ public class AutoCrystalRewrite extends Module {
                 if (targetEP == null)
                     break;
 
+                // If web, replace
                 if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
                     mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
                     webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
                 }
 
+                // Get us information + predict if needed
                 player = new PlayerInfo( predictSelfPlace.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false,
                         mc.player.getTotalArmorValue(),
                         (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
@@ -797,6 +800,7 @@ public class AutoCrystalRewrite extends Module {
                 if (players.size() == 0)
                     break;
 
+                // Replace web if needed
                 for(EntityPlayer et : players) {
                     if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
                         mc.world.setBlockToAir(new BlockPos(et.posX, et.posY, et.posZ));
@@ -806,45 +810,17 @@ public class AutoCrystalRewrite extends Module {
 
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
-                    // Split list of entity
-                    List<List<EntityPlayer>> list = splitListEntity(players, nThread);
-
-                    // Clear players, we are going to replace it with the prediciton
-                    players.clear();
-                    // Output
-                    Collection<Future<?>> futures = new LinkedList<>();
-
-                    int predictPlaceTimeout = this.predictPlaceTimeout.getValue();
-                    // Start multithreading
-                    for (int i = 0; i < nThread; i++) {
-                        int finalI = i;
-                        // Add them
-                        futures.add(executor.submit(() -> getPredicts(list.get(finalI), settings) ));
-                    }
-
-                    // For every thread
-                    for (Future<?> future : futures) {
-                        try {
-                            // Get it
-                            List<EntityPlayer> temp;
-                            //noinspection unchecked
-                            temp = (List<EntityPlayer>) future.get(predictPlaceTimeout, TimeUnit.MILLISECONDS);
-                            // If not null, add
-                            if (temp != null)
-                                players.addAll(temp);
-                        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
+                    players = getPlayersThreaded(nThread, players, settings, placeTimeout);
                 }
 
+                // Get our information
                 player = new PlayerInfo( predictSelfPlace.getValue() ?
                         PredictUtil.predictPlayer(mc.player, settings)
                         : mc.player, false,
                         mc.player.getTotalArmorValue(),
                         (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
+                // If display predict
                 if (predictSelfPlace.getValue() && showSelfPredictPlace.getValue())
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfPlace.getColor(), widthPredict.getValue()));
 
@@ -1008,7 +984,6 @@ public class AutoCrystalRewrite extends Module {
         for (PositionInfo crystal : possibleLocations) {
             // Calculate Y
             double temp;
-            //noinspection ConstantConditions
             if ((temp = target.entity.posY - crystal.pos.getY() - 1) > 0 ? temp > minYTarget : temp < -maxYTarget)
                 continue;
 
@@ -1043,9 +1018,6 @@ public class AutoCrystalRewrite extends Module {
         }
         return null;
     }
-
-
-
 
     //endregion
 
@@ -1194,6 +1166,7 @@ public class AutoCrystalRewrite extends Module {
             // If the enemy is in air
             if (BlockUtil.getBlock(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ) instanceof BlockAir) {
                 // Place it
+                //noinspection RedundantIfStatement
                 if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
                     return true;
             }
@@ -1205,67 +1178,85 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
+    // Simple function for placing a web on a target
     boolean placeWeb(BlockPos target) {
 
+        // If it's possible to place
         EnumFacing side = BlockUtil.getPlaceableSide(target);
-
         if (side == null)
             return false;
 
         BlockPos neighbour = target.offset(side);
         EnumFacing opposite = side.getOpposite();
 
+        // If that block cannot be clicked, false
         if (!BlockUtil.canBeClicked(neighbour)) {
             return false;
         }
 
+        // Here we basically manage the web slot.
         int oldSlot = -1;
+        // If we dont have a web in our hand
         if (!(mc.player.inventory.getCurrentItem().getItem() instanceof ItemBlock &&
                 ((ItemBlock) mc.player.inventory.getCurrentItem().getItem()).getBlock() == Blocks.WEB)) {
+            // Get slot of the web
             int slot = InventoryUtil.findFirstBlockSlot(Blocks.WEB.getClass(), 0, 8);
             oldSlot = mc.player.inventory.currentItem;
+            // If nothing found, return false
             if (slot == -1)
                 return false;
+            // If something found and silentSwitch, change slot
             else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            // If we have to switch back at the end, normal switch + set oldSlotBack to oldSlot
             else if (switchBackEnd.getValue()) {
                 oldSlotBack = oldSlot;
                 mc.player.inventory.currentItem = slot;
                 oldSlot = -1;
             }
+            // If normal switch but with switch back at the end
             else if (switchBackWeb.getValue()) mc.player.inventory.currentItem = slot;
+            // If just switch
             else if (switchWeb.getValue()) {
                 mc.player.inventory.currentItem = slot;
                 oldSlot = -1;
             } else return false;
         }
 
+        // Get hitVec
         Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0.5, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
 
+        // If preRotate
         if (preRotateWeb.getValue()) {
             BlockUtil.faceVectorPacketInstant(hitVec, true);
         }
 
+        // If focusWeb
         if (focusWebRotate.getValue()) {
             lastHitVec = hitVec;
             tick = 0;
         }
 
+        // If that block can be opened
         boolean isSneaking = false;
         if (BlockUtil.blackList.contains(neighbourBlock) || BlockUtil.shulkerList.contains(neighbourBlock)) {
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
             isSneaking = true;
         }
 
-
+        // Place the block
         mc.playerController.processRightClickBlock(mc.player, mc.world, neighbour, opposite, hitVec, EnumHand.MAIN_HAND);
         mc.player.swingArm(EnumHand.MAIN_HAND);
 
+        // If sneaking, stop
         if (isSneaking)
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
 
+        // If oldSlot is != -1, then we have to switchBack
         if (oldSlot != -1)
+            // SilentSwitch
             if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            // Normal switchBack
             else mc.player.inventory.currentItem = oldSlot;
 
         return true;
@@ -1341,11 +1332,15 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
             // New tick
             tick = 0;
+            // If preRotate
             if (preRotate.getValue()) {
                 BlockUtil.faceVectorPacketInstant(lastHitVec, true);
             } else
+            // If we have to check or yaw or pitch
             if (yawCheck.getValue() || pitchCheck.getValue()) {
+                // Get the rotation we want
                 Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
+                // If we are not rotating, set new values
                 if (!isRotating) {
                     yPlayer = pitchCheck.getValue()
                             ? mc.player.getPitchYaw().x
@@ -1356,8 +1351,10 @@ public class AutoCrystalRewrite extends Module {
                     isRotating = true;
                 }
 
+                // If we allow to predict the place (so place when we are near that block)
                 if (placeStrictPredict.getValue()) {
 
+                    // Check yaw
                     if (yawCheck.getValue()) {
                         // Get first if + or -
                         double distanceDo = rotationWanted.x - xPlayer;
@@ -1370,6 +1367,7 @@ public class AutoCrystalRewrite extends Module {
                         }
                     }
 
+                    // Check pitch
                     if (pitchCheck.getValue()) {
                         // Get first if + or -
                         double distanceDo = rotationWanted.y - yPlayer;
@@ -1462,8 +1460,10 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
+        // Add that we placed that crystal
         endCrystalPlaced.addCrystal(pos);
 
+        // If we have to show how many crystals we have placed, add
         if (showPlaceCrystalsSecond.getValue())
             listCrystalsSecondWait.addCrystal(pos, 2000);
 
@@ -1484,6 +1484,7 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // Given a pos, say if there is a crystal
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isCrystalHere(BlockPos pos) {
         // Get position
         BlockPos posUp = pos.up();
@@ -1541,7 +1542,7 @@ public class AutoCrystalRewrite extends Module {
         int minYTarget = this.minYTarget.getValue();
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
-        double minDamage = this.minDamagePlace.getValue();
+        double minDamage = this.minDamageBreak.getValue();
         int breakTimeout = this.breakTimeout.getValue();
         // Prepare for after
         PlayerInfo player;
@@ -1566,19 +1567,24 @@ public class AutoCrystalRewrite extends Module {
                 if (targetEP == null)
                     break;
 
+                // If the player is in a web
                 if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
+                    // Set it to air
                     mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
+                    // Replace it after
                     webRemoved.add(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
                 }
 
+                // Get our informations. If we have to predict, predict coordinates
                 player = new PlayerInfo( predictSelfDBreaking.getValue() ? PredictUtil.predictPlayer(mc.player, settings) : mc.player, false,
                         mc.player.getTotalArmorValue(),
                         (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
+                // If self predict and show it, add a box
                 if (predictSelfDBreaking.getValue() && showSelfPredictBreaking.getValue())
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
-
+                // Get every possible crystals that you could break
                 possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
 
                 if (possibleCrystals == null)
@@ -1603,6 +1609,7 @@ public class AutoCrystalRewrite extends Module {
                 if (players.size() == 0)
                     break;
 
+                // For every players, if there is web, remove it
                 for(EntityPlayer et : players) {
                     if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
                         mc.world.setBlockToAir(new BlockPos(et.posX, et.posY, et.posZ));
@@ -1612,50 +1619,24 @@ public class AutoCrystalRewrite extends Module {
 
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
-                    // Split list of entity
-                    List<List<EntityPlayer>> list = splitListEntity(players, nThread);
-
-                    // Clear players, we are going to replace it with the prediciton
-                    players.clear();
-                    // Output
-                    Collection<Future<?>> futures = new LinkedList<>();
-
-                    int predictBreakTimeout = this.predictBreakTimeout.getValue();
-                    // Start multithreading
-                    for (int i = 0; i < nThread; i++) {
-                        int finalI = i;
-                        // Add them
-                        futures.add(executor.submit(() -> getPredicts(list.get(finalI), settings) ));
-                    }
-
-                    // For every thread
-                    for (Future<?> future : futures) {
-                        try {
-                            // Get it
-                            List<EntityPlayer> temp;
-                            //noinspection unchecked
-                            temp = (List<EntityPlayer>) future.get(predictBreakTimeout, TimeUnit.MILLISECONDS);
-                            // If not null, add
-                            if (temp != null)
-                                players.addAll(temp);
-                        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
+                    players = getPlayersThreaded(nThread, players, settings, breakTimeout);
                 }
 
+                // Get our information
                 player = new PlayerInfo( predictSelfDBreaking.getValue() ?
                         PredictUtil.predictPlayer(mc.player, settings)
                         : mc.player, false,
                         mc.player.getTotalArmorValue(),
                         (float) mc.player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
+                // If we have to show the predict
                 if (predictSelfDBreaking.getValue() && showSelfPredictBreaking.getValue())
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
+                // Get possible crystals to break
                 possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
 
+                // If nothing found, rip
                 if (possibleCrystals == null)
                     break;
 
@@ -1679,10 +1660,6 @@ public class AutoCrystalRewrite extends Module {
 
                 }
 
-                /*
-                    Continue with finding the breaking
-                 */
-
                 break;
 
         }
@@ -1695,43 +1672,58 @@ public class AutoCrystalRewrite extends Module {
     }
 
     List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
+        // Our output
         List<PositionInfo> damagePos = new ArrayList<>();
 
+        // For every entity
         mc.world.loadedEntityList.stream()
+                // Take only endCrystals
                 .filter(entity -> entity instanceof EntityEnderCrystal)
+                // Transform list in list of endCrystals
                 .map(entity -> (EntityEnderCrystal) entity).collect(Collectors.toList())
+                // Iterate
                 .forEach(
                         crystal -> {
-
+                            // Damage
                             float damage = Float.MIN_VALUE;
+                            // Since forEach does not allow continue, i have to use a boolean
                             boolean continueFor = true;
 
+                            // If antiSuicide
                             if (antiSuicide.getValue() ) {
+                                // Get damage
                                 damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
+                                // If >, stop
                                 if (damage >= self.health) {
                                     continueFor = false;
                                 }
                             }
 
+                            // If we can continue
                             if (continueFor) {
                                 // Raytrace. We have to calculate the raytrace for both wall and raytrace option
                                 RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
                                         new Vec3d(crystal.posX, crystal.posY, crystal.posZ));
+                                // If raytrace is ok
                                 if (result == null || (!raytrace && mc.player.getDistanceSq(crystal) <= wallRangeSQ)) {
 
+                                    // Calculate damage if before we havent calculated it
                                     if (damage == Float.MIN_VALUE)
                                         damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
 
+                                    // For every types of break
                                     switch (breakType.getValue()) {
                                         case "All":
+                                            // Add everything
                                             damagePos.add(new PositionInfo(crystal, damage));
                                             break;
                                         case "Own":
-                                            BlockPos now = new BlockPos(crystal.getPosition());
+                                            // Add only our
                                             if (endCrystalPlaced.hasCrystal(crystal))
                                                 damagePos.add(new PositionInfo(crystal, damage));
                                             break;
                                         case "Smart":
+                                            // Add only crystals that deal less damage
                                             if (damage < maxSelfDamage)
                                                 damagePos.add(new PositionInfo(crystal, damage));
                                             break;
@@ -1742,6 +1734,7 @@ public class AutoCrystalRewrite extends Module {
                         }
                 );
 
+        // Return splitted list
         return splitList(damagePos, nThread.getValue());
     }
 
@@ -1777,8 +1770,10 @@ public class AutoCrystalRewrite extends Module {
         }
         // Get best result
         //results.add(bestBreak); (BRUH WHY THIS)
+        // Return the result
         if (results.size() != 1)
             return getResultBreak(results);
+        // Return null
         return new CrystalInfo.NewBreakInfo(0, null, null, 0);
     }
 
@@ -1792,7 +1787,6 @@ public class AutoCrystalRewrite extends Module {
         for (PositionInfo crystal : possibleLocations) {
             // Calculate Y
             double temp;
-            //noinspection ConstantConditions
             if ((temp = target.entity.posY - crystal.crystal.posY - 1) > 0 ? temp > minYTarget : temp < -maxYTarget)
                 continue;
 
@@ -1825,6 +1819,7 @@ public class AutoCrystalRewrite extends Module {
                 return new CrystalInfo.NewBreakInfo((float) best.damage, target, best.crystal, best.distancePlayer);
             }
         }
+        // return null
         return null;
     }
 
@@ -1845,10 +1840,11 @@ public class AutoCrystalRewrite extends Module {
                 }
                 // If damage is higher
             } else if (now.damage > returnValue.damage)
-                // Return
+                // New values
                 returnValue = now;
         }
 
+        // Return output
         return returnValue;
     }
 
@@ -2005,12 +2001,15 @@ public class AutoCrystalRewrite extends Module {
             });
     }
 
+    // If we can break that block
     private boolean canBreak(BlockPos pos) {
         final IBlockState blockState = mc.world.getBlockState(pos);
         final Block block = blockState.getBlock();
+        //noinspection deprecation
         return block.getBlockHardness(blockState, mc.world, pos) != -1;
     }
 
+    // Listen for when we are breaking a block
     @EventHandler
     private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
 
@@ -2121,7 +2120,7 @@ public class AutoCrystalRewrite extends Module {
 
     });
 
-
+    // Check for that block if it's possible to city, if yes place crystal
     void placeSurroundBlock(BlockPos blockPos, EnumHand hand) {
         float armourPercent = armourFacePlace.getValue() / 100.0f;
 
@@ -2340,6 +2339,42 @@ public class AutoCrystalRewrite extends Module {
 
         RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);
     }
+
+    // Given a list of players, this return every players predictions
+    List<EntityPlayer> getPlayersThreaded(int nThread, List<EntityPlayer> players, PredictUtil.PredictSettings settings, int timeOut) {
+        // Split list of entity
+        List<List<EntityPlayer>> list = splitListEntity(players, nThread);
+
+        // Clear players, we are going to replace it with the prediciton
+        List<EntityPlayer> output = new ArrayList<>();
+        // Output
+        Collection<Future<?>> futures = new LinkedList<>();
+
+        // Start multithreading
+        for (int i = 0; i < nThread; i++) {
+            int finalI = i;
+            // Add them
+            futures.add(executor.submit(() -> getPredicts(list.get(finalI), settings) ));
+        }
+
+        // For every thread
+        for (Future<?> future : futures) {
+            try {
+                // Get it
+                List<EntityPlayer> temp;
+                //noinspection unchecked
+                temp = (List<EntityPlayer>) future.get(timeOut, TimeUnit.MILLISECONDS);
+                // If not null, add
+                if (temp != null)
+                    output.addAll(temp);
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return output;
+    }
+
 
     //endregion
 
