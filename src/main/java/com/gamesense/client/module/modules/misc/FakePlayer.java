@@ -7,6 +7,7 @@ import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
+import com.gamesense.api.util.world.combat.ac.PlayerInfo;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -30,6 +31,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.world.GameType;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.UUID;
 
 /*
@@ -54,6 +56,7 @@ public class FakePlayer extends Module {
     StringSetting nameFakePlayer = registerString("Name FakePlayer", "fit");
     IntegerSetting vulnerabilityTick = registerInteger("Vulnerability Tick", 4, 0, 10);
     IntegerSetting resetHealth = registerInteger("Reset Health", 10, 0, 36);
+    IntegerSetting tickRegenVal = registerInteger("Tick Regen", 4, 0, 30);
 
     int incr;
     public void onEnable() {
@@ -100,6 +103,7 @@ public class FakePlayer extends Module {
             }
         }
         clonedPlayer.onLivingUpdate();
+        listPlayers.add(new playerInfo(clonedPlayer.getName()));
     }
     boolean beforePressed;
     @Override
@@ -111,28 +115,44 @@ public class FakePlayer extends Module {
         } else beforePressed = false;
 
         // Update tick explosion
-        listExplosion.removeIf(tickPop::update);
+        for(int i = 0; i < listPlayers.size(); i++) {
+            if (listPlayers.get(i).update()) {
+                int finalI = i;
+                Optional<EntityPlayer> temp = mc.world.playerEntities.stream().filter(
+                        e -> e.getName().equals(listPlayers.get(finalI).name)
+                ).findAny();
+                if (temp.isPresent())
+                    if (temp.get().getHealth() < 20)
+                        temp.get().setHealth(temp.get().getHealth() + 1);
+            }
+        }
     }
 
-    ArrayList<tickPop> listExplosion = new ArrayList<>();
+    ArrayList<playerInfo> listPlayers = new ArrayList<>();
+    class playerInfo {
+        final String name;
+        int tickPop = -1;
+        int tickRegen = 0;
 
-    // Simple class for managing crystal vulnerability
-    static class tickPop {
 
-        String name;
-        int tick;
-        int tickEnd;
-
-        public tickPop(String name, int tickEnd) {
+        public playerInfo(String name) {
             this.name = name;
-            this.tick = 0;
-            this.tickEnd = tickEnd;
         }
 
         boolean update() {
-            return ++tick >= tickEnd;
+            if (tickPop != -1) {
+                if (++tickPop >= vulnerabilityTick.getValue())
+                    tickPop = -1;
+            }
+            if (++tickRegen >= tickRegenVal.getValue()) {
+                tickRegen = 0;
+                return true;
+            } else return false;
         }
 
+        boolean canPop() {
+            return this.tickPop == -1;
+        }
     }
 
     public void onDisable() {
@@ -141,6 +161,7 @@ public class FakePlayer extends Module {
                 mc.world.removeEntityFromWorld((-1234 - i));
             }
         }
+        listPlayers.clear();
     }
 
     @SuppressWarnings("unused")
@@ -159,8 +180,11 @@ public class FakePlayer extends Module {
                                     // If the player is like we want to be
                                     if (entityPlayer.getName().split(nameFakePlayer.getText()).length == 2) {
 
+                                        Optional<playerInfo> temp = listPlayers.stream().filter(
+                                                e -> e.name.equals(entityPlayer.getName())
+                                        ).findAny();
                                         // If he is in wait, continue
-                                        if (listExplosion.stream().anyMatch(e -> e.name.equals(entityPlayer.getName())))
+                                        if (!temp.isPresent() || !temp.get().canPop())
                                             continue;
 
                                         // Calculate damage
@@ -175,7 +199,7 @@ public class FakePlayer extends Module {
                                         } else entityPlayer.setHealth(entityPlayer.getHealth() - damage);
 
                                         // Add vulnerability
-                                        listExplosion.add(new tickPop(entityPlayer.getName(), vulnerabilityTick.getValue()));
+                                        temp.get().tickPop = 0;
                                     }
                                 }
                             }
