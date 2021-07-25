@@ -637,12 +637,23 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
+    void updateCounters() {
+        // Placement
+        listCrystalsPlaced.updateCrystals();
+        listCrystalsSecondWait.updateCrystals();
+        crystalSecondPlace.updateCrystals();
+        endCrystalPlaced.updateCrystals();
+    }
+
     // Simple onUpdate
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
 
         // Clear what we are displaying
         toDisplay.clear();
+
+        // Update counters
+        updateCounters();
 
         if (stopGapple(true))
             return;
@@ -713,7 +724,7 @@ public class AutoCrystalRewrite extends Module {
     //region Calculate Place Crystal
 
     // Main function for calculating the best crystal
-    void getTargetPlacing(String mode) {
+    CrystalInfo.PlaceInfo getTargetPlacing(String mode) {
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
@@ -732,7 +743,7 @@ public class AutoCrystalRewrite extends Module {
         List<List<PositionInfo>> possibleCrystals;
         PlayerInfo target;
         // Our result
-        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
             // Lowest and Nearest use the same code with just 1 difference.
@@ -748,7 +759,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If nobody found, return
                 if (targetEP == null)
-                    return;
+                    break;
 
                 if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
                     mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
@@ -768,7 +779,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If nothing is possible
                 if (possibleCrystals == null)
-                    return;
+                    break;
 
                 // Get target info
                 target = new PlayerInfo(targetEP, armourPercent,
@@ -776,7 +787,7 @@ public class AutoCrystalRewrite extends Module {
                         (float) targetEP.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
                 // Calcualte best cr
-                calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                bestPlace = calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                         minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
 
                 break;
@@ -784,7 +795,7 @@ public class AutoCrystalRewrite extends Module {
                 // Get every possible players
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
-                    return;
+                    break;
 
                 for(EntityPlayer et : players) {
                     if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
@@ -842,7 +853,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If nothing is possible
                 if (possibleCrystals == null)
-                    return;
+                    break;
 
                 // For every players
                 int count = 0;
@@ -858,7 +869,7 @@ public class AutoCrystalRewrite extends Module {
                             playerTemp.getTotalArmorValue(),
                             (float) playerTemp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
                     // Calculate
-                    calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                    bestPlace = calcualteBestPlace(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                             minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, placeTimeout);
                 }
         }
@@ -866,11 +877,12 @@ public class AutoCrystalRewrite extends Module {
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
 
+        return bestPlace;
     }
 
     // Function that call every thread for the calculating of the crystals
     // + return the best place
-    void calcualteBestPlace(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
+    CrystalInfo.PlaceInfo calcualteBestPlace(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
                             PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
                             int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
@@ -897,10 +909,12 @@ public class AutoCrystalRewrite extends Module {
                 e.printStackTrace();
             }
         }
+
         // Get best result
-        results.add(bestPlace);
+        //results.add(bestPlace); (why this BRUH)
         if (results.size() != 1)
-            bestPlace = getResultPlace(results);
+            return getResultPlace(results);
+        return new CrystalInfo.PlaceInfo(0, null, null, 0);
     }
 
     // This return the best crystal
@@ -1062,12 +1076,6 @@ public class AutoCrystalRewrite extends Module {
     // Main function for placing crystals
     void placeCrystals() {
 
-        // Update every crystals timers
-        listCrystalsPlaced.updateCrystals();
-        listCrystalsSecondWait.updateCrystals();
-        crystalSecondPlace.updateCrystals();
-        endCrystalPlaced.updateCrystals();
-
         for(int i = 0; i < packetsBlocks.size(); i++) {
             if (!packetsBlocks.get(i).update()) {
                 packetsBlocks.remove(i);
@@ -1140,7 +1148,7 @@ public class AutoCrystalRewrite extends Module {
             // Get time
             inizio = System.currentTimeMillis();
         // Get target
-        getTargetPlacing(targetPlacing.getValue());
+        bestPlace = getTargetPlacing(targetPlacing.getValue());
         // For debugging timeCalcPlacemetn
         if (timeCalcPlacement.getValue()) {
             // Get duration
@@ -1521,7 +1529,7 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
-    void getTargetBreaking(String mode) {
+    CrystalInfo.NewBreakInfo getTargetBreaking(String mode) {
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
         int nThread = this.nThread.getValue();
         double enemyRangeSQ = rangeEnemyBreaking.getValue() * rangeEnemyBreaking.getValue();
@@ -1540,7 +1548,7 @@ public class AutoCrystalRewrite extends Module {
         List<List<PositionInfo>> possibleCrystals;
         PlayerInfo target;
         // Our result
-        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+        CrystalInfo.NewBreakInfo bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         ArrayList<BlockPos> webRemoved = new ArrayList<>();
         switch (mode) {
 
@@ -1556,7 +1564,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If nobody found, return
                 if (targetEP == null)
-                    return;
+                    break;
 
                 if (BlockUtil.getBlock(targetEP.posX, targetEP.posY, targetEP.posZ) instanceof BlockWeb) {
                     mc.world.setBlockToAir(new BlockPos(targetEP.posX, targetEP.posY, targetEP.posZ));
@@ -1574,7 +1582,7 @@ public class AutoCrystalRewrite extends Module {
                 possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
 
                 if (possibleCrystals == null)
-                    return;
+                    break;
 
                 // Get target info
                 target = new PlayerInfo(targetEP, armourPercent,
@@ -1593,7 +1601,7 @@ public class AutoCrystalRewrite extends Module {
                 // Get every possible players
                 List<EntityPlayer> players = getBasicPlayers(enemyRangeSQ).sorted(new Sortbyroll()).collect(Collectors.toList());
                 if (players.size() == 0)
-                    return;
+                    break;
 
                 for(EntityPlayer et : players) {
                     if (BlockUtil.getBlock(et.posX, et.posY, et.posZ) instanceof BlockWeb) {
@@ -1649,7 +1657,7 @@ public class AutoCrystalRewrite extends Module {
                 possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
 
                 if (possibleCrystals == null)
-                    return;
+                    break;
 
                 // For every players
                 int count = 0;
@@ -1678,7 +1686,11 @@ public class AutoCrystalRewrite extends Module {
                 break;
 
         }
+        // Replace webs
+        for(BlockPos web : webRemoved)
+            mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
 
+        return bestBreak;
 
     }
 
@@ -1735,7 +1747,7 @@ public class AutoCrystalRewrite extends Module {
 
     // Function that call every thread for the calculating of the crystals
     // + return the best place
-    void calcualteBestBreak(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
+    CrystalInfo.NewBreakInfo calcualteBestBreak(int nThread, List<List<PositionInfo>> possibleCrystals, double posX, double posY, double posZ,
                             PlayerInfo target, double minDamage, double minFacePlaceHp, double minFacePlaceDamage, double maxSelfDamage,
                             int maxYTarget, int minYTarget, int placeTimeout) {
         // For getting output of threading
@@ -1764,9 +1776,10 @@ public class AutoCrystalRewrite extends Module {
             }
         }
         // Get best result
-        results.add(bestBreak);
+        //results.add(bestBreak); (BRUH WHY THIS)
         if (results.size() != 1)
-            bestBreak = getResultBreak(results);
+            return getResultBreak(results);
+        return new CrystalInfo.NewBreakInfo(0, null, null, 0);
     }
 
 
