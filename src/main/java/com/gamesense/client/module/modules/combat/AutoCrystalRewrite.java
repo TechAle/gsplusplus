@@ -79,8 +79,8 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting rangeEnemyBreaking = registerDouble("Range Enemy Breaking", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
-    IntegerSetting maxYTargetPlace = registerInteger("Max Y Place", 3, 0, 5, () -> ranges.getValue());
-    IntegerSetting minYTargetPlace = registerInteger("Min Y Place", 3, 0, 5, () -> ranges.getValue());
+    IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
+    IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
     //endregion
 
     //region Place
@@ -126,6 +126,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting breakSection = registerBoolean("Break Section", false);
     ModeSetting breakType = registerMode("Break Type", Arrays.asList("Own", "All", "Smart"), "Smart",
             () -> breakSection.getValue());
+    DoubleSetting minDamageBreak = registerDouble("Min Damage Break", 5, 0, 30, () -> place.getValue());
     DoubleSetting maxSelfDamageBreak = registerDouble("Max Self Damage Break", 12, 0, 30,
             () -> breakSection.getValue() && breakType.getValue().equals("Smart"));
     DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8,
@@ -304,6 +305,8 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting maxTarget = registerInteger("Max Target", 5, 1, 30, () -> threading.getValue());
     IntegerSetting placeTimeout = registerInteger("Place Timeout", 100, 0, 1000, () -> threading.getValue());
     IntegerSetting predictPlaceTimeout = registerInteger("Predict Place Timeout", 100, 0, 1000, () -> threading.getValue());
+    IntegerSetting breakTimeout = registerInteger("Break Timeout", 100, 0, 1000, () -> threading.getValue());
+    IntegerSetting predictBreakTimeout = registerInteger("Predict Break Timeout", 100, 0, 1000, () -> threading.getValue());
     //endregion
 
     //region Strict
@@ -721,8 +724,8 @@ public class AutoCrystalRewrite extends Module {
         double maxSelfDamage = this.maxSelfDamagePlace.getValue();
         double wallRangePlaceSQ = this.crystalWallPlace.getValue() * this.crystalWallPlace.getValue();
         boolean raytraceValue = raytrace.getValue();
-        int maxYTarget = this.maxYTargetPlace.getValue();
-        int minYTarget = this.minYTargetPlace.getValue();
+        int maxYTarget = this.maxYTarget.getValue();
+        int minYTarget = this.minYTarget.getValue();
         int placeTimeout = this.placeTimeout.getValue();
         // Prepare for after
         PlayerInfo player;
@@ -1526,6 +1529,12 @@ public class AutoCrystalRewrite extends Module {
         boolean rayTrace = raytrace.getValue();
         double wallRangeSQ = wallrangeBreak.getValue() * wallrangeBreak.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
+        int maxYTarget = this.maxYTarget.getValue();
+        int minYTarget = this.minYTarget.getValue();
+        double minFacePlaceHp = this.facePlaceValue.getValue();
+        double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
+        double minDamage = this.minDamagePlace.getValue();
+        int breakTimeout = this.breakTimeout.getValue();
         // Prepare for after
         PlayerInfo player;
         List<List<PositionInfo>> possibleCrystals;
@@ -1573,9 +1582,10 @@ public class AutoCrystalRewrite extends Module {
                         (float) targetEP.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
 
 
-                /*
-                    Continue with finding possible crystals to break
-                 */
+                // Calcualte best cr
+                calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                        minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout);
+
 
                 break;
 
@@ -1602,7 +1612,7 @@ public class AutoCrystalRewrite extends Module {
                     // Output
                     Collection<Future<?>> futures = new LinkedList<>();
 
-                    int predictPlaceTimeout = this.predictPlaceTimeout.getValue();
+                    int predictBreakTimeout = this.predictBreakTimeout.getValue();
                     // Start multithreading
                     for (int i = 0; i < nThread; i++) {
                         int finalI = i;
@@ -1616,7 +1626,7 @@ public class AutoCrystalRewrite extends Module {
                             // Get it
                             List<EntityPlayer> temp;
                             //noinspection unchecked
-                            temp = (List<EntityPlayer>) future.get(predictPlaceTimeout, TimeUnit.MILLISECONDS);
+                            temp = (List<EntityPlayer>) future.get(predictBreakTimeout, TimeUnit.MILLISECONDS);
                             // If not null, add
                             if (temp != null)
                                 players.addAll(temp);
@@ -1654,6 +1664,10 @@ public class AutoCrystalRewrite extends Module {
                     target = new PlayerInfo(playerTemp, armourPercent,
                             playerTemp.getTotalArmorValue(),
                             (float) playerTemp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+
+                    // Calculate
+                    calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                            minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout);
 
                 }
 
@@ -1729,10 +1743,10 @@ public class AutoCrystalRewrite extends Module {
         // Iterate for every thread we have
         for (int i = 0; i < nThread; i++) {
             int finalI = i;
-            /*
+
             // Add them
-            futures.add(executor.submit(() -> calculateBestPlaceTarget(possibleCrystals.get(finalI), posX, posY, posZ,
-                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget)));*/
+            futures.add(executor.submit(() -> calculateBestBreakTarget(possibleCrystals.get(finalI), posX, posY, posZ,
+                    target, minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget)));
         }
         // Get stack for then collecting the results
         Stack<CrystalInfo.NewBreakInfo> results = new Stack<>();
@@ -1754,6 +1768,53 @@ public class AutoCrystalRewrite extends Module {
         if (results.size() != 1)
             bestBreak = getResultBreak(results);
     }
+
+
+    // This calculate the best crystal given a list of possible positions and the enemy
+    CrystalInfo.NewBreakInfo calculateBestBreakTarget(List<PositionInfo> possibleLocations, double x, double y, double z, PlayerInfo target,
+                                                   double minDamage, double minFacePlaceHealth, double minFacePlaceDamage, double maxSelfDamage,
+                                                   int maxYTarget, int minYTarget) {
+        // Start calculating damage
+        PositionInfo best = new PositionInfo();
+        for (PositionInfo crystal : possibleLocations) {
+            // Calculate Y
+            double temp;
+            //noinspection ConstantConditions
+            if ((temp = target.entity.posY - crystal.crystal.posY - 1) > 0 ? temp > minYTarget : temp < -maxYTarget)
+                continue;
+
+            // if player is out of range of this crystal, do nothing
+            float currentDamage = DamageUtil.calculateDamageThreaded(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ, target);
+            if (currentDamage == best.damage) {
+                // this new crystal is closer
+                // higher chance of being able to break it
+                if (best.crystal == null || ((temp = crystal.crystal.getDistanceSq(x, y, z)) == best.distance || (currentDamage / maxSelfDamage) > best.rapp) || temp < best.distance) {
+                    // Set new values
+                    best = crystal;
+                    best.setEnemyDamage(currentDamage);
+                    best.distance = target.entity.getDistanceSq(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ);
+                    best.distancePlayer = mc.player.getDistanceSq(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ);
+                }
+            } else if (currentDamage > best.damage) {
+                // Set new values
+                best = crystal;
+                best.setEnemyDamage(currentDamage);
+                best.distance = target.entity.getDistanceSq(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ);
+                best.distancePlayer = mc.player.getDistanceSq(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ);
+            }
+        }
+
+
+        // If we found something
+        if (best.crystal != null) {
+            if (best.damage >= minDamage || ((target.health <= minFacePlaceHealth || target.lowArmour) && best.damage >= minFacePlaceDamage)) {
+                // Return
+                return new CrystalInfo.NewBreakInfo((float) best.damage, target, best.crystal, best.distancePlayer);
+            }
+        }
+        return null;
+    }
+
 
     // This return the best crystal
     CrystalInfo.NewBreakInfo getResultBreak(Stack<CrystalInfo.NewBreakInfo> result) {
