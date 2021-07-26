@@ -24,10 +24,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.world.GameType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Techale
@@ -58,7 +55,6 @@ public class Chams extends Module {
 
 
     private int fpNum = 0;
-    List<Integer> fakePlayers = new ArrayList<>();
 
     ArrayList<Entity> toSpawn = new ArrayList<>();
 
@@ -77,17 +73,14 @@ public class Chams extends Module {
 
         toSpawn.removeIf(this::spawnPlayer);
 
-        for(int i = 0; i < fakePlayers.size(); i++) {
-
-            try {
-                if (mc.world.getEntityByID(fakePlayers.get(i)).ticksExisted > life.getValue()) {
-                    mc.world.removeEntityFromWorld(fakePlayers.get(i));
-                    fakePlayers.remove(fakePlayers.get(i));
-                    i--;
+        for(int i = 0; i < listPlayers.size(); i++) {
+            if (listPlayers.get(i).onUpdate()) {
+                try {
+                    mc.world.removeEntityFromWorld(listPlayers.get(i).id);
+                }catch (NullPointerException ignored) {
                 }
-            }catch (NullPointerException e) {
-                fakePlayers.remove(fakePlayers.get(i));
-                i--;
+                listPlayers.remove(i);
+                i--; // -1237
             }
         }
 
@@ -129,7 +122,7 @@ public class Chams extends Module {
         // Add entity id
         mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
         clonedPlayer.onLivingUpdate();
-        fakePlayers.add((-1235 - fpNum));
+        listPlayers.add(new playerChams(-1235 - fpNum, life.getValue()));
         fpNum++;
         return true;
     }
@@ -168,6 +161,28 @@ public class Chams extends Module {
             renderChamsPre(new GSColor(crystalColor.getValue(), 255), false);
         }
     });
+
+    static class playerChams {
+        private int tick;
+        final private int finalTick;
+        final private int id;
+
+        public playerChams(int id, int finalTick) {
+            this.id = id;
+            this.finalTick = finalTick;
+            this.tick = 0;
+        }
+
+        public boolean onUpdate() {
+            return tick++ > finalTick;
+        }
+
+        public int returnGradient() {
+            return 250 - ((int) (tick / (float) finalTick * 250));
+        }
+    }
+
+    ArrayList<playerChams> listPlayers = new ArrayList<>();
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -222,7 +237,10 @@ public class Chams extends Module {
 
         int alpha = chamsColor.getColor().getAlpha();
         if (gradientAlpha.getValue()) {
-            alpha = (int) (250 - (player.ticksExisted / (float) life.getValue() * 250));
+            Optional<playerChams> prova = listPlayers.stream().filter(e -> e.id == player.entityId).findAny();
+            if (prova.isPresent()) {
+                alpha = prova.get().returnGradient();
+            }
         }
 
         if (alpha < 0)
