@@ -1,7 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
@@ -13,16 +12,18 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "Long Jump", category = Category.Movement)
-public class LongJump extends  Module{
+public class LongJump extends Module {
 
-    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe"), "Strafe");
-    DoubleSetting speed = registerDouble("speed", 2.15,0,10);
-    DoubleSetting jumpHeight = registerDouble("jumpHeight",0.41,0,1);
-
+    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far"), "Strafe");
+    DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting farSpeed = registerDouble("farSpeed", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Far"));
+    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
 
     Double playerSpeed;
 
@@ -33,11 +34,6 @@ public class LongJump extends  Module{
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
     }
-
-    public void onDisable() {
-        timer.reset();
-    }
-
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -70,4 +66,25 @@ public class LongJump extends  Module{
             event.setZ(dir[1]);
         }
     });
+
+    @Override
+    public void onUpdate() {
+        if (mode.getValue().equalsIgnoreCase("Far")){
+            if (mc.player.onGround && mc.gameSettings.keyBindForward.isKeyDown()) {
+                mc.player.jump();
+            }
+            if (mc.player.motionY == 0.0030162615090425808) {
+                mc.player.jumpMovementFactor = farSpeed.getValue().floatValue();
+            }
+            }
+        }
+
+
+    @Override
+    public void onDisable() {
+        timer.reset();
+    }
 }
+
+
+
