@@ -1824,7 +1824,8 @@ public class AutoCrystalRewrite extends Module {
         return mc.world.playerEntities.stream()
                 .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
                 .filter(entity -> !EntityUtil.basicChecksEntity(entity))
-                .filter(entity -> entity.getHealth() > 0.0f);
+                .filter(entity -> entity.getHealth() > 0.0f)
+                .filter(entity -> !entity.isCreative() && !entity.isSpectator());
     }
 
     // Say if two blockPos are the same
