@@ -27,6 +27,6 @@ public class MixinEntity {
     }
     @Redirect(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isSneaking()Z"))
     public boolean isSneaking(Entity entity) {
-        return ModuleManager.isModuleEnabled(Scaffold.class) && Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown()|| ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
+        return ModuleManager.isModuleEnabled(Scaffold.class) && !Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown()|| ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
     }
 }
