@@ -61,7 +61,7 @@ public class Chams extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<TotemPopEvent> totemPopEventListener = new Listener<>(event -> {
-        if (chamsPop.getValue())
+        if (chamsPop.getValue() && event.getEntity() != null)
             toSpawn.add(event.getEntity());
     });
 
@@ -89,41 +89,43 @@ public class Chams extends Module {
 
 
     boolean spawnPlayer(Entity entity) {
-        // Clone empty player
-        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), ""));
-        // Copy angles
-        clonedPlayer.copyLocationAndAnglesFrom(entity);
-        clonedPlayer.rotationYawHead = entity.getRotationYawHead();
-        clonedPlayer.rotationYaw = entity.rotationYaw;
-        clonedPlayer.rotationPitch = entity.rotationPitch;
-        /// Trying to make others ca not target this
-        // idk maybe some ca not considerate spectator
-        clonedPlayer.setGameType(GameType.SPECTATOR);
-        clonedPlayer.setHealth(20);
-        // Add resistance for 0 damage
-        clonedPlayer.addPotionEffect(new PotionEffect(MobEffects.RESISTANCE, 100, 100, false, false));
-        // Add armor for not making some ca target this because "naked"
-        final ItemStack[] armors = new ItemStack[]{
-                new ItemStack(Items.DIAMOND_BOOTS),
-                new ItemStack(Items.DIAMOND_LEGGINGS),
-                new ItemStack(Items.DIAMOND_CHESTPLATE),
-                new ItemStack(Items.DIAMOND_HELMET)
-        };
-        for (int i = 0; i < 4; i++) {
-            // Create base
-            ItemStack item = armors[i];
-            // Add enchants
-            item.addEnchantment(
-                    i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
-                    50);
-            // Add it to the player
-            clonedPlayer.inventory.armorInventory.set(i, item);
+        if (entity != null) {
+            // Clone empty player
+            EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), ""));
+            // Copy angles
+            clonedPlayer.copyLocationAndAnglesFrom(entity);
+            clonedPlayer.rotationYawHead = entity.getRotationYawHead();
+            clonedPlayer.rotationYaw = entity.rotationYaw;
+            clonedPlayer.rotationPitch = entity.rotationPitch;
+            /// Trying to make others ca not target this
+            // idk maybe some ca not considerate spectator
+            clonedPlayer.setGameType(GameType.SPECTATOR);
+            clonedPlayer.setHealth(20);
+            // Add resistance for 0 damage
+            clonedPlayer.addPotionEffect(new PotionEffect(MobEffects.RESISTANCE, 100, 100, false, false));
+            // Add armor for not making some ca target this because "naked"
+            final ItemStack[] armors = new ItemStack[]{
+                    new ItemStack(Items.DIAMOND_BOOTS),
+                    new ItemStack(Items.DIAMOND_LEGGINGS),
+                    new ItemStack(Items.DIAMOND_CHESTPLATE),
+                    new ItemStack(Items.DIAMOND_HELMET)
+            };
+            for (int i = 0; i < 4; i++) {
+                // Create base
+                ItemStack item = armors[i];
+                // Add enchants
+                item.addEnchantment(
+                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                        50);
+                // Add it to the player
+                clonedPlayer.inventory.armorInventory.set(i, item);
+            }
+            // Add entity id
+            mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
+            clonedPlayer.onLivingUpdate();
+            listPlayers.add(new playerChams(-1235 - fpNum, life.getValue()));
+            fpNum++;
         }
-        // Add entity id
-        mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
-        clonedPlayer.onLivingUpdate();
-        listPlayers.add(new playerChams(-1235 - fpNum, life.getValue()));
-        fpNum++;
         return true;
     }
 
