@@ -63,8 +63,8 @@ public class Scaffold extends Module {
     int direction;
 
     boolean doSupport;
-    boolean replacable;
     boolean doDown;
+    boolean doTechaleVoodooMagic;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
@@ -144,7 +144,7 @@ public class Scaffold extends Module {
 
         if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
                 || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
-            replacable = true;
+            doTechaleVoodooMagic = false;
             return;
         }
 
@@ -160,10 +160,9 @@ public class Scaffold extends Module {
 
         // place block
 
-        if (!doDown) {
+        if (!doDown && doTechaleVoodooMagic) {
             placeBlockPacket(null, belowPlayerBlock);
-        }
-        if (doDown) {
+        }else {
             placeBlockPacket(null, supportBlock);
         }
 
