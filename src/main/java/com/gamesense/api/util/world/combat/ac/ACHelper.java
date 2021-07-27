@@ -92,6 +92,7 @@ public enum ACHelper implements Listenable {
             .filter(entity -> self.entity.getDistanceSq(entity) <= entityRangeSq)
             .filter(entity -> !EntityUtil.basicChecksEntity(entity))
             .filter(entity -> entity.getHealth() > 0.0f)
+            .filter(entity -> !entity.isCreative() && !entity.isSpectator())
             .collect(Collectors.toList());
 
         targetableCrystals = mc.world.loadedEntityList.stream()

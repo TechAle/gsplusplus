@@ -79,7 +79,7 @@ public class TargetHUD extends HUDModule {
     }
 
     private static boolean isValidEntity(Entity e) {
-        if (!(e instanceof EntityPlayer)) return false;
+        if (!(e instanceof EntityPlayer) || e.getName().length() == 0) return false;
         else return e != mc.player;
     }
 
@@ -108,7 +108,7 @@ public class TargetHUD extends HUDModule {
             // Render content
             if (mc.world != null && mc.player.ticksExisted >= 10) {
                 EntityPlayer entityPlayer = (EntityPlayer) mc.world.loadedEntityList.stream()
-                    .filter(entity -> isValidEntity(entity))
+                    .filter(TargetHUD::isValidEntity)
                     .map(entity -> (EntityLivingBase) entity)
                     .min(Comparator.comparing(c -> mc.player.getDistance(c)))
                     .orElse(null);
