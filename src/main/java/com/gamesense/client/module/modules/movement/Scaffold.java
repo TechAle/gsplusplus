@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ColorSetting;
@@ -14,12 +15,16 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.player.EntityPlayer;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -28,6 +33,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.lwjgl.input.Keyboard;
 
 import java.lang.management.MonitorInfo;
 
@@ -59,36 +65,32 @@ public class Scaffold extends Module {
     boolean doSupport;
     boolean replacable;
     boolean doDown;
-    boolean crouched;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
     BlockPos supportBlock;
-    BlockPos supportBlockTwo;
-
-    com.gamesense.api.util.misc.Timer timer = new com.gamesense.api.util.misc.Timer();
 
 
     PredictUtil.PredictSettings predictSettings;
-
+    PredictUtil.PredictSettings predictSettingsSafeWalk;
 
     @Override
     public void onUpdate() {
 
-        //safewalk
-
-        if (!mc.player.isSneaking() &&mc.world.getBlockState(new BlockPos(mc.player.posX,mc.player.posY-2,mc.player.posZ)).getMaterial().isReplaceable() && !doDown) {
-            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
-            crouched = true;
-        }
-
         predictSettings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debug.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
 
-        if (render.getValue()) {
+        supportBlock = new BlockPos(mc.player.posX,mc.player.posY-2,mc.player.posZ);
 
-            EntityPlayer clonedPlayer = PredictUtil.predictPlayer(mc.player, predictSettings);
-            RenderUtil.drawBoundingBox(clonedPlayer.getEntityBoundingBox(), width.getValue(), mainColor.getColor());
+        playerBlock = new BlockPos(PredictUtil.predictPlayer(mc.player, predictSettings));
 
+        //DOWN SHIT
+
+        if (mc.gameSettings.keyBindSprint.isKeyDown()) {
+            belowPlayerBlock = playerBlock.add(0, -2, 0);
+            doDown = true;
+        } else {
+            belowPlayerBlock = playerBlock.add(0, -1, 0);
+            doDown = false;
         }
 
         direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
@@ -136,79 +138,45 @@ public class Scaffold extends Module {
         }
         *///this might be useful
 
-        playerBlock = new BlockPos(PredictUtil.predictPlayer(mc.player, predictSettings));
 
-        supportBlock = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ);
-        supportBlockTwo = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ);
 
-        if (mc.gameSettings.keyBindSprint.isKeyDown()) {
-            belowPlayerBlock = playerBlock.add(0, -2, 0);
-            supportBlock = supportBlock.add(0, -2, 0);
-            supportBlockTwo = supportBlockTwo.add(-1,-2,0);
-            doDown = true;
-        } else {
-            belowPlayerBlock = playerBlock.add(0, -1, 0);
-            supportBlock = supportBlock.add(1, -1, 0);
-            supportBlockTwo = supportBlockTwo.add(-1,-1,0);
-            doDown = false;
+        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+
+        if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
+                || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
+            replacable = true;
+            return;
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown()) {
-            mc.player.motionX *= 0.3;
-            mc.player.motionZ *= 0.3;
-            mc.player.jump();
-            if (timer.hasReached(1500,true)){
-                mc.player.motionY = -0.28;
-            }
+        int newSlot;
+        newSlot = InventoryUtil.findObsidianSlot(false, false);
 
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+        if (newSlot == -1)
+            return;
 
-            if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
-                    || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
-                replacable = true;
-                return;
-            }
+        int oldSlot;
+        oldSlot = mc.player.inventory.currentItem;
+        mc.player.inventory.currentItem = newSlot;
 
-            int newSlot;
-            newSlot = InventoryUtil.findObsidianSlot(false, false);
+        // place block
 
-            if (newSlot == -1)
-                return;
-
-            int oldSlot;
-            oldSlot = mc.player.inventory.currentItem;
-            mc.player.inventory.currentItem = newSlot;
-
-            // place block
-
-            if (crouched) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-            }
-
-            if (!doDown) {
-                placeBlockPacket(null, belowPlayerBlock);
-                placeBlockPacket(null, supportBlock);
-                placeBlockPacket(null, supportBlockTwo);
-            }
-            if (doDown) {
-                placeBlockPacket(null, supportBlock);
-            }
-
-            mc.player.inventory.currentItem = oldSlot;
-
-            doSupport = false;
-            if (!doDown) {
-                mc.player.setSneaking(true);
-            }
+        if (!doDown) {
+            placeBlockPacket(null, belowPlayerBlock);
         }
+        if (doDown) {
+            placeBlockPacket(null, supportBlock);
+        }
+
+        mc.player.inventory.currentItem = oldSlot;
     }
+
 
     void placeBlockPacket(EnumFacing side, BlockPos pos) {
 
         if (side == null) {
             side = BlockUtil.getPlaceableSide(pos);
         }
-        if (side == null){
+        if (side == null) {
 
             doSupport = true;
             return;
@@ -230,6 +198,22 @@ public class Scaffold extends Module {
         // Swing
         mc.player.swingArm(EnumHand.MAIN_HAND);
     }
+
+/*    @EventHandler
+    private final Listener<PacketEvent.Send> playerMoveEventListener = new Listener<>(event -> {
+        Packet packet = event.getPacket();
+
+        if (packet instanceof CPacketEntityAction) {
+
+        if (((CPacketEntityAction) packet).getAction() == CPacketEntityAction.Action.START_SNEAKING) {
+
+            event.cancel();
+
+        }
+
+        }
+
+    });*/
 }
 
 
