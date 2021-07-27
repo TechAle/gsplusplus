@@ -46,7 +46,7 @@ public class Chams extends Module {
     ColorSetting mobColor = registerColor("Mob Color", new GSColor(255, 255, 0, 255));
     ColorSetting crystalColor = registerColor("Crystal Color", new GSColor(0, 255, 0, 255));
     BooleanSetting chamsPop = registerBoolean("Chams Pop", false);
-    ModeSetting chamsPopType = registerMode("Chams Pop Type", Arrays.asList("Color", "WireFrame"), "WireFrame");
+    ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame");
     ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255));
     IntegerSetting wireFramePop = registerInteger("WireFrame Pop", 4, 0, 10);
     BooleanSetting gradientAlpha = registerBoolean("Gradient Alpha", true);
@@ -148,7 +148,7 @@ public class Chams extends Module {
 
         if (player.getValue() && entity1 instanceof EntityPlayer && entity1 != mc.player) {
             if ( chamsPop.getValue() && entity1.getName().length() == 0) {
-                renderChamsPop(entity1);
+                renderChamsPopPre(entity1);
             } else
             renderChamsPre(new GSColor(playerColor.getValue(), 255), true);
         }
@@ -204,7 +204,10 @@ public class Chams extends Module {
         }
 
         if (player.getValue() && entity1 instanceof EntityPlayer && entity1 != mc.player) {
-            renderChamsPost(true);
+            if (entity1.getName().length() == 0)
+                renderChamsPopPost();
+            else
+                renderChamsPost(true);
         }
 
         if (mob.getValue() && (entity1 instanceof EntityCreature || entity1 instanceof EntitySlime || entity1 instanceof EntitySquid)) {
@@ -233,7 +236,7 @@ public class Chams extends Module {
         }
     }
 
-    private void renderChamsPop(Entity player) {
+    private void renderChamsPopPre(Entity player) {
 
         int alpha = chamsColor.getColor().getAlpha();
         if (gradientAlpha.getValue()) {
@@ -253,6 +256,19 @@ public class Chams extends Module {
             }
             case "WireFrame": {
                 ChamsUtil.createWirePre(new GSColor(chamsColor.getColor(), alpha), wireFramePop.getValue(), true);
+                break;
+            }
+        }
+    }
+
+    private void renderChamsPopPost() {
+        switch (chamsPopType.getValue()) {
+            case "Color": {
+                ChamsUtil.createColorPost(true);
+                break;
+            }
+            case "WireFrame": {
+                ChamsUtil.createWirePost(true);
                 break;
             }
         }
