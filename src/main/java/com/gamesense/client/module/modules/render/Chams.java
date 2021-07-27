@@ -10,6 +10,7 @@ import com.gamesense.client.module.Module;
 import com.mojang.authlib.GameProfile;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
@@ -22,6 +23,7 @@ import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.GameType;
 
 import java.util.*;
@@ -100,6 +102,7 @@ public class Chams extends Module {
             /// Trying to make others ca not target this
             // idk maybe some ca not considerate spectator
             clonedPlayer.setGameType(GameType.SPECTATOR);
+            clonedPlayer.isSpectator();
             clonedPlayer.setHealth(20);
             // Add resistance for 0 damage
             clonedPlayer.addPotionEffect(new PotionEffect(MobEffects.RESISTANCE, 100, 100, false, false));
@@ -122,7 +125,6 @@ public class Chams extends Module {
             }
             // Add entity id
             mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
-            clonedPlayer.onLivingUpdate();
             listPlayers.add(new playerChams(-1235 - fpNum, life.getValue()));
             fpNum++;
         }
