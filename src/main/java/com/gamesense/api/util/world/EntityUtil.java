@@ -155,7 +155,7 @@ public class EntityUtil {
     }
 
     public static boolean basicChecksEntity(Entity pl) {
-        return pl.getName().equals(mc.player.getName()) || SocialManager.isFriend(pl.getName()) || pl.isDead;
+        return pl.getName().equals(mc.player.getName()) || SocialManager.isFriend(pl.getName()) || pl.isDead || pl.getName().length() == 0;
     }
 
     public static BlockPos getPosition(Entity pl) {
