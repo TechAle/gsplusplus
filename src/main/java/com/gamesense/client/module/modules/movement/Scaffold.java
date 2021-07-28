@@ -1,45 +1,34 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
-import com.gamesense.api.event.events.PlayerMoveEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
-import me.zero.alpine.listener.EventHandler;
-import me.zero.alpine.listener.Listener;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.Packet;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.MovementInput;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.input.Keyboard;
 
-import java.lang.management.MonitorInfo;
+import java.util.Arrays;
 
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
+    ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Pull", "Fly", "None"), "Pull");
+    DoubleSetting upSpeed = registerDouble("Up Speed", 1, 0, 5);
+    DoubleSetting downSpeed = registerDouble("Down Speed", 0.05, 0, 0.25);
     BooleanSetting render = registerBoolean("Render", false);
     ColorSetting mainColor = registerColor("Color");
 
@@ -65,21 +54,24 @@ public class Scaffold extends Module {
     boolean doSupport;
     boolean doDown;
     boolean doTechaleVoodooMagic;
+    boolean towering;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
     BlockPos supportBlock;
 
-
     PredictUtil.PredictSettings predictSettings;
     PredictUtil.PredictSettings predictSettingsSafeWalk;
+
+    final Timer stuckTimer = new Timer();
+    final Timer towerTimer = new Timer();
 
     @Override
     public void onUpdate() {
 
         predictSettings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debug.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
 
-        supportBlock = new BlockPos(mc.player.posX,mc.player.posY-2,mc.player.posZ);
+        supportBlock = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
 
         playerBlock = new BlockPos(PredictUtil.predictPlayer(mc.player, predictSettings));
 
@@ -88,15 +80,54 @@ public class Scaffold extends Module {
         if (mc.gameSettings.keyBindSprint.isKeyDown()) {
             belowPlayerBlock = playerBlock.add(0, -2, 0);
             doDown = true;
+            if (!mc.player.onGround) {
+                final double[] dir = directionSpeed(downSpeed.getValue());
+                mc.player.motionX = dir[0];
+                mc.player.motionZ = dir[1];
+            }
+
         } else {
             belowPlayerBlock = playerBlock.add(0, -1, 0);
             doDown = false;
         }
 
+        if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
+
+            switch (upMode.getValue()) {
+                case "Pull": {
+                    towering = false;
+                    if (mc.player.onGround) {
+                        mc.player.jump();
+                    } else if (mc.player.motionY < 0) {
+
+                        mc.player.motionY = -upSpeed.getValue();
+
+                    }
+                }
+                break;
+                case "Fly": {
+
+
+                    mc.player.motionX *= 0.3;
+                    mc.player.motionZ *= 0.3;
+                    mc.player.jump();
+                    if (towerTimer.hasReached(1500)) {
+                        mc.player.motionY = -0.28;
+                        towerTimer.reset();
+                        towering = true;
+                    }
+                }
+            }
+            placeBlockPacket(null, playerBlock);
+        } else {
+            towerTimer.reset();
+            towering = false;
+        }
+
         direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
 
 
-/*        if (mc.gameSettings.keyBindJump.isPressed()) {
+            /*
 
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
@@ -115,36 +146,11 @@ public class Scaffold extends Module {
         }
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-
-            /*
-        switch (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7) {
-            case 0:
-                return "+Z";
-            case 1:
-                return "-X +Z";
-            case 2:
-                return "-X";
-            case 3:
-                return "-X -Z";
-            case 4:
-                return "-Z";
-            case 5:
-                return "+X -Z";
-            case 6:
-                return "+X";
-            case 7:
-                return "+X +Z";
-            }
-        }
-        *///this might be useful
-
-
-
         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
         if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
                 || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
-            doTechaleVoodooMagic = false;
+            doTechaleVoodooMagic = !stuckTimer.hasReached(250, true) && !towering;
             return;
         }
 
@@ -162,8 +168,15 @@ public class Scaffold extends Module {
 
         if (!doDown && doTechaleVoodooMagic) {
             placeBlockPacket(null, belowPlayerBlock);
-        }else {
+
+        } else {
             placeBlockPacket(null, supportBlock);
+        }
+
+        if (mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable() && !mc.player.onGround && !towering && !doDown) {
+
+            clutch();
+
         }
 
         mc.player.inventory.currentItem = oldSlot;
@@ -198,21 +211,53 @@ public class Scaffold extends Module {
         mc.player.swingArm(EnumHand.MAIN_HAND);
     }
 
-/*    @EventHandler
-    private final Listener<PacketEvent.Send> playerMoveEventListener = new Listener<>(event -> {
-        Packet packet = event.getPacket();
+    public static double[] directionSpeed(double speed) {
+        float forward = mc.player.movementInput.moveForward;
+        float side = mc.player.movementInput.moveStrafe;
+        float yaw = mc.player.prevRotationYaw + (mc.player.rotationYaw - mc.player.prevRotationYaw) * mc.getRenderPartialTicks();
 
-        if (packet instanceof CPacketEntityAction) {
+        if (forward != 0) {
+            if (side > 0) {
+                yaw += (forward > 0 ? -45 : 45);
+            } else if (side < 0) {
+                yaw += (forward > 0 ? 45 : -45);
+            }
+            side = 0;
 
-        if (((CPacketEntityAction) packet).getAction() == CPacketEntityAction.Action.START_SNEAKING) {
-
-            event.cancel();
-
+            //forward = clamp(forward, 0, 1);
+            if (forward > 0) {
+                forward = 1;
+            } else if (forward < 0) {
+                forward = -1;
+            }
         }
 
-        }
+        final double sin = Math.sin(Math.toRadians(yaw + 90));
+        final double cos = Math.cos(Math.toRadians(yaw + 90));
+        final double posX = (forward * speed * cos + side * speed * sin);
+        final double posZ = (forward * speed * sin - side * speed * cos);
+        return new double[]{posX, posZ};
+    }
+    public void clutch() {
 
-    });*/
+        BlockPos playerPos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ);
+
+        BlockPos xppos = new BlockPos(mc.player.posX+1,mc.player.posY-1,mc.player.posZ);
+        BlockPos xmpos = new BlockPos(mc.player.posX-1,mc.player.posY-1,mc.player.posZ);
+        BlockPos zppos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ +1);
+        BlockPos zmpos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ -1);
+
+
+        placeBlockPacket(null,xppos);
+        if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()){
+            placeBlockPacket(null, xmpos);
+            if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()){
+                placeBlockPacket(null, zppos);
+                if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()){
+                    placeBlockPacket(null, zmpos);
+                }
+            }
+        }
+    }
 }
-
 
