@@ -29,8 +29,6 @@ import java.util.Arrays;
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
-    ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Pull", "Fly", "None"), "Pull");
-    DoubleSetting upSpeed = registerDouble("Up Speed", 1, 0, 5);
     DoubleSetting downSpeed = registerDouble("Down Speed", 0.05, 0, 0.25);
     BooleanSetting render = registerBoolean("Render", false);
     ColorSetting mainColor = registerColor("Color");
@@ -139,7 +137,7 @@ public class Scaffold extends Module {
 
         // place block
 
-        if (!dontPlace){
+        if (!dontPlace) {
             if (!doDown && doTechaleVoodooMagic) {
                 placeBlockPacket(null, belowPlayerBlock);
 
@@ -241,38 +239,24 @@ public class Scaffold extends Module {
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
         if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
 
-            dontPlace = true;
-
-            switch (upMode.getValue()) {
-                case "Pull": {
-                    towering = false;
-                    if (mc.player.onGround) {
-                        mc.player.jump();
-                    } else if (mc.player.motionY < 0) {
-
-                        mc.player.motionY = -upSpeed.getValue();
-
-                    }
-                }
-                break;
-                case "Fly": {
-
-
-                    mc.player.motionX *= 0.3;
-                    mc.player.motionZ *= 0.3;
-                    mc.player.jump();
-                    if (towerTimer.hasReached(1500)) {
-                        mc.player.motionY = -0.28;
-                        towerTimer.reset();
-                        towering = true;
-                    }
-                }
+            mc.player.motionX *= 0.3;
+            mc.player.motionZ *= 0.3;
+            mc.player.jump();
+            if (towerTimer.hasReached(1500)) {
+                mc.player.motionY = -0.28;
+                towerTimer.reset();
+                towering = true;
             }
-            placeBlockPacket(null, (new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ)));
+
+            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)));
+            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
+
         } else {
+
             towerTimer.reset();
             towering = false;
             dontPlace = false;
+
         }
     });
 }
