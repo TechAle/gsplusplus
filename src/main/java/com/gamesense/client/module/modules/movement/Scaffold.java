@@ -15,7 +15,10 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -29,26 +32,26 @@ import java.util.Arrays;
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
-    DoubleSetting downSpeed = registerDouble("Down Speed", 0.05, 0, 0.25);
-    BooleanSetting render = registerBoolean("Render", false);
-    ColorSetting mainColor = registerColor("Color");
+    DoubleSetting upSpeed = registerDouble("Up Speed",  120, 1, 500);
+    DoubleSetting downSpeed = registerDouble("Down Speed", 0, 0, 0.25);
 
-    IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30);
-    BooleanSetting calculateYPredict = registerBoolean("Calculate Y Predict", true);
-    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200, () -> calculateYPredict.getValue());
-    IntegerSetting exponentStartDecrease = registerInteger("Exponent Start", 2, 1, 5, () -> calculateYPredict.getValue());
-    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5, () -> calculateYPredict.getValue());
-    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3, () -> calculateYPredict.getValue());
-    IntegerSetting increaseY = registerInteger("Increase Y", 3, 1, 5, () -> calculateYPredict.getValue());
-    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3, () -> calculateYPredict.getValue());
-    BooleanSetting splitXZ = registerBoolean("Split XZ", true);
-    IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
-    BooleanSetting debug = registerBoolean("Debug", false);
-    BooleanSetting showPredictions = registerBoolean("Show Predictions", false);
-    BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false);
-    BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false, () -> manualOutHole.getValue());
+    BooleanSetting showPredictSettings = registerBoolean("Predict Settings", false);
 
-    int targetBlockSlot;
+    IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30, () -> showPredictSettings.getValue());
+    BooleanSetting calculateYPredict = registerBoolean("Calculate Y Predict", true, () -> showPredictSettings.getValue());
+    IntegerSetting startDecrease = registerInteger("Start Decrease", 39, 0, 200, () -> calculateYPredict.getValue() && showPredictSettings.getValue());
+    IntegerSetting exponentStartDecrease = registerInteger("Exponent Start", 2, 1, 5, () -> calculateYPredict.getValue()&& showPredictSettings.getValue());
+    IntegerSetting decreaseY = registerInteger("Decrease Y", 2, 1, 5, () -> calculateYPredict.getValue()&& showPredictSettings.getValue());
+    IntegerSetting exponentDecreaseY = registerInteger("Exponent Decrease Y", 1, 1, 3, () -> calculateYPredict.getValue()&& showPredictSettings.getValue());
+    IntegerSetting increaseY = registerInteger("Increase Y", 3, 1, 5, () -> calculateYPredict.getValue()&& showPredictSettings.getValue());
+    IntegerSetting exponentIncreaseY = registerInteger("Exponent Increase Y", 2, 1, 3, () -> calculateYPredict.getValue()&& showPredictSettings.getValue());
+    BooleanSetting splitXZ = registerBoolean("Split XZ", true, () -> showPredictSettings.getValue());
+    IntegerSetting width = registerInteger("Line Width", 2, 1, 5, () -> showPredictSettings.getValue());
+    BooleanSetting debug = registerBoolean("Debug", false, () -> showPredictSettings.getValue());
+    BooleanSetting showPredictions = registerBoolean("Show Predictions", false, () -> showPredictSettings.getValue());
+    BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> showPredictSettings.getValue());
+    BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false, () -> manualOutHole.getValue()&& showPredictSettings.getValue());
+
     int oldSlot;
     int direction;
 
@@ -57,6 +60,7 @@ public class Scaffold extends Module {
     boolean doTechaleVoodooMagic;
     boolean towering;
     boolean dontPlace;
+    boolean cont;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
@@ -106,20 +110,41 @@ public class Scaffold extends Module {
 
             }*/
 
-        targetBlockSlot =
+        int targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
 
-                oldSlot = mc.player.inventory.currentItem;
-
-        if (targetBlockSlot == -1) {
+        if (targetBlockSlot > 9 || targetBlockSlot < 0) {
             MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You dont have any obby lol");
-            disable();
+            dontPlace = true;
         }
 
-        mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+        for (int i = 1; i < 10; i++) {
+
+            if (cont && mc.player.inventory.getStackInSlot(i) != ItemStack.EMPTY && mc.player.inventory.getStackInSlot(i).item instanceof ItemBlock) {
+
+                targetBlockSlot = i;
+
+                cont = false;
+
+            }
+
+        }
+
+
+        if (targetBlockSlot == -1) {
+
+            if (mc.player.posY > 0) {
+                MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "No blocks in hotbar, disabling.");
+                disable();
+            }
+        }
+
 
         if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
                 || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
+
             doTechaleVoodooMagic = !stuckTimer.hasReached(250, true) && !towering;
+
             return;
         }
 
@@ -131,7 +156,7 @@ public class Scaffold extends Module {
 
         if (mc.player.inventory.currentItem != newSlot) {
             oldSlot = mc.player.inventory.currentItem;
-            mc.player.inventory.currentItem = newSlot;
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
             switchTimer.reset();
         }
 
@@ -182,7 +207,7 @@ public class Scaffold extends Module {
         mc.player.swingArm(EnumHand.MAIN_HAND);
 
         //Switch back
-        mc.player.inventory.currentItem = oldSlot;
+        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
     }
 
     public static double[] directionSpeed(double speed) {
@@ -223,13 +248,15 @@ public class Scaffold extends Module {
         BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
 
 
-        placeBlockPacket(null, xppos);
-        if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
-            placeBlockPacket(null, xmpos);
-            if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
-                placeBlockPacket(null, zppos);
-                if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
-                    placeBlockPacket(null, zmpos);
+        if (!dontPlace) {
+            placeBlockPacket(null, xppos);
+            if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+                placeBlockPacket(null, xmpos);
+                if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
+                    placeBlockPacket(null, zppos);
+                    if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+                        placeBlockPacket(null, zmpos);
+                    }
                 }
             }
         }
@@ -237,11 +264,12 @@ public class Scaffold extends Module {
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+
         if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
 
             mc.player.motionX *= 0.3;
             mc.player.motionZ *= 0.3;
-            mc.player.jump();
+            mc.player.motionY = 0.41;
             if (towerTimer.hasReached(1500)) {
                 mc.player.motionY = -0.28;
                 towerTimer.reset();
@@ -250,6 +278,21 @@ public class Scaffold extends Module {
 
             placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)));
             placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
+
+
+
+/*            if (towerTimer.hasReached(upSpeed.getValue().longValue())){
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ, true));
+
+                mc.player.setPosition(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ);
+
+                placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
+            }*/
+
+
 
         } else {
 
