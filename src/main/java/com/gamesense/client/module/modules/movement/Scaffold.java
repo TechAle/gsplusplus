@@ -216,7 +216,7 @@ public class Scaffold extends Module {
         mc.player.swingArm(EnumHand.MAIN_HAND);
 
         //Switch back
-        mc.player.inventory.
+        mc.player.inventory.currentItem = oldSlot;
     }
 
     public static double[] directionSpeed(double speed) {
