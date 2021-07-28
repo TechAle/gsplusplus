@@ -55,6 +55,8 @@ public class Scaffold extends Module {
     boolean doDown;
     boolean doTechaleVoodooMagic;
     boolean towering;
+    boolean dontClutch;
+    boolean switchBack;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
@@ -65,6 +67,7 @@ public class Scaffold extends Module {
 
     final Timer stuckTimer = new Timer();
     final Timer towerTimer = new Timer();
+    final Timer switchTimer = new Timer();
 
     @Override
     public void onUpdate() {
@@ -92,6 +95,8 @@ public class Scaffold extends Module {
         }
 
         if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
+
+            dontClutch = true;
 
             switch (upMode.getValue()) {
                 case "Pull": {
@@ -122,6 +127,7 @@ public class Scaffold extends Module {
         } else {
             towerTimer.reset();
             towering = false;
+            dontClutch = false;
         }
 
         direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
@@ -146,7 +152,6 @@ public class Scaffold extends Module {
         }
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
         if (!mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable()
                 || mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(belowPlayerBlock)).stream().anyMatch(entity -> entity instanceof EntityPlayer && entity != mc.player)) {
@@ -160,9 +165,11 @@ public class Scaffold extends Module {
         if (newSlot == -1)
             return;
 
-        int oldSlot;
-        oldSlot = mc.player.inventory.currentItem;
-        mc.player.inventory.currentItem = newSlot;
+        if (mc.player.inventory.currentItem != newSlot){
+            oldSlot = mc.player.inventory.currentItem;
+            mc.player.inventory.currentItem = newSlot;
+            switchTimer.reset();
+        }
 
         // place block
 
@@ -173,13 +180,11 @@ public class Scaffold extends Module {
             placeBlockPacket(null, supportBlock);
         }
 
-        if (mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable() && !mc.player.onGround && !towering && !doDown) {
+        if (mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable() && !mc.player.onGround && !towering && !doDown && !dontClutch && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
             clutch();
 
         }
-
-        mc.player.inventory.currentItem = oldSlot;
     }
 
 
@@ -209,6 +214,9 @@ public class Scaffold extends Module {
 
         // Swing
         mc.player.swingArm(EnumHand.MAIN_HAND);
+
+        //Switch back
+        mc.player.inventory.
     }
 
     public static double[] directionSpeed(double speed) {
