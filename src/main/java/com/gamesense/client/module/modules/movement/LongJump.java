@@ -2,6 +2,7 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.world.EntityUtil;
@@ -22,14 +23,19 @@ public class LongJump extends Module {
 
     ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far"), "Strafe");
     DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
-    DoubleSetting farSpeed = registerDouble("farSpeed", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Far"));
-    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
+    DoubleSetting farSpeed = registerDouble("farSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
+    IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
+    DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
+    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe"));
 
     Double playerSpeed;
 
     boolean slowDown;
 
+    int i;
+
     private final Timer timer = new Timer();
+    private final Timer farTimer = new Timer();
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
@@ -69,15 +75,26 @@ public class LongJump extends Module {
 
     @Override
     public void onUpdate() {
-        if (mode.getValue().equalsIgnoreCase("Far")){
+        double[] dir = MotionUtil.forward(playerSpeed);
+        if (mode.getValue().equalsIgnoreCase("Far")) {
             if (mc.player.onGround && mc.gameSettings.keyBindForward.isKeyDown()) {
+                mc.player.motionX = dir[0] * initialFar.getValue().floatValue();
+                mc.player.motionZ = dir[1] * initialFar.getValue().floatValue();
                 mc.player.jump();
+                i = 0;
             }
             if (mc.player.motionY == 0.0030162615090425808) {
-                mc.player.jumpMovementFactor = farSpeed.getValue().floatValue();
-            }
+                if (farAccel.getValue().equals(0)) {
+                    mc.player.jumpMovementFactor = farSpeed.getValue().floatValue();
+                } else {
+                    i++;
+                    mc.player.jumpMovementFactor = i * (farSpeed.getValue().floatValue() / farAccel.getValue());
+                }
+
+
             }
         }
+    }
 
 
     @Override
