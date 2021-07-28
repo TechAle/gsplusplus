@@ -26,14 +26,16 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.lwjgl.Sys;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
-    DoubleSetting upSpeed = registerDouble("Up Speed",  120, 1, 500);
+    IntegerSetting upSpeed = registerInteger("Up Speed",  10, 1, 20);
     DoubleSetting downSpeed = registerDouble("Down Speed", 0, 0, 0.25);
+    IntegerSetting offset = registerInteger("Offset", 1,0,3);
 
     BooleanSetting showPredictSettings = registerBoolean("Predict Settings", false);
 
@@ -51,6 +53,8 @@ public class Scaffold extends Module {
     BooleanSetting showPredictions = registerBoolean("Show Predictions", false, () -> showPredictSettings.getValue());
     BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> showPredictSettings.getValue());
     BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false, () -> manualOutHole.getValue()&& showPredictSettings.getValue());
+
+    double jumpGround;
 
     int oldSlot;
     int direction;
@@ -267,6 +271,8 @@ public class Scaffold extends Module {
 
         if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
 
+            /*mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,mc.player.rotationPitch,true));
+
             mc.player.motionX *= 0.3;
             mc.player.motionZ *= 0.3;
             mc.player.motionY = 0.41;
@@ -277,7 +283,7 @@ public class Scaffold extends Module {
             }
 
             placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)));
-            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
+            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));*/
 
 
 
@@ -293,6 +299,26 @@ public class Scaffold extends Module {
             }*/
 
 
+
+            mc.player.motionX *= 0.3;
+            mc.player.motionZ *= 0.3;
+            mc.player.jump();
+            if (this.towerTimer.hasReached(1500L)) {
+                mc.player.motionY = -0.28;
+                this.towerTimer.reset();
+            }
+/*            if (mc.player.posY > jumpGround + 0.79) {
+                mc.player.setPosition(
+                        mc.player.posX,
+                        Math.floor(mc.player.posY),
+                        mc.player.posZ
+                );
+                mc.player.motionY = 0.42;
+                jumpGround = mc.player.posY;
+            }*/
+            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable()) {
+                placeBlockPacket(null, new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ));
+            }
 
         } else {
 
