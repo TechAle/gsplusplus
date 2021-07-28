@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.misc.Timer;
@@ -11,6 +12,8 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
@@ -55,8 +58,7 @@ public class Scaffold extends Module {
     boolean doDown;
     boolean doTechaleVoodooMagic;
     boolean towering;
-    boolean dontClutch;
-    boolean switchBack;
+    boolean dontPlace;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
@@ -94,42 +96,6 @@ public class Scaffold extends Module {
             doDown = false;
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
-
-            dontClutch = true;
-
-            switch (upMode.getValue()) {
-                case "Pull": {
-                    towering = false;
-                    if (mc.player.onGround) {
-                        mc.player.jump();
-                    } else if (mc.player.motionY < 0) {
-
-                        mc.player.motionY = -upSpeed.getValue();
-
-                    }
-                }
-                break;
-                case "Fly": {
-
-
-                    mc.player.motionX *= 0.3;
-                    mc.player.motionZ *= 0.3;
-                    mc.player.jump();
-                    if (towerTimer.hasReached(1500)) {
-                        mc.player.motionY = -0.28;
-                        towerTimer.reset();
-                        towering = true;
-                    }
-                }
-            }
-            placeBlockPacket(null, playerBlock);
-        } else {
-            towerTimer.reset();
-            towering = false;
-            dontClutch = false;
-        }
-
         direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
 
 
@@ -165,7 +131,7 @@ public class Scaffold extends Module {
         if (newSlot == -1)
             return;
 
-        if (mc.player.inventory.currentItem != newSlot){
+        if (mc.player.inventory.currentItem != newSlot) {
             oldSlot = mc.player.inventory.currentItem;
             mc.player.inventory.currentItem = newSlot;
             switchTimer.reset();
@@ -173,14 +139,16 @@ public class Scaffold extends Module {
 
         // place block
 
-        if (!doDown && doTechaleVoodooMagic) {
-            placeBlockPacket(null, belowPlayerBlock);
+        if (!dontPlace){
+            if (!doDown && doTechaleVoodooMagic) {
+                placeBlockPacket(null, belowPlayerBlock);
 
-        } else {
-            placeBlockPacket(null, supportBlock);
+            } else {
+                placeBlockPacket(null, supportBlock);
+            }
         }
 
-        if (mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable() && !mc.player.onGround && !towering && !doDown && !dontClutch && !mc.gameSettings.keyBindJump.isKeyDown()) {
+        if (mc.world.getBlockState(belowPlayerBlock).getMaterial().isReplaceable() && !mc.player.onGround && !towering && !doDown && !dontPlace && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
             clutch();
 
@@ -246,26 +214,65 @@ public class Scaffold extends Module {
         final double posZ = (forward * speed * sin - side * speed * cos);
         return new double[]{posX, posZ};
     }
+
     public void clutch() {
 
-        BlockPos playerPos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ);
+        BlockPos playerPos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ);
 
-        BlockPos xppos = new BlockPos(mc.player.posX+1,mc.player.posY-1,mc.player.posZ);
-        BlockPos xmpos = new BlockPos(mc.player.posX-1,mc.player.posY-1,mc.player.posZ);
-        BlockPos zppos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ +1);
-        BlockPos zmpos = new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ -1);
+        BlockPos xppos = new BlockPos(mc.player.posX + 1, mc.player.posY - 1, mc.player.posZ);
+        BlockPos xmpos = new BlockPos(mc.player.posX - 1, mc.player.posY - 1, mc.player.posZ);
+        BlockPos zppos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ + 1);
+        BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
 
 
-        placeBlockPacket(null,xppos);
-        if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()){
+        placeBlockPacket(null, xppos);
+        if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
             placeBlockPacket(null, xmpos);
-            if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()){
+            if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
                 placeBlockPacket(null, zppos);
-                if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()){
+                if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
                     placeBlockPacket(null, zmpos);
                 }
             }
         }
     }
-}
 
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+        if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
+
+            dontPlace = true;
+
+            switch (upMode.getValue()) {
+                case "Pull": {
+                    towering = false;
+                    if (mc.player.onGround) {
+                        mc.player.jump();
+                    } else if (mc.player.motionY < 0) {
+
+                        mc.player.motionY = -upSpeed.getValue();
+
+                    }
+                }
+                break;
+                case "Fly": {
+
+
+                    mc.player.motionX *= 0.3;
+                    mc.player.motionZ *= 0.3;
+                    mc.player.jump();
+                    if (towerTimer.hasReached(1500)) {
+                        mc.player.motionY = -0.28;
+                        towerTimer.reset();
+                        towering = true;
+                    }
+                }
+            }
+            placeBlockPacket(null, (new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ)));
+        } else {
+            towerTimer.reset();
+            towering = false;
+            dontPlace = false;
+        }
+    });
+}
