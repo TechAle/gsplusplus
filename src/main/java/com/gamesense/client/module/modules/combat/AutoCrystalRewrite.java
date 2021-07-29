@@ -14,6 +14,7 @@ import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
@@ -85,11 +86,13 @@ public class AutoCrystalRewrite extends Module {
 
     //region Place
     BooleanSetting place = registerBoolean("Place Section", false);
-    ModeSetting placeDelay = registerMode("Place Delay", Arrays.asList("Tick", "Time"), "Tick", () -> place.getValue());
+    ModeSetting placeDelay = registerMode("Place Delay", Arrays.asList("Tick", "Time", "Vanilla"), "Tick", () -> place.getValue());
     IntegerSetting tickDelayPlace = registerInteger("Tick Delay Place", 0, 0, 20,
             () -> place.getValue() && placeDelay.getValue().equals("Tick"));
     IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
             () -> place.getValue() && placeDelay.getValue().equals("Time"));
+    IntegerSetting vanillaSpeed = registerInteger("Vanilla Speed", 19, 0, 20,
+            () -> place.getValue() && placeDelay.getValue().equals("Vanilla"));
     BooleanSetting placeOnCrystal = registerBoolean("Place On Crystal", false,
             () -> place.getValue());
     DoubleSetting minDamagePlace = registerDouble("Min Damage Place", 5, 0, 30, () -> place.getValue());
@@ -454,6 +457,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting showPlaceName = registerBoolean("Show Place Name", false, () -> hudDisplayShow.getValue());
     BooleanSetting showPlaceDamage = registerBoolean("Show Place Damage", false, () -> hudDisplayShow.getValue());
     BooleanSetting showPlaceCrystalsSecond = registerBoolean("Show c/s place", false, () -> hudDisplayShow.getValue());
+    BooleanSetting cleanPlace = registerBoolean("Clean Place", true, () -> hudDisplayShow.getValue());
 
     //endregion
     //endregion
@@ -683,6 +687,7 @@ public class AutoCrystalRewrite extends Module {
 
     double xPlayer, yPlayer;
 
+    Timer timerPlace = new Timer();
 
     long time = 0;
 
@@ -821,7 +826,7 @@ public class AutoCrystalRewrite extends Module {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: ").append(temp);
                     place = true;
-                } else t.append(" c/s: ").append(temp);
+                } else t.append((cleanPlace.getValue() ? " c/s: " : "") + temp);
             }
 
         }
@@ -1151,6 +1156,12 @@ public class AutoCrystalRewrite extends Module {
                     return true;
                 else if (System.currentTimeMillis() - time >= timeDelayPlace.getValue()) {
                     checkTime = false;
+                    return true;
+                }
+                break;
+            case "Vanilla":
+                if (timerPlace.getTimePassed() / 50L >= 20 - vanillaSpeed.getValue()) {
+                    timerPlace.reset();
                     return true;
                 }
                 break;

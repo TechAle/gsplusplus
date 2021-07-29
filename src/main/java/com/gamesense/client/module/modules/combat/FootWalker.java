@@ -40,6 +40,10 @@ public class FootWalker extends Module {
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
     BooleanSetting onShift = registerBoolean("On Shift", true);
     BooleanSetting preRotate = registerBoolean("Pre Rotate", false);
+    ModeSetting jumpMode = registerMode("Jump Mode", Arrays.asList("Konas", "Future"), "Konas");
+    BooleanSetting doubleRubberband = registerBoolean("Double Rubberband", false);
+    DoubleSetting addDouble = registerDouble("Add Double", 1.1, 0, 2, () -> doubleRubberband.getValue());
+    BooleanSetting beforeRubberband = registerBoolean("Before Rubberband", false);
     ModeSetting rubberbandMode = registerMode("Rubberband Mode", Arrays.asList("+Y", "-Y", "Add Y", "Free Y"), "+Y");
     IntegerSetting ym = registerInteger("Y-", -4, -64, 0, () -> rubberbandMode.getValue().equals("-Y"));
     IntegerSetting yp = registerInteger("Y+", 128, 0, 200, () -> rubberbandMode.getValue().equals("+Y"));
@@ -295,10 +299,7 @@ public class FootWalker extends Module {
             }
 
             // Send burrow exploit
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.01, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16, posZ, true));
+            jump(jumpMode.getValue(), posX, posZ);
 
             // Start placing
             placeBlockPacket(EnumFacing.DOWN, pos);
@@ -319,7 +320,9 @@ public class FootWalker extends Module {
                     newY = posY + y;
                     break;
             }
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY, posZ, true));
+
+            if (beforeRubberband.getValue())
+                rubberband(posX, newY, posZ);
 
             // return old slot
             if (slotBlock != oldSlot)
@@ -333,6 +336,9 @@ public class FootWalker extends Module {
             if (isSneaking)
                 mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
 
+            if (!beforeRubberband.getValue())
+                rubberband(posX, newY, posZ);
+
             // If phase, active
             if (phase.getValue()) {
                 if (predictPhase.getValue())
@@ -344,6 +350,31 @@ public class FootWalker extends Module {
 
         if (disactive && !phase.getValue())
             disable();
+    }
+
+    void rubberband(double posX, double newY, double posZ) {
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY, posZ, true));
+        if (doubleRubberband.getValue()) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, newY + addDouble.getValue(), posZ, true));
+        }
+    }
+
+    void jump(String mode, double posX, double posZ) {
+        switch (mode) {
+            case "Konas":
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.01, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16, posZ, true));
+                break;
+            case "Future":
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.9, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.17, posZ, true));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.17, posZ, true));
+                break;
+        }
     }
 
     boolean placeBlockPacket(EnumFacing side, BlockPos pos) {
