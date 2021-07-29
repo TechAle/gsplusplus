@@ -1061,8 +1061,8 @@ public class Elevatot extends Module {
     }
 
     public String getHudInfo() {
-        String temp = "";
-        if (!(temp = aimTarget.getGameProfile().getName()).equalsIgnoreCase(""))
+        String temp;
+        if ( aimTarget != null && !(temp = aimTarget.getGameProfile().getName()).equalsIgnoreCase(""))
             return "[" + ChatFormatting.WHITE + temp + ChatFormatting.GRAY + "]";
         return "";
     }
