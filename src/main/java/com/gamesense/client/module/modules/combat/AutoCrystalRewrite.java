@@ -46,9 +46,8 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -91,7 +90,7 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && placeDelay.getValue().equals("Tick"));
     IntegerSetting timeDelayPlace = registerInteger("TIme Delay Place", 0, 0, 2000,
             () -> place.getValue() && placeDelay.getValue().equals("Time"));
-    IntegerSetting vanillaSpeed = registerInteger("Vanilla Speed", 19, 0, 20,
+    IntegerSetting vanillaSpeedPlace = registerInteger("Vanilla Speed pl", 19, 0, 20,
             () -> place.getValue() && placeDelay.getValue().equals("Vanilla"));
     BooleanSetting placeOnCrystal = registerBoolean("Place On Crystal", false,
             () -> place.getValue());
@@ -108,7 +107,10 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && limitPacketPlace.getValue().equals("Tick"));
     IntegerSetting limitTickTime = registerInteger("Limit Time Place", 0, 0, 2000,
             () -> place.getValue() && limitPacketPlace.getValue().equals("Time"));
-    BooleanSetting swingPlace = registerBoolean("Swing Place", false, () -> place.getValue());
+    ModeSetting swingModepl = registerMode("Swing Mode pl", Arrays.asList("Client", "Server", "None"), "Server",
+            () -> place.getValue());
+    BooleanSetting hideClientpl = registerBoolean("Hide Client pl", false,
+            () -> place.getValue() && swingModepl.getValue().equals("Server"));
     BooleanSetting autoWeb = registerBoolean("Auto Web", false, () -> place.getValue());
     BooleanSetting stopCrystal = registerBoolean("Stop Crystal", true, () -> place.getValue() && autoWeb.getValue());
     BooleanSetting preRotateWeb = registerBoolean("Pre Rotate Web", false, () -> place.getValue() && autoWeb.getValue());
@@ -126,12 +128,29 @@ public class AutoCrystalRewrite extends Module {
 
     //region break
     BooleanSetting breakSection = registerBoolean("Break Section", false);
-    ModeSetting breakType = registerMode("Break Type", Arrays.asList("Own", "All", "Smart"), "Smart",
+    ModeSetting breakDelay = registerMode("Break Delay", Arrays.asList("Tick", "Time", "Vanilla"), "Tick", () -> breakSection.getValue());
+    IntegerSetting tickDelayBreak = registerInteger("Tick Delay Place", 0, 0, 20,
+            () -> breakSection.getValue() && breakDelay.getValue().equals("Tick"));
+    IntegerSetting timeDelayBreak = registerInteger("TIme Delay Place", 0, 0, 2000,
+            () -> breakSection.getValue() && breakDelay.getValue().equals("Time"));
+    IntegerSetting vanillaSpeedBreak = registerInteger("Vanilla Speed br", 19, 0, 20,
+            () -> breakSection.getValue() && breakDelay.getValue().equals("Vanilla"));
+    ModeSetting chooseCrystal = registerMode("Choose Type", Arrays.asList("Own", "All", "Smart"), "Smart",
             () -> breakSection.getValue());
     DoubleSetting minDamageBreak = registerDouble("Min Damage Break", 5, 0, 30, () -> breakSection.getValue());
     DoubleSetting maxSelfDamageBreak = registerDouble("Max Self Damage Break", 12, 0, 30,
-            () -> breakSection.getValue() && breakType.getValue().equals("Smart"));
+            () -> breakSection.getValue() && chooseCrystal.getValue().equals("Smart"));
     DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8,
+            () -> breakSection.getValue());
+    ModeSetting swingModebr = registerMode("Swing Mode br", Arrays.asList("Client", "Server", "None"), "Server",
+            () -> breakSection.getValue());
+    BooleanSetting hideClientbr = registerBoolean("Hide Client br", false,
+            () -> breakSection.getValue() && swingModebr.getValue().equals("Server"));
+    ModeSetting swingHandbr = registerMode("Hand Break", Arrays.asList("Both", "Offhand", "Mainhand"), "Offhand",
+            () -> breakSection.getValue() && !swingModebr.getValue().equals("None"));
+    ModeSetting breakTypeCrystal = registerMode("Break Type", Arrays.asList("Packet", "Vanilla"), "Packet",
+            () -> breakSection.getValue());
+    BooleanSetting cancelCrystal = registerBoolean("Cancel Crystal", false,
             () -> breakSection.getValue());
     //endregion
 
@@ -681,15 +700,17 @@ public class AutoCrystalRewrite extends Module {
     /// Global variables sorted by type
     public static boolean stopAC = false;
 
-    boolean checkTime, placedCrystal = false, isRotating;
+    boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, slotChange, tickSwitch, oldSlotBack, slotWebBack;
+    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBack, slotWebBack;
 
     double xPlayer, yPlayer;
 
     Timer timerPlace = new Timer();
+    Timer timerBreak = new Timer();
 
-    long time = 0;
+    long timePlace = 0;
+    long timeBreak = 0;
 
     Vec3d lastHitVec;
 
@@ -716,10 +737,10 @@ public class AutoCrystalRewrite extends Module {
 
     public void onEnable() {
         // Just reset some variables
-        tickBeforePlace = tick = 0;
-        time = 0;
+        tickBeforePlace = tickBeforeBreak = tick = 0;
+        timePlace = timeBreak = 0;
         oldSlotBack = tickSwitch = slotWebBack = -1;
-        checkTime = isRotating = false;
+        checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak = isRotating = false;
     }
 
     int tickEat = 0;
@@ -1152,15 +1173,15 @@ public class AutoCrystalRewrite extends Module {
                 break;
             case "Time":
                 // Check if the time between time and now is >= timeDelayPlace
-                if (!checkTime)
+                if (!checkTimePlace)
                     return true;
-                else if (System.currentTimeMillis() - time >= timeDelayPlace.getValue()) {
-                    checkTime = false;
+                else if (System.currentTimeMillis() - timePlace >= timeDelayPlace.getValue()) {
+                    checkTimePlace = false;
                     return true;
                 }
                 break;
             case "Vanilla":
-                if (timerPlace.getTimePassed() / 50L >= 20 - vanillaSpeed.getValue()) {
+                if (timerPlace.getTimePassed() / 50L >= 20 - vanillaSpeedPlace.getValue()) {
                     timerPlace.reset();
                     return true;
                 }
@@ -1552,8 +1573,8 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // If he want to swing
-        if (swingPlace.getValue())
-            mc.player.swingArm(handSwing);
+        if (!swingModepl.getValue().equals("None"))
+            swingArm(swingModepl.getValue(), hideClientpl.getValue(), handSwing);
 
         // For silent switch
         if (slotChange != -1) {
@@ -1563,8 +1584,8 @@ public class AutoCrystalRewrite extends Module {
 
         // For limiting place packets
         tickBeforePlace = tickDelayPlace.getValue();
-        checkTime = true;
-        time = System.currentTimeMillis();
+        checkTimePlace = true;
+        timePlace = System.currentTimeMillis();
         // Switch
         switch (limitPacketPlace.getValue()) {
             // Tick, add new wait in tick
@@ -1802,7 +1823,7 @@ public class AutoCrystalRewrite extends Module {
                                         damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
 
                                     // For every types of break
-                                    switch (breakType.getValue()) {
+                                    switch (chooseCrystal.getValue()) {
                                         case "All":
                                             // Add everything
                                             damagePos.add(new PositionInfo(crystal, damage));
@@ -1942,7 +1963,49 @@ public class AutoCrystalRewrite extends Module {
 
     // region Break Crystal
 
+    boolean canStartBreaking() {
+        switch (breakDelay.getValue()) {
+            // Tick, check if tick == 0, else -1
+            case "Tick":
+                if (tickBeforeBreak == 0)
+                    return true;
+                else tickBeforeBreak--;
+                break;
+            case "Time":
+                // Check if the time between time and now is >= timeDelayPlace
+                if (!checkTimeBreak)
+                    return true;
+                else if (System.currentTimeMillis() - timeBreak >= timeDelayBreak.getValue()) {
+                    checkTimeBreak = false;
+                    return true;
+                }
+                break;
+            case "Vanilla":
+                if (timerBreak.getTimePassed() / 50L >= 20 - vanillaSpeedBreak.getValue()) {
+                    timerBreak.reset();
+                    return true;
+                }
+                break;
+        }
+        return false;
+    }
+
     void breakCrystals() {
+
+        // If we have placed a crystal before
+        if (brokenCrystal) {
+            // Stop
+            brokenCrystal = false;
+            return;
+        }
+
+        if (!canStartBreaking())
+            return;
+
+
+        /*
+            Looking crystal break code
+         */
 
         // For debugging timeCalcPlacement
         long inizio = 0;
@@ -1973,8 +2036,144 @@ public class AutoCrystalRewrite extends Module {
             if (predictBreakingEnemy.getValue())
                 toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
 
+            // Break crystal
+            breakCrystal(bestBreak.crystal);
         }
 
+    }
+
+    void breakCrystal(EntityEnderCrystal cr) {
+        BlockPos pos = cr.getPosition();
+        // Rotate
+        if (rotate.getValue()) {
+            // New lastHitVec
+            lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
+            // New tick
+            tick = 0;
+            // If preRotate
+            if (preRotate.getValue()) {
+                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
+            } else
+                // If we have to check or yaw or pitch
+                if (yawCheck.getValue() || pitchCheck.getValue()) {
+                    // Get the rotation we want
+                    Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
+                    // If we are not rotating, set new values
+                    if (!isRotating) {
+                        yPlayer = pitchCheck.getValue()
+                                ? mc.player.getPitchYaw().x
+                                : Double.MIN_VALUE;
+                        xPlayer = yawCheck.getValue()
+                                ? RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                                : Double.MIN_VALUE;
+                        isRotating = true;
+                    }
+
+                    // If we allow to predict the place (so place when we are near that block)
+                    if (placeStrictPredict.getValue()) {
+
+                        // Check yaw
+                        if (yawCheck.getValue()) {
+                            // Get first if + or -
+                            double distanceDo = rotationWanted.x - xPlayer;
+                            if (Math.abs(distanceDo) > 180) {
+                                distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                            }
+                            // Check if distance is > of what we want
+                            if (Math.abs(distanceDo) > yawStep.getValue()) {
+                                return;
+                            }
+                        }
+
+                        // Check pitch
+                        if (pitchCheck.getValue()) {
+                            // Get first if + or -
+                            double distanceDo = rotationWanted.y - yPlayer;
+                            // Check if distance is > of what we want
+
+                            if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                                return;
+                            }
+                        }
+
+                    } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                        return;
+                }
+        }
+
+        // Swing
+        if (!swingModebr.getValue().equals("None"))
+            swingArm(swingModebr.getValue(), hideClientbr.getValue(), null);
+
+        // Break
+        if (breakTypeCrystal.getValue().equalsIgnoreCase("Swing")) {
+            mc.playerController.attackEntity(mc.player, cr);
+        } else {
+            mc.player.connection.sendPacket(new CPacketUseEntity(cr));
+        }
+
+
+        // Cancel crystal is useless, but whatever
+        if (cancelCrystal.getValue()) {
+            cr.setDead();
+            mc.world.removeAllEntities();
+            mc.world.getLoadedEntityList();
+        }
+
+        // For limiting place packets
+        tickBeforePlace = tickDelayPlace.getValue();
+        checkTimePlace = true;
+        timePlace = System.currentTimeMillis();
+    }
+
+    private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
+        boolean serverSide = swingModebr.getValue().equals("Server");
+        EnumHand[] handSwing;
+        if (handSwingDef == null) {
+            switch (swingHandbr.getValue()) {
+                case "Both": {
+                    handSwing = new EnumHand[]{
+                            EnumHand.MAIN_HAND,
+                            EnumHand.OFF_HAND
+                    };
+                    break;
+                }
+                case "Offhand": {
+                    handSwing = new EnumHand[]{
+                            EnumHand.OFF_HAND
+                    };
+                    break;
+                }
+                default: {
+                    handSwing = new EnumHand[]{
+                            EnumHand.MAIN_HAND,
+                    };
+                    break;
+                }
+            }
+        }
+        else handSwing = new EnumHand[] {handSwingDef};
+
+        for(EnumHand hand : handSwing) {
+            if (serverSide) {
+                if (hideClientbr.getValue()) {
+                    // Packet Swing
+                    mc.player.connection.sendPacket(new CPacketAnimation(hand));
+                } else {
+                    // Packet swing + client side
+                    mc.player.swingArm(hand);
+                }
+            } else {
+                // Client side only
+                ItemStack stack = mc.player.getHeldItem(hand);
+                if (!stack.isEmpty() && stack.getItem().onEntitySwing(mc.player, stack)) {
+                    return;
+                }
+                mc.player.swingProgressInt = -1;
+                mc.player.isSwingInProgress = true;
+                mc.player.swingingHand = hand;
+            }
+        }
     }
 
 
@@ -2054,47 +2253,7 @@ public class AutoCrystalRewrite extends Module {
     // This function is for displaying things
     public void onWorldRender(RenderEvent event) {
 
-        // If we have a bestPlace
-        if (bestPlace != null && bestPlace.crystal != null) {
-            // Switch for types
-            switch (typePlace.getValue()) {
-                case "Outline": {
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
-                    // Else, new rendering
-                    else renderCustomOutline(getBox(bestPlace.crystal));
-                    break;
-                }
-                case "Fill": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                    // Else, new rendering
-                    else renderFillCustom(getBox(bestPlace.crystal));
-                    break;
-                }
-                case "Both": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                    // Else, new
-                    else renderFillCustom(getBox(bestPlace.crystal));
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
-                    // Else, new
-                    else renderCustomOutline(getBox(bestPlace.crystal));
-                    break;
-                }
-            }
-        }
-
-        // If we have a bestPlace
+        // If we have a bestBreak
         if (bestBreak != null && bestBreak.crystal != null) {
             BlockPos pos = bestBreak.crystal.getPosition().add(0, -1, 0);
             // Switch for types
@@ -2130,6 +2289,46 @@ public class AutoCrystalRewrite extends Module {
                         RenderUtil.drawBoundingBox(getBox(pos), outlineWidthbr.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
                         // Else, new
                     else renderCustomOutline(getBox(pos));
+                    break;
+                }
+            }
+        }
+
+        // If we have a bestPlace
+        if (bestPlace != null && bestPlace.crystal != null) {
+            // Switch for types
+            switch (typePlace.getValue()) {
+                case "Outline": {
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    // Else, new rendering
+                    else renderCustomOutline(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Fill": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    // Else, new rendering
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    break;
+                }
+                case "Both": {
+                    // If 1 vertice
+                    if (isOne(false))
+                        // Old rendering
+                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
+                    // Else, new
+                    else renderFillCustom(getBox(bestPlace.crystal));
+                    // If 1 vertice
+                    if (isOne(true))
+                        // Old rendering
+                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
+                    // Else, new
+                    else renderCustomOutline(getBox(bestPlace.crystal));
                     break;
                 }
             }
