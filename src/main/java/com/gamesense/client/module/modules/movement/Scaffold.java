@@ -33,7 +33,8 @@ import java.util.Arrays;
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
-    IntegerSetting upSpeed = registerInteger("Up Speed",  10, 1, 20);
+    DoubleSetting upSpeed = registerDouble("Up Speed",  0.42, 0, 1);
+    IntegerSetting upDelay = registerInteger("Up Delay", 0,0,10);
     DoubleSetting downSpeed = registerDouble("Down Speed", 0, 0, 0.25);
     IntegerSetting offset = registerInteger("Offset", 1,0,3);
 
@@ -65,6 +66,7 @@ public class Scaffold extends Module {
     boolean towering;
     boolean dontPlace;
     boolean cont;
+    boolean wait;
 
     BlockPos belowPlayerBlock;
     BlockPos playerBlock;
@@ -76,6 +78,7 @@ public class Scaffold extends Module {
     final Timer stuckTimer = new Timer();
     final Timer towerTimer = new Timer();
     final Timer switchTimer = new Timer();
+    final Timer towerPlaceTimer = new Timer();
 
     @Override
     public void onUpdate() {
@@ -302,10 +305,11 @@ public class Scaffold extends Module {
 
             mc.player.motionX *= 0.3;
             mc.player.motionZ *= 0.3;
-            mc.player.jump();
-            if (this.towerTimer.hasReached(1500L)) {
+            mc.player.motionY = upSpeed.getValue();
+            if (this.towerTimer.hasReached(1500L) || wait) {
                 mc.player.motionY = -0.28;
                 this.towerTimer.reset();
+                wait = false;
             }
 /*            if (mc.player.posY > jumpGround + 0.79) {
                 mc.player.setPosition(
@@ -316,8 +320,9 @@ public class Scaffold extends Module {
                 mc.player.motionY = 0.42;
                 jumpGround = mc.player.posY;
             }*/
-            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable()) {
+            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable() && towerPlaceTimer.hasReached(upDelay.getValue()*50, true)) {
                 placeBlockPacket(null, new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ));
+                wait = true;
             }
 
         } else {
