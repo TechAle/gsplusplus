@@ -618,6 +618,7 @@ public class AutoCrystalRewrite extends Module {
 
         // Add new crystal with tick delay
         void addCrystal(BlockPos cryst, @SuppressWarnings("SameParameterValue") int tick, int tickFinish) {
+            removeCrystal((double) cryst.getX(), (double) cryst.getY(), (double) cryst.getZ());
             listWait.add(new crystalTime(cryst,  tick, tickFinish));
         }
 
@@ -893,6 +894,31 @@ public class AutoCrystalRewrite extends Module {
                     place = true;
                 } else t.append(cleanPlace.getValue() ? " c/s: " : " ")
                         .append(temp);
+            }
+
+        }
+
+        if (bestBreak.target != null) {
+            if (showPlaceName.getValue()) {
+                if (!place) {
+                    t.append(ChatFormatting.GRAY + "[")
+                            .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break Name: " : ""))
+                            .append(bestBreak.target.entity.getName());
+                    place = true;
+                } else
+                    t.append(!cleanPlace.getValue() ? " Name: " : " ")
+                            .append(bestBreak.target.entity.getName());
+            }
+
+            if (showPlaceDamage.getValue()) {
+                if (!place) {
+                    t.append(ChatFormatting.GRAY + "[")
+                            .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break damage: " : ""))
+                            .append((int) bestBreak.damage);
+                    place = true;
+                } else
+                    t.append(!cleanPlace.getValue() ? " Damage: " : " ")
+                            .append((int) bestBreak.damage);
             }
 
         }
@@ -2095,7 +2121,7 @@ public class AutoCrystalRewrite extends Module {
         // Rotate
         if (rotate.getValue()) {
             // New lastHitVec
-            lastHitVec = new Vec3d(pos).add(0.5, 1, 0.5);
+            lastHitVec = new Vec3d(pos).add(0.5, 0, 0.5);
             // New tick
             tick = 0;
             // If preRotate
