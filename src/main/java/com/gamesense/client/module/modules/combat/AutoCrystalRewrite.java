@@ -81,6 +81,7 @@ public class AutoCrystalRewrite extends Module {
     DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting rangeEnemyBreaking = registerDouble("Range Enemy Breaking", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
+    DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
@@ -746,7 +747,7 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
     crystalPlaceWait listCrystalsSecondWait = new crystalPlaceWait();
     crystalPlaceWait crystalSecondPlace = new crystalPlaceWait();
-    crystalPlaceWait inibithWait = new crystalPlaceWait();
+    crystalPlaceWait breakPacketLimit = new crystalPlaceWait();
     crystalTime crystalPlace = null;
 
 
@@ -808,7 +809,7 @@ public class AutoCrystalRewrite extends Module {
             }
 
         }
-        inibithWait.updateCrystals();
+        breakPacketLimit.updateCrystals();
     }
 
     // Simple onUpdate
@@ -1685,6 +1686,7 @@ public class AutoCrystalRewrite extends Module {
         double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double minDamage = this.minDamageBreak.getValue();
+        double rangeSQ = this.breakRange.getValue() * this.breakRange.getValue();
         int breakTimeout = this.breakTimeout.getValue();
         // Prepare for after
         PlayerInfo player;
@@ -1727,7 +1729,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get every possible crystals that you could break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
 
                 if (possibleCrystals == null)
                     break;
@@ -1776,7 +1778,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get possible crystals to break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
 
                 // If nothing found, rip
                 if (possibleCrystals == null)
@@ -1813,14 +1815,16 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
-    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ) {
+    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ) {
         // Our output
         List<PositionInfo> damagePos = new ArrayList<>();
 
         // For every entity
         mc.world.loadedEntityList.stream()
                 // Take only endCrystals
-                .filter(entity -> entity instanceof EntityEnderCrystal && inibithWait.CrystalExists(entity.getPosition()) == -1)
+                .filter(entity -> entity instanceof EntityEnderCrystal
+                        && breakPacketLimit.CrystalExists(entity.getPosition()) == -1
+                        && mc.player.getDistanceSq(entity) <= rangeSQ)
                 // Transform list in list of endCrystals
                 .map(entity -> (EntityEnderCrystal) entity).collect(Collectors.toList())
                 // Iterate
@@ -2153,17 +2157,17 @@ public class AutoCrystalRewrite extends Module {
 
         switch(limitBreakPacket.getValue()) {
             case "Tick":
-                inibithWait.addCrystal(cr.getPosition(), 0, lomitBreakPacketTick.getValue());
+                breakPacketLimit.addCrystal(cr.getPosition(), 0, lomitBreakPacketTick.getValue());
                 break;
             case "Time":
-                inibithWait.addCrystal(cr.getPosition(), limitBreakPacketTime.getValue());
+                breakPacketLimit.addCrystal(cr.getPosition(), limitBreakPacketTime.getValue());
                 break;
         }
 
         // For limiting place packets
-        tickBeforePlace = tickDelayPlace.getValue();
-        checkTimePlace = true;
-        timePlace = System.currentTimeMillis();
+        tickBeforeBreak = tickDelayBreak.getValue();
+        checkTimeBreak = true;
+        timeBreak = System.currentTimeMillis();
     }
 
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
@@ -2890,7 +2894,7 @@ public class AutoCrystalRewrite extends Module {
                         if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
                             entity.setDead();
                         }
-                        inibithWait.removeCrystal(entity.posX, entity.posY, entity.posZ);
+                        breakPacketLimit.removeCrystal(entity.posX, entity.posY, entity.posZ);
                     }
                 }
             }
