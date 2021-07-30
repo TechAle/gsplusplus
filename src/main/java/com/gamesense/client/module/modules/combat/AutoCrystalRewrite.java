@@ -1099,9 +1099,7 @@ public class AutoCrystalRewrite extends Module {
 
         // Get best result
         results.add(old);
-        if (results.size() != 1)
-            return getResultPlace(results);
-        return new CrystalInfo.PlaceInfo(0, null, null, 0);
+        return getResultPlace(results);
     }
 
     // This return the best crystal
@@ -1956,10 +1954,7 @@ public class AutoCrystalRewrite extends Module {
         // Get best result
         results.add(oldBreak);
         // Return the result
-        if (results.size() != 1)
-            return getResultBreak(results);
-        // Return null
-        return new CrystalInfo.NewBreakInfo(0, null, null, 0);
+        return getResultBreak(results);
     }
 
 
