@@ -490,6 +490,10 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting showPlaceDamage = registerBoolean("Show Place Damage", false, () -> hudDisplayShow.getValue());
     BooleanSetting showPlaceCrystalsSecond = registerBoolean("Show c/s place", false, () -> hudDisplayShow.getValue());
     BooleanSetting cleanPlace = registerBoolean("Clean Place", true, () -> hudDisplayShow.getValue());
+    BooleanSetting showBreakName = registerBoolean("Show break Name", false, () -> hudDisplayShow.getValue());
+    BooleanSetting showBreakDamage = registerBoolean("Show break Damage", false, () -> hudDisplayShow.getValue());
+    BooleanSetting showBreakCrystalsSecond = registerBoolean("Show c/s break", false, () -> hudDisplayShow.getValue());
+    BooleanSetting cleanBreak = registerBoolean("Clean break", true, () -> hudDisplayShow.getValue());
 
     //endregion
     //endregion
@@ -859,15 +863,21 @@ public class AutoCrystalRewrite extends Module {
 
         if (bestPlace.target != null) {
             if (showPlaceName.getValue()) {
-                t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place Name: ").append(bestPlace.target.entity.getName());
+                t.append(ChatFormatting.GRAY + "[")
+                 .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Place Name: " : ""))
+                 .append(bestPlace.target.entity.getName());
                 place = true;
             }
 
             if (showPlaceDamage.getValue()) {
                 if (!place) {
-                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place Damage: ").append((int) bestPlace.damage);
+                    t.append(ChatFormatting.GRAY + "[")
+                     .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Place damage: " : ""))
+                     .append((int) bestPlace.damage);
                     place = true;
-                } else t.append(" Damage: ").append((int) bestPlace.damage);
+                } else
+                    t.append(!cleanPlace.getValue() ? " Damage: " : " ")
+                     .append((int) bestPlace.damage);
             }
 
         }
@@ -877,9 +887,12 @@ public class AutoCrystalRewrite extends Module {
             int temp;
             if ((temp = crystalSecondPlace.countCrystals()) > 0) {
                 if (!place) {
-                    t.append(ChatFormatting.GRAY + "[" + ChatFormatting.WHITE + "Place c/s: ").append(temp);
+                    t.append(ChatFormatting.GRAY + "[")
+                            .append(ChatFormatting.WHITE + (cleanPlace.getValue() ? "Place c/s: " : ""))
+                            .append(temp);
                     place = true;
-                } else t.append((cleanPlace.getValue() ? " c/s: " : "") + temp);
+                } else t.append(cleanPlace.getValue() ? " c/s: " : " ")
+                        .append(temp);
             }
 
         }
