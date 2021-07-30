@@ -43,14 +43,17 @@ import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.*;
+import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.*;
 
 import java.util.*;
@@ -150,7 +153,16 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && !swingModebr.getValue().equals("None"));
     ModeSetting breakTypeCrystal = registerMode("Break Type", Arrays.asList("Packet", "Vanilla"), "Packet",
             () -> breakSection.getValue());
+    ModeSetting limitBreakPacket = registerMode("Limit Break Packet", Arrays.asList("Tick", "Time", "None"), "None",
+            () -> breakSection.getValue());
+    IntegerSetting lomitBreakPacketTick = registerInteger("Limit Break Tick", 4, 0, 20,
+            () -> breakSection.getValue() && limitBreakPacket.getValue().equals("Tick"));
+    IntegerSetting limitBreakPacketTime = registerInteger("Limit Break Time", 500, 0, 2000,
+            () -> breakSection.getValue() && limitBreakPacket.getValue().equals("Time"));
+    // This is useless lmao
     BooleanSetting cancelCrystal = registerBoolean("Cancel Crystal", false,
+            () -> breakSection.getValue());
+    BooleanSetting setDead = registerBoolean("Set Dead", true,
             () -> breakSection.getValue());
     //endregion
 
@@ -531,58 +543,10 @@ public class AutoCrystalRewrite extends Module {
         }
     }
 
-    class crystalPlaceWait {
-
-        // Here we have every crystals
-        ArrayList<crystalTime> listWait = new ArrayList<>();
-
-        // Add new crystal with time delay
-        void addCrystal(BlockPos cryst, int finish) {
-            listWait.add(new crystalTime(cryst,  finish));
-        }
-
-        // Add new crystal with tickd elay
-        void addCrystal(BlockPos cryst, @SuppressWarnings("SameParameterValue") int tick, int tickFinish) {
-            listWait.add(new crystalTime(cryst,  tick, tickFinish));
-        }
-
-        // If exists, remove crystal at x y z
-        boolean removeCrystal(Double x, Double y, Double z) {
-            int i = CrystalExists(new BlockPos(x, y, z));
-            if (i != -1) {
-                listWait.remove(i);
-                return true;
-            }
-            return false;
-        }
-
-        // Return the index of the crystal in the array. -1 if it doesnt exists
-        int CrystalExists(BlockPos pos) {
-            for(int i = 0; i < listWait.size(); i++)
-                if (sameBlockPos(pos, listWait.get(i).posCrystal))
-                    return i;
-            return -1;
-        }
-
-        // Update every crystals timers
-        void updateCrystals() {
-            for(int i = 0; i < listWait.size(); i++) {
-                if (listWait.get(i).isReady()) {
-                    listWait.remove(i);
-                    i--;
-                }
-            }
-        }
-
-        int countCrystals() {
-            return listWait.size();
-        }
-
-    }
-
     // Class of the crystal time
     static class crystalTime {
-        final BlockPos posCrystal;
+        BlockPos posCrystal;
+        int idCrystal;
         final int type;
         int tick;
         int finishTick;
@@ -605,6 +569,22 @@ public class AutoCrystalRewrite extends Module {
             this.type = 1;
         }
 
+        // Time Id
+        public crystalTime(int id, int finish) {
+            this.idCrystal = id;
+            this.start = System.currentTimeMillis();
+            this.finish = finish;
+            this.type = 1;
+        }
+
+        // Tick id
+        public crystalTime(int id, int tick, int finishTick) {
+            this.idCrystal = id;
+            this.tick = tick;
+            this.type = 0;
+            this.finishTick = finishTick;
+        }
+
         // Check if the crystal is ready.
         boolean isReady() {
             switch (type) {
@@ -617,6 +597,55 @@ public class AutoCrystalRewrite extends Module {
             }
             // This should never be reached
             return true;
+        }
+
+    }
+
+    class crystalPlaceWait {
+
+        // Here we have every crystals
+        ArrayList<crystalTime> listWait = new ArrayList<>();
+
+        // Add new crystal with time delay
+        void addCrystal(BlockPos cryst, int finish) {
+            listWait.add(new crystalTime(cryst,  finish));
+        }
+
+        // Add new crystal with tick delay
+        void addCrystal(BlockPos cryst, @SuppressWarnings("SameParameterValue") int tick, int tickFinish) {
+            listWait.add(new crystalTime(cryst,  tick, tickFinish));
+        }
+
+        // If exists, remove crystal at x y z
+        boolean removeCrystal(Double x, Double y, Double z) {
+            int i = CrystalExists(new BlockPos(x, y, z));
+            if (i != -1) {
+                listWait.remove(i);
+                return true;
+            }
+            return false;
+        }
+
+        // Return the index of the crystal in the array. -1 if it doesnt exists
+        int CrystalExists(BlockPos pos) {
+            for(int i = 0; i < listWait.size(); i++)
+                if ( sameBlockPos(pos, listWait.get(i).posCrystal))
+                    return i;
+            return -1;
+        }
+
+        // Update every crystals timers
+        void updateCrystals() {
+            for(int i = 0; i < listWait.size(); i++) {
+                if (listWait.get(i).isReady()) {
+                    listWait.remove(i);
+                    i--;
+                }
+            }
+        }
+
+        int countCrystals() {
+            return listWait.size();
         }
 
     }
@@ -717,6 +746,7 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
     crystalPlaceWait listCrystalsSecondWait = new crystalPlaceWait();
     crystalPlaceWait crystalSecondPlace = new crystalPlaceWait();
+    crystalPlaceWait inibithWait = new crystalPlaceWait();
     crystalTime crystalPlace = null;
 
 
@@ -778,6 +808,7 @@ public class AutoCrystalRewrite extends Module {
             }
 
         }
+        inibithWait.updateCrystals();
     }
 
     // Simple onUpdate
@@ -1789,7 +1820,7 @@ public class AutoCrystalRewrite extends Module {
         // For every entity
         mc.world.loadedEntityList.stream()
                 // Take only endCrystals
-                .filter(entity -> entity instanceof EntityEnderCrystal)
+                .filter(entity -> entity instanceof EntityEnderCrystal && inibithWait.CrystalExists(entity.getPosition()) == -1)
                 // Transform list in list of endCrystals
                 .map(entity -> (EntityEnderCrystal) entity).collect(Collectors.toList())
                 // Iterate
@@ -1814,7 +1845,7 @@ public class AutoCrystalRewrite extends Module {
                             if (continueFor) {
                                 // Raytrace. We have to calculate the raytrace for both wall and raytrace option
                                 RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
-                                        new Vec3d(crystal.posX, crystal.posY, crystal.posZ));
+                                        new Vec3d(crystal.posX, crystal.posY + 1, crystal.posZ));
                                 // If raytrace is ok
                                 if (result == null || (!raytrace && mc.player.getDistanceSq(crystal) <= wallRangeSQ)) {
 
@@ -2120,6 +2151,15 @@ public class AutoCrystalRewrite extends Module {
             mc.world.getLoadedEntityList();
         }
 
+        switch(limitBreakPacket.getValue()) {
+            case "Tick":
+                inibithWait.addCrystal(cr.getPosition(), 0, lomitBreakPacketTick.getValue());
+                break;
+            case "Time":
+                inibithWait.addCrystal(cr.getPosition(), limitBreakPacketTime.getValue());
+                break;
+        }
+
         // For limiting place packets
         tickBeforePlace = tickDelayPlace.getValue();
         checkTimePlace = true;
@@ -2175,7 +2215,6 @@ public class AutoCrystalRewrite extends Module {
             }
         }
     }
-
 
     // endregion
 
@@ -2840,6 +2879,20 @@ public class AutoCrystalRewrite extends Module {
                 if (showPlaceCrystalsSecond.getValue())
                     if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
                         crystalSecondPlace.addCrystal(null, 1000);
+            }
+        }
+        else
+        if (event.getPacket() instanceof SPacketSoundEffect) {
+            final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
+            if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
+                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                    if (entity instanceof EntityEnderCrystal) {
+                        if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
+                            entity.setDead();
+                        }
+                        inibithWait.removeCrystal(entity.posX, entity.posY, entity.posZ);
+                    }
+                }
             }
         }
 
