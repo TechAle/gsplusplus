@@ -54,7 +54,6 @@ public class KillAura extends Module {
     ModeSetting enemyPriority = registerMode("Enemy Priority", Arrays.asList("Closest", "Health"), "Closest");
     BooleanSetting swordPriority = registerBoolean("Prioritise Sword", true);
     BooleanSetting caCheck = registerBoolean("AC Check", false);
-    BooleanSetting criticals = registerBoolean("Criticals", true);
     BooleanSetting rotation = registerBoolean("Rotation", true);
     BooleanSetting autoSwitch = registerBoolean("Switch", false);
     DoubleSetting switchHealth = registerDouble("Min Switch Health", 0f, 0f, 20f);
@@ -117,17 +116,6 @@ public class KillAura extends Module {
             }
         }
     }
-
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PacketEvent.Send> listener = new Listener<>(event -> {
-        if (event.getPacket() instanceof CPacketUseEntity) {
-            if (criticals.getValue() && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK && mc.player.onGround && isAttacking) {
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.1f, mc.player.posZ, false));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
-            }
-        }
-    });
 
     private Pair<Float, Integer> findSwordSlot() {
         List<Integer> items = InventoryUtil.findAllItemSlots(ItemSword.class);
