@@ -49,8 +49,9 @@ public class PvPInfo extends Module {
             return;
         }
 
-        TotemPopManager.INSTANCE.sendMsgs = popCounter.getValue();
+        TotemPopManager.INSTANCE.sendMsgs = isToggleMsg();
         TotemPopManager.INSTANCE.sendCountPops = popCounter.getValue();
+        TotemPopManager.INSTANCE.popCount = countPops.getValue();
         TotemPopManager.INSTANCE.sendCountKills = countKills.getValue();
 
         if (popCounter.getValue()) TotemPopManager.INSTANCE.chatFormatting = ColorUtil.textToChatFormatting(chatColor);

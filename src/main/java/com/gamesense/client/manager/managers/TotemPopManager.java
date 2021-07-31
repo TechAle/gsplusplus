@@ -32,6 +32,7 @@ public enum TotemPopManager implements Manager {
     public boolean sendMsgs = false;
     public boolean sendCountPops = false;
     public boolean sendCountKills = false;
+    public boolean popCount = false;
     public ChatFormatting chatFormatting = ChatFormatting.WHITE;
     private final HashMap<String, Integer> playerPopCount = new HashMap<>();
     private int countPops = 0;
@@ -97,18 +98,18 @@ public enum TotemPopManager implements Manager {
             return;
         ++countPops;
 
-        if (sendCountPops && pvp.isEnabled())
+        if ( sendMsgs && popCount && pvp.isEnabled())
             MessageBus.sendClientPrefixMessage(chatFormatting + "You have seen " + ChatFormatting.GREEN + countPops + chatFormatting + " people popped!");
 
         if (playerPopCount.get(entityName) == null) {
             playerPopCount.put(entityName, 1);
-            if (sendMsgs && pvp.isEnabled())
+            if (sendMsgs && sendCountPops && pvp.isEnabled())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + 1 + chatFormatting + " totem!");
         } else {
             int popCounter = playerPopCount.get(entityName) + 1;
 
             playerPopCount.put(entityName, popCounter);
-            if (sendMsgs && pvp.isEnabled())
+            if (sendMsgs && sendCountPops && pvp.isEnabled())
                 MessageBus.sendClientPrefixMessage(chatFormatting + entityName + " popped " + ChatFormatting.RED + popCounter + chatFormatting + " totems!");
         }
     });
