@@ -56,7 +56,11 @@ import static org.lwjgl.opengl.GL11.glRotatef;
 public class KillAura extends Module {
 
     public BooleanSetting animation = registerBoolean("Animations", true);
-    DoubleSetting animScale = registerDouble("Animation Scale", 125,0,250);
+    DoubleSetting animSpeed = registerDouble("Animation Speed", 125,0,250, () -> animation.getValue());
+    DoubleSetting animx = registerDouble("Anim X", 0,-500,500,() -> animation.getValue());
+    DoubleSetting animy = registerDouble("Anim Y", 0,-500,500,() -> animation.getValue());
+    DoubleSetting animz = registerDouble("Anim Z", 0,-500,500,() -> animation.getValue());
+
     BooleanSetting players = registerBoolean("Players", true);
     BooleanSetting hostileMobs = registerBoolean("Monsters", false);
     BooleanSetting passiveMobs = registerBoolean("Animals", false);
