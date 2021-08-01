@@ -163,9 +163,15 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && limitBreakPacket.getValue().equals("Tick"));
     IntegerSetting limitBreakPacketTime = registerInteger("Limit Break Time", 500, 0, 2000,
             () -> breakSection.getValue() && limitBreakPacket.getValue().equals("Time"));
+    ModeSetting firstHit = registerMode("First Hit", Arrays.asList("Tick", "Time", "None"), "None", () -> breakSection.getValue());
+    IntegerSetting firstHitTick = registerInteger("Tick First Hit", 0, 0, 20,
+            () -> breakSection.getValue() && firstHit.getValue().equals("Tick"));
+    IntegerSetting fitstHitTime = registerInteger("TIme First Hit", 0, 0, 2000,
+            () -> breakSection.getValue() && firstHit.getValue().equals("Time"));
     // This is useless lmao
     BooleanSetting cancelCrystal = registerBoolean("Cancel Crystal", false,
             () -> breakSection.getValue());
+    // This is also useless ngl
     BooleanSetting setDead = registerBoolean("Set Dead", true,
             () -> breakSection.getValue());
     //endregion
@@ -756,6 +762,7 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait listCrystalsSecondWait = new crystalPlaceWait();
     crystalPlaceWait crystalSecondPlace = new crystalPlaceWait();
     crystalPlaceWait breakPacketLimit = new crystalPlaceWait();
+    crystalPlaceWait existsCrystal = new crystalPlaceWait();
     crystalTime crystalPlace = null;
 
 
@@ -780,14 +787,12 @@ public class AutoCrystalRewrite extends Module {
         timePlace = timeBreak = 0;
         oldSlotBack = tickSwitch = slotWebBack = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak = isRotating = false;
-        /*
-            Never gonna give you up
-            Never gonna let you down
-            Never gonna run around and desert you
-            Never gonna make you cry
-            Never gonna say goodbye
-            Never gonna tell a lie and hurt you
-         */
+        String rickroll = "Never gonna give you up\n" +
+                "            Never gonna let you down\n" +
+                "            Never gonna run around and desert you\n" +
+                "            Never gonna make you cry\n" +
+                "            Never gonna say goodbye\n" +
+                "            Never gonna tell a lie and hurt you";
     }
 
     int tickEat = 0;
@@ -818,6 +823,7 @@ public class AutoCrystalRewrite extends Module {
         listCrystalsSecondWait.updateCrystals();
         crystalSecondPlace.updateCrystals();
         endCrystalPlaced.updateCrystals();
+        existsCrystal.updateCrystals();
         for(int i = 0; i < packetsBlocks.size(); i++) {
             if (!packetsBlocks.get(i).update()) {
                 packetsBlocks.remove(i);
@@ -1866,13 +1872,14 @@ public class AutoCrystalRewrite extends Module {
     List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ) {
         // Our output
         List<PositionInfo> damagePos = new ArrayList<>();
-
+        // 571 1 564
         // For every entity
         mc.world.loadedEntityList.stream()
                 // Take only endCrystals
                 .filter(entity -> entity instanceof EntityEnderCrystal
                         && breakPacketLimit.CrystalExists(entity.getPosition()) == -1
-                        && mc.player.getDistanceSq(entity) <= rangeSQ)
+                        && mc.player.getDistanceSq(entity) <= rangeSQ
+                        && existsCrystal.CrystalExists(entity.getPosition().add(0, -1, 0)) == -1)
                 // Transform list in list of endCrystals
                 .map(entity -> (EntityEnderCrystal) entity).collect(Collectors.toList())
                 // Iterate
@@ -2929,6 +2936,15 @@ public class AutoCrystalRewrite extends Module {
                 if (showPlaceCrystalsSecond.getValue())
                     if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
                         crystalSecondPlace.addCrystal(null, 1000);
+
+                switch(firstHit.getValue()) {
+                    case "Tick":
+                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
+                        break;
+                    case "Time":
+                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
+                        break;
+                }
             }
         }
         else
