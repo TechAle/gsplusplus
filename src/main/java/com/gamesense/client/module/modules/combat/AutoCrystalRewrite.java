@@ -567,7 +567,7 @@ public class AutoCrystalRewrite extends Module {
     // Class of the crystal time
     static class crystalTime {
         BlockPos posCrystal;
-        int idCrystal;
+        int idCrystal = -100;
         final int type;
         int tick;
         int finishTick;
@@ -591,7 +591,8 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Time Id
-        public crystalTime(int id, int finish) {
+        public crystalTime(BlockPos pos, int id, int finish, boolean lol) {
+            this.posCrystal = pos;
             this.idCrystal = id;
             this.start = System.currentTimeMillis();
             this.finish = finish;
@@ -599,7 +600,8 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Tick id
-        public crystalTime(int id, int tick, int finishTick) {
+        public crystalTime(BlockPos pos, int id, int tick, int finishTick) {
+            this.posCrystal = pos;
             this.idCrystal = id;
             this.tick = tick;
             this.type = 0;
@@ -638,6 +640,17 @@ public class AutoCrystalRewrite extends Module {
             listWait.add(new crystalTime(cryst,  tick, tickFinish));
         }
 
+        // Add new crystal with time delay
+        void addCrystalId(BlockPos cryst, int id, int finish) {
+            listWait.add(new crystalTime(cryst, id,  finish, false));
+        }
+
+        // Add new crystal with tick delay
+        void addCrystalId(BlockPos cryst, int id, @SuppressWarnings("SameParameterValue") int tick, int tickFinish) {
+            removeCrystal((double) cryst.getX(), (double) cryst.getY(), (double) cryst.getZ());
+            listWait.add(new crystalTime(cryst, id,  tick, tickFinish));
+        }
+
         // If exists, remove crystal at x y z
         boolean removeCrystal(Double x, Double y, Double z) {
             int i = CrystalExists(new BlockPos(x, y, z));
@@ -654,6 +667,10 @@ public class AutoCrystalRewrite extends Module {
                 if ( sameBlockPos(pos, listWait.get(i).posCrystal))
                     return i;
             return -1;
+        }
+
+        boolean crystalIdExists(int id) {
+            return listWait.stream().anyMatch(e -> e.idCrystal == id);
         }
 
         // Update every crystals timers
@@ -1903,7 +1920,7 @@ public class AutoCrystalRewrite extends Module {
         mc.world.loadedEntityList.stream()
                 // Take only endCrystals
                 .filter(entity -> entity instanceof EntityEnderCrystal
-                        && breakPacketLimit.CrystalExists(entity.getPosition()) == -1
+                        && !breakPacketLimit.crystalIdExists(entity.entityId)
                         && mc.player.getDistanceSq(entity) <= rangeSQ
                         && existsCrystal.CrystalExists(entity.getPosition().add(0, -1, 0)) == -1)
                 // Transform list in list of endCrystals
@@ -2235,10 +2252,10 @@ public class AutoCrystalRewrite extends Module {
 
         switch(limitBreakPacket.getValue()) {
             case "Tick":
-                breakPacketLimit.addCrystal(cr.getPosition(), 0, lomitBreakPacketTick.getValue());
+                breakPacketLimit.addCrystalId(cr.getPosition(), cr.entityId, 0, lomitBreakPacketTick.getValue());
                 break;
             case "Time":
-                breakPacketLimit.addCrystal(cr.getPosition(), limitBreakPacketTime.getValue());
+                breakPacketLimit.addCrystalId(cr.getPosition(), cr.entityId, limitBreakPacketTime.getValue());
                 break;
         }
 
@@ -2995,9 +3012,9 @@ public class AutoCrystalRewrite extends Module {
                         if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
                             entity.setDead();
                         }
-                        breakPacketLimit.removeCrystal(entity.posX, entity.posY, entity.posZ);
                     }
                 }
+                breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
             }
         }
 
