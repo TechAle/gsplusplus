@@ -30,6 +30,7 @@ import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.hud.TargetInfo;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -70,7 +71,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting logicTarget = registerBoolean("Logic Section", true);
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
     BooleanSetting oneStop = registerBoolean("One Stop", false,
-            () -> logic.getValue().equals("Place->Break") || logic.getValue().equals("Break->Place"));
+            () -> logicTarget.getValue() && (logic.getValue().equals("Place->Break") || logic.getValue().equals("Break->Place")));
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
@@ -174,6 +175,12 @@ public class AutoCrystalRewrite extends Module {
     // This is also useless ngl
     BooleanSetting setDead = registerBoolean("Set Dead", true,
             () -> breakSection.getValue());
+    BooleanSetting placeAfterBreak = registerBoolean("Place After", false,
+            () -> breakSection.getValue());
+    BooleanSetting instaPlace = registerBoolean("Insta Place", false,
+            () -> breakSection.getValue() && placeAfterBreak.getValue());
+    BooleanSetting forcePlace = registerBoolean("Force Place", false,
+            () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     //endregion
 
     //region Misc
@@ -700,12 +707,7 @@ public class AutoCrystalRewrite extends Module {
                 if (!CrystalUtil.canPlaceCrystal(block, newPlace.getValue()))
                     return true;
 
-                // If there is a crystal, stop
-                if ( !placeOnCrystal.getValue() && !isCrystalHere(block)) {
-                    return true;
-                }
-
-                placeCrystal(block, hand);
+                placeCrystal(block, hand, false);
                 placedCrystal = true;
 
             }
@@ -776,6 +778,11 @@ public class AutoCrystalRewrite extends Module {
 
     CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
     CrystalInfo.NewBreakInfo bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+
+    // damage target crystal distance
+    float forcePlaceDamage;
+    PlayerInfo forcePlaceTarget;
+    BlockPos forcePlaceCrystal = null;
 
     //endregion
 
@@ -1331,7 +1338,7 @@ public class AutoCrystalRewrite extends Module {
 
                     // Else, place it (dont ask me why but sometimes crystalPlace become null
                     if (crystalPlace != null)
-                        return placeCrystal(crystalPlace.posCrystal, hand);
+                        return placeCrystal(crystalPlace.posCrystal, hand, false);
 
                 }
             }
@@ -1342,8 +1349,20 @@ public class AutoCrystalRewrite extends Module {
         if (timeCalcPlacement.getValue())
             // Get time
             inizio = System.currentTimeMillis();
+        boolean instaPlaceBol = false;
         // Get target
-        bestPlace = getTargetPlacing(targetPlacing.getValue());
+        if (forcePlaceCrystal != null && forcePlace.getValue()) {
+            bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
+            instaPlaceBol = true;
+        }
+        else {
+            bestPlace = getTargetPlacing(targetPlacing.getValue());
+            if (forcePlaceCrystal != null && bestPlace.crystal != null)
+                if (sameBlockPos(forcePlaceCrystal, bestPlace.crystal))
+                    instaPlaceBol = true;
+        }
+
+
         // For debugging timeCalcPlacemetn
         if (timeCalcPlacement.getValue()) {
             // Get duration
@@ -1360,6 +1379,13 @@ public class AutoCrystalRewrite extends Module {
             }
         }
 
+        if (instaPlace.getValue() && bestPlace.target == null && forcePlaceCrystal != null) {
+            bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
+            instaPlaceBol = true;
+        }
+
+        forcePlaceCrystal = null;
+
         // Display crystal
         if (bestPlace.crystal != null) {
             //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
@@ -1370,7 +1396,7 @@ public class AutoCrystalRewrite extends Module {
             if (isPlacingWeb())
                 return true;
 
-            return placeCrystal(bestPlace.crystal, hand);
+            return placeCrystal(bestPlace.crystal, hand, instaPlaceBol);
         } else {
             if (switchBack.getValue() && oldSlotBack != -1)
                 if (tickSwitch > 0)
@@ -1541,9 +1567,9 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This actually place the crystal
-    boolean placeCrystal(BlockPos pos, EnumHand handSwing) {
+    boolean placeCrystal(BlockPos pos, EnumHand handSwing, boolean instaPlace) {
         // If there is a crystal, stop
-        if ( !placeOnCrystal.getValue() && !isCrystalHere(pos))
+        if ( !placeOnCrystal.getValue() && !isCrystalHere(pos) && !instaPlace)
             return false;
 
         // If this pos is in wait
@@ -2220,6 +2246,19 @@ public class AutoCrystalRewrite extends Module {
         tickBeforeBreak = tickDelayBreak.getValue();
         checkTimeBreak = true;
         timeBreak = System.currentTimeMillis();
+
+        if (placeAfterBreak.getValue()) {
+            if (instaPlace.getValue()) {
+                EnumHand hand = getHandCrystal();
+                if (hand != null)
+                    placeCrystal(cr.getPosition().add(0, -1, 0), hand, true);
+            } else {
+                forcePlaceCrystal = cr.getPosition().add(0, -1, 0);
+                forcePlaceDamage = bestBreak.damage;
+                forcePlaceTarget = bestBreak.target;
+            }
+        }
+
         return true;
     }
 
@@ -2664,7 +2703,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // Place crystal
                 if (coords != null) {
-                    placeCrystal(coords, hand);
+                    placeCrystal(coords, hand, false);
                     placedCrystal = true;
                 }
 
@@ -2965,15 +3004,6 @@ public class AutoCrystalRewrite extends Module {
 
     });
 
-
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
-        Packet packet = event.getPacket();
-        if (packet instanceof CPacketUseEntity) {
-            PistonCrystal.printDebug("a", false);
-        }
-    });
 
     //endregion
 
