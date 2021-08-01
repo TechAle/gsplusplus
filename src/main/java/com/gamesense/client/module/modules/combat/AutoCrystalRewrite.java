@@ -48,6 +48,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
@@ -68,6 +69,8 @@ public class AutoCrystalRewrite extends Module {
     //region Logic
     BooleanSetting logicTarget = registerBoolean("Logic Section", true);
     ModeSetting logic = registerMode("Logic", Arrays.asList("Place->Break", "Break->Place", "Place", "Break"), "Place->Break", () -> logicTarget.getValue());
+    BooleanSetting oneStop = registerBoolean("One Stop", false,
+            () -> logic.getValue().equals("Place->Break") || logic.getValue().equals("Break->Place"));
     ModeSetting targetPlacing = registerMode("Target Placing", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     ModeSetting targetBreaking = registerMode("Target Breaking", Arrays.asList("Nearest", "Lowest", "Damage"), "Nearest", () -> logicTarget.getValue());
     BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
@@ -777,6 +780,14 @@ public class AutoCrystalRewrite extends Module {
         timePlace = timeBreak = 0;
         oldSlotBack = tickSwitch = slotWebBack = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak = isRotating = false;
+        /*
+            Never gonna give you up
+            Never gonna let you down
+            Never gonna run around and desert you
+            Never gonna make you cry
+            Never gonna say goodbye
+            Never gonna tell a lie and hurt you
+         */
     }
 
     int tickEat = 0;
@@ -833,12 +844,12 @@ public class AutoCrystalRewrite extends Module {
         // Start ca
         switch (logic.getValue()) {
             case "Place->Break":
-                placeCrystals();
-                breakCrystals();
+                if (!placeCrystals() || !oneStop.getValue())
+                    breakCrystals();
                 break;
             case "Break->Place":
-                breakCrystals();
-                placeCrystals();
+                if (!breakCrystals() || !oneStop.getValue())
+                    placeCrystals();
                 break;
             case "Place":
                 placeCrystals();
@@ -1261,24 +1272,24 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // Main function for placing crystals
-    void placeCrystals() {
+    boolean placeCrystals() {
 
         // If we have placed a crystal before
         if (placedCrystal) {
             // Stop
             placedCrystal = false;
-            return;
+            return false;
         }
 
         // If we cannot place (place delay)
         if (!canStartPlacing())
-            return;
+            return false;
 
         // Get crystal hand
         EnumHand hand = getHandCrystal();
         // If no hand found
         if (hand == null)
-            return;
+            return false;
 
         // If we have to look a block
         if (crystalPlace != null) {
@@ -1310,13 +1321,12 @@ public class AutoCrystalRewrite extends Module {
                 else {
                     // AutoWeb
                     if (isPlacingWeb())
-                        return;
+                        return true;
 
                     // Else, place it (dont ask me why but sometimes crystalPlace become null
                     if (crystalPlace != null)
-                        placeCrystal(crystalPlace.posCrystal, hand);
+                        return placeCrystal(crystalPlace.posCrystal, hand);
 
-                    return;
                 }
             }
         }
@@ -1352,9 +1362,9 @@ public class AutoCrystalRewrite extends Module {
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemyPlace.getColor(), outlineWidth.getValue()));
 
             if (isPlacingWeb())
-                return;
+                return true;
 
-            placeCrystal(bestPlace.crystal, hand);
+            return placeCrystal(bestPlace.crystal, hand);
         } else {
             if (switchBack.getValue() && oldSlotBack != -1)
                 if (tickSwitch > 0)
@@ -1365,6 +1375,7 @@ public class AutoCrystalRewrite extends Module {
                         tickSwitch = -1;
                     }
         }
+        return false;
     }
 
     boolean isPlacingWeb() {
@@ -1524,14 +1535,14 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This actually place the crystal
-    void placeCrystal(BlockPos pos, EnumHand handSwing) {
+    boolean placeCrystal(BlockPos pos, EnumHand handSwing) {
         // If there is a crystal, stop
         if ( !placeOnCrystal.getValue() && !isCrystalHere(pos))
-            return;
+            return false;
 
         // If this pos is in wait
         if (listCrystalsPlaced.CrystalExists(pos) != -1)
-            return;
+            return false;
 
         // Rotate
         if (rotate.getValue()) {
@@ -1570,7 +1581,7 @@ public class AutoCrystalRewrite extends Module {
                         }
                         // Check if distance is > of what we want
                         if (Math.abs(distanceDo) > yawStep.getValue()) {
-                            return;
+                            return true;
                         }
                     }
 
@@ -1581,12 +1592,12 @@ public class AutoCrystalRewrite extends Module {
                         // Check if distance is > of what we want
 
                         if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                            return;
+                            return true;
                         }
                     }
 
                 } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
-                    return;
+                    return true;
             }
         }
 
@@ -1621,7 +1632,7 @@ public class AutoCrystalRewrite extends Module {
             RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ), new Vec3d(pos.getX() + 0.5d, pos.getY() + .5d, pos.getZ() + 0.5d));
             // If not, return
             if (result == null || result.sideHit == null) {
-                return;
+                return false;
             } else {
                 // Else, enumFacing is the side we hit
                 enumFacing = result.sideHit;
@@ -1687,7 +1698,7 @@ public class AutoCrystalRewrite extends Module {
                     crystalPlace = new crystalTime(pos, timeWaitFocusPlace.getValue());
                     break;
             }
-
+        return true;
     }
 
     // Given a pos, say if there is a crystal
@@ -2059,17 +2070,17 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
-    void breakCrystals() {
+    boolean breakCrystals() {
 
         // If we have placed a crystal before
         if (brokenCrystal) {
             // Stop
             brokenCrystal = false;
-            return;
+            return false;
         }
 
         if (!canStartBreaking())
-            return;
+            return false;
 
 
         /*
@@ -2106,12 +2117,12 @@ public class AutoCrystalRewrite extends Module {
                 toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
 
             // Break crystal
-            breakCrystal(bestBreak.crystal);
+            return breakCrystal(bestBreak.crystal);
         }
-
+        return false;
     }
 
-    void breakCrystal(EntityEnderCrystal cr) {
+    boolean breakCrystal(EntityEnderCrystal cr) {
         BlockPos pos = cr.getPosition();
         // Rotate
         if (rotate.getValue()) {
@@ -2150,7 +2161,7 @@ public class AutoCrystalRewrite extends Module {
                             }
                             // Check if distance is > of what we want
                             if (Math.abs(distanceDo) > yawStep.getValue()) {
-                                return;
+                                return true;
                             }
                         }
 
@@ -2161,12 +2172,12 @@ public class AutoCrystalRewrite extends Module {
                             // Check if distance is > of what we want
 
                             if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                                return;
+                                return true;
                             }
                         }
 
                     } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
-                        return;
+                        return true;
                 }
         }
 
@@ -2180,7 +2191,7 @@ public class AutoCrystalRewrite extends Module {
         } else {
             mc.player.connection.sendPacket(new CPacketUseEntity(cr));
         }
-
+        // 143 5 159
 
         // Cancel crystal is useless, but whatever
         if (cancelCrystal.getValue()) {
@@ -2202,6 +2213,7 @@ public class AutoCrystalRewrite extends Module {
         tickBeforeBreak = tickDelayBreak.getValue();
         checkTimeBreak = true;
         timeBreak = System.currentTimeMillis();
+        return true;
     }
 
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
@@ -2935,6 +2947,16 @@ public class AutoCrystalRewrite extends Module {
         }
 
 
+    });
+
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
+        Packet packet = event.getPacket();
+        if (packet instanceof CPacketUseEntity) {
+            PistonCrystal.printDebug("a", false);
+        }
     });
 
     //endregion

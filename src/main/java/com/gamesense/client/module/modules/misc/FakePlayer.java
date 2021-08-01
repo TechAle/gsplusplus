@@ -102,7 +102,6 @@ public class FakePlayer extends Module {
                 clonedPlayer.inventory.armorInventory.set(i, item);
             }
         }
-        clonedPlayer.onLivingUpdate();
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
     }
     boolean beforePressed;
