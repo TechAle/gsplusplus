@@ -82,7 +82,7 @@ public class FakePlayer extends Module {
         clonedPlayer.setGameType(GameType.SURVIVAL);
         clonedPlayer.setHealth(20);
         // Add entity id
-        mc.world.addEntityToWorld((-1234 - incr), clonedPlayer);
+        mc.world.addEntityToWorld((-1234 + incr), clonedPlayer);
         incr++;
         // Set invenotry
         if (copyInventory.getValue())
@@ -158,7 +158,7 @@ public class FakePlayer extends Module {
     public void onDisable() {
         if (mc.world != null) {
             for(int i = 0; i < incr; i++) {
-                mc.world.removeEntityFromWorld((-1234 - i));
+                mc.world.removeEntityFromWorld((-1234 + i));
             }
         }
         listPlayers.clear();
