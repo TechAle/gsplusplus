@@ -30,7 +30,6 @@ import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.hud.TargetInfo;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -49,7 +48,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemEndCrystal;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
@@ -765,7 +763,7 @@ public class AutoCrystalRewrite extends Module {
 
     boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBack, slotWebBack;
+    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack;
 
     double xPlayer, yPlayer;
 
@@ -809,7 +807,7 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tickBeforeBreak = tick = 0;
         timePlace = timeBreak = 0;
-        oldSlotBack = tickSwitch = slotWebBack = -1;
+        oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak = isRotating = false;
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
@@ -1415,12 +1413,12 @@ public class AutoCrystalRewrite extends Module {
 
             return placeCrystal(bestPlace.crystal, hand, instaPlaceBol);
         } else {
-            if (switchBack.getValue() && oldSlotBack != -1)
+            if (switchBack.getValue() && oldSlotObby != -1)
                 if (tickSwitch > 0)
                     --tickSwitch;
                 else
                     if (tickSwitch == 0) {
-                        mc.player.inventory.currentItem = oldSlotBack;
+                        mc.player.inventory.currentItem = oldSlotObby;
                         tickSwitch = -1;
                     }
         }
@@ -1437,9 +1435,9 @@ public class AutoCrystalRewrite extends Module {
                 if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
                     return true;
             }
-        } else if (oldSlotBack != -1) {
-            mc.player.inventory.currentItem = oldSlotBack;
-            oldSlotBack = -1;
+        } else if (oldSlotBackWeb != -1) {
+            mc.player.inventory.currentItem = oldSlotBackWeb;
+            oldSlotBackWeb = -1;
         }
 
         return false;
@@ -1476,7 +1474,7 @@ public class AutoCrystalRewrite extends Module {
             else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
             // If we have to switch back at the end, normal switch + set oldSlotBack to oldSlot
             else if (switchBackEnd.getValue()) {
-                oldSlotBack = oldSlot;
+                oldSlotBackWeb = oldSlot;
                 mc.player.inventory.currentItem = slot;
                 oldSlot = -1;
             }
@@ -1664,7 +1662,7 @@ public class AutoCrystalRewrite extends Module {
                     if (slotChange != mc.player.inventory.currentItem) {
                         if (switchBack.getValue()) {
                             tickSwitch = tickSwitchBack.getValue();
-                            oldSlotBack = mc.player.inventory.currentItem;
+                            oldSlotObby = mc.player.inventory.currentItem;
                         }
                         mc.player.inventory.currentItem = slotChange;
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
