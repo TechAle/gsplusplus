@@ -43,11 +43,9 @@ import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemEndCrystal;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 import net.minecraft.network.play.server.SPacketSpawnObject;
@@ -179,6 +177,10 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && placeAfterBreak.getValue());
     BooleanSetting forcePlace = registerBoolean("Force Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
+    BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false, () -> breakSection.getValue());
+    BooleanSetting silentSwitchWeakness = registerBoolean("Silent Switch Weakness", false,
+            () -> breakSection.getValue() && antiWeakness.getValue());
+
     //endregion
 
     //region Misc
@@ -2229,6 +2231,19 @@ public class AutoCrystalRewrite extends Module {
                 }
         }
 
+        int switchBack = -1;
+        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS) && !mc.player.isPotionActive(MobEffects.STRENGTH)) {
+            int slotSword = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
+            if (slotSword == -1)
+                return false;
+            if (slotSword != mc.player.inventory.currentItem) {
+                if (silentSwitchWeakness.getValue()) {
+                    switchBack = mc.player.inventory.currentItem;
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotSword));
+                } else mc.player.inventory.currentItem = slotSword;
+            }
+        }
+
         // Swing
         if (!swingModebr.getValue().equals("None"))
             swingArm(swingModebr.getValue(), hideClientbr.getValue(), null);
@@ -2273,6 +2288,9 @@ public class AutoCrystalRewrite extends Module {
                 forcePlaceTarget = bestBreak.target;
             }
         }
+
+        if (slotChange != -1)
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
 
         return true;
     }
