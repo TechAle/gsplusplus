@@ -2326,8 +2326,7 @@ public class AutoCrystalRewrite extends Module {
         // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[0].contains("damageBoost")
         // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[2].charAt(0) > 49
         int switchBack = -1;
-        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
-            && mc.player.getActivePotionEffects().stream().noneMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0)) {
+        if (antiWeakness.getValue()){
             int slotSword = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
             if (slotSword == -1)
                 return false;
