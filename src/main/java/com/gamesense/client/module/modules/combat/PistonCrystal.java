@@ -28,6 +28,7 @@ import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.CPacketEntityAction;
@@ -753,7 +754,8 @@ public class PistonCrystal extends Module {
         else
             hitTryTick = 0;
         // If weaknes
-        if (antiWeakness.getValue())
+        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
+            && mc.player.getActivePotionEffects().stream().noneMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0))
             mc.player.inventory.currentItem = slot_mat[4];
         // If rotate
         if (rotate.getValue()) {

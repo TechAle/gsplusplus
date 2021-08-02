@@ -2243,9 +2243,12 @@ public class AutoCrystalRewrite extends Module {
                         return true;
                 }
         }
-
+        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")
+        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[0].contains("damageBoost")
+        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[2].charAt(0) > 49
         int switchBack = -1;
-        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS) && !mc.player.isPotionActive(MobEffects.STRENGTH)) {
+        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
+            && !(mc.player.getActivePotionEffects().stream().anyMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0))) {
             int slotSword = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
             if (slotSword == -1)
                 return false;
@@ -2302,8 +2305,8 @@ public class AutoCrystalRewrite extends Module {
             }
         }
 
-        if (slotChange != -1)
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(slotChange));
+        if (switchBack != -1)
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(switchBack));
 
         return true;
     }
