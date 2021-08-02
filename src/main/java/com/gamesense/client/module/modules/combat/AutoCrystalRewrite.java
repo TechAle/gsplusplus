@@ -763,7 +763,7 @@ public class AutoCrystalRewrite extends Module {
     /// Global variables sorted by type
     public static boolean stopAC = false;
 
-    boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
+    boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal;
 
     int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack;
 
@@ -810,7 +810,8 @@ public class AutoCrystalRewrite extends Module {
         tickBeforePlace = tickBeforeBreak = tick = 0;
         timePlace = timeBreak = 0;
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
-        checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak = isRotating = false;
+        checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
+        yPlayer = xPlayer = Double.MAX_VALUE;
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
                 "            Never gonna run around and desert you\n" +
@@ -1608,15 +1609,21 @@ public class AutoCrystalRewrite extends Module {
                 // Get the rotation we want
                 Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 // If we are not rotating, set new values
-                if (!isRotating) {
-                    yPlayer = pitchCheck.getValue()
-                            ? mc.player.getPitchYaw().x
-                            : Double.MIN_VALUE;
-                    xPlayer = yawCheck.getValue()
-                            ? RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                            : Double.MIN_VALUE;
-                    isRotating = true;
-                }
+                yPlayer = pitchCheck.getValue()
+                        ? (
+                            yPlayer == Double.MAX_VALUE ?
+                            mc.player.getPitchYaw().x
+                            : yPlayer
+                            )
+                        : Double.MIN_VALUE;
+                xPlayer = yawCheck.getValue()
+                        ? (
+                            xPlayer == Double.MAX_VALUE ?
+                            RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                            : xPlayer
+                            )
+                        : Double.MIN_VALUE;
+
 
                 // If we allow to predict the place (so place when we are near that block)
                 if (placeStrictPredict.getValue()) {
@@ -2183,21 +2190,27 @@ public class AutoCrystalRewrite extends Module {
             // If preRotate
             if (preRotate.getValue()) {
                 BlockUtil.faceVectorPacketInstant(lastHitVec, true);
+                xPlayer = yPlayer = Double.MIN_VALUE;
             } else
                 // If we have to check or yaw or pitch
                 if (yawCheck.getValue() || pitchCheck.getValue()) {
                     // Get the rotation we want
                     Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                     // If we are not rotating, set new values
-                    if (!isRotating) {
-                        yPlayer = pitchCheck.getValue()
-                                ? mc.player.getPitchYaw().x
-                                : Double.MIN_VALUE;
-                        xPlayer = yawCheck.getValue()
+                    yPlayer = pitchCheck.getValue()
+                            ? (
+                            yPlayer == Double.MAX_VALUE
+                            ? mc.player.getPitchYaw().x
+                            : yPlayer
+                            )
+                            : Double.MIN_VALUE;
+                    xPlayer = yawCheck.getValue()
+                            ? (
+                                xPlayer == Double.MAX_VALUE
                                 ? RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                                : Double.MIN_VALUE;
-                        isRotating = true;
-                    }
+                                : xPlayer
+                            )
+                            : Double.MIN_VALUE;
 
                     // If we allow to predict the place (so place when we are near that block)
                     if (placeStrictPredict.getValue()) {
@@ -2929,7 +2942,6 @@ public class AutoCrystalRewrite extends Module {
         if (tick++ > tickAfterRotation.getValue()) {
             lastHitVec = null;
             tick = 0;
-            isRotating = false;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
