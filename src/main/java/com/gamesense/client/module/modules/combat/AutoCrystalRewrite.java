@@ -128,6 +128,8 @@ public class AutoCrystalRewrite extends Module {
             () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue());
     BooleanSetting switchBackEnd = registerBoolean("Switch Back Web End", false,
             () -> place.getValue() && autoWeb.getValue() && switchWeb.getValue() && !silentSwitchWeb.getValue() && switchBackWeb.getValue());
+    BooleanSetting breakNearCrystal = registerBoolean("Break Near Crystal", false,
+            () -> place.getValue());
     //endregion
 
     //region break
@@ -783,6 +785,8 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait breakPacketLimit = new crystalPlaceWait();
     crystalPlaceWait existsCrystal = new crystalPlaceWait();
     crystalTime crystalPlace = null;
+    EntityEnderCrystal forceBreak = null;
+    BlockPos forceBreakPlace = null;
 
 
     ArrayList<display> toDisplay = new ArrayList<>();
@@ -812,6 +816,8 @@ public class AutoCrystalRewrite extends Module {
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
         yPlayer = xPlayer = Double.MAX_VALUE;
+        forceBreak = null;
+        forceBreakPlace = null;
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
                 "            Never gonna run around and desert you\n" +
@@ -1590,6 +1596,26 @@ public class AutoCrystalRewrite extends Module {
         if ( !placeOnCrystal.getValue() && !isCrystalHere(pos) && !instaPlace)
             return false;
 
+        // Get position
+        BlockPos posUp = pos.up();
+
+        // Get box
+        AxisAlignedBB box = new AxisAlignedBB(
+                posUp.getX(), posUp.getY(), posUp.getZ(),
+                posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
+        );
+        // 574 1 566
+        // Check for entity
+        List<Entity> a = mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal && !sameBlockPos(entity.getPosition().add(0, -1, 0), pos));
+
+        if (a.size() > 0) {
+            if (breakNearCrystal.getValue()) {
+                forceBreak = (EntityEnderCrystal) a.get(0);
+                forceBreakPlace = pos;
+            }
+            return false;
+        }
+
         // If this pos is in wait
         if (listCrystalsPlaced.CrystalExists(pos) != -1)
             return false;
@@ -1772,9 +1798,9 @@ public class AutoCrystalRewrite extends Module {
                 posUp.getX(), posUp.getY(), posUp.getZ(),
                 posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
         );
-
+        // 574.5 1 566.5
         // Check for entity
-        return mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal).isEmpty();
+        return mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal && sameBlockPos(entity.getPosition(), pos)).isEmpty();
     }
 
     //endregion
@@ -2154,7 +2180,8 @@ public class AutoCrystalRewrite extends Module {
             // Get time
             inizio = System.currentTimeMillis();
         // Get target
-        bestBreak = getTargetBreaking(targetBreaking.getValue());
+        if (forceBreak == null)
+            bestBreak = getTargetBreaking(targetBreaking.getValue());
         // For debugging timeCalcPlacemetn
         if (timeCalcBreaking.getValue()) {
             // Get duration
@@ -2171,8 +2198,11 @@ public class AutoCrystalRewrite extends Module {
             }
         }
 
+        // Break forceBreak
+        if (forceBreak != null)
+            return breakCrystal(forceBreak);
         // Display crystal
-        if (bestBreak.crystal != null) {
+        else if (bestBreak.crystal != null) {
             toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue()));
             if (predictBreakingEnemy.getValue())
                 toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
@@ -2252,7 +2282,7 @@ public class AutoCrystalRewrite extends Module {
         // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[2].charAt(0) > 49
         int switchBack = -1;
         if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
-            && !(mc.player.getActivePotionEffects().stream().anyMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0))) {
+            && mc.player.getActivePotionEffects().stream().noneMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0)) {
             int slotSword = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
             if (slotSword == -1)
                 return false;
@@ -2298,16 +2328,24 @@ public class AutoCrystalRewrite extends Module {
         timeBreak = System.currentTimeMillis();
 
         if (placeAfterBreak.getValue()) {
+            BlockPos position = forceBreak == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace;
             if (instaPlace.getValue()) {
                 EnumHand hand = getHandCrystal();
                 if (hand != null)
-                    placeCrystal(cr.getPosition().add(0, -1, 0), hand, true);
+                    placeCrystal(position, hand, true);
             } else {
-                forcePlaceCrystal = cr.getPosition().add(0, -1, 0);
-                forcePlaceDamage = bestBreak.damage;
-                forcePlaceTarget = bestBreak.target;
+                forcePlaceCrystal = position;
+                if (forceBreak == null) {
+                    forcePlaceDamage = bestBreak.damage;
+                    forcePlaceTarget = bestBreak.target;
+                } else {
+                    forcePlaceDamage = 10;
+                    forcePlaceTarget = new PlayerInfo(mc.player, 0);
+                }
             }
         }
+        forceBreak = null;
+        forceBreakPlace = null;
 
         if (switchBack != -1)
             mc.player.connection.sendPacket(new CPacketHeldItemChange(switchBack));
@@ -2316,10 +2354,9 @@ public class AutoCrystalRewrite extends Module {
     }
 
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
-        boolean serverSide = swingModebr.getValue().equals("Server");
         EnumHand[] handSwing;
         if (handSwingDef == null) {
-            switch (swingHandbr.getValue()) {
+            switch (swingMode) {
                 case "Both": {
                     handSwing = new EnumHand[]{
                             EnumHand.MAIN_HAND,
@@ -2344,7 +2381,7 @@ public class AutoCrystalRewrite extends Module {
         else handSwing = new EnumHand[] {handSwingDef};
 
         for(EnumHand hand : handSwing) {
-            if (serverSide) {
+            if (hideClient) {
                 if (hideClientbr.getValue()) {
                     // Packet Swing
                     mc.player.connection.sendPacket(new CPacketAnimation(hand));
