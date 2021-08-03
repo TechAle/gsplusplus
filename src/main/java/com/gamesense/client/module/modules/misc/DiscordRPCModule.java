@@ -84,7 +84,7 @@ public class DiscordRPCModule extends Module {
         } else {
             p = String.valueOf(Objects.requireNonNull(mc.getConnection().getPlayerInfo(mc.player.getName())).getResponseTime());
         }
-        p = p + " ping";
+        p = p + "ping";
         return p;
     }
 
