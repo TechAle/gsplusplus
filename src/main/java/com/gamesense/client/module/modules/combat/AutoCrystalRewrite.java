@@ -1678,6 +1678,10 @@ public class AutoCrystalRewrite extends Module {
                     }
 
                 }
+            } else {
+                // Change to crystal
+                if (oldSlot != mc.player.inventory.currentItem)
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
             }
         }
 
