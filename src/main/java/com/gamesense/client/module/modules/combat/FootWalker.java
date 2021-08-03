@@ -67,6 +67,8 @@ public class FootWalker extends Module {
     BooleanSetting scaffold = registerBoolean("Scaffold", false);
     BooleanSetting shiftJump = registerBoolean("Shift Jump", false);
     BooleanSetting safeMode = registerBoolean("Safe Mode", false);
+    BooleanSetting normalSwitch = registerBoolean("Normal Switch", false);
+    BooleanSetting switchBack = registerBoolean("Switch Back", false, () -> normalSwitch.getValue());
 
 
     public void onEnable() {
@@ -221,8 +223,11 @@ public class FootWalker extends Module {
 
                     if (scaf) {
 
-                        if (slotBlock != oldSlot)
+                        if (slotBlock != oldSlot) {
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+                            if (normalSwitch.getValue())
+                                mc.player.inventory.currentItem = slotBlock;
+                        }
 
                         placeBlockPacket(null, pos.add(0, -1, 0));
                     }
@@ -236,6 +241,10 @@ public class FootWalker extends Module {
                     mc.player.setPosition(newX, mc.player.posY, newZ);
 
                     if (slotBlock != oldSlot)
+                        if (normalSwitch.getValue()) {
+                            if (switchBack.getValue())
+                                mc.player.inventory.currentItem = oldSlot;
+                        } else
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
                     return;
@@ -243,8 +252,12 @@ public class FootWalker extends Module {
 
                     if (scaf) {
 
-                        if (slotBlock != oldSlot)
+                        if (slotBlock != oldSlot) {
+                            if (normalSwitch.getValue()) {
+                                mc.player.inventory.currentItem = slotBlock;
+                            }
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+                        }
 
                         placeBlockPacket(null, pos.add(0, -1, 0));
                     }
@@ -253,7 +266,11 @@ public class FootWalker extends Module {
                     center = true;
 
                     if (slotBlock != oldSlot)
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                        if (normalSwitch.getValue()) {
+                            if (switchBack.getValue())
+                                mc.player.inventory.currentItem = oldSlot;
+                        } else
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
                     return;
                 }
@@ -271,8 +288,11 @@ public class FootWalker extends Module {
             }
 
             // If it's different from what we have now
-            if (slotBlock != oldSlot)
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));
+            if (slotBlock != oldSlot) {
+                if (normalSwitch.getValue()) {
+                    mc.player.inventory.currentItem = slotBlock;
+                }
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(slotBlock));}
 
             if (scaf) {
                 placeBlockPacket(null, pos.add(0, -1, 0));
@@ -306,6 +326,10 @@ public class FootWalker extends Module {
 
             // return old slot
             if (slotBlock != oldSlot)
+                if (normalSwitch.getValue()) {
+                    if (switchBack.getValue())
+                        mc.player.inventory.currentItem = oldSlot;
+                } else
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
             // Stop sneaking

@@ -1,9 +1,11 @@
 package com.gamesense.api.util.player;
 
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,6 +25,8 @@ public class PredictUtil {
         // entity motions
         double motionX = entity.posX - entity.prevPosX;
         double motionY = entity.posY - entity.prevPosY;
+        if (settings.debug)
+            PistonCrystal.printDebug("Motion Y:" + motionY, false);
         double motionZ = entity.posZ - entity.prevPosZ;
         // Y Prediction stuff
         boolean goingUp = false;
@@ -33,8 +37,9 @@ public class PredictUtil {
 
         // If he want manual out hole
         boolean isHole = false;
-        if (settings.manualOutHole && motionY > 0) {
-            if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE)
+        if (settings.manualOutHole && motionY > .2) {
+            if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE
+                && BlockUtil.getBlock(EntityUtil.getPosition(entity).add(0, 2, 0)) instanceof BlockAir)
                 isHole = true;
             else if (settings.aboveHoleManual && HoleUtil.isHole(EntityUtil.getPosition(entity).add(0, -1, 0), false, true).getType() != HoleUtil.HoleType.NONE)
                 isHole = true;
@@ -160,9 +165,13 @@ public class PredictUtil {
         if (settings.debug) {
             PistonCrystal.printDebug(String.format("Player: %s Total ticks: %d Up: %d Down: %d", ((EntityPlayer) entity).getGameProfile().getName(), settings.tick, up, down), false);
         }
-        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit"));
+        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), entity.getName()));
         clonedPlayer.setPosition(posVec[0], posVec[1], posVec[2]);
         clonedPlayer.inventory.copyInventory(entity.inventory);
+        clonedPlayer.setHealth(entity.getHealth());
+        clonedPlayer.prevPosX = entity.prevPosX;
+        clonedPlayer.prevPosY = entity.prevPosY;
+        clonedPlayer.prevPosZ = entity.prevPosZ;
         return clonedPlayer;
     }
 

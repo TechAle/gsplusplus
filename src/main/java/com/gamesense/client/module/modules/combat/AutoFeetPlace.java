@@ -43,6 +43,7 @@ public class AutoFeetPlace extends Module {
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
+    BooleanSetting disableAfter = registerBoolean("Disable After", false);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
@@ -137,6 +138,8 @@ public class AutoFeetPlace extends Module {
 
             hasPlaced = false;
 
+            int obbyHere = 0;
+
             while (blocksPlaced <= blocksPerTick.getValue()) {
                 int maxSteps;
                 Vec3d[] offsetPattern;
@@ -175,6 +178,7 @@ public class AutoFeetPlace extends Module {
 
                 if (!mc.world.getBlockState(targetPos).getMaterial().isReplaceable()) {
                     tryPlacing = false;
+                    obbyHere++;
                 }
 
                 for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(targetPos))) {
@@ -197,6 +201,26 @@ public class AutoFeetPlace extends Module {
             }
             if (hasPlaced)
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+
+            if (disableAfter.getValue()) {
+                int maxSteps;
+                switch (offsetMode.getValue()) {
+                    case "Around": {
+                        maxSteps = Offsets.Around.length;
+                        break;
+                    }
+                    case "Both": {
+                        maxSteps = Offsets.Both.length;
+                        break;
+                    }
+                    default: {
+                        maxSteps = Offsets.AutoCity.length;
+                        break;
+                    }
+                }
+                if (maxSteps == obbyHere)
+                    disable();
+            }
         }
     }
 

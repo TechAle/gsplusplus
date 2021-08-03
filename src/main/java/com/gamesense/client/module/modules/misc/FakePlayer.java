@@ -57,6 +57,7 @@ public class FakePlayer extends Module {
     IntegerSetting vulnerabilityTick = registerInteger("Vulnerability Tick", 4, 0, 10);
     IntegerSetting resetHealth = registerInteger("Reset Health", 10, 0, 36);
     IntegerSetting tickRegenVal = registerInteger("Tick Regen", 4, 0, 30);
+    IntegerSetting startHealth = registerInteger("Start Health", 20, 0, 30);
 
     int incr;
     public void onEnable() {
@@ -80,7 +81,7 @@ public class FakePlayer extends Module {
         clonedPlayer.rotationPitch = mc.player.rotationPitch;
         // set gameType
         clonedPlayer.setGameType(GameType.SURVIVAL);
-        clonedPlayer.setHealth(20);
+        clonedPlayer.setHealth(startHealth.getValue());
         // Add entity id
         mc.world.addEntityToWorld((-1234 + incr), clonedPlayer);
         incr++;
@@ -102,7 +103,6 @@ public class FakePlayer extends Module {
                 clonedPlayer.inventory.armorInventory.set(i, item);
             }
         }
-        clonedPlayer.onLivingUpdate();
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
     }
     boolean beforePressed;
