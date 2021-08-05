@@ -1,4 +1,4 @@
-package com.gamesense.client.module.modules.movement;
+/*package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -44,4 +44,4 @@ public class Timer extends Module {
 
         return arraylistSpeed;
     }
-}
+}*/
