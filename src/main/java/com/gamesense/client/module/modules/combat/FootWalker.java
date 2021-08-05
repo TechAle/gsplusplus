@@ -69,6 +69,8 @@ public class FootWalker extends Module {
     BooleanSetting safeMode = registerBoolean("Safe Mode", false);
     BooleanSetting normalSwitch = registerBoolean("Normal Switch", false);
     BooleanSetting switchBack = registerBoolean("Switch Back", false, () -> normalSwitch.getValue());
+    IntegerSetting tickSwitchBack = registerInteger("Tick SwitchBack", 4, 0, 10,
+            () -> normalSwitch.getValue() && switchBack.getValue());
 
 
     public void onEnable() {
@@ -80,12 +82,23 @@ public class FootWalker extends Module {
             instaBurrow(disactiveAfter.getValue());
     }
 
+    int tick;
+
     void initValues() {
         finishOnGround = center = havePhase = beforeShiftJump = false;
         materials = true;
+        oldSlotBack = tick = -1;
     }
 
     public void onUpdate() {
+
+        if (tick != -1) {
+            if (tick++ >= tickSwitchBack.getValue()) {
+                mc.player.inventory.currentItem = oldSlotBack;
+                oldSlotBack = tick = -1;
+            }
+
+        }
 
         // If we have to phase
         if (havePhase) {
@@ -122,6 +135,8 @@ public class FootWalker extends Module {
         if (materials)
             setDisabledMessage("No materials found... FootConcrete disabled");
     }
+
+    int oldSlotBack;
 
     void instaBurrow(boolean disactive) {
 
@@ -242,8 +257,10 @@ public class FootWalker extends Module {
 
                     if (slotBlock != oldSlot)
                         if (normalSwitch.getValue()) {
-                            if (switchBack.getValue())
-                                mc.player.inventory.currentItem = oldSlot;
+                            if (switchBack.getValue()) {
+                                oldSlotBack = oldSlot;
+                                tick = 0;
+                            }
                         } else
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
@@ -267,8 +284,10 @@ public class FootWalker extends Module {
 
                     if (slotBlock != oldSlot)
                         if (normalSwitch.getValue()) {
-                            if (switchBack.getValue())
-                                mc.player.inventory.currentItem = oldSlot;
+                            if (switchBack.getValue()) {
+                                oldSlotBack = oldSlot;
+                                tick = 0;
+                            }
                         } else
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
@@ -327,8 +346,10 @@ public class FootWalker extends Module {
             // return old slot
             if (slotBlock != oldSlot)
                 if (normalSwitch.getValue()) {
-                    if (switchBack.getValue())
-                        mc.player.inventory.currentItem = oldSlot;
+                    if (switchBack.getValue()) {
+                        oldSlotBack = oldSlot;
+                        tick = 0;
+                    }
                 } else
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
