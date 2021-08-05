@@ -26,7 +26,8 @@ import java.util.Arrays;
 public class Speed extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "Fake", "YPort"), "Strafe");
-    DoubleSetting yPortSpeed = registerDouble("Y Port Speed", 0.06, 0.01, 0.15);
+    DoubleSetting speed = registerDouble("speed", 2.15,0,10, () -> mode.getValue().equals("Strafe"));
+    DoubleSetting yPortSpeed = registerDouble("yPortSpeed", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
 
     private boolean slowDown;
@@ -84,7 +85,7 @@ public class Speed extends Module {
                 }
 
                 event.setY(mc.player.motionY = speedY);
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : 1.901);
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
                 slowDown = true;
                 timer.reset();
             } else {
