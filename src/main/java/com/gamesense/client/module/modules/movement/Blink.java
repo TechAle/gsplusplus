@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Blink extends Module {
 
     BooleanSetting ghostPlayer = registerBoolean("Ghost Player", true);
+    BooleanSetting keepRotations = registerBoolean("Keep Rotations", false);
 
     private EntityOtherPlayerMP entity;
     private final ConcurrentLinkedQueue<Packet<?>> packets = new ConcurrentLinkedQueue<>();
@@ -70,12 +71,28 @@ public class Blink extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
-        Packet<?> packet = event.getPacket();
-        EntityPlayerSP player = mc.player;
+        if (!keepRotations.getValue()){
+            Packet<?> packet = event.getPacket();
+            EntityPlayerSP player = mc.player;
 
-        if (player != null && player.isEntityAlive() && packet instanceof CPacketPlayer) {
-            packets.add(packet);
-            event.cancel();
+            if (player != null && player.isEntityAlive() && packet instanceof CPacketPlayer) {
+                packets.add(packet);
+                event.cancel();
+            }
+        } else {
+            Packet<?> packet = event.getPacket();
+            EntityPlayerSP player = mc.player;
+
+            if (player != null && player.isEntityAlive() && packet instanceof CPacketPlayer.Position) {
+                packets.add(packet);
+                event.cancel();
+            } else if (player != null && player.isEntityAlive() && packet instanceof CPacketPlayer.PositionRotation) {
+
+                packets.add(packet);
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(((CPacketPlayer.PositionRotation) packet).yaw,((CPacketPlayer.PositionRotation) packet).pitch,mc.player.onGround));
+                event.cancel();
+            }
+
         }
     });
 
