@@ -2,10 +2,7 @@ package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEntityEvent;
 import com.gamesense.api.event.events.TotemPopEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.ChamsUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.module.Category;
@@ -52,12 +49,14 @@ public class Chams extends Module {
     ColorSetting mobColor = registerColor("Mob Color", new GSColor(255, 255, 0, 255));
     ColorSetting crystalColor = registerColor("Crystal Color", new GSColor(0, 255, 0, 255));
     BooleanSetting chamsPop = registerBoolean("Chams Pop", false);
-    ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame");
-    ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255));
-    IntegerSetting wireFramePop = registerInteger("WireFrame Pop", 4, 0, 10);
-    BooleanSetting gradientAlpha = registerBoolean("Gradient Alpha", true);
-
-    IntegerSetting life = registerInteger("Time", 100, 10, 300);
+    ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame",
+            () -> chamsPop.getValue());
+    ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255), () -> chamsPop.getValue());
+    IntegerSetting wireFramePop = registerInteger("WireFrame Pop", 4, 0, 10, () -> chamsPop.getValue());
+    BooleanSetting gradientAlpha = registerBoolean("Gradient Alpha", true, () -> chamsPop.getValue());
+    ModeSetting Movement = registerMode("Movement", Arrays.asList("None", "Heaven", "Hell"), "None", () -> chamsPop.getValue());
+    DoubleSetting yMovement = registerDouble("Y Movement", .2, 0, 1, () -> chamsPop.getValue() && !Movement.getValue().equals("None"));
+    IntegerSetting life = registerInteger("Time", 100, 10, 300, () -> chamsPop.getValue());
 
 
     private int fpNum = 0;
@@ -98,7 +97,16 @@ public class Chams extends Module {
         if (entity != null) {
             // Add entity id
             //mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
-            listPlayers.add(new playerChams(-1235 - fpNum, life.getValue(), new double[] {entity.posX, entity.posY, entity.posZ}));
+            double movement = 0;
+            switch (Movement.getValue()) {
+                case "Heaven":
+                    movement = yMovement.getValue();
+                    break;
+                case "Hell":
+                    movement = -yMovement.getValue();
+                    break;
+            }
+            listPlayers.add(new playerChams(-1235 - fpNum, life.getValue(), new double[] {entity.posX, entity.posY, entity.posZ}, movement));
             fpNum++;
         }
         return true;
@@ -176,15 +184,18 @@ public class Chams extends Module {
         final private int finalTick;
         final private int id;
         final double[] coordinates;
+        final double movement;
 
-        public playerChams(int id, int finalTick, double[] coordinates) {
+        public playerChams(int id, int finalTick, double[] coordinates, double movement) {
             this.id = id;
             this.finalTick = finalTick;
             this.tick = 0;
             this.coordinates = coordinates;
+            this.movement = movement;
         }
 
         public boolean onUpdate() {
+            coordinates[1] += movement;
             return tick++ > finalTick;
         }
 
