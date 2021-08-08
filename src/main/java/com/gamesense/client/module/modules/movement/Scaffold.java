@@ -320,7 +320,7 @@ public class Scaffold extends Module {
                 mc.player.motionY = 0.42;
                 jumpGround = mc.player.posY;
             }*/
-            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable() && towerPlaceTimer.hasReached(upDelay.getValue()*50, true)) {
+            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable() || towerPlaceTimer.hasReached(upDelay.getValue()*50, true)) {
                 placeBlockPacket(null, new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ));
                 wait = true;
             }
