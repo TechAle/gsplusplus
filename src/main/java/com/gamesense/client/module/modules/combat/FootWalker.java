@@ -275,10 +275,8 @@ public class FootWalker extends Module {
             }
 
             // Send burrow exploit
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.42, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 0.75, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.01, posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(posX, mc.player.posY + 1.16, posZ, true));
+
+            PlayerUtil.fakeJump();
 
             // Start placing
             placeBlockPacket(EnumFacing.DOWN, pos);
