@@ -1,4 +1,4 @@
-package com.gamesense.client.module.modules.movement;
+/*package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.*;
@@ -108,14 +108,14 @@ public class Scaffold extends Module {
         direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
 
 
-            /*
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
-
-            }*/
+//
+//            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+//            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+//            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+//            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
+//
+//            }
 
         int targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
 
@@ -274,32 +274,32 @@ public class Scaffold extends Module {
 
         if (mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown() && !MotionUtil.isMoving(mc.player)) {
 
-            /*mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,mc.player.rotationPitch,true));
+//            mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,mc.player.rotationPitch,true));
+//
+//            mc.player.motionX *= 0.3;
+//            mc.player.motionZ *= 0.3;
+//            mc.player.motionY = 0.41;
+//            if (towerTimer.hasReached(1500)) {
+//                mc.player.motionY = -0.28;
+//                towerTimer.reset();
+//                towering = true;
+//            }
+//
+//            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)));
+//            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
 
-            mc.player.motionX *= 0.3;
-            mc.player.motionZ *= 0.3;
-            mc.player.motionY = 0.41;
-            if (towerTimer.hasReached(1500)) {
-                mc.player.motionY = -0.28;
-                towerTimer.reset();
-                towering = true;
-            }
-
-            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)));
-            placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));*/
 
 
-
-/*            if (towerTimer.hasReached(upSpeed.getValue().longValue())){
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ, true));
-
-                mc.player.setPosition(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ);
-
-                placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
-            }*/
+//            if (towerTimer.hasReached(upSpeed.getValue().longValue())){
+//                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+//                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+//                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+//                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ, true));
+//
+//                mc.player.setPosition(mc.player.posX, mc.player.posY + 1.15, mc.player.posZ);
+//
+//                placeBlockPacket(null, (new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ)));
+//            }
 
 
 
@@ -311,16 +311,16 @@ public class Scaffold extends Module {
                 this.towerTimer.reset();
                 wait = false;
             }
-/*            if (mc.player.posY > jumpGround + 0.79) {
-                mc.player.setPosition(
-                        mc.player.posX,
-                        Math.floor(mc.player.posY),
-                        mc.player.posZ
-                );
-                mc.player.motionY = 0.42;
-                jumpGround = mc.player.posY;
-            }*/
-            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable() || towerPlaceTimer.hasReached(upDelay.getValue()*50, true)) {
+//            if (mc.player.posY > jumpGround + 0.79) {
+//                mc.player.setPosition(
+//                        mc.player.posX,
+//                        Math.floor(mc.player.posY),
+//                        mc.player.posZ
+//                );
+//                mc.player.motionY = 0.42;
+//                jumpGround = mc.player.posY;
+//            }
+            if (mc.world.getBlockState(new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ)).getMaterial().isReplaceable() && towerPlaceTimer.hasReached(upDelay.getValue()*50, true)) {
                 placeBlockPacket(null, new BlockPos(mc.player.posX, mc.player.posY - offset.getValue(), mc.player.posZ));
                 wait = true;
             }
@@ -334,3 +334,4 @@ public class Scaffold extends Module {
         }
     });
 }
+*/
