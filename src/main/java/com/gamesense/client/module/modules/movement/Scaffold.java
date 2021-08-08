@@ -1,4 +1,4 @@
-/*package com.gamesense.client.module.modules.movement;
+package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.*;
@@ -334,4 +334,3 @@ public class Scaffold extends Module {
         }
     });
 }
-*/
