@@ -37,7 +37,7 @@ public class LiquidSpeed extends Module {
     DoubleSetting YPLava = registerDouble("Y+ Lava", 1, 1, 5);
     DoubleSetting YMLava = registerDouble("Y- Lava", 1, 0, 10);
     ModeSetting YLavaMotion = registerMode("Y Lava motion", Arrays.asList("None", "Zero", "Bounding", "Min"), "None");
-    IntegerSetting magnitudeMinLava = registerInteger("Magnitude Min Water", 0, 0, 6);
+    IntegerSetting magnitudeMinLava = registerInteger("Magnitude Min Lava", 0, 0, 6);
     BooleanSetting groundIgnore = registerBoolean("Ground Ignore", true);
 
 
@@ -117,7 +117,7 @@ public class LiquidSpeed extends Module {
                 velY *= isMovingUp ? YPLava.getValue() : YMLava.getValue();
                 velZ *= XZLava.getValue();
                 if (!isMovingUp && !isMovingDown)
-                    switch (YWaterMotion.getValue()) {
+                    switch (YLavaMotion.getValue()) {
                         case "Zero":
                             velY = 0.0;
                             break;

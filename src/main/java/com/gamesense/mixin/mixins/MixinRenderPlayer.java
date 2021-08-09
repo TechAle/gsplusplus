@@ -16,6 +16,10 @@ public abstract class MixinRenderPlayer {
 
     @Inject(method = "renderEntityName", at = @At("HEAD"), cancellable = true)
     private void renderLivingLabel(AbstractClientPlayer entity, double x, double y, double z, String name, double distanceSq, CallbackInfo callbackInfo) {
+
+        if (entity.getName().length() == 0)
+            callbackInfo.cancel();
+
         if (ModuleManager.isModuleEnabled(Nametags.class)) {
             callbackInfo.cancel();
         }
