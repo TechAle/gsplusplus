@@ -79,7 +79,7 @@ public class Freecam extends Module {
     }
 
     public void onUpdate() {
-        if (strafe.getValue()) mc.player.setVelocity(0,0,0);
+        if (strafe.getValue()) mc.player.setVelocity(MotionUtil.forward(speed.getValue().intValue())[0],0,MotionUtil.forward(speed.getValue().intValue())[1]);
         mc.player.capabilities.isFlying = true;
         mc.player.capabilities.setFlySpeed((float) (speed.getValue() / 100f));
         mc.player.noClip = noclip.getValue();
