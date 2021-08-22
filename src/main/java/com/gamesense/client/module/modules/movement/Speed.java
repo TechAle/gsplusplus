@@ -79,6 +79,8 @@ public class Speed extends Module {
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
             double speedY = jumpHeight.getValue();
 
+            if (mc.player.onGround) mc.player.jump();
+
             if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(300)) {
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
                     speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
