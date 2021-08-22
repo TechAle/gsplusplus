@@ -13,6 +13,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import com.gamesense.client.module.modules.misc.Trigger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -40,6 +41,8 @@ public class FootConcrete extends Module {
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
     BooleanSetting allowEchest = registerBoolean("allowEchest", true);
     BooleanSetting onlyEchest = registerBoolean("onlyEchest", false, () -> allowEchest.getValue());
+    BooleanSetting allowEndRod = registerBoolean("allowEndRod", true);
+    BooleanSetting onlyEndRod = registerBoolean("onlyEndRot", false, () -> allowEndRod.getValue());
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting phase = registerBoolean("clipDown", false);
     BooleanSetting rotate = registerBoolean("rotate", true);
@@ -47,6 +50,8 @@ public class FootConcrete extends Module {
     boolean doGlitch;
 
     boolean invalidHotbar;
+
+    boolean rotation;
 
     float oldPitch;
 
@@ -63,6 +68,16 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
 
     public void onEnable() {
+
+        if (rotate.getValue()) {
+
+            rotation = true;
+
+        } else {
+
+            rotation = ModuleManager.getModule(Trigger.class).cc;
+
+        }
 
         invalidHotbar = false;
 
@@ -85,6 +100,11 @@ public class FootConcrete extends Module {
         if (targetBlockSlot == -1 || onlyEchest.getValue()) {
             if (allowEchest.getValue())
                 targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+        }
+
+        if (targetBlockSlot == -1 || onlyEndRod.getValue()) {
+            if (allowEndRod.getValue())
+                targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.END_ROD.getClass(), 0, 8);
         }
 
         if (targetBlockSlot == -1) {
@@ -145,7 +165,7 @@ public class FootConcrete extends Module {
 
                     PlayerUtil.fakeJump();
 
-                    PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+                    PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
                     if (!absoluteClipHeight.getValue()) {
 
@@ -159,7 +179,7 @@ public class FootConcrete extends Module {
 
                     if (phase.getValue()) {
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 42069, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw , mc.player.rotationPitch, true));
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 42069, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, true));
                     }
 
                     disable();
@@ -202,7 +222,7 @@ public class FootConcrete extends Module {
 
                 oldPitch = mc.player.rotationPitch;
 
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue());
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotation);
 
                 oldslot = mc.player.inventory.currentItem;
 
