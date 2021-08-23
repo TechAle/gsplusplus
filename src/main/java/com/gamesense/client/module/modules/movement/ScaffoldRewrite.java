@@ -2,9 +2,12 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.PredictUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
@@ -28,8 +31,9 @@ import java.util.Arrays;
 public class ScaffoldRewrite extends Module {
 
     BooleanSetting towerSetting = registerBoolean("Tower", true);
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion", () -> towerSetting.getValue());
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "None"), "Motion", () -> towerSetting.getValue());
     DoubleSetting jumpMotion = registerDouble("Jump Speed", 5, 0, 10, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Motion"));
+    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20);
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
@@ -44,6 +48,8 @@ public class ScaffoldRewrite extends Module {
     BlockPos scaffoldSupport;
     BlockPos towerPos;
     BlockPos downPos;
+
+    Timer towerTimer = new Timer();
 
     public void onUpdate() {
 
@@ -135,7 +141,18 @@ public class ScaffoldRewrite extends Module {
 
                 }
 
-                placeBlockPacket( towerPos, false);
+                case "Clip": {
+
+                    if (towerTimer.hasReached(clipSpeed.getValue() * 50, true)) { // Delay so we don't spam packets and get kicked
+
+                        PlayerUtil.fakeJump(); // Jump
+                        mc.player.setPosition(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ); // Set our position to where we jumped
+
+                    }
+
+                }
+
+                placeBlockPacket( towerPos, false); // Place Block
 
             }
         }
