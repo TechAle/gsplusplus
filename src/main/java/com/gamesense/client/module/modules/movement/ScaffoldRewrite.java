@@ -30,11 +30,10 @@ import java.util.Arrays;
 @Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
 public class ScaffoldRewrite extends Module {
 
-    BooleanSetting towerSetting = registerBoolean("Tower", true);
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "None"), "Motion", () -> towerSetting.getValue());
-    DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Jump"));
-    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Clip"));
-    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Clip"));
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "None"), "Motion");
+    DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
+    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20, () -> towerMode.getValue().equalsIgnoreCase("Clip"));
+    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int oldSlot;
@@ -56,21 +55,20 @@ public class ScaffoldRewrite extends Module {
         oldSlot = mc.player.inventory.currentItem;
 
         towerPos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ);
+        downPos = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
 
         if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-            scaffold = towerPos;
-
-            if (towerSetting.getValue()) {
                 mc.player.motionX *= 0.3;
                 mc.player.motionZ *= 0.3;
-            }
+
 
         }
 
         predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(2, false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
 
         scaffold = predPlayer.getPosition();
+        scaffold.add(0,-1,0);
 
         if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
 
@@ -101,12 +99,14 @@ public class ScaffoldRewrite extends Module {
 
         if (newSlot == -1) {
 
+            newSlot = 1;
+
             MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of valid blocks. Disabling!");
             disable();
 
         }
 
-        if (towerSetting.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
+        if ( mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
 
             switch (towerMode.getValue()) {
 
@@ -160,7 +160,7 @@ public class ScaffoldRewrite extends Module {
 
         if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()){
 
-            placeBlockPacket( scaffold, true);
+            placeBlockPacket(scaffold, true);
 
         }
 
