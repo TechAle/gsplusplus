@@ -2,6 +2,7 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
@@ -25,16 +26,21 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import java.util.Arrays;
 
 @Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
 public class ScaffoldRewrite extends Module {
 
     BooleanSetting towerSetting = registerBoolean("Tower", true);
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");
+    DoubleSetting jumpMotion = registerDouble("Jump Speed", 5,0,10);
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0,0,0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int oldSlot;
     int newSlot;
+
+    double oldTower;
 
     EntityPlayer predPlayer;
 
@@ -103,27 +109,56 @@ public class ScaffoldRewrite extends Module {
 
         if (towerSetting.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
 
-            mc.player.jump();
+            switch (towerMode.getValue()){
 
-            if (towerTimer.hasReached(1500, true)) {
+                case "Motion": { // might be broken
+                    if (mc.player.onGround) {
+                        mc.player.isAirBorne = true;
+                        mc.player.motionY = 0.42;
+                        oldTower = mc.player.posY;
+                    }
 
-                mc.player.motionY = -0.28;
+                    if (mc.player.posY > oldTower + 0.42) {
 
-            }
+                        mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ);
+                        mc.player.motionY = 0.42;
+                        oldTower = mc.player.posY;
+                    }
+
+                }
+                case "Jump": { // Should work in mean time
+
+                    if (mc.player.onGround) {
+
+                        oldTower = mc.player.posY;
+                        mc.player.jump();
+
+                    }
+
+                    if (mc.player.posY > oldTower + 1.1) /* peak of jump is ~ 1.17ish so we will reach 1.1 */ {
+
+                        mc.player.motionY = jumpMotion.getValue(); // go down faster
+
+                    }
+
+                }
 
             placeBlockPacket(null, towerPos, false);
 
+            }
         }
 
         if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()) placeBlockPacket(null, scaffold, true);
-        if (mc.gameSettings.keyBindSprint.isKeyDown()) placeBlockPacket(null,downPos,true);
+
+        double[] dirDown = MotionUtil.forward(downSpeed.getValue());
+        if (mc.gameSettings.keyBindSprint.isKeyDown()) placeBlockPacket(null,downPos,true); mc.player.motionX = dirDown[0]; mc.player.motionZ = dirDown[1];
 
     }
     void placeBlockPacket(EnumFacing side, BlockPos pos, boolean allowSupport) {
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
 
-        if (side == null) {
+        if (side == null && BlockUtil.getPlaceableSide(pos) != null) {
             side = BlockUtil.getPlaceableSide(pos);
         }
         if (side == null && allowSupport) {
