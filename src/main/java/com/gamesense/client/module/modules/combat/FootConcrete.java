@@ -42,7 +42,9 @@ public class FootConcrete extends Module {
     BooleanSetting allowEchest = registerBoolean("allowEchest", true);
     BooleanSetting onlyEchest = registerBoolean("onlyEchest", false, () -> allowEchest.getValue());
     BooleanSetting allowEndRod = registerBoolean("allowEndRod", true);
-    BooleanSetting onlyEndRod = registerBoolean("onlyEndRot", false, () -> allowEndRod.getValue());
+    BooleanSetting onlyEndRod = registerBoolean("onlyEndRod", false, () -> allowEndRod.getValue());
+    BooleanSetting allowAnvil = registerBoolean("allowAnvil", false);
+    BooleanSetting onlyAnvil = registerBoolean("onlyAnvil", false, () -> allowAnvil.getValue());
     BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting phase = registerBoolean("clipDown", false);
     BooleanSetting rotate = registerBoolean("rotate", true);
@@ -152,6 +154,11 @@ public class FootConcrete extends Module {
                     if (targetBlockSlot == -1 || onlyEchest.getValue()) {
                         if (allowEchest.getValue())
                             targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+                    }
+
+                    if (targetBlockSlot == -1 || onlyAnvil.getValue()) {
+                        if (onlyAnvil.getValue())
+                            targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
                     }
 
                     oldSlot = mc.player.inventory.currentItem;
