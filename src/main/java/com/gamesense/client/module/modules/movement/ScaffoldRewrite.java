@@ -32,9 +32,9 @@ public class ScaffoldRewrite extends Module {
 
     BooleanSetting towerSetting = registerBoolean("Tower", true);
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "None"), "Motion", () -> towerSetting.getValue());
-    DoubleSetting jumpMotion = registerDouble("Jump Speed", 5, 0, 10, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Motion"));
-    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20);
-    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Jump"));
+    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Clip"));
+    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2, () -> towerSetting.getValue() && towerMode.getValue().equalsIgnoreCase("Clip"));
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int oldSlot;
@@ -102,6 +102,7 @@ public class ScaffoldRewrite extends Module {
         if (newSlot == -1) {
 
             MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of valid blocks. Disabling!");
+            disable();
 
         }
 
@@ -110,7 +111,7 @@ public class ScaffoldRewrite extends Module {
             switch (towerMode.getValue()) {
 
                 case "Motion": { // might be broken
-                    if (mc.player.onGround) {
+                    if (mc.player.collidedVertically) {
                         mc.player.isAirBorne = true;
                         mc.player.motionY = 0.42;
                         oldTower = mc.player.posY;
@@ -133,7 +134,7 @@ public class ScaffoldRewrite extends Module {
 
                     }
 
-                    if (mc.player.posY > oldTower + 1.1) /* peak of jump is ~ 1.17ish so we will reach 1.1 */ {
+                    if (mc.player.posY > oldTower + 1.15) /* peak of jump is ~ 1.17ish so we will reach 1.1 */ {
 
                         mc.player.motionY = jumpMotion.getValue(); // go down faster
 
@@ -157,29 +158,25 @@ public class ScaffoldRewrite extends Module {
             }
         }
 
-        if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown())
+        if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()){
+
             placeBlockPacket( scaffold, true);
 
-        double[] dirDown = MotionUtil.forward(downSpeed.getValue());
-        if (mc.gameSettings.keyBindSprint.isKeyDown()) placeBlockPacket( downPos, true);
-        mc.player.motionX = dirDown[0];
-        mc.player.motionZ = dirDown[1];
+        }
 
+        double[] dirDown = MotionUtil.forward(downSpeed.getValue());
+        if (mc.gameSettings.keyBindSprint.isKeyDown()) {
+
+            placeBlockPacket(downPos, true);
+            mc.player.motionX = dirDown[0];
+            mc.player.motionZ = dirDown[1];
+
+        }
     }
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
-        EnumFacing side = null;
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
-
-        if (BlockUtil.getPlaceableSide(pos) != null) {
-            side = BlockUtil.getPlaceableSide(pos);
-        }
-
-        if (side == null && allowSupport) {
-            doSupport();
-            return;
-        }
 
         PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
 
@@ -228,7 +225,7 @@ public class ScaffoldRewrite extends Module {
             scaffoldSupport.add(-1, 0, 0);
         }
 
-        placeBlockPacket( scaffoldSupport, false);
+        placeBlockPacket(scaffoldSupport, false);
 
     }
 }
