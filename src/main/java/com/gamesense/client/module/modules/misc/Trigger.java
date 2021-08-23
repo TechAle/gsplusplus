@@ -1,6 +1,5 @@
 package com.gamesense.client.module.modules.misc;
 
-
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -14,6 +13,8 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.combat.FootConcrete;
 import com.gamesense.client.module.modules.combat.Surround;
+import jdk.nashorn.internal.ir.Block;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 
 @Module.Declaration(name = "Trigger", category = Category.Misc)
@@ -29,7 +30,6 @@ public class Trigger extends Module {
 
     BooleanSetting NearbyBurrow = registerBoolean("Auto Clutch Burrow", true, () -> FootConcSettings.getValue());
     DoubleSetting NBRadius = registerDouble("Scan Radius", 2,0,10, () -> FootConcSettings.getValue() && NearbyBurrow.getValue()); // if you use 10 you deserve the death sentence
-    BooleanSetting CCRot = registerBoolean("No Rotate On .cc", true);
 
     Surround srnd = ModuleManager.getModule(Surround.class);
     FootConcrete footConc = ModuleManager.getModule(FootConcrete.class);
@@ -47,9 +47,10 @@ public class Trigger extends Module {
 
     @Override
     public void onUpdate() {
+        BlockPos player = new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ);
 
         /* Surround */
-        if (!(HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals(HoleUtil.HoleType.NONE)) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
+        if ((new AxisAlignedBB(player)).intersects(mc.player.getEntityBoundingBox()) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
             // IF mc.player is in hole, enable surround after SIHTicks * 50 and reset the timer, if in hole, it wont turn on repeatedly
             if (!srnd.isEnabled()){
                 srnd.enable();
@@ -69,30 +70,10 @@ public class Trigger extends Module {
 
         /* FootConcrete */
 
-        if (NearbyBurrow.getValue() && PlayerUtil.findClosestTarget(NBRadius.getValue(),null) != null) {
+        if (NearbyBurrow.getValue() && PlayerUtil.findClosestTarget(NBRadius.getValue(),null) != null && (new AxisAlignedBB(player)).intersects(mc.player.getEntityBoundingBox())) {
 
             footConc.enable(); // time for some 2b2tpvp.net fun :troll:
 
         }
-
-        try {
-            if ((CCRot.getValue() && (mc.serverName.equalsIgnoreCase("crystalpvp.cc") || (mc.serverName.equalsIgnoreCase("us.crystalpvp.cc")))) == true) {
-
-                cc = true;
-
-
-            } else {
-
-                cc = false;
-
-            }
-        } finally {
-
-            MessageBus.sendClientPrefixMessage("Null exception caught from Trigger > 'No Rotate On .cc'");
-
-        }
-
-
-
     }
 }
