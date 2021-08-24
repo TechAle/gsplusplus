@@ -21,18 +21,20 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
 public class ScaffoldRewrite extends Module {
 
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "None"), "Motion");
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "Burrow", "None"), "Motion");
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
-    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2,1,20, () -> towerMode.getValue().equalsIgnoreCase("Clip"));
+    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2, 1, 20, () -> towerMode.getValue().equalsIgnoreCase("Clip"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
@@ -59,16 +61,15 @@ public class ScaffoldRewrite extends Module {
 
         if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                mc.player.motionX *= 0.3;
-                mc.player.motionZ *= 0.3;
+            mc.player.motionX *= 0.3;
+            mc.player.motionZ *= 0.3;
 
 
         }
 
         predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(2, false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
 
-        scaffold = predPlayer.getPosition();
-        scaffold.add(0,-1,0);
+        scaffold = predPlayer.getPosition().add(0, -1, 0);
 
         if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
 
@@ -106,23 +107,24 @@ public class ScaffoldRewrite extends Module {
 
         }
 
-        if ( mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
+        if (mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
 
             switch (towerMode.getValue()) {
 
                 case "Motion": { // might be broken
                     if (mc.player.collidedVertically) {
                         mc.player.isAirBorne = true;
-                        mc.player.motionY = 0.42;
+                        mc.player.motionY = 0.4199382043D;
                         oldTower = mc.player.posY;
                     }
 
-                    if (mc.player.posY > oldTower + 0.42) {
-
+                    if (mc.player.posY > oldTower + 1.15) {
                         mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ);
-                        mc.player.motionY = 0.42;
+                        mc.player.motionY = 0.4199382043D;
                         oldTower = mc.player.posY;
                     }
+
+                    break;
 
                 }
                 case "Jump": { // Should work in mean time
@@ -140,39 +142,62 @@ public class ScaffoldRewrite extends Module {
 
                     }
 
+                    break;
+
                 }
 
-                case "Clip": {
+                case "Clip": { //Doesnt work :/
 
                     if (towerTimer.hasReached(clipSpeed.getValue() * 50, true)) { // Delay so we don't spam packets and get kicked
 
                         PlayerUtil.fakeJump(); // Jump
-                        mc.player.setPosition(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ); // Set our position to where we jumped
 
                     }
+                    break;
 
                 }
 
-                placeBlockPacket( towerPos, false); // Place Block
+                case "Burrow": {
 
+                    if (towerTimer.hasReached(clipSpeed.getValue() * 50, true)) {
+                        BlockPos burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
+
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
+
+                        PlayerUtil.fakeJump();
+
+                        PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotate.getValue()));
+
+                        placeBlockPacket(towerPos, false); // Place Block
+
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                    }
+
+                    break;
+
+                }
             }
+
+            placeBlockPacket(towerPos, false);
+
         }
 
-        if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()){
+        if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()) {
 
             placeBlockPacket(scaffold, true);
 
         }
 
-        double[] dirDown = MotionUtil.forward(downSpeed.getValue());
+        double[] dir = MotionUtil.forward(downSpeed.getValue());
         if (mc.gameSettings.keyBindSprint.isKeyDown()) {
 
             placeBlockPacket(downPos, true);
-            mc.player.motionX = dirDown[0];
-            mc.player.motionZ = dirDown[1];
+            mc.player.motionX = dir[0];
+            mc.player.motionZ = dir[1];
 
         }
     }
+
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
@@ -180,6 +205,7 @@ public class ScaffoldRewrite extends Module {
 
         PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
 
+        //Switch back
         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
     }
 
@@ -229,3 +255,4 @@ public class ScaffoldRewrite extends Module {
 
     }
 }
+

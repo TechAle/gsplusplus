@@ -46,7 +46,6 @@ public class Scaffold extends Module {
     IntegerSetting tickPredict = registerInteger("Tick Predict", 8, 0, 30, () -> showPredictSettings.getValue());
 
     int oldSlot;
-    int direction;
     int targetBlockSlot;
 
     double oldTower;
@@ -90,8 +89,6 @@ public class Scaffold extends Module {
             belowPlayerBlock = playerBlock.add(0, -1, 0);
             doDown = false;
         }
-
-        direction = (MathHelper.floor((double) (mc.player.rotationYaw * 8.0F / 360.0F) + 0.5D) & 7);
 
 
 //
