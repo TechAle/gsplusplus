@@ -32,6 +32,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
 public class ScaffoldRewrite extends Module {
 
+    IntegerSetting distance = registerInteger("Distance", 2, 0, 20);
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "Burrow", "None"), "Motion");
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     IntegerSetting clipSpeed = registerInteger("Clip Delay", 2, 1, 20, () -> towerMode.getValue().equalsIgnoreCase("Clip"));
@@ -67,7 +68,7 @@ public class ScaffoldRewrite extends Module {
 
         }
 
-        predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(2, false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
+        predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
 
         scaffold = predPlayer.getPosition().add(0, -1, 0);
 
