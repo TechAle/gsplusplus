@@ -3044,6 +3044,7 @@ public class AutoCrystalRewrite extends Module {
         if (tick++ > tickAfterRotation.getValue()) {
             lastHitVec = null;
             tick = 0;
+            xPlayer = yPlayer = Double.MAX_VALUE;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
@@ -3061,6 +3062,7 @@ public class AutoCrystalRewrite extends Module {
 
                     if (Math.abs(distanceDo) > pitchStep.getValue()) {
                         yPlayer = RotationUtil.normalizeAngle(yPlayer + pitchStep.getValue() * direction);
+                        tick = 0;
                     } else {
                         yPlayer = rotationWanted.y;
                     }
@@ -3078,6 +3080,7 @@ public class AutoCrystalRewrite extends Module {
 
                     if (Math.abs(distanceDo) > yawStep.getValue()) {
                         xPlayer = RotationUtil.normalizeAngle(xPlayer + yawStep.getValue() * direction);
+                        tick = 0;
                     } else {
                         xPlayer = rotationWanted.x;
                     }
@@ -3086,7 +3089,6 @@ public class AutoCrystalRewrite extends Module {
             } else {
                 nowRotation = rotationWanted;
             }
-
             PlayerPacket packet = new PlayerPacket(this, nowRotation);
             PlayerPacketManager.INSTANCE.addPacket(packet);
         }
