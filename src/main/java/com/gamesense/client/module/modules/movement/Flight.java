@@ -70,11 +70,17 @@ public class Flight extends Module {
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
-                Vec3d dir = mc.player.getLookVec().normalize();
-                mc.player.setPosition(mc.player.posX + (dir.x * 0.0624), mc.player.posY, mc.player.posZ + (dir.z * 0.0624));
+                double[] dir = MotionUtil.forward(0.0624);
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), false));
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX,mc.player.posY + 69420, mc.player.posZ,mc.player.rotationYaw,mc.player.rotationPitch, false));
+
             }
             if (antiKick.getValue() && mc.player.ticksExisted % 4 == 0) {
-                mc.player.motionY -= 0.1;
+                event.setY(0.01);
+            } else {
+
+                event.setY(0);
+
             }
         }
 
