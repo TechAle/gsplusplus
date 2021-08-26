@@ -53,7 +53,7 @@ public class Flight extends Module {
             }
         } else if (mode.getValue().equalsIgnoreCase("Vanilla")) {
 
-            mc.player.capabilities.setFlySpeed(speed.getValue().floatValue());
+            mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
             mc.player.capabilities.isFlying = true;
 
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
