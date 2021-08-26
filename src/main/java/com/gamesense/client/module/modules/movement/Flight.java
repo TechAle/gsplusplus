@@ -76,7 +76,7 @@ public class Flight extends Module {
 
             }
             if (antiKick.getValue() && mc.player.ticksExisted % 4 == 0) {
-                event.setY(0.01);
+                event.setY(-0.01);
             } else {
 
                 event.setY(0);
