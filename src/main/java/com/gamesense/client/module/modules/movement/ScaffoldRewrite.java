@@ -7,9 +7,7 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
-import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -21,11 +19,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
@@ -33,9 +28,9 @@ import java.util.Arrays;
 public class ScaffoldRewrite extends Module {
 
     IntegerSetting distance = registerInteger("Distance", 2, 0, 20);
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "Clip", "Burrow", "None"), "Motion");
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
+    IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20);
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
-    IntegerSetting clipSpeed = registerInteger("Clip Delay", 2, 1, 20, () -> towerMode.getValue().equalsIgnoreCase("Clip"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
@@ -113,15 +108,16 @@ public class ScaffoldRewrite extends Module {
             switch (towerMode.getValue()) {
 
                 case "Motion": { // might be broken
-                    if (mc.player.collidedVertically) {
+                    if (mc.player.onGround) {
                         mc.player.isAirBorne = true;
-                        mc.player.motionY = 0.4199382043D;
+                        mc.player.motionY = 0.41583072100313484;
                         oldTower = mc.player.posY;
                     }
 
-                    if (mc.player.posY > oldTower + 1.15) {
+                    if (mc.player.posY > oldTower + 0.42) {
+
                         mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ);
-                        mc.player.motionY = 0.4199382043D;
+                        mc.player.motionY = 0.42;
                         oldTower = mc.player.posY;
                     }
 
@@ -147,37 +143,17 @@ public class ScaffoldRewrite extends Module {
 
                 }
 
-                case "Clip": { //Doesnt work :/
+                case "AirJump": { //Doesnt work :/
 
-                    if (towerTimer.hasReached(clipSpeed.getValue() * 50, true)) { // Delay so we don't spam packets and get kicked
+                    if (mc.player.ticksExisted % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        PlayerUtil.fakeJump(); // Jump
+                        mc.player.jump();
+
 
                     }
-                    break;
-
-                }
-
-                case "Burrow": {
-
-                    if (towerTimer.hasReached(clipSpeed.getValue() * 50, true)) {
-                        BlockPos burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
-
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
-
-                        PlayerUtil.fakeJump();
-
-                        PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotate.getValue()));
-
-                        placeBlockPacket(towerPos, false); // Place Block
-
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-                    }
-
-                    break;
-
                 }
             }
+
 
             placeBlockPacket(towerPos, false);
 

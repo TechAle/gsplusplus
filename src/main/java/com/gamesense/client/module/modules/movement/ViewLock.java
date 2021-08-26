@@ -1,25 +1,51 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+
+import java.util.Objects;
 
 @Module.Declaration(name = "ViewLock", category = Category.Movement)
 public class ViewLock extends Module {
 
+    boolean dontChange;
+
+    Timer timer = new Timer();
+
     @Override
     public void onUpdate() {
-        float yawRounded;
+        final int angle = 360 / 8;
+        float yaw = mc.player.rotationYaw;
 
-        float yaw = Math.abs(Math.round(mc.player.rotationYaw) % 360);
-        float division = (int) Math.floor(yaw / 45);
-        float remainder = (int) (yaw % 45);
-        if (remainder < 45 / 2) {
-            yawRounded = 45 * division;
-        } else {
-            yawRounded = 45 * (division + 1);
+        if (org.lwjgl.input.Keyboard.isKeyDown(205) && !dontChange) {
+
+            timer.reset();
+            dontChange = true;
+            yaw += 45;
+
+        } else if (org.lwjgl.input.Keyboard.isKeyDown(203) && !dontChange) {
+
+            timer.reset();
+            dontChange = true;
+            yaw -= 45;
+
         }
 
-        mc.player.rotationYaw = yawRounded;
+        if (dontChange) {
 
+            if (timer.hasReached(250)) {
+
+                dontChange = false;
+
+            }
+
+        }
+
+        yaw = (float)(Math.round(yaw / angle) * angle);
+        mc.player.rotationYaw = yaw;
+        if (mc.player.isRiding()) {
+            Objects.requireNonNull(mc.player.getRidingEntity()).rotationYaw = yaw;
+        }
     }
 }

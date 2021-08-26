@@ -27,6 +27,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,7 +62,7 @@ public class OffHand extends Module {
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
     BooleanSetting miscSection = registerBoolean("Misc Section", true);
-    BooleanSetting strict = registerBoolean("Strict", true,() -> switchSection.getValue());
+    public BooleanSetting strict = registerBoolean("Strict", true,() -> switchSection.getValue());
     BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
     BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
     BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> miscSection.getValue());
@@ -179,7 +182,13 @@ public class OffHand extends Module {
 
                     if (mc.player.isHandActive()) {
 
-                        mc.player.resetActiveHand();
+                        int slot = mc.player.inventory.currentItem;
+                        if (slot != 1)
+                            mc.player.inventory.currentItem = 1;
+                        else
+                            mc.player.inventory.currentItem = 2;
+
+                        mc.player.inventory.currentItem = slot;
 
                     }
 

@@ -21,8 +21,6 @@ import java.util.Arrays;
 public class ElytraFlightRewrite extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
-    BooleanSetting strict = registerBoolean("Strict", true, () -> mode.getValue().equalsIgnoreCase("Boost"));
-    IntegerSetting strictPitch = registerInteger("Boost Strict Pitch", 0, -90, 90, () -> mode.getValue().equals("Boost") && strict.getValue());
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> mode.getValue().equals("Control"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10);
@@ -42,12 +40,10 @@ public class ElytraFlightRewrite extends Module {
             mc.timer.tickLength = 50;
 
             if (mode.getValue().equals("Boost")) {
-                if (mc.player.rotationYaw > strictPitch.getValue() || !strict.getValue()) {
-                    if (mc.gameSettings.keyBindJump.isKeyDown() || mc.gameSettings.keyBindForward.isKeyDown()) {
-                        float yaw = (float) Math.toRadians(mc.player.rotationYaw);
-                        mc.player.motionX -= MathHelper.sin(yaw) * 0.05f;
-                        mc.player.motionZ += MathHelper.cos(yaw) * 0.05f;
-                    }
+                if (mc.gameSettings.keyBindJump.isKeyDown() || mc.gameSettings.keyBindForward.isKeyDown()) {
+                    float yaw = (float) Math.toRadians(mc.player.rotationYaw);
+                    mc.player.motionX -= MathHelper.sin(yaw) * 0.05f;
+                    mc.player.motionZ += MathHelper.cos(yaw) * 0.05f;
                 }
 
             } else if (mode.getValue().equals("Control")) {
