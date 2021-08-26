@@ -1,12 +1,10 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.events.PacketEvent;
-import com.gamesense.api.event.events.TransformSideFirstPersonEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Pair;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
@@ -17,10 +15,8 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.AutoGG;
-import com.gamesense.client.module.modules.render.ViewModel;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -36,7 +32,6 @@ import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketUseEntity;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.EnumHandSide;
 import net.minecraft.util.math.Vec2f;
 
 import java.util.Arrays;
@@ -44,22 +39,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import static org.lwjgl.opengl.GL11.glRotatef;
-
 /**
  * @author 0b00101010
- * @author Doogie13
  * @since 07/02/2021
  */
 
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
-
-    public BooleanSetting animation = registerBoolean("Animations", true);
-    DoubleSetting animSpeed = registerDouble("Animation Speed", 125,0,250, () -> animation.getValue());
-    DoubleSetting animx = registerDouble("Anim X", 0,-500,500,() -> animation.getValue());
-    DoubleSetting animy = registerDouble("Anim Y", 0,-500,500,() -> animation.getValue());
-    DoubleSetting animz = registerDouble("Anim Z", 0,-500,500,() -> animation.getValue());
 
     BooleanSetting players = registerBoolean("Players", true);
     BooleanSetting hostileMobs = registerBoolean("Monsters", false);
@@ -74,43 +60,8 @@ public class KillAura extends Module {
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
 
     private boolean isAttacking = false;
-    private Timer animTimer = new Timer();
-
-    boolean animattack;
-    boolean doAnim;
-
-    double xright;
-    double yright;
-    double zright;
-
-    double xscaleright;
-    double yscaleright;
-    double zscaleright;
-
 
     public void onUpdate() {
-        /**/
-        if (animation.getValue()) {
-
-            if (animattack) {
-
-                doAnim = true;
-                animattack = false;
-            }
-
-            if (doAnim) {
-
-
-
-
-            } else {
-
-                animTimer.reset();
-
-            }
-
-        }
-        /**/
         if (mc.player == null || !mc.player.isEntityAlive()) return;
 
         final double rangeSq = range.getValue() * range.getValue();
@@ -165,6 +116,19 @@ public class KillAura extends Module {
             }
         }
     }
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> listener = new Listener<>(event -> {
+        if (event.getPacket() instanceof CPacketUseEntity) {
+            if ((ModuleManager.getModule(Criticals.class).isEnabled() && ModuleManager.getModule(Criticals.class).onlyAura.getValue()) && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK && mc.player.onGround && isAttacking) {
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.11, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.1100013579, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.3579E-6, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer());
+            }
+        }
+    });
 
     private Pair<Float, Integer> findSwordSlot() {
         List<Integer> items = InventoryUtil.findAllItemSlots(ItemSword.class);
@@ -226,7 +190,6 @@ public class KillAura extends Module {
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
             isAttacking = false;
-            animattack = true;
         }
     }
 
@@ -243,15 +206,4 @@ public class KillAura extends Module {
 
         return hostileMobs.getValue() && entity instanceof EntityMob;
     }
-
-    @EventHandler
-    private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
-
-        ViewModel viewmodel = ModuleManager.getModule(ViewModel.class);
-
-            if (event.getEnumHandSide() == EnumHandSide.RIGHT) {  // ViewModel will work hopefully lol
-                GlStateManager.scale(xscaleright + viewmodel.xScaleRight.getValue(), yscaleright + viewmodel.yScaleRight.getValue(), zscaleright + viewmodel.zScaleRight.getValue());
-                GlStateManager.translate(xright + viewmodel.xRight.getValue(), yright + viewmodel.yRight.getValue(), zright + viewmodel.zRight.getValue());
-            }
-    });
 }

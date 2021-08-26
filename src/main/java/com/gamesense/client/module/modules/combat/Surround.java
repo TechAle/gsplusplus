@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
@@ -39,6 +40,7 @@ public class Surround extends Module {
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
     BooleanSetting centerPlayer = registerBoolean("Center Player", false);
+    BooleanSetting alwaysCenter = registerBoolean("Always Center", false);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
@@ -61,7 +63,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (centerPlayer.getValue() && mc.player.onGround) {
+        if (centerPlayer.getValue() && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !(HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None"))) {
             mc.player.motionX = 0;
             mc.player.motionZ = 0;
         }
@@ -128,7 +130,7 @@ public class Surround extends Module {
 
         activedOff = true;
 
-        if (centerPlayer.getValue() && centeredBlock != Vec3d.ZERO && mc.player.onGround) {
+        if (centerPlayer.getValue() && centeredBlock != Vec3d.ZERO && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None")) {
             PlayerUtil.centerPlayer(centeredBlock);
         }
 

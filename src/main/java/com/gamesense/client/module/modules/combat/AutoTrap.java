@@ -32,7 +32,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "AutoTrap", category = Category.Combat)
 public class AutoTrap extends Module {
 
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple", "Crystal"), "Normal");
     ModeSetting targetMode = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
     IntegerSetting enemyRange = registerInteger("Range", 4, 0, 6);
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
@@ -145,6 +145,11 @@ public class AutoTrap extends Module {
                     case "Simple": {
                         offsetPattern = Offsets.TRAP_SIMPLE;
                         maxSteps = Offsets.TRAP_SIMPLE.length;
+                        break;
+                    }
+                    case "Crystal": {
+                        offsetPattern = Offsets.TRAP_CRYSTAL;
+                        maxSteps = Offsets.TRAP_CRYSTAL.length;
                         break;
                     }
                     default: {

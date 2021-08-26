@@ -13,8 +13,6 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
 
 import java.util.Arrays;
 

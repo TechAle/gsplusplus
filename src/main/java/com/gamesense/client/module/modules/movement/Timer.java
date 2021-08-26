@@ -1,4 +1,4 @@
-/*package com.gamesense.client.module.modules.movement;
+package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -26,7 +26,7 @@ public class Timer extends Module {
 
     @Override
     public void onUpdate() {
-        if (!onMove.getValue() && !onSpeedOnly.getValue()|| MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()|| onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class) && !onMove.getValue()) {
+        if (!onMove.getValue() && !onSpeedOnly.getValue()|| MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()|| onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class) && !onMove.getValue() && MotionUtil.isMoving(mc.player)) {
             doTimer();
         } else {
             mc.timer.tickLength = 50;
@@ -44,4 +44,4 @@ public class Timer extends Module {
 
         return arraylistSpeed;
     }
-}*/
+}

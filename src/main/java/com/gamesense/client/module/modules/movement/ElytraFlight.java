@@ -18,15 +18,15 @@ import java.util.Arrays;
 @Module.Declaration(name = "ElytraFlight", category = Category.Movement)
 public class ElytraFlight extends Module {
 
-    ModeSetting mode = registerMode("mode", Arrays.asList("control", "creative", "boost"), "creative");
+    ModeSetting mode = registerMode("mode", Arrays.asList("control", "boost"), "control");
     BooleanSetting strict = registerBoolean("strict", false, () -> mode.getValue().equals("boost"));
+    IntegerSetting strictPitch = registerInteger("strictPitch", 0,-90,90);
     ModeSetting upMode = registerMode("UpMode", Arrays.asList("jump", "look", "none"), "jump");
     ModeSetting lookMode = registerMode("lookMode", Arrays.asList("client", "user"), "client", () -> upMode.getValue().equals("look"));
     DoubleSetting yawStep = registerDouble("yawStep", 1.5, 0, 10);
     DoubleSetting speed = registerDouble("speed", 1, 0, 25);
     DoubleSetting ySpeed = registerDouble("ySpeed", 1, 0, 5);
     DoubleSetting glideSpeed = registerDouble("glideSpeed", 0.0003, 0, 3);
-    IntegerSetting upLook = registerInteger("upBoostDelay", 35, 0, 250);
 
     boolean doFlight;
 
@@ -64,17 +64,17 @@ public class ElytraFlight extends Module {
                     mc.player.capabilities.isFlying = false;
                     if (mc.gameSettings.keyBindJump.isKeyDown() && upMode.getValue().equals("jump")) {
 
-                        mc.player.motionY = ySpeed.getValue();
-
                         doY = false;
+
+                        mc.player.motionY = ySpeed.getValue();
 
                         doControl();
 
                     } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                        mc.player.motionY = -ySpeed.getValue();
-
                         doY = false;
+
+                        mc.player.motionY = -ySpeed.getValue();
 
                         doControl();
 
@@ -117,14 +117,6 @@ public class ElytraFlight extends Module {
 
                     }
 
-                    break;
-                case "creative":
-
-                    if ((mc.player.ticksExisted % upLook.getValue() == 0 && upMode.getValue().equals("look") || upMode.getValue().equals("none") || upMode.getValue().equals("jump"))) {
-
-                        doCreative();
-
-                    }
                     break;
                 case "boost":
 
@@ -199,7 +191,7 @@ public class ElytraFlight extends Module {
 
     public void doBoost() {
 
-        if (mc.player.rotationYaw > 0 || !strict.getValue()) {
+        if (mc.player.rotationYaw > strictPitch.getValue() || !strict.getValue()) {
             if (mc.gameSettings.keyBindJump.isKeyDown() || mc.gameSettings.keyBindForward.isKeyDown()) {
                 float yaw = (float) Math.toRadians(mc.player.rotationYaw);
                 mc.player.motionX -= MathHelper.sin(yaw) * 0.05f;

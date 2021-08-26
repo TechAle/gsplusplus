@@ -2,6 +2,7 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.world.EntityUtil;
@@ -29,6 +30,7 @@ public class Speed extends Module {
     DoubleSetting speed = registerDouble("speed", 2.15,0,10, () -> mode.getValue().equals("Strafe"));
     DoubleSetting yPortSpeed = registerDouble("yPortSpeed", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300,0,1000);
 
     private boolean slowDown;
     private double playerSpeed;
@@ -79,7 +81,9 @@ public class Speed extends Module {
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
             double speedY = jumpHeight.getValue();
 
-            if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(300)) {
+            if (mc.player.onGround) mc.player.jump();
+
+            if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
                     speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
                 }

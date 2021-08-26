@@ -112,6 +112,13 @@ public class PlayerUtil {
         return target;
     }
 
+    public static void fakeJump() {
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
+    }
+
     // TechAle: Return the health of the player
     public static float getHealth() {
         return mc.player.getHealth() + mc.player.getAbsorptionAmount();

@@ -23,7 +23,7 @@ public class Blink extends Module {
     BooleanSetting keepRotations = registerBoolean("Keep Rotations", false);
 
     private EntityOtherPlayerMP entity;
-    private final ConcurrentLinkedQueue<Packet<?>> packets = new ConcurrentLinkedQueue<>();
+    public final ConcurrentLinkedQueue<Packet<?>> packets = new ConcurrentLinkedQueue<>();
 
     public void onEnable() {
         EntityPlayerSP player = mc.player;
