@@ -117,6 +117,19 @@ public class KillAura extends Module {
         }
     }
 
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> listener = new Listener<>(event -> {
+        if (event.getPacket() instanceof CPacketUseEntity) {
+            if ((ModuleManager.getModule(Criticals.class).isEnabled() && ModuleManager.getModule(Criticals.class).onlyAura.getValue()) && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK && mc.player.onGround && isAttacking) {
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.11, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.1100013579, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.3579E-6, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer());
+            }
+        }
+    });
+
     private Pair<Float, Integer> findSwordSlot() {
         List<Integer> items = InventoryUtil.findAllItemSlots(ItemSword.class);
         List<ItemStack> inventory = mc.player.inventory.mainInventory;
