@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.misc;
 
+import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -14,6 +15,9 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.combat.FootConcrete;
 import com.gamesense.client.module.modules.combat.Surround;
 import jdk.nashorn.internal.ir.Block;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 
@@ -50,18 +54,8 @@ public class Trigger extends Module {
         BlockPos player = new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ);
 
         /* Surround */
-        if ((new AxisAlignedBB(player)).intersects(mc.player.getEntityBoundingBox()) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
+        if (!HoleUtil.isHole(mc.player.getPosition().down(), false, false).getType().equals(HoleUtil.HoleType.NONE) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
             // IF mc.player is in hole, enable surround after SIHTicks * 50 and reset the timer, if in hole, it wont turn on repeatedly
-            if (!srnd.isEnabled()){
-                srnd.enable();
-            }
-
-        }
-
-        if (TotemPopManager.INSTANCE.getPops() > pops && SurroundOnPop.getValue() && srnd.isEnabled()) {
-            // IF we pop whilst surround is disabled, we enable surround
-            pops = TotemPopManager.INSTANCE.getPops();
-
             if (!srnd.isEnabled()){
                 srnd.enable();
             }
@@ -76,4 +70,16 @@ public class Trigger extends Module {
 
         }
     }
+
+    //totem pop event = surround if
+    @EventHandler
+    public Listener<TotemPopEvent> totemPopEvent = new Listener<>(event -> {
+        if (SurroundOnPop.getValue()) {
+            EntityPlayer entity = (EntityPlayer) event.getEntity();
+            if (mc.player == entity) {
+                if (!ModuleManager.isModuleEnabled("Surround")) ModuleManager.getModule(Surround.class).toggle();
+            }
+        }
+    });
+
 }
