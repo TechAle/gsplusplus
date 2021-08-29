@@ -20,7 +20,7 @@ import net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent;
 @Module.Declaration(name = "Freecam", category = Category.Render)
 public class Freecam extends Module {
 
-    BooleanSetting strafe = registerBoolean("Static", true);
+    BooleanSetting source = registerBoolean("Source Engine", false);
     BooleanSetting noclip = registerBoolean("NoClip", true);
     BooleanSetting cancelPackets = registerBoolean("Cancel Packets", true);
     DoubleSetting speed = registerDouble("Speed", 10, 0, 20);
@@ -53,8 +53,6 @@ public class Freecam extends Module {
             clonedPlayer.copyLocationAndAnglesFrom(mc.player);
             clonedPlayer.rotationYawHead = mc.player.rotationYawHead;
             mc.world.addEntityToWorld(-100, clonedPlayer);
-            mc.player.capabilities.isFlying = true;
-            mc.player.capabilities.setFlySpeed((float) (speed.getValue() / 100f));
             mc.player.noClip = noclip.getValue();
         }
     }
@@ -67,8 +65,6 @@ public class Freecam extends Module {
             clonedPlayer = null;
             posX = posY = posZ = 0.D;
             pitch = yaw = 0.f;
-            mc.player.capabilities.isFlying = false;
-            mc.player.capabilities.setFlySpeed(0.05f);
             mc.player.noClip = false;
             mc.player.motionX = mc.player.motionY = mc.player.motionZ = 0.f;
 
@@ -79,9 +75,33 @@ public class Freecam extends Module {
     }
 
     public void onUpdate() {
-        if (strafe.getValue()) mc.player.setVelocity(MotionUtil.forward(speed.getValue().intValue())[0],0,MotionUtil.forward(speed.getValue().intValue())[1]);
-        mc.player.capabilities.isFlying = true;
-        mc.player.capabilities.setFlySpeed((float) (speed.getValue() / 100f));
+
+        // Static Flight Code
+        if (!source.getValue()){
+            if (mc.gameSettings.keyBindJump.isKeyDown()) {
+
+                mc.player.motionY = (speed.getValue());
+
+            } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
+
+                mc.player.motionY = (-speed.getValue());
+
+            }
+        } else {
+
+            mc.player.motionY = (this.speed.getValue() * (-degToRad(mc.player.rotationPitch))) * mc.player.movementInput.moveForward;
+
+        }
+
+        if (MotionUtil.isMoving(mc.player)) {
+            MotionUtil.setSpeed(mc.player, speed.getValue());
+
+        } else {
+
+            mc.player.motionX = (0);
+            mc.player.motionZ = (0);
+
+        }
         mc.player.noClip = noclip.getValue();
         mc.player.onGround = false;
         mc.player.fallDistance = 0;
@@ -107,4 +127,9 @@ public class Freecam extends Module {
             event.cancel();
         }
     });
+
+    public static double degToRad(double deg) {
+        return deg * (float) (Math.PI / 180.0f);
+    }
+
 }
