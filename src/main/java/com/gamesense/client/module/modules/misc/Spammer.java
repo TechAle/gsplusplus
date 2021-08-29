@@ -9,8 +9,6 @@ import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 
-import java.util.Objects;
-
 @Module.Declaration(name = "Spammer", category = Category.Misc)
 public class Spammer extends Module {
 
@@ -20,11 +18,12 @@ public class Spammer extends Module {
     BooleanSetting bypass = registerBoolean("Bypass", true);
     IntegerSetting delay = registerInteger("Delay", 10,1,50);
     IntegerSetting range = registerInteger("Range", 3,0,20);
+    BooleanSetting debug = registerBoolean("Debug", false);
 
-    Timer timer = new Timer();
     boolean calcDelay = true;
     int thisDelay;
     String thisString;
+    int i;
 
     @Override
     public void onUpdate() {
@@ -57,10 +56,17 @@ public class Spammer extends Module {
 
         }
 
-        if (timer.hasReached(thisDelay, true)) {
+        if (i % thisDelay == 0) {
 
             calcDelay= true;
             MessageBus.sendServerMessage(thisString);
+
+        } else {
+
+            if (debug.getValue()){
+                MessageBus.sendClientRawMessage("ticksExisted % delay" + mc.player.ticksExisted % thisDelay + "delay:" + thisDelay);
+            }
+            i++;
 
         }
 

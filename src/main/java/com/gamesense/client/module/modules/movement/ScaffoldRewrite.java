@@ -1,11 +1,12 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.setting.values.*;
+import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.render.GSColor;
-import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -14,9 +15,6 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
-import net.minecraft.client.renderer.entity.Render;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -38,8 +36,6 @@ public class ScaffoldRewrite extends Module {
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
-    BooleanSetting render = registerBoolean("Render", false);
-    ColorSetting color = registerColor("Render Colour", new GSColor(144,155,255), () -> render.getValue());
 
     int oldSlot;
     int newSlot;
@@ -70,7 +66,7 @@ public class ScaffoldRewrite extends Module {
             if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
-            scaffold = new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ).down();
+            scaffold = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ).down();
 
             vec = (EntityUtil.getInterpolatedPos(mc.player, distance.getValue()));
 
@@ -199,15 +195,8 @@ public class ScaffoldRewrite extends Module {
         mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
 
 
-        if (mc.world != null && pos != null){
+        if (mc.world != null && pos != null) {
             PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
-        }
-
-
-        if (render.getValue()) {
-
-            RenderUtil.drawBox(pos,1,color.getColor(),12);
-
         }
 
         //Switch back
