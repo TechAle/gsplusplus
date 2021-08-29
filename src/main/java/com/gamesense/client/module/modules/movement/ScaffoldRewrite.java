@@ -1,13 +1,12 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -15,24 +14,32 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
+import net.minecraft.client.renderer.entity.Render;
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
 public class ScaffoldRewrite extends Module {
 
+    ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
     IntegerSetting distance = registerInteger("Distance", 2, 0, 20);
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
     IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20);
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
+    BooleanSetting render = registerBoolean("Render", false);
+    ColorSetting color = registerColor("Render Colour", new GSColor(144,155,255), () -> render.getValue());
 
     int oldSlot;
     int newSlot;
@@ -42,11 +49,10 @@ public class ScaffoldRewrite extends Module {
     EntityPlayer predPlayer;
 
     BlockPos scaffold;
-    BlockPos scaffoldSupport;
     BlockPos towerPos;
     BlockPos downPos;
 
-    Timer towerTimer = new Timer();
+    Vec3d vec;
 
     public void onUpdate() {
 
@@ -55,6 +61,24 @@ public class ScaffoldRewrite extends Module {
         towerPos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ);
         downPos = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
 
+
+        if (logic.getValue().equalsIgnoreCase("Predict")) {
+            predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
+
+            scaffold = predPlayer.getPosition().add(0, -1, 0);
+
+            if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
+        } else if (logic.getValue().equalsIgnoreCase("Player")) {
+
+            scaffold = new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ).down();
+
+            vec = (EntityUtil.getInterpolatedPos(mc.player, distance.getValue()));
+
+            Vec3i veci = new Vec3i(vec.x, 0, vec.z);
+
+            scaffold.add(veci);
+        }
+
         if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
             mc.player.motionX *= 0.3;
@@ -62,12 +86,6 @@ public class ScaffoldRewrite extends Module {
 
 
         }
-
-        predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
-
-        scaffold = predPlayer.getPosition().add(0, -1, 0);
-
-        if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
 
         // Courtesy of KAMI, this block finding algo
         newSlot = -1;
@@ -143,7 +161,7 @@ public class ScaffoldRewrite extends Module {
 
                 }
 
-                case "AirJump": { //Doesnt work :/
+                case "AirJump": { // Best scaffold ever 100%
 
                     if (mc.player.ticksExisted % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
@@ -180,56 +198,20 @@ public class ScaffoldRewrite extends Module {
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
 
-        PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
+
+        if (mc.world != null && pos != null){
+            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
+        }
+
+
+        if (render.getValue()) {
+
+            RenderUtil.drawBox(pos,1,color.getColor(),12);
+
+        }
 
         //Switch back
         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-    }
-
-    void doSupport() {
-
-        // Round player yaw to nearest 45
-
-        float yawRounded;
-
-        float yaw = Math.abs(Math.round(mc.player.rotationYaw) % 360);
-        float division = (int) Math.floor(yaw / 45);
-        float remainder = (int) (yaw % 45);
-        if (remainder < 45f / 2f) {
-            yawRounded = 45 * division;
-        } else {
-            yawRounded = 45 * (division + 1);
-        }
-
-        // TERRIBLE CODING AHEAD //
-
-        if (mc.gameSettings.keyBindLeft.isKeyDown()) {
-
-            yawRounded -= 45;
-
-        }
-        if (mc.gameSettings.keyBindRight.isKeyDown()) {
-
-            yawRounded += 45;
-
-        }
-
-        if (yawRounded == 45) { //NE
-            scaffoldSupport = scaffold;
-            scaffoldSupport.add(-1, 0, 0);
-        } else if (yawRounded == 45 + 90) { // SE
-            scaffoldSupport = scaffold;
-            scaffoldSupport.add(1, 0, 0);
-        } else if (yawRounded == 45 + 90 + 90) { // SW
-            scaffoldSupport = scaffold;
-            scaffoldSupport.add(1, 0, 0);
-        } else if (yawRounded == 45 + 90 + 90 + 90) { // NW
-            scaffoldSupport = scaffold;
-            scaffoldSupport.add(-1, 0, 0);
-        }
-
-        placeBlockPacket(scaffoldSupport, false);
-
     }
 }
 
