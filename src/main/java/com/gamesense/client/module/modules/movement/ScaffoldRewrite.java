@@ -182,7 +182,7 @@ public class ScaffoldRewrite extends Module {
         double[] dir = MotionUtil.forward(downSpeed.getValue());
         if (mc.gameSettings.keyBindSprint.isKeyDown()) {
 
-            placeBlockPacket(downPos, true);
+            placeBlockPacket(downPos, false);
             mc.player.motionX = dir[0];
             mc.player.motionZ = dir[1];
 
