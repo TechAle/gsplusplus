@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.WaterPushEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.world.BlockUtil;
@@ -45,6 +46,8 @@ public class PlayerTweaks extends Module {
     BooleanSetting noFall = registerBoolean("No Fall", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
+    DoubleSetting veloXZ = registerDouble("XZ Multiplier", 0,-5,5, () -> antiKnockBack.getValue());
+    DoubleSetting veloY = registerDouble("Y Multiplier", 0,-5,5, () -> antiKnockBack.getValue());
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
     IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40,
@@ -143,12 +146,16 @@ public class PlayerTweaks extends Module {
         if (antiKnockBack.getValue()) {
             if (event.getPacket() instanceof SPacketEntityVelocity) {
                 if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
-                    event.cancel();
+                    ((SPacketEntityVelocity) event.getPacket()).motionX *= veloXZ.getValue();
+                    ((SPacketEntityVelocity) event.getPacket()).motionY *= veloY.getValue();
+                    ((SPacketEntityVelocity) event.getPacket()).motionZ *= veloXZ.getValue();
                 }
 
             }
             if (event.getPacket() instanceof SPacketExplosion) {
-                event.cancel();
+                ((SPacketExplosion) event.getPacket()).motionX *= veloXZ.getValue();
+                ((SPacketExplosion) event.getPacket()).motionY *= veloY.getValue();
+                ((SPacketExplosion) event.getPacket()).motionZ *= veloXZ.getValue();
             }
         }
     });
