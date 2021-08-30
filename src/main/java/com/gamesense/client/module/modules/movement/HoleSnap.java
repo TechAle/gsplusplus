@@ -1,22 +1,31 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import jdk.nashorn.internal.ir.Block;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.List;
 
 @Module.Declaration(name = "HoleSnap", category = Category.Movement)
 public class HoleSnap extends Module { // im bad at movement :pensive:
 
+    BooleanSetting render = registerBoolean ("Render", true);
+    IntegerSetting width = registerInteger("Width", 1,1,10, () -> render.getValue());
+    ColorSetting colour = registerColor("Colour",new GSColor(0,255,0), () -> render.getValue());
     BooleanSetting doubles = registerBoolean("Double Holes", false);
     DoubleSetting range = registerDouble("Range", 4, 0, 10);
 
@@ -24,10 +33,34 @@ public class HoleSnap extends Module { // im bad at movement :pensive:
     double dist;
     int bestHole;
 
+    Vec3d vec;
+
+    @Override
+    protected void onEnable() {
+        vec = new Vec3d(findHoles().get(closestHole())); // get pos
+    }
+
     @Override
     public void onUpdate() {
 
-        PlayerUtil.centerPlayer(new Vec3d(findHoles().get(closestHole())));
+        BlockPos h = new BlockPos(vec);
+
+        PlayerUtil.centerPlayer(vec);
+
+        // Render line to players feet from the hole pos.
+        if (render.getValue()) {
+
+            BlockPos p = mc.player.getPosition();
+            RenderUtil.drawLine(h.x,h.y,h.z, /*<-Hole Pos | Player Pos->*/ p.x,p.y,p.z, colour.getColor(), width.getValue());
+
+        }
+
+        // if we are within 0.25 blocks of center
+        if (mc.player.getPosition().distanceSq(new Vec3i(h.x, h.y, h.z)) >= 0.25) {
+
+            disable();
+
+        }
 
     }
 
