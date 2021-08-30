@@ -148,9 +148,10 @@ public class ElytraFlightRewrite extends Module {
 
                         if (mc.player.onGround) {
                             mc.player.jump();
+                        } else {
+                            mc.timer.tickLength = 300f;
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
                         }
-                        mc.timer.tickLength = 300f;
-                        mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                     }
                     default: {

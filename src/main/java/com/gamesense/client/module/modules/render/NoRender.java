@@ -28,7 +28,7 @@ public class NoRender extends Module {
     public BooleanSetting noOverlay = registerBoolean("No Overlay", false);
     BooleanSetting noBossBar = registerBoolean("No Boss Bar", false);
     public BooleanSetting noWeather = registerBoolean("No Weather", false);
-    public ModeSetting weather = registerMode("Weather", Arrays.asList("Clear", "Rain", "Thunder"), "Clear");
+    public ModeSetting weather = registerMode("Allowed Weather", Arrays.asList("Clear", "Rain", "Thunder"), "Clear");
     public BooleanSetting noCluster = registerBoolean("No Cluster", false);
     IntegerSetting maxNoClusterRender = registerInteger("No Cluster Max", 5, 1, 25);
 
