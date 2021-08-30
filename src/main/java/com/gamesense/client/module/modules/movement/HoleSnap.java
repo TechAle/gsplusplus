@@ -23,11 +23,11 @@ import java.util.List;
 @Module.Declaration(name = "HoleSnap", category = Category.Movement)
 public class HoleSnap extends Module { // im bad at movement :pensive:
 
+    DoubleSetting range = registerDouble("Range", 4, 0, 10);
+    BooleanSetting doubles = registerBoolean("Double Holes", false);
     BooleanSetting render = registerBoolean ("Render", true);
     IntegerSetting width = registerInteger("Width", 1,1,10, () -> render.getValue());
     ColorSetting colour = registerColor("Colour",new GSColor(0,255,0), () -> render.getValue());
-    BooleanSetting doubles = registerBoolean("Double Holes", false);
-    DoubleSetting range = registerDouble("Range", 4, 0, 10);
 
     int i;
     double dist;
@@ -37,7 +37,7 @@ public class HoleSnap extends Module { // im bad at movement :pensive:
 
     @Override
     protected void onEnable() {
-        vec = new Vec3d(findHoles().get(closestHole())); // get pos
+        vec = new Vec3d(findHoles().get(closestHole())); // get pos of closest hole
     }
 
     @Override
@@ -91,10 +91,10 @@ public class HoleSnap extends Module { // im bad at movement :pensive:
     }
 
     private int closestHole() {
+        // Get our closest hole
 
         bestHole = 0;
 
-        // Get our closest hole
         while (i < findHoles().size()) {
 
             dist = findHoles().get(i).distanceSq(mc.player.getPosition());
@@ -110,7 +110,7 @@ public class HoleSnap extends Module { // im bad at movement :pensive:
 
         }
 
-        return bestHole;
+        return bestHole; // return position in list for findHoles()
 
     }
 
