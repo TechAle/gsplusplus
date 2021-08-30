@@ -25,6 +25,7 @@ public class ElytraFlightRewrite extends Module {
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, 0, 3);
+    BooleanSetting setVelo = registerBoolean("Set Velocity", false, () -> mode.getValue().equals("Control"));
 
     boolean setAng;
 
@@ -32,8 +33,6 @@ public class ElytraFlightRewrite extends Module {
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
-
-        PlayerMoveEvent e = event;
 
         if (mc.player.isElytraFlying()) {
 
@@ -50,24 +49,30 @@ public class ElytraFlightRewrite extends Module {
 
                 if (upMode.getValue().equalsIgnoreCase("Jump")) {
 
+                    if (setVelo.getValue()) {
+
+                        mc.player.setVelocity(0,0,0);
+
+                    }
+
                     if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        e.setY(ySpeed.getValue());
+                        event.setY(ySpeed.getValue());
 
                     } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                        e.setY(-ySpeed.getValue());
+                        event.setY(-ySpeed.getValue());
 
                     } else {
 
-                        e.setY(-glideSpeed.getValue() - 0.0001);
+                        event.setY(-glideSpeed.getValue() - 0.0001);
 
                     }
 
                     if (!(MotionUtil.isMoving(mc.player))) {
 
-                        e.setX(0);
-                        e.setZ(0);
+                        event.setX(0);
+                        event.setZ(0);
 
                     } else {
 
@@ -86,19 +91,19 @@ public class ElytraFlightRewrite extends Module {
 
                         if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                            e.setY(-ySpeed.getValue());
+                            event.setY(-ySpeed.getValue());
 
                         } else {
 
-                            e.setY(-glideSpeed.getValue() - 0.0001);
+                            event.setY(-glideSpeed.getValue() - 0.0001);
 
                         }
 
 
                         if (!(MotionUtil.isMoving(mc.player))) {
 
-                            e.setX(0);
-                            e.setZ(0);
+                            event.setX(0);
+                            event.setZ(0);
 
                         } else {
 
@@ -111,7 +116,7 @@ public class ElytraFlightRewrite extends Module {
 
                         if (!MotionUtil.isMoving(mc.player)) {
 
-                            e.setY(0);
+                            event.setY(0);
 
                         }
 
@@ -125,7 +130,13 @@ public class ElytraFlightRewrite extends Module {
 
         if (event.getPacket() instanceof CPacketPlayer && setAng) {
 
-                ((CPacketPlayer) event.getPacket()).pitch = (float) 0;
+                ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
+
+            if (setVelo.getValue()) {
+
+                mc.player.setVelocity(0,0,0);
+
+            }
 
         }
 
