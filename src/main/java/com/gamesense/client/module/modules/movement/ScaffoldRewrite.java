@@ -76,14 +76,6 @@ public class ScaffoldRewrite extends Module {
             scaffold.add(veci);
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown()) {
-
-            mc.player.motionX *= 0.3;
-            mc.player.motionZ *= 0.3;
-
-
-        }
-
         // Courtesy of KAMI, this block finding algo
         newSlot = -1;
         for (int i = 0; i < 9; i++) {
@@ -209,6 +201,34 @@ public class ScaffoldRewrite extends Module {
 
         //Switch back
         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+
+        if (allowSupport && mc.world.getBlockState(pos).getMaterial().isReplaceable()) {
+
+            clutch();
+
+        }
     }
+
+    public void clutch() {
+
+        BlockPos xppos = new BlockPos(mc.player.posX + 1, mc.player.posY - 1, mc.player.posZ);
+        BlockPos xmpos = new BlockPos(mc.player.posX - 1, mc.player.posY - 1, mc.player.posZ);
+        BlockPos zppos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ + 1);
+        BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
+
+
+            placeBlockPacket(xppos,false);
+            if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+                placeBlockPacket(xmpos,false);
+                if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
+                    placeBlockPacket(zppos,false);
+                    if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+                        placeBlockPacket(zmpos, false);
+                    }
+                }
+            }
+
+    }
+
 }
 
