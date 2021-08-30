@@ -12,6 +12,7 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.world.combat.CrystalUtil;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.HUDModule;
@@ -123,7 +124,7 @@ public class CombatInfo extends HUDModule {
                 if (ModuleManager.isModuleEnabled(hoosiersModules[index])) return hoosiersNames[index] + ": ON";
                 else return hoosiersNames[index] + ": OFF";
             } else if (infoType.getValue().equals("Cyber")) {
-                if (index == 0) return "gamesense.cc";
+                if (index == 0) return GameSense.MODNAME + " " + GameSense.MODVER;
                 else if (index == 1) return "HTR";
                 else if (index == 2) return "PLR";
                 else if (index == 3) return "" + totems;
