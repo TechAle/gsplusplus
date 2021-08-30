@@ -39,6 +39,7 @@ public class ScaffoldRewrite extends Module {
 
     int oldSlot;
     int newSlot;
+    int i = 0;
 
     double oldTower;
 
@@ -159,10 +160,17 @@ public class ScaffoldRewrite extends Module {
 
                 case "AirJump": { // Best scaffold ever 100%
 
-                    if (mc.player.ticksExisted % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
+                    if (i % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
                         mc.player.jump();
 
+                        i++;
+
+                        if (mc.player.onGround) {
+
+                            i = 0;
+
+                        }
 
                     }
                 }
