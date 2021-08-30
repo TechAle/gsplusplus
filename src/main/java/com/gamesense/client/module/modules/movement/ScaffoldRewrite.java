@@ -160,7 +160,7 @@ public class ScaffoldRewrite extends Module {
 
                 case "AirJump": { // Best scaffold ever 100%
 
-                    if (i % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
+                    if (mc.player.ticksExisted % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
                         mc.player.jump();
 
