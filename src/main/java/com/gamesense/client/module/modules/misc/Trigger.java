@@ -54,7 +54,8 @@ public class Trigger extends Module {
         BlockPos player = new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ);
 
         /* Surround */
-        if (!HoleUtil.isHole(mc.player.getPosition().down(), false, false).getType().equals(HoleUtil.HoleType.NONE) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
+        HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(mc.player.getPosition().down(), false, true);
+        if (!(holeInfo.getType() == HoleUtil.HoleType.NONE) && SurroundInHole.getValue() && SIHTicksTimer.hasReached(SIHTicks.getValue()*50,true) && !srnd.isEnabled()) {
             // IF mc.player is in hole, enable surround after SIHTicks * 50 and reset the timer, if in hole, it wont turn on repeatedly
             if (!srnd.isEnabled()){
                 srnd.enable();
