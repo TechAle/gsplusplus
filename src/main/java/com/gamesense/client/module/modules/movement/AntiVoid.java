@@ -34,31 +34,94 @@ public class AntiVoid extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Freeze", "Glitch", "Catch"), "Freeze");
     DoubleSetting height = registerDouble("Height", 2, 0, 5);
-    BooleanSetting chorus = registerBoolean("Chorus", false);
+    BooleanSetting chorus = registerBoolean("Chorus", false, () -> mode.getValue().equals("Freeze"));
+    BooleanSetting packetfly = registerBoolean("PacketFly", false, () -> mode.getValue().equals("Catch"));
 
     boolean chor;
 
     @Override
     public void onUpdate() {
-        if (!mc.player.noClip /*to account for packetfly*/ && mc.player.posY < height.getValue() && mode.getValue().equalsIgnoreCase("Freeze") && mc.world.getBlockState(new BlockPos(mc.player.posX, 1, mc.player.posZ)).getMaterial().isReplaceable()) {
+        if (!mc.player.noClip /*to account for packetfly*/ && mc.player.posY < height.getValue() && mode.getValue().equalsIgnoreCase("Freeze") && mc.world.getBlockState(new BlockPos(mc.player.posX, 0, mc.player.posZ)).getMaterial().isReplaceable()) {
 
-            if (mode.getValue().equals("Freeze")){
-                int newSlot;
+            switch (mode.getValue()) {
+                case "Freeze": {
+                    int newSlot;
 
-                mc.player.setVelocity(0.0D, 0.0D, 0.0D);
+                    mc.player.setVelocity(0.0D, 0.0D, 0.0D);
 
-                if (mc.player.getRidingEntity() != null)
-                    mc.player.getRidingEntity().setVelocity(0.0D, 0.0D, 0.0D);
+                    if (mc.player.getRidingEntity() != null)
+                        mc.player.getRidingEntity().setVelocity(0.0D, 0.0D, 0.0D);
 
-                if (chorus.getValue()) {
-                    // Courtesy of KAMI, this item finding algo
+                    if (chorus.getValue()) {
+                        // Courtesy of KAMI, this item finding algo
+                        newSlot = -1;
+                        for (int i = 0; i < 9; i++) {
+                            // filter out non-block items
+                            ItemStack stack =
+                                    mc.player.inventory.getStackInSlot(i);
+
+                            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemChorusFruit)) {
+                                continue;
+                            }
+
+                            newSlot = i;
+                            break;
+                        }
+
+                        if (newSlot == -1) {
+
+                            newSlot = 1;
+
+                            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of chorus!");
+                            chor = false;
+
+                        } else {
+                            chor = true;
+                        }
+
+                        if (chor) {
+
+                            mc.player.inventory.currentItem = newSlot;
+
+                            if (mc.player.canEat(true)) {
+
+                                mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+
+                            }
+
+                        }
+                    }
+
+                    break;
+                }
+                case "Glitch":
+
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 69, mc.player.posZ, mc.player.onGround));
+
+                    break;
+                case "Catch": {
+
+                    int oldSlot = mc.player.inventory.currentItem;
+
+                    int newSlot;
+                    // Courtesy of KAMI, this block finding algo
                     newSlot = -1;
                     for (int i = 0; i < 9; i++) {
                         // filter out non-block items
                         ItemStack stack =
                                 mc.player.inventory.getStackInSlot(i);
 
-                        if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemChorusFruit)) {
+                        if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                            continue;
+                        }
+
+                        // filter out non-solid blocks
+                        if (!Block.getBlockFromItem(stack.getItem()).getDefaultState()
+                                .isFullBlock())
+                            continue;
+
+                        // don't use falling blocks if it'd fall
+                        if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockFalling) {
                             continue;
                         }
 
@@ -70,75 +133,26 @@ public class AntiVoid extends Module {
 
                         newSlot = 1;
 
-                        MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of chorus!");
-                        chor = false;
-
-                    } else {
-                        chor = true;
-                    }
-
-                    if (chor) {
-
-                        mc.player.inventory.currentItem = newSlot;
-
-                        if (mc.player.canEat(true)) {
-
-                            mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
-
-                        }
+                        MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of valid blocks. Disabling!");
+                        disable();
 
                     }
-                }
 
-            } else if (mode.getValue().equals("Glitch")) {
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
 
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + 69, mc.player.posZ,mc.player.onGround));
+                    PlacementUtil.place(new BlockPos(mc.player.posX, 0, mc.player.posZ), EnumHand.MAIN_HAND, true);
 
-            } else if (mode.getValue().equals("Catch")){
+                    if (mc.world.getBlockState(new BlockPos(mc.player.posX, 0, mc.player.posZ)).getMaterial().isReplaceable() && packetfly.getValue()) {
 
-                int oldSlot = mc.player.inventory.currentItem;
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY + 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
-                int newSlot;
-                // Courtesy of KAMI, this block finding algo
-                newSlot = -1;
-                for (int i = 0; i < 9; i++) {
-                    // filter out non-block items
-                    ItemStack stack =
-                            mc.player.inventory.getStackInSlot(i);
-
-                    if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
-                        continue;
                     }
 
-                    // filter out non-solid blocks
-                    if (!Block.getBlockFromItem(stack.getItem()).getDefaultState()
-                            .isFullBlock())
-                        continue;
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
-                    // don't use falling blocks if it'd fall
-                    if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockFalling) {
-                        continue;
-                    }
-
-                    newSlot = i;
                     break;
                 }
-
-                if (newSlot == -1) {
-
-                    newSlot = 1;
-
-                    MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Out of valid blocks. Disabling!");
-                    disable();
-
-                }
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
-
-                PlacementUtil.place(new BlockPos(mc.player.posX, 1, mc.player.posZ), EnumHand.MAIN_HAND, true);
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-
             }
         }
     }
