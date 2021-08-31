@@ -14,6 +14,7 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -213,7 +214,7 @@ public class ScaffoldRewrite extends Module {
 
         if (allowSupport) {
             assert pos != null;
-            if (mc.world.getBlockState(pos).getMaterial().isReplaceable()) {
+            if (mc.world.getBlockState(pos).getBlock() instanceof BlockAir) {
 
                 clutch();
 
