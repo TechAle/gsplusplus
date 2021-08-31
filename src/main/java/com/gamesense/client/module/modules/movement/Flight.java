@@ -128,7 +128,7 @@ public class Flight extends Module {
 
         } else {
 
-            for (int i = 0; i > 64; i++) {
+            for (int i = 0; i < 64; i++) {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
             }
