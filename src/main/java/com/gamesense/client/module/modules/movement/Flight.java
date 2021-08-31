@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -10,6 +11,8 @@ import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
+import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
@@ -19,7 +22,9 @@ public class Flight extends Module {
 
     float flyspeed;
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
+    public boolean velo;
+
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Bypass"), "Static");
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting speed = registerDouble("Speed", 2,0,10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 1,0,10);
@@ -95,5 +100,36 @@ public class Flight extends Module {
     protected void onDisable() {
         mc.player.capabilities.setFlySpeed(flyspeed);
         mc.player.capabilities.isFlying = false;
+        velo = true;
     }
+
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+
+        if (mode.getValue().equals("Bypass")){
+
+            velo = false;
+
+            double[] dir = MotionUtil.forward(((((SPacketEntityVelocity) event.getPacket()).motionX) + ((SPacketEntityVelocity) event.getPacket()).motionZ) / 2d);
+
+            if (event.getPacket() instanceof SPacketEntityVelocity) {
+                if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
+
+
+                    ((SPacketEntityVelocity) event.getPacket()).motionX = ((int) dir[0]);
+                    ((SPacketEntityVelocity) event.getPacket()).motionZ = ((int) dir[1]);
+                }
+
+            }
+            if (event.getPacket() instanceof SPacketExplosion) {
+                ((SPacketExplosion) event.getPacket()).motionX = ((int) dir[0]);
+                ((SPacketExplosion) event.getPacket()).motionZ = ((int) dir[1]);
+            }
+        } else {
+
+            velo = true;
+
+        }
+    });
+
 }

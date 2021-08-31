@@ -46,8 +46,9 @@ public class PlayerTweaks extends Module {
     BooleanSetting noFall = registerBoolean("No Fall", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
-    DoubleSetting veloXZ = registerDouble("XZ Multiplier", 0,-5,5, () -> antiKnockBack.getValue());
-    DoubleSetting veloY = registerDouble("Y Multiplier", 0,-5,5, () -> antiKnockBack.getValue());
+    BooleanSetting akbM = registerBoolean("Non 0 value", false);
+    DoubleSetting veloXZ = registerDouble("XZ Multiplier", 0,-5,5, () -> antiKnockBack.getValue() && akbM.getValue());
+    DoubleSetting veloY = registerDouble("Y Multiplier", 0,-5,5, () -> antiKnockBack.getValue() && akbM.getValue());
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
     IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40,
@@ -143,19 +144,33 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-        if (antiKnockBack.getValue()) {
-            if (event.getPacket() instanceof SPacketEntityVelocity) {
-                if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
-                    ((SPacketEntityVelocity) event.getPacket()).motionX *= veloXZ.getValue();
-                    ((SPacketEntityVelocity) event.getPacket()).motionY *= veloY.getValue();
-                    ((SPacketEntityVelocity) event.getPacket()).motionZ *= veloXZ.getValue();
+        if (ModuleManager.getModule(Flight.class).velo || !ModuleManager.getModule(Flight.class).isEnabled()) {
+            if (antiKnockBack.getValue() && akbM.getValue()) {
+                if (event.getPacket() instanceof SPacketEntityVelocity) {
+                    if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
+                        ((SPacketEntityVelocity) event.getPacket()).motionX *= veloXZ.getValue();
+                        ((SPacketEntityVelocity) event.getPacket()).motionY *= veloY.getValue();
+                        ((SPacketEntityVelocity) event.getPacket()).motionZ *= veloXZ.getValue();
+                    }
+
+                }
+                if (event.getPacket() instanceof SPacketExplosion) {
+                    ((SPacketExplosion) event.getPacket()).motionX *= veloXZ.getValue();
+                    ((SPacketExplosion) event.getPacket()).motionY *= veloY.getValue();
+                    ((SPacketExplosion) event.getPacket()).motionZ *= veloXZ.getValue();
+                }
+            } else if (antiKnockBack.getValue() && !akbM.getValue()) {
+
+                if (event.getPacket() instanceof SPacketEntityVelocity) {
+                    if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
+                        event.cancel();
+                    }
+
+                }
+                if (event.getPacket() instanceof SPacketExplosion) {
+                    event.cancel();
                 }
 
-            }
-            if (event.getPacket() instanceof SPacketExplosion) {
-                ((SPacketExplosion) event.getPacket()).motionX *= veloXZ.getValue();
-                ((SPacketExplosion) event.getPacket()).motionY *= veloY.getValue();
-                ((SPacketExplosion) event.getPacket()).motionZ *= veloXZ.getValue();
             }
         }
     });
