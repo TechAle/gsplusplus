@@ -36,6 +36,7 @@ public class ScaffoldRewrite extends Module {
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
+    BooleanSetting silent = registerBoolean("Silent Switch", true);
 
     int oldSlot;
     int newSlot;
@@ -192,7 +193,13 @@ public class ScaffoldRewrite extends Module {
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
-        mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
+        if (silent.getValue()){
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
+        } else {
+
+            mc.player.inventory.currentItem = newSlot;
+
+        }
 
 
         if (mc.world != null && pos != null) {
@@ -200,12 +207,17 @@ public class ScaffoldRewrite extends Module {
         }
 
         //Switch back
-        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+        if (silent.getValue()) {
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+        }
 
-        if (allowSupport && mc.world.getBlockState(pos).getMaterial().isReplaceable()) {
+        if (allowSupport) {
+            assert pos != null;
+            if (mc.world.getBlockState(pos).getMaterial().isReplaceable()) {
 
-            clutch();
+                clutch();
 
+            }
         }
     }
 

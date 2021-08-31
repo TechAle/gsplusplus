@@ -13,7 +13,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import com.gamesense.client.module.modules.misc.Trigger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -74,10 +73,6 @@ public class FootConcrete extends Module {
         if (rotate.getValue()) {
 
             rotation = true;
-
-        } else {
-
-            rotation = ModuleManager.getModule(Trigger.class).cc;
 
         }
 
