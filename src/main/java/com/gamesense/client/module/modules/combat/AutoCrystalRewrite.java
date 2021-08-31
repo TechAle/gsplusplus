@@ -1691,7 +1691,7 @@ public class AutoCrystalRewrite extends Module {
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
         } else {
             // Normal placing
-            if (pos.getY() == 255) {
+            if (pos.getY() == 255 || pos.getY() > mc.player.posY) {
                 // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
                 mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.DOWN, handSwing, 0, 0, 0));
             } else {
