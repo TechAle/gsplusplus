@@ -28,6 +28,7 @@ public class Flight extends Module {
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting jumpHeight = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
+    BooleanSetting allowY = registerBoolean("Allow Positive Y Velocity", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting speed = registerDouble("Speed", 2,0,10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 1,0,10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0,-10,10);
@@ -127,6 +128,17 @@ public class Flight extends Module {
 
                     ((SPacketEntityVelocity) event.getPacket()).motionX = ((int) dir[0]);
                     ((SPacketEntityVelocity) event.getPacket()).motionZ = ((int) dir[1]);
+
+                    if (allowY.getValue() && ((SPacketEntityVelocity) event.getPacket()).motionY > 0) {
+
+                        ((SPacketEntityVelocity) event.getPacket()).motionY = ((SPacketEntityVelocity) event.getPacket()).motionY;
+
+                    } else {
+
+                        ((SPacketEntityVelocity) event.getPacket()).motionY = 0;
+
+                    }
+
                 }
 
             }
@@ -134,6 +146,18 @@ public class Flight extends Module {
                 ((SPacketExplosion) event.getPacket()).motionX = ((int) dir[0]);
                 ((SPacketExplosion) event.getPacket()).motionZ = ((int) dir[1]);
             }
+
+            if (allowY.getValue() && ((SPacketEntityVelocity) event.getPacket()).motionY > 0) {
+
+                ((SPacketExplosion) event.getPacket()).motionY = ((SPacketExplosion) event.getPacket()).motionY;
+
+            } else {
+
+                ((SPacketExplosion) event.getPacket()).motionY = 0;
+
+
+            }
+
         } else {
 
             velo = true;
