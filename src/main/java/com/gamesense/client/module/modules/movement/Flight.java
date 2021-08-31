@@ -26,6 +26,8 @@ public class Flight extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Bypass"), "Static");
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
+    DoubleSetting jumpHeight = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting speed = registerDouble("Speed", 2,0,10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 1,0,10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0,-10,10);
@@ -107,6 +109,13 @@ public class Flight extends Module {
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
 
         if (mode.getValue().equals("Bypass")){
+
+            if (jump.getValue() && mc.player.onGround) {
+
+                mc.player.jumpMovementFactor = jumpHeight.getValue().floatValue();
+                mc.player.jump();
+
+            }
 
             velo = false;
 
