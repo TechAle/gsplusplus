@@ -84,7 +84,7 @@ public class DiscordRPCModule extends Module {
         } else {
             p = String.valueOf(Objects.requireNonNull(mc.getConnection().getPlayerInfo(mc.player.getName())).getResponseTime());
         }
-        p = p + " ping";
+        p = p + "ping";
         return p;
     }
 
@@ -97,7 +97,7 @@ public class DiscordRPCModule extends Module {
     static final DiscordRPC discordRPC = DiscordRPC.INSTANCE;
 
     int curImg = -1;
-    ModeSetting imgType = registerMode("Image", Arrays.asList("gs++", "insigna", "luk"), "gs++");
+    ModeSetting imgType = registerMode("Image", Arrays.asList("gs++", "insigna", "luk", "aether"), "gs++");
     ModeSetting lowImg = registerMode("Low Img", Arrays.asList("none", "nocatsnolife", "sable__", "phantom826", "EightTwoSix", "doogie13", "soulbond", "anonymousplayer", "hoosier", "toxicaven", "0b00101010"), "none");
     BooleanSetting animateGs = registerBoolean("Animated gs++", true);
     IntegerSetting msChange = registerInteger("Image Change", 2000, 250, 5000);

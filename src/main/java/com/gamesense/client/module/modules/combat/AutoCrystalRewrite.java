@@ -180,7 +180,13 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting forcePlace = registerBoolean("Force Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false, () -> breakSection.getValue());
-
+    ModeSetting slowBreak = registerMode("Slow Break", Arrays.asList("None", "Tick", "Time"), "None", () -> breakSection.getValue());
+    DoubleSetting speedActivation = registerDouble("Speed Activation", 0.5, 0, 1,
+            () -> breakSection.getValue() && !slowBreak.getValue().equals("None"));
+    IntegerSetting tickSlowBreak = registerInteger("Tick Slow Break", 3, 0, 20,
+            () -> breakSection.getValue() && slowBreak.getValue().equals("Tick"));
+    IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
+            () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     //endregion
 
     //region Misc
@@ -689,6 +695,34 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
+    // Wait for slowBreak
+    static class slowBreakPlayers {
+        final String name;
+        int tick = Integer.MAX_VALUE;
+        int finalTick;
+        long start = Long.MAX_VALUE;
+        int finish;
+
+        public slowBreakPlayers(String name, int finalTick, boolean ignored) {
+          this.name = name;
+          this.finalTick = finalTick;
+          this.tick = 0;
+        }
+
+        public slowBreakPlayers(String name, int finish) {
+            this.name = name;
+            this.finish = finish;
+            this.start = System.currentTimeMillis();
+        }
+
+        boolean update() {
+            if (tick == Integer.MAX_VALUE)
+                return System.currentTimeMillis() - this.start >= this.finish;
+            else return ++tick >= this.finalTick;
+        }
+
+    }
+
     // This is used by packet surround
     class packetBlock {
         public final BlockPos block;
@@ -791,6 +825,7 @@ public class AutoCrystalRewrite extends Module {
     ArrayList<Long> durationsPlace = new ArrayList<>();
     ArrayList<Long> durationsBreaking = new ArrayList<>();
     ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
+    ArrayList<slowBreakPlayers> listPlayersBreak = new ArrayList<>();
 
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
@@ -861,6 +896,7 @@ public class AutoCrystalRewrite extends Module {
 
         }
         breakPacketLimit.updateCrystals();
+        listPlayersBreak.removeIf(slowBreakPlayers::update);
     }
 
     // Simple onUpdate
@@ -2198,9 +2234,21 @@ public class AutoCrystalRewrite extends Module {
             toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue()));
             if (predictBreakingEnemy.getValue())
                 toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
-
             // Break crystal
-            return breakCrystal(bestBreak.crystal);
+            if (listPlayersBreak.stream().noneMatch(e -> bestBreak.target.entity.getName().equals(e.name)) || isMoving(bestBreak.target.entity.getName()))
+                return breakCrystal(bestBreak.crystal);
+        }
+        return false;
+    }
+
+    boolean isMoving(String name) {
+        for(EntityPlayer e : mc.world.playerEntities) {
+            if (e.getName().equals(name)) {
+                if(Math.abs(e.posX - e.prevPosX) + Math.abs(e.posZ - e.prevPosZ) > speedActivation.getValue()) {
+                    listPlayersBreak.removeIf(f -> f.name.equals(name));
+                    return true;
+                } else return false;
+            }
         }
         return false;
     }
@@ -2297,6 +2345,7 @@ public class AutoCrystalRewrite extends Module {
             mc.world.getLoadedEntityList();
         }
 
+
         switch(limitBreakPacket.getValue()) {
             case "Tick":
                 breakPacketLimit.addCrystalId(cr.getPosition(), cr.entityId, 0, lomitBreakPacketTick.getValue());
@@ -2334,6 +2383,18 @@ public class AutoCrystalRewrite extends Module {
         if (switchBack != -1)
             mc.player.connection.sendPacket(new CPacketHeldItemChange(switchBack));
 
+        if (bestBreak.target != null) {
+            if (Math.abs(bestBreak.target.entity.posX - bestBreak.target.entity.prevPosX) + Math.abs(bestBreak.target.entity.posZ - bestBreak.target.entity.prevPosZ) < speedActivation.getValue()) {
+                switch (slowBreak.getValue()) {
+                    case "Tick":
+                        listPlayersBreak.add(new slowBreakPlayers(bestBreak.target.entity.getName(), tickSlowBreak.getValue(), false));
+                        break;
+                    case "Time":
+                        listPlayersBreak.add(new slowBreakPlayers(bestBreak.target.entity.getName(), timeSlowBreak.getValue()));
+                        break;
+                }
+            }
+        }
         return true;
     }
 
