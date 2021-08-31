@@ -178,8 +178,6 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting forcePlace = registerBoolean("Force Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false, () -> breakSection.getValue());
-    BooleanSetting silentSwitchWeakness = registerBoolean("Silent Switch Weakness", false,
-            () -> breakSection.getValue() && antiWeakness.getValue());
 
     //endregion
 
@@ -1671,6 +1669,10 @@ public class AutoCrystalRewrite extends Module {
                     }
 
                 }
+            } else {
+                // Change to crystal
+                if (oldSlot != mc.player.inventory.currentItem)
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
             }
         }
 
