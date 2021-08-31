@@ -144,7 +144,7 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-        if (ModuleManager.getModule(Flight.class).velo || !ModuleManager.getModule(Flight.class).isEnabled()) {
+        if (ModuleManager.getModule(LongJump.class).velo || !ModuleManager.getModule(LongJump.class).isEnabled()) {
             if (antiKnockBack.getValue() && akbM.getValue()) {
                 if (event.getPacket() instanceof SPacketEntityVelocity) {
                     if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {

@@ -1,6 +1,5 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -11,10 +10,6 @@ import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
-import net.minecraft.network.play.server.SPacketExplosion;
-import net.minecraft.util.math.Vec3d;
-
 import java.util.Arrays;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
@@ -22,13 +17,8 @@ public class Flight extends Module {
 
     float flyspeed;
 
-    public boolean velo;
-
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Bypass", "Damage"), "Static");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage"), "Static");
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting jumpHeight = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    BooleanSetting allowY = registerBoolean("Allow Positive Y Velocity", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting speed = registerDouble("Speed", 2,0,10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 1,0,10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0,-10,10);
@@ -92,8 +82,6 @@ public class Flight extends Module {
             }
         } else if (mode.getValue().equalsIgnoreCase("Damage")) {
 
-            damage();
-
             if (MotionUtil.isMoving(mc.player)) {
                 MotionUtil.setSpeed(mc.player, speed.getValue());
             } else {
@@ -112,78 +100,26 @@ public class Flight extends Module {
     @Override
     protected void onEnable() {
         flyspeed = mc.player.capabilities.getFlySpeed();
+
+        if (mode.getValue().equalsIgnoreCase("Damage")) {
+
+            damage();
+            mc.player.jump();
+
+        }
     }
 
     @Override
     protected void onDisable() {
         mc.player.capabilities.setFlySpeed(flyspeed);
         mc.player.capabilities.isFlying = false;
-        velo = true;
     }
-
-    @EventHandler
-    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-
-        if (mode.getValue().equals("Bypass")){
-
-            if (jump.getValue() && mc.player.onGround) {
-
-                mc.player.jumpMovementFactor = jumpHeight.getValue().floatValue();
-                mc.player.jump();
-
-            }
-
-            velo = false;
-
-            double[] dir = MotionUtil.forward(((((SPacketEntityVelocity) event.getPacket()).motionX) + ((SPacketEntityVelocity) event.getPacket()).motionZ) / 2d);
-
-            if (event.getPacket() instanceof SPacketEntityVelocity) {
-                if (((SPacketEntityVelocity) event.getPacket()).getEntityID() == mc.player.getEntityId()) {
-
-
-                    ((SPacketEntityVelocity) event.getPacket()).motionX = ((int) dir[0]);
-                    ((SPacketEntityVelocity) event.getPacket()).motionZ = ((int) dir[1]);
-
-                    if (allowY.getValue() && ((SPacketEntityVelocity) event.getPacket()).motionY > 0) {
-
-                        ((SPacketEntityVelocity) event.getPacket()).motionY = ((SPacketEntityVelocity) event.getPacket()).motionY;
-
-                    } else {
-
-                        ((SPacketEntityVelocity) event.getPacket()).motionY = 0;
-
-                    }
-
-                }
-
-            }
-            if (event.getPacket() instanceof SPacketExplosion) {
-                ((SPacketExplosion) event.getPacket()).motionX = ((int) dir[0]);
-                ((SPacketExplosion) event.getPacket()).motionZ = ((int) dir[1]);
-            }
-
-            if (allowY.getValue() && ((SPacketEntityVelocity) event.getPacket()).motionY > 0) {
-
-                ((SPacketExplosion) event.getPacket()).motionY = ((SPacketExplosion) event.getPacket()).motionY;
-
-            } else {
-
-                ((SPacketExplosion) event.getPacket()).motionY = 0;
-
-
-            }
-
-        } else {
-
-            velo = true;
-
-        }
-    });
 
     public void damage() {
 
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 3.1, mc.player.posZ, false)); // send the player up
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true)); // set onground to true and deal damage
 
         mc.player.motionY = -5; // go down fast (idk if will help at all)
 
