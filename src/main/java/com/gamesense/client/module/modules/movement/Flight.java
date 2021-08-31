@@ -24,7 +24,7 @@ public class Flight extends Module {
 
     public boolean velo;
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Bypass"), "Static");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Bypass", "Damage"), "Static");
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting jumpHeight = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
@@ -90,6 +90,21 @@ public class Flight extends Module {
                 event.setY(0);
 
             }
+        } else if (mode.getValue().equalsIgnoreCase("Damage")) {
+
+            damage();
+
+            if (MotionUtil.isMoving(mc.player)) {
+                MotionUtil.setSpeed(mc.player, speed.getValue());
+            } else {
+
+                event.setX(0);
+                event.setZ(0);
+
+            }
+
+            event.setY(0.001);
+
         }
 
     });
@@ -164,5 +179,15 @@ public class Flight extends Module {
 
         }
     });
+
+    public void damage() {
+
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 3.1, mc.player.posZ, false)); // send the player up
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
+
+        mc.player.motionY = -5; // go down fast (idk if will help at all)
+
+    }
+
 
 }
