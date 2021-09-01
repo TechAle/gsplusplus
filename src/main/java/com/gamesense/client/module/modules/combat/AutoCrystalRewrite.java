@@ -3061,6 +3061,7 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = null;
             tick = 0;
             isRotating = false;
+            yPlayerRotationWanted = xPlayerRotationWanted = 0;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
