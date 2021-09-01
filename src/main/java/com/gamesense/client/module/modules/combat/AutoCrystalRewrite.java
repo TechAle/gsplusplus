@@ -2,6 +2,9 @@
     Author: TechAle
     Description: Place and break crystals with the power of multithreading
     Created: 06/28/21
+    TODO:
+    - Please, more optimization between place and break. More whise use of variables
+    - Make more whise use of the return value
  */
 package com.gamesense.client.module.modules.combat;
 
@@ -75,13 +78,13 @@ public class AutoCrystalRewrite extends Module {
 
     //region Ranges
     BooleanSetting ranges = registerBoolean("Range Section", false);
-    DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 15, () -> ranges.getValue());
-    DoubleSetting rangeEnemyBreaking = registerDouble("Range Enemy Breaking", 7, 0, 15, () -> ranges.getValue());
+    DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
+    DoubleSetting rangeEnemyBreaking = registerDouble("Range Enemy Breaking", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
-    IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 6, () -> ranges.getValue());
-    IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 6, () -> ranges.getValue());
+    IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
+    IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
     //endregion
 
     //region Place
@@ -177,8 +180,6 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting forcePlace = registerBoolean("Force Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false, () -> breakSection.getValue());
-    BooleanSetting silentSwitchWeakness = registerBoolean("Silent Switch Weakness", false,
-            () -> breakSection.getValue() && antiWeakness.getValue());
     ModeSetting slowBreak = registerMode("Slow Break", Arrays.asList("None", "Tick", "Time"), "None", () -> breakSection.getValue());
     DoubleSetting speedActivation = registerDouble("Speed Activation", 0.5, 0, 1,
             () -> breakSection.getValue() && !slowBreak.getValue().equals("None"));
@@ -492,6 +493,8 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
     BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
+    BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
+            () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     //endregion
 
     //region Debug
@@ -796,11 +799,11 @@ public class AutoCrystalRewrite extends Module {
     /// Global variables sorted by type
     public static boolean stopAC = false;
 
-    boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal;
+    boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
     int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack;
 
-    double xPlayer, yPlayer;
+    double xPlayerRotationWanted, yPlayerRotationWanted, xPlayerNow, yPlayerNow;
 
     Timer timerPlace = new Timer();
     Timer timerBreak = new Timer();
@@ -847,7 +850,7 @@ public class AutoCrystalRewrite extends Module {
         timePlace = timeBreak = 0;
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
-        yPlayer = xPlayer = Double.MAX_VALUE;
+        yPlayerRotationWanted = xPlayerRotationWanted = yPlayerNow = xPlayerNow = Double.MAX_VALUE;
         forceBreak = null;
         forceBreakPlace = null;
         String rickroll = "Never gonna give you up\n" +
@@ -1663,25 +1666,29 @@ public class AutoCrystalRewrite extends Module {
             if (preRotate.getValue()) {
                 BlockUtil.faceVectorPacketInstant(lastHitVec, true);
             } else
-            // If we have to check or yaw or pitch
+            // If we have to check or yaw or pitch (-28  14)
             if (yawCheck.getValue() || pitchCheck.getValue()) {
                 // Get the rotation we want
                 Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 // If we are not rotating, set new values
-                yPlayer = pitchCheck.getValue()
-                        ? (
-                            yPlayer == Double.MAX_VALUE ?
-                            mc.player.getPitchYaw().x
-                            : yPlayer
-                            )
-                        : Double.MIN_VALUE;
-                xPlayer = yawCheck.getValue()
-                        ? (
-                            xPlayer == Double.MAX_VALUE ?
-                            RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                            : xPlayer
-                            )
-                        : Double.MIN_VALUE;
+                if ( !blockRotation.getValue() || !isRotating) {
+                    yPlayerRotationWanted = pitchCheck.getValue()
+                            ? (
+                            yPlayerRotationWanted == Double.MAX_VALUE ?
+                                    mc.player.getPitchYaw().x
+                                    : yPlayerRotationWanted
+                    )
+                            : Double.MIN_VALUE;
+                    xPlayerRotationWanted = yawCheck.getValue()
+                            ? (
+                            xPlayerRotationWanted == Double.MAX_VALUE ?
+                                    RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                                    : xPlayerRotationWanted
+                    )
+                            : Double.MIN_VALUE;
+                    isRotating = true;
+                }
+
 
 
                 // If we allow to predict the place (so place when we are near that block)
@@ -1690,7 +1697,7 @@ public class AutoCrystalRewrite extends Module {
                     // Check yaw
                     if (yawCheck.getValue()) {
                         // Get first if + or -
-                        double distanceDo = rotationWanted.x - xPlayer;
+                        double distanceDo = rotationWanted.x - xPlayerRotationWanted;
                         if (Math.abs(distanceDo) > 180) {
                             distanceDo = RotationUtil.normalizeAngle(distanceDo);
                         }
@@ -1703,7 +1710,7 @@ public class AutoCrystalRewrite extends Module {
                     // Check pitch
                     if (pitchCheck.getValue()) {
                         // Get first if + or -
-                        double distanceDo = rotationWanted.y - yPlayer;
+                        double distanceDo = rotationWanted.y - yPlayerRotationWanted;
                         // Check if distance is > of what we want
 
                         if (Math.abs(distanceDo) > pitchStep.getValue()) {
@@ -1711,7 +1718,7 @@ public class AutoCrystalRewrite extends Module {
                         }
                     }
 
-                } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                } else if (!(xPlayerRotationWanted == rotationWanted.x && yPlayerRotationWanted == rotationWanted.y))
                     return true;
             }
         }
@@ -1831,7 +1838,7 @@ public class AutoCrystalRewrite extends Module {
                 posUp.getX(), posUp.getY(), posUp.getZ(),
                 posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
         );
-        // 574.5 1 566.5
+
         // Check for entity
         return mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal && sameBlockPos(entity.getPosition(), pos)).isEmpty();
     }
@@ -2269,27 +2276,30 @@ public class AutoCrystalRewrite extends Module {
             // If preRotate
             if (preRotate.getValue()) {
                 BlockUtil.faceVectorPacketInstant(lastHitVec, true);
-                xPlayer = yPlayer = Double.MIN_VALUE;
             } else
                 // If we have to check or yaw or pitch
                 if (yawCheck.getValue() || pitchCheck.getValue()) {
                     // Get the rotation we want
                     Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                     // If we are not rotating, set new values
-                    yPlayer = pitchCheck.getValue()
-                            ? (
-                            yPlayer == Double.MAX_VALUE
-                            ? mc.player.getPitchYaw().x
-                            : yPlayer
-                            )
-                            : Double.MIN_VALUE;
-                    xPlayer = yawCheck.getValue()
-                            ? (
-                                xPlayer == Double.MAX_VALUE
-                                ? RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                                : xPlayer
-                            )
-                            : Double.MIN_VALUE;
+                    if ( !blockRotation.getValue() || !isRotating) {
+                        yPlayerRotationWanted = pitchCheck.getValue()
+                                ? (
+                                yPlayerRotationWanted == Double.MAX_VALUE ?
+                                        mc.player.getPitchYaw().x
+                                        : yPlayerRotationWanted
+                        )
+                                : Double.MIN_VALUE;
+                        xPlayerRotationWanted = yawCheck.getValue()
+                                ? (
+                                xPlayerRotationWanted == Double.MAX_VALUE ?
+                                        RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                                        : xPlayerRotationWanted
+                        )
+                                : Double.MIN_VALUE;
+                        isRotating = true;
+                    }
+
 
                     // If we allow to predict the place (so place when we are near that block)
                     if (placeStrictPredict.getValue()) {
@@ -2297,7 +2307,7 @@ public class AutoCrystalRewrite extends Module {
                         // Check yaw
                         if (yawCheck.getValue()) {
                             // Get first if + or -
-                            double distanceDo = rotationWanted.x - xPlayer;
+                            double distanceDo = rotationWanted.x - xPlayerRotationWanted;
                             if (Math.abs(distanceDo) > 180) {
                                 distanceDo = RotationUtil.normalizeAngle(distanceDo);
                             }
@@ -2310,7 +2320,7 @@ public class AutoCrystalRewrite extends Module {
                         // Check pitch
                         if (pitchCheck.getValue()) {
                             // Get first if + or -
-                            double distanceDo = rotationWanted.y - yPlayer;
+                            double distanceDo = rotationWanted.y - yPlayerRotationWanted;
                             // Check if distance is > of what we want
 
                             if (Math.abs(distanceDo) > pitchStep.getValue()) {
@@ -2318,7 +2328,7 @@ public class AutoCrystalRewrite extends Module {
                             }
                         }
 
-                    } else if (!(xPlayer == rotationWanted.x && yPlayer == rotationWanted.y))
+                    } else if (!(xPlayerRotationWanted == rotationWanted.x && yPlayerRotationWanted == rotationWanted.y))
                         return true;
                 }
         }
@@ -2332,10 +2342,8 @@ public class AutoCrystalRewrite extends Module {
             if (slotSword == -1)
                 return false;
             if (slotSword != mc.player.inventory.currentItem) {
-                if (silentSwitchWeakness.getValue()) {
-                    switchBack = mc.player.inventory.currentItem;
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slotSword));
-                } else mc.player.inventory.currentItem = slotSword;
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(slotSword));
+                mc.player.inventory.currentItem = slotSword;
             }
         }
 
@@ -3044,7 +3052,7 @@ public class AutoCrystalRewrite extends Module {
         if (tick++ > tickAfterRotation.getValue()) {
             lastHitVec = null;
             tick = 0;
-            xPlayer = yPlayer = Double.MAX_VALUE;
+            isRotating = false;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
@@ -3052,26 +3060,26 @@ public class AutoCrystalRewrite extends Module {
 
             if (yawCheck.getValue() || pitchCheck.getValue()) {
 
-                if (yPlayer == Double.MIN_VALUE)
-                    yPlayer = rotationWanted.y;
+                if (yPlayerRotationWanted == Double.MIN_VALUE)
+                    yPlayerRotationWanted = rotationWanted.y;
                 else {
                     // Get first if + or -
-                    double distanceDo = rotationWanted.y - yPlayer;
+                    double distanceDo = rotationWanted.y - yPlayerRotationWanted;
                     int direction = distanceDo > 0 ? 1 : -1;
                     // Check if distance is > of what we want
 
                     if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                        yPlayer = RotationUtil.normalizeAngle(yPlayer + pitchStep.getValue() * direction);
+                        yPlayerRotationWanted = RotationUtil.normalizeAngle(yPlayerRotationWanted + pitchStep.getValue() * direction);
                         tick = 0;
                     } else {
-                        yPlayer = rotationWanted.y;
+                        yPlayerRotationWanted = rotationWanted.y;
                     }
                 }
-                if (xPlayer == Double.MIN_VALUE)
-                    xPlayer = rotationWanted.x;
+                if (xPlayerRotationWanted == Double.MIN_VALUE)
+                    xPlayerRotationWanted = rotationWanted.x;
                 else {
                     // Get first if + or -
-                    double distanceDo = rotationWanted.x - xPlayer;
+                    double distanceDo = rotationWanted.x - xPlayerRotationWanted;
                     if (Math.abs(distanceDo) > 180) {
                         distanceDo = RotationUtil.normalizeAngle(distanceDo);
                     }
@@ -3079,16 +3087,17 @@ public class AutoCrystalRewrite extends Module {
                     // Check if distance is > of what we want
 
                     if (Math.abs(distanceDo) > yawStep.getValue()) {
-                        xPlayer = RotationUtil.normalizeAngle(xPlayer + yawStep.getValue() * direction);
+                        xPlayerRotationWanted = RotationUtil.normalizeAngle(xPlayerRotationWanted + yawStep.getValue() * direction);
                         tick = 0;
                     } else {
-                        xPlayer = rotationWanted.x;
+                        xPlayerRotationWanted = rotationWanted.x;
                     }
                 }
-                nowRotation = new Vec2f((float) xPlayer, (float) yPlayer);
+                nowRotation = new Vec2f((float) xPlayerRotationWanted, (float) yPlayerRotationWanted);
             } else {
                 nowRotation = rotationWanted;
             }
+
             PlayerPacket packet = new PlayerPacket(this, nowRotation);
             PlayerPacketManager.INSTANCE.addPacket(packet);
         }
