@@ -24,6 +24,7 @@ public class NoRender extends Module {
     public BooleanSetting noSkylight = registerBoolean("Skylight", false);
     public BooleanSetting noOverlay = registerBoolean("No Overlay", false);
     BooleanSetting noBossBar = registerBoolean("No Boss Bar", false);
+    public BooleanSetting noWeather = registerBoolean("No Weather", false);
     public BooleanSetting noCluster = registerBoolean("No Cluster", false);
     IntegerSetting maxNoClusterRender = registerInteger("No Cluster Max", 5, 1, 25);
 

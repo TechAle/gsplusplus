@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -10,6 +11,8 @@ import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.realmsclient.gui.ChatFormatting;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -24,6 +27,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,6 +62,7 @@ public class OffHand extends Module {
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
     BooleanSetting miscSection = registerBoolean("Misc Section", true);
+    public BooleanSetting strict = registerBoolean("Strict", true,() -> switchSection.getValue());
     BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
     BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
     BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> miscSection.getValue());
@@ -78,6 +85,9 @@ public class OffHand extends Module {
     boolean returnBack,
         stepChanging,
         firstChange;
+
+    public boolean dontMove;
+
     private static String forceItem;
     private final ArrayList<Long> switchDone = new ArrayList<>();
     private final ArrayList<Item> ignoreNoSword = new ArrayList<Item>() {
@@ -166,6 +176,23 @@ public class OffHand extends Module {
             // Check if we have to wait
             if (tickWaited++ >= tickDelay.getValue()) {
                 // If we are fine, finish
+                if (strict.getValue()) {
+
+                    dontMove = true;
+
+                    if (mc.player.isHandActive()) {
+
+                        int slot = mc.player.inventory.currentItem;
+                        if (slot != 1)
+                            mc.player.inventory.currentItem = 1;
+                        else
+                            mc.player.inventory.currentItem = 2;
+
+                        mc.player.inventory.currentItem = slot;
+
+                    }
+
+                }
                 tickWaited = 0;
                 stepChanging = false;
                 // Change
@@ -477,5 +504,19 @@ public class OffHand extends Module {
     public String getHudInfo() {
         return "[" + ChatFormatting.WHITE + totems + ChatFormatting.GRAY + "]";
     }
+
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+
+        if (dontMove) {
+
+            event.setX(0);
+            event.setZ(0);
+
+            dontMove = false;
+
+        }
+
+    });
 
 }

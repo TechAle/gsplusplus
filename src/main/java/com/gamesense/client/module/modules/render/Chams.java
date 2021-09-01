@@ -167,7 +167,7 @@ public class Chams extends Module {
             if ( chamsPop.getValue() && entity1.getName().length() == 0) {
                 renderChamsPopPre(entity1);
             } else
-            renderChamsPre(new GSColor(playerColor.getValue(), 255), true);
+                renderChamsPre(new GSColor(playerColor.getValue(), 255), true);
         }
 
         if (mob.getValue() && (entity1 instanceof EntityCreature || entity1 instanceof EntitySlime || entity1 instanceof EntitySquid)) {

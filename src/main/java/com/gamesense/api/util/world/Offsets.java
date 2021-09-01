@@ -90,6 +90,28 @@ public class Offsets {
         new Vec3d(0, 3, 0)
     };
 
+    public static final Vec3d[] TRAP_CRYSTAL = {
+
+            //layer below feet
+            new Vec3d(-1, -1, 0), //scaffold
+            //layer at feet level
+            new Vec3d(-1, 0, 0), //scaffold
+            //layer at head level
+            new Vec3d(-1, 1, 0),
+            new Vec3d(-1, 1, 1),
+            new Vec3d(-1, 1, -1),
+            //roof layer
+            new Vec3d(-1,2,0), // scaffold
+            new Vec3d(0, 2, 0),
+            new Vec3d(1, 2, 0),
+            //head layer again
+            new Vec3d(0, 1, 1),
+            new Vec3d(0, 1, -1),
+            //front head layer
+            new Vec3d(1, 1, 0),
+
+    };
+
     //"simple" trap method with least number of blocks to trap someone (no head layer)
     public static final Vec3d[] TRAP_SIMPLE = {
         //layer below feet
