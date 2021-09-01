@@ -263,7 +263,7 @@ public class FakePlayer extends Module {
                             }
                         }
 
-                        player.setPosition(
+                        player.setPositionAndUpdate(
                                 posX,
                                 posY,
                                 posZ
@@ -287,7 +287,7 @@ public class FakePlayer extends Module {
                             }
                         }
 
-                        player.setPosition(
+                        player.setPositionAndUpdate(
                                 posXCir,
                                 posYCir,
                                 posZCir

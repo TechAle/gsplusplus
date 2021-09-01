@@ -853,12 +853,20 @@ public class AutoCrystalRewrite extends Module {
         yPlayerRotationWanted = xPlayerRotationWanted = yPlayerNow = xPlayerNow = Double.MAX_VALUE;
         forceBreak = null;
         forceBreakPlace = null;
+        lastHitVec = null;
+        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
                 "            Never gonna run around and desert you\n" +
                 "            Never gonna make you cry\n" +
                 "            Never gonna say goodbye\n" +
                 "            Never gonna tell a lie and hurt you";
+    }
+
+    public void onDisable() {
+        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
     }
 
     int tickEat = 0;
