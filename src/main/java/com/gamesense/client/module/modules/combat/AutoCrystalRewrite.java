@@ -1776,9 +1776,24 @@ public class AutoCrystalRewrite extends Module {
 
             // Place
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
+        } else if (placeStrictPredict.getValue()) {
+
+            /// Here we have to understand the facing we are going to place, idk on 2bstrict it requires this
+            // If we are above, 100% up
+            EnumFacing result;
+            if (mc.player.posY + .63 > pos.getY()) {
+                result = EnumFacing.UP;
+            }
+            // Else if we are down
+            else {
+                /*
+                Continue
+                 */
+            }
+
         } else {
             // Normal placing
-            if (pos.getY() == 255 || pos.getY() > mc.player.posY) {
+            if (pos.getY() == 255) {
                 // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
                 mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.DOWN, handSwing, 0, 0, 0));
             } else {
