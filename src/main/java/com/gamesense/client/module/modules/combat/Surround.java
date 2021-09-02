@@ -3,13 +3,13 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
+import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -17,7 +17,6 @@ import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
@@ -129,15 +128,21 @@ public class Surround extends Module {
 
         activedOff = true;
 
-        if (HoleUtil.isHole((new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
-            if (centreMode.getValue().equalsIgnoreCase("Motion")) {
-                PlayerUtil.centerPlayer(centeredBlock);
-            } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+        if (HoleUtil.isHole((new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
 
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
-                mc.player.setPositionAndUpdate(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5);
+            // if statement to check if we need to center. needs work
+            if (intersects(mc.player)) {
 
+                if (centreMode.getValue().equalsIgnoreCase("Motion")) {
+                    PlayerUtil.centerPlayer(centeredBlock);
+                } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
+                    mc.player.setPositionAndUpdate(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5); // Updating makes it look different lol
+
+                }
             }
+
         }
 
         if (delayTimer.getTimePassed() / 50L >= delayTicks.getValue()) {
@@ -194,6 +199,12 @@ public class Surround extends Module {
             if (hasPlaced)
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
         }
+    }
+
+    private boolean intersects(Entity pl) {
+
+        return true; // will be made to check collision
+
     }
 
     private boolean placeBlock(BlockPos pos) {
