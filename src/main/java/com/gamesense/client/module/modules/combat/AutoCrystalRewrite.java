@@ -495,6 +495,7 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
+    BooleanSetting strictDirection = registerBoolean("Strict Direction", false, () -> strict.getValue() && rotate.getValue());
     //endregion
 
     //region Debug
@@ -856,6 +857,7 @@ public class AutoCrystalRewrite extends Module {
         lastHitVec = null;
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+        isRotating = false;
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
                 "            Never gonna run around and desert you\n" +
@@ -3061,7 +3063,7 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = null;
             tick = 0;
             isRotating = false;
-            yPlayerRotationWanted = xPlayerRotationWanted = 0;
+            yPlayerRotationWanted = xPlayerRotationWanted = Double.MAX_VALUE;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
