@@ -67,7 +67,6 @@ public class ProfileManager {
 
         ArrayList<String> profiles = new ArrayList<>();
 
-
         Path dir = Paths.get(fileName+profilesPath);
         Files.walk(dir).forEach(path -> {
             if(path.toFile().isDirectory())  profiles.add(path.toFile().getName());
@@ -77,12 +76,12 @@ public class ProfileManager {
     }
 
     private static void saveConfig() throws IOException {
-
-        if(currentProfile.equals("")) return;
-
         if (!Files.exists(Paths.get(fileName + profilesPath))) {
             Files.createDirectories(Paths.get(fileName + profilesPath));
         }
+
+        if(currentProfile.equals("")) return;
+
         if (!Files.exists(Paths.get(fileName + profilesPath + currentProfile))) {
             Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile));
         }

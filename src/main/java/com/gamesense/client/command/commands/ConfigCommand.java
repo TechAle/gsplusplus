@@ -19,7 +19,8 @@ public class ConfigCommand extends Command {
 
     @Override
     public void onCommand(String command, String[] message) {
-        switch(command){
+        switch(message[0]){
+
             case "list":
 
                 TextComponentString msg = new TextComponentString("\2477Profiles: " + "\247f ");
@@ -44,13 +45,13 @@ public class ConfigCommand extends Command {
                     e.printStackTrace();
                 }
            case "add":
-                GameSense.LOGGER.info("attempting to add config " + message[0]);
-                ProfileManager.createConfig(message[0]);
+                GameSense.LOGGER.info("attempting to add config " + message[1]);
+                ProfileManager.createConfig(message[1]);
             case "load":
-                GameSense.LOGGER.info("attempting to load config " + message[0]);
+                GameSense.LOGGER.info("attempting to load config " + message[1]);
                 try {
-                    if (!ProfileManager.getProfiles().contains(message[0])) MessageBus.sendCommandMessage("Profile not found. (dont use spaces btw)", true);
-                    else ProfileManager.setCurrentProfile(message[0]);
+                    if (!ProfileManager.getProfiles().contains(message[1])) MessageBus.sendCommandMessage("Profile not found. (dont use spaces btw)", true);
+                    else ProfileManager.setCurrentProfile(message[1]);
                 }catch(IOException e){
                     e.printStackTrace();
                 }
