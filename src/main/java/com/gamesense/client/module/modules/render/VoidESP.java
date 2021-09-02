@@ -26,7 +26,7 @@ import java.util.List;
 @Module.Declaration(name = "VoidESP", category = Category.Render)
 public class VoidESP extends Module {
 
-    IntegerSetting renderDistance = registerInteger("Distance", 10, 1, 40);
+    IntegerSetting renderDistance = registerInteger("Distance", 10, 1, 256);
     IntegerSetting activeYValue = registerInteger("Activate Y", 20, 0, 256);
     ModeSetting renderType = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
     ModeSetting renderMode = registerMode("Mode", Arrays.asList("Box", "Flat"), "Flat");
@@ -76,6 +76,8 @@ public class VoidESP extends Module {
     private void renderESP(BlockPos blockPos) {
         GSColor fillColor = new GSColor(color.getValue(), 50);
         GSColor outlineColor = new GSColor(color.getValue(), 255);
+
+        if (blockPos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) > renderDistance.getValue()) return;
 
         int sides = renderMode.getValue().equalsIgnoreCase("Flat") ? GeometryMasks.Quad.DOWN : GeometryMasks.Quad.ALL;
 
