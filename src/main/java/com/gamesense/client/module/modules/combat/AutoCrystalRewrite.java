@@ -491,7 +491,7 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && !preRotate.getValue());
     IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
             () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
-    BooleanSetting placeStrictPredict = registerBoolean("Place Strict Predict", false,
+    BooleanSetting placeStrictDirection = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
@@ -1702,7 +1702,7 @@ public class AutoCrystalRewrite extends Module {
 
 
                 // If we allow to predict the place (so place when we are near that block)
-                if (placeStrictPredict.getValue()) {
+                if (placeStrictDirection.getValue()) {
 
                     // Check yaw
                     if (yawCheck.getValue()) {
@@ -1776,7 +1776,7 @@ public class AutoCrystalRewrite extends Module {
 
             // Place
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
-        } else if (placeStrictPredict.getValue()) {
+        } else if (placeStrictDirection.getValue()) {
 
             /// Here we have to understand the facing we are going to place, idk on 2bstrict it requires this
             // If we are above, 100% up
@@ -1786,10 +1786,13 @@ public class AutoCrystalRewrite extends Module {
             }
             // Else if we are down
             else {
-                /*
-                Continue
-                 */
+                double  xDiff = pos.getX() - mc.player.posX + .5,
+                        zDiff = pos.getZ() - mc.player.posZ + .5;
+                result = Math.abs(xDiff) > Math.abs(zDiff)
+                            ? (xDiff > 0 ? EnumFacing.WEST : EnumFacing.EAST)
+                            : (zDiff > 0 ? EnumFacing.NORTH : EnumFacing.SOUTH);
             }
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, result, handSwing, 0, 0, 0));
 
         } else {
             // Normal placing
@@ -2327,7 +2330,7 @@ public class AutoCrystalRewrite extends Module {
 
 
                     // If we allow to predict the place (so place when we are near that block)
-                    if (placeStrictPredict.getValue()) {
+                    if (placeStrictDirection.getValue()) {
 
                         // Check yaw
                         if (yawCheck.getValue()) {
