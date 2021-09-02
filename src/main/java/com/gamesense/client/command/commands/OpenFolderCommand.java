@@ -13,7 +13,7 @@ import java.io.IOException;
  * @Author Hoosiers on 11/05/2020
  */
 
-@Command.Declaration(name = "OpenFolder", syntax = "openfolder", alias = {"openfolder", "config", "open", "folder"})
+@Command.Declaration(name = "OpenFolder", syntax = "openfolder", alias = {"openfolder", "open", "folder"})
 public class OpenFolderCommand extends Command {
 
     public void onCommand(String command, String[] message) {

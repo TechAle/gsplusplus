@@ -60,6 +60,8 @@ public class LoadConfig {
     }
 
     public static void setProfile(String profile){
+        GameSense.LOGGER.info("LoadConfig profile was set to " + profile);
+
         fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile;
     }
 

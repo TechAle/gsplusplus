@@ -3,6 +3,7 @@ package com.gamesense.client.command.commands;
 
 import com.gamesense.api.config.ProfileManager;
 import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.command.Command;
 import com.gamesense.client.command.CommandManager;
 import com.mojang.realmsclient.gui.ChatFormatting;
@@ -20,11 +21,13 @@ public class ConfigCommand extends Command {
     public void onCommand(String command, String[] message) {
         switch(command){
             case "list":
+
                 TextComponentString msg = new TextComponentString("\2477Profiles: " + "\247f ");
                 try {
                     int size = ProfileManager.getProfiles().size();
                     int index = 0;
                     for (String profile : ProfileManager.getProfiles()){
+                        GameSense.LOGGER.info("adding to list" + profile);
                         msg.appendSibling(new TextComponentString((ProfileManager.getCurrentProfile().equals(profile) ? ChatFormatting.GREEN : ChatFormatting.RED) + profile + "\2477" + ((index == size - 1) ? "" : ", ")))
                         .setStyle(new Style()
                                 .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Load "+profile)))
@@ -41,12 +44,13 @@ public class ConfigCommand extends Command {
                     e.printStackTrace();
                 }
            case "add":
+                GameSense.LOGGER.info("attempting to add config " + message[0]);
                 ProfileManager.createConfig(message[0]);
             case "load":
+                GameSense.LOGGER.info("attempting to load config " + message[0]);
                 try {
                     if (!ProfileManager.getProfiles().contains(message[0])) MessageBus.sendCommandMessage("Profile not found. (dont use spaces btw)", true);
                     else ProfileManager.setCurrentProfile(message[0]);
-
                 }catch(IOException e){
                     e.printStackTrace();
                 }

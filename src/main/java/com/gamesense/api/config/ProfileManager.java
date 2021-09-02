@@ -77,6 +77,9 @@ public class ProfileManager {
     }
 
     private static void saveConfig() throws IOException {
+
+        if(currentProfile.equals("")) return;
+
         if (!Files.exists(Paths.get(fileName + profilesPath))) {
             Files.createDirectories(Paths.get(fileName + profilesPath));
         }
@@ -92,6 +95,7 @@ public class ProfileManager {
         if (!Files.exists(Paths.get(fileName + profilesPath + miscName))) {
             Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile + miscName));
         }
+        GameSense.LOGGER.info("created new config directory");
     }
 
     private static void registerFiles(String location, String name) throws IOException {

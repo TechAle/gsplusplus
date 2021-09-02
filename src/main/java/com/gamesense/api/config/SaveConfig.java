@@ -62,6 +62,7 @@ public class SaveConfig {
     }
 
     public static void setProfile(String profile){
+        GameSense.LOGGER.info("SaveConfig profile was set to " + profile);
         fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile;
     }
 
