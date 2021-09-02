@@ -72,8 +72,8 @@ public class ElytraFlightRewrite extends Module {
 
                     if (!(MotionUtil.isMoving(mc.player))) {
 
-                        event.setX(0);
-                        event.setZ(0);
+                        mc.player.motionX = (0);
+                        mc.player.motionZ = (0);
 
                     } else {
 
@@ -103,9 +103,8 @@ public class ElytraFlightRewrite extends Module {
 
                         if (!(MotionUtil.isMoving(mc.player))) {
 
-                            event.setX(0);
-                            event.setZ(0);
-
+                            mc.player.motionX = (0);
+                            mc.player.motionZ = (0);
                         } else {
 
                             MotionUtil.setSpeed(mc.player, speed.getValue());
@@ -135,7 +134,7 @@ public class ElytraFlightRewrite extends Module {
 
                             mc.player.jump();
 
-                        } else {
+                        } else if (mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0025, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
                             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
@@ -148,7 +147,7 @@ public class ElytraFlightRewrite extends Module {
 
                         if (mc.player.onGround) {
                             mc.player.jump();
-                        } else {
+                        } else if (mc.player.motionY < 0) {
                             mc.timer.tickLength = 300f;
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
                         }
@@ -156,7 +155,7 @@ public class ElytraFlightRewrite extends Module {
                     }
                     default: {
 
-                        if (!mc.player.onGround) {
+                        if (!mc.player.onGround && mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 

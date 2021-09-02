@@ -19,6 +19,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -39,8 +40,7 @@ public class Surround extends Module {
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
-    BooleanSetting centerPlayer = registerBoolean("Center Player", false);
-    BooleanSetting alwaysCenter = registerBoolean("Always Center", false);
+    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Snap", "Motion", "None"), "Snap");
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
@@ -53,7 +53,6 @@ public class Surround extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
-    private boolean isSneaking = false;
     boolean hasPlaced;
 
     public void onEnable() {
@@ -63,7 +62,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (centerPlayer.getValue() && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !(HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None"))) {
+        if (centreMode.getValue().equalsIgnoreCase("Motion")) {
             mc.player.motionX = 0;
             mc.player.motionZ = 0;
         }
@@ -130,8 +129,15 @@ public class Surround extends Module {
 
         activedOff = true;
 
-        if (centerPlayer.getValue() && centeredBlock != Vec3d.ZERO && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None")) {
-            PlayerUtil.centerPlayer(centeredBlock);
+        if (HoleUtil.isHole((new BlockPos(mc.player.posX,mc.player.posY,mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
+            if (centreMode.getValue().equalsIgnoreCase("Motion")) {
+                PlayerUtil.centerPlayer(centeredBlock);
+            } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
+                mc.player.setPositionAndUpdate(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5);
+
+            }
         }
 
         if (delayTimer.getTimePassed() / 50L >= delayTicks.getValue()) {
@@ -145,17 +151,12 @@ public class Surround extends Module {
                 int maxSteps;
                 Vec3d[] offsetPattern;
 
-                switch (offsetMode.getValue()) {
-                    case "Anti City": {
-                        offsetPattern = Offsets.SURROUND_CITY;
-                        maxSteps = Offsets.SURROUND_CITY.length;
-                        break;
-                    }
-                    default: {
-                        offsetPattern = Offsets.SURROUND;
-                        maxSteps = Offsets.SURROUND.length;
-                        break;
-                    }
+                if ("Anti City".equals(offsetMode.getValue())) {
+                    offsetPattern = Offsets.SURROUND_CITY;
+                    maxSteps = Offsets.SURROUND_CITY.length;
+                } else {
+                    offsetPattern = Offsets.SURROUND;
+                    maxSteps = Offsets.SURROUND.length;
                 }
 
                 if (offsetSteps >= maxSteps) {

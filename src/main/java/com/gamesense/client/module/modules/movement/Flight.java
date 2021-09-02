@@ -93,7 +93,7 @@ public class Flight extends Module {
 
             }
 
-            event.setY(0.001);
+            event.setY(-0.001);
 
         }
 
@@ -115,6 +115,7 @@ public class Flight extends Module {
     protected void onDisable() {
         mc.player.capabilities.setFlySpeed(flyspeed);
         mc.player.capabilities.isFlying = false;
+        mc.player.motionX = mc.player.motionY = mc.player.motionZ = 0;
     }
 
     public void damage() {
