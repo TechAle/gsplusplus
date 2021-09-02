@@ -1,5 +1,6 @@
 package com.gamesense.client.command.commands;
 
+import com.gamesense.api.config.ProfileManager;
 import com.gamesense.api.config.SaveConfig;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.command.Command;
@@ -17,7 +18,8 @@ public class OpenFolderCommand extends Command {
 
     public void onCommand(String command, String[] message) {
         try {
-            Desktop.getDesktop().open(new File(SaveConfig.fileName.replace("/", "")));
+            String path = ProfileManager.getCurrentProfile().equals("") ? ProfileManager.fileName.replace("/", "") :  ProfileManager.fileName + "profiles/" + ProfileManager.getCurrentProfile();
+            Desktop.getDesktop().open(new File(path));
             MessageBus.sendCommandMessage("Opened config folder!", true);
         } catch (IOException e) {
             MessageBus.sendCommandMessage("Could not open config folder!", true);

@@ -33,7 +33,7 @@ import java.nio.file.Paths;
 
 public class LoadConfig {
 
-    private static final String fileName = "gs++/";
+    private static String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
@@ -57,6 +57,10 @@ public class LoadConfig {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void setProfile(String profile){
+        fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile;
     }
 
     //big shoutout to lukflug for helping/fixing this

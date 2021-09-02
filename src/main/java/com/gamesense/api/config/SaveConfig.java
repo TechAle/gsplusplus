@@ -33,7 +33,7 @@ import java.nio.file.Paths;
 
 public class SaveConfig {
 
-    public static final String fileName = "gs++/";
+    public static String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
@@ -59,6 +59,10 @@ public class SaveConfig {
             e.printStackTrace();
         }
         GameSense.LOGGER.info("Saved Config!");
+    }
+
+    public static void setProfile(String profile){
+        fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile;
     }
 
     private static void saveConfig() throws IOException {
