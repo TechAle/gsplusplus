@@ -1011,7 +1011,7 @@ public class AutoCrystalRewrite extends Module {
         }
 
         if (bestBreak.target != null) {
-            if (showPlaceName.getValue()) {
+            if (showBreakName.getValue()) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
                             .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break Name: " : ""))
@@ -1022,7 +1022,7 @@ public class AutoCrystalRewrite extends Module {
                             .append(bestBreak.target.entity.getName());
             }
 
-            if (showPlaceDamage.getValue()) {
+            if (showBreakDamage.getValue()) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
                             .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break damage: " : ""))
