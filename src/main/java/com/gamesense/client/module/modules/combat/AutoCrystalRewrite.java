@@ -2640,31 +2640,34 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab) {
-        AxisAlignedBB box = getBox(position);
-        int mask = GeometryMasks.Quad.ALL;
-        if (dimension.equals("Flat")) {
-            mask = GeometryMasks.Quad.UP;
-            box = new AxisAlignedBB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
-        }
-        else if (dimension.equals("Slab")) {
-            box = new AxisAlignedBB(box.minX, box.maxY - heightSlab, box.minZ, box.maxX, box.maxY, box.maxZ);
-        }
-
-        // Switch for types
-        switch (type) {
-            case "Outline": {
-                displayOutline(box);
-                break;
+        if (dimension.equals("Circle")) {
+            RenderUtil.drawCircle(position.x + .5F, position.getY() + 1, position.z + .5F, .8F, new GSColor(255, 255, 255));
+        } else {
+            AxisAlignedBB box = getBox(position);
+            int mask = GeometryMasks.Quad.ALL;
+            if (dimension.equals("Flat")) {
+                mask = GeometryMasks.Quad.UP;
+                box = new AxisAlignedBB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
+            } else if (dimension.equals("Slab")) {
+                box = new AxisAlignedBB(box.minX, box.maxY - heightSlab, box.minZ, box.maxX, box.maxY, box.maxZ);
             }
-            case "Fill": {
-                displayFill(box, mask);
-                break;
-            }
-            case "Both": {
-                displayFill(box, mask);
 
-                displayOutline(box);
-                break;
+            // Switch for types
+            switch (type) {
+                case "Outline": {
+                    displayOutline(box);
+                    break;
+                }
+                case "Fill": {
+                    displayFill(box, mask);
+                    break;
+                }
+                case "Both": {
+                    displayFill(box, mask);
+
+                    displayOutline(box);
+                    break;
+                }
             }
         }
     }

@@ -427,6 +427,50 @@ public class RenderUtil {
         GlStateManager.popMatrix();
     }
 
+    public static void drawCircle(float x, float y, float z, float radius, GSColor colour) {
+        //IBlockState iblockstate = RenderUtil.mc.world.getBlockState(new BlockPos(x, y, z));
+        //Vec3d interpPos = EntityUtil.getInterpolatedPos(RenderUtil.mc.player, RenderUtil.mc.getRenderPartialTicks());
+        BlockPos pos = new BlockPos(x, y, z);
+        //AxisAlignedBB bb = iblockstate.getSelectedBoundingBox(RenderUtil.mc.world, new BlockPos(x, y, z)).offset(-interpPos.x, -interpPos.y, -interpPos.z);
+        AxisAlignedBB bb = new AxisAlignedBB((double) pos.getX() - RenderUtil.mc.getRenderManager().viewerPosX, (double) pos.getY() - RenderUtil.mc.getRenderManager().viewerPosY,
+                (double) pos.getZ() - RenderUtil.mc.getRenderManager().viewerPosZ,
+                (double) (pos.getX() + 1) - RenderUtil.mc.getRenderManager().viewerPosX,
+                (double) (pos.getY() + 1) - RenderUtil.mc.getRenderManager().viewerPosY, (double) (pos.getZ() + 1) - RenderUtil.mc.getRenderManager().viewerPosZ);
+        drawCircleVertices(bb, radius, colour);
+
+    }
+
+
+    public static void drawCircleVertices(AxisAlignedBB bb, float radius, GSColor colour) {
+        float r = (float) colour.getRed() / 255.0f;
+        float g = (float) colour.getGreen() / 255.0f;
+        float b = (float) colour.getBlue() / 255.0f;
+        float a = (float) colour.getAlpha() / 255.0f;
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        GlStateManager.pushMatrix();
+        GlStateManager.enableBlend();
+        GlStateManager.disableDepth();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 0, 1);
+        GlStateManager.disableTexture2D();
+        GlStateManager.depthMask(false);
+        GL11.glEnable(2848);
+        GL11.glHint(3154, 4354);
+        GL11.glLineWidth(1f);
+        for (int i = 0; i < 360; i++) {
+            buffer.begin(3, DefaultVertexFormats.POSITION_COLOR);
+            buffer.pos(bb.getCenter().x + (Math.sin((i * 3.1415926D / 180)) * radius), bb.minY, bb.getCenter().z + (Math.cos((i * 3.1415926D / 180)) * radius)).color(r, g, b, a).endVertex();
+            buffer.pos(bb.getCenter().x + (Math.sin(((i + 1) * 3.1415926D / 180)) * radius), bb.minY, bb.getCenter().z + (Math.cos(((i + 1) * 3.1415926D / 180)) * radius)).color(r, g, b, a).endVertex();
+            tessellator.draw();
+        }
+        GL11.glDisable(2848);
+        GlStateManager.depthMask(true);
+        GlStateManager.enableDepth();
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
+        GlStateManager.popMatrix();
+    }
+
     public static void drawNametag(Entity entity, String[] text, GSColor color, int type) {
         Vec3d pos = EntityUtil.getInterpolatedPos(entity, mc.getRenderPartialTicks());
         drawNametag(pos.x, pos.y + entity.height, pos.z, text, color, type);
