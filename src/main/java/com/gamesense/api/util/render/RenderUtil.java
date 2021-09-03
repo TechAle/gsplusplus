@@ -20,8 +20,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.glu.Sphere;
 
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glHint;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author 086
@@ -427,49 +426,27 @@ public class RenderUtil {
         GlStateManager.popMatrix();
     }
 
-    public static void drawCircle(float x, float y, float z, float radius, GSColor colour) {
-        //IBlockState iblockstate = RenderUtil.mc.world.getBlockState(new BlockPos(x, y, z));
-        //Vec3d interpPos = EntityUtil.getInterpolatedPos(RenderUtil.mc.player, RenderUtil.mc.getRenderPartialTicks());
-        BlockPos pos = new BlockPos(x, y, z);
-        //AxisAlignedBB bb = iblockstate.getSelectedBoundingBox(RenderUtil.mc.world, new BlockPos(x, y, z)).offset(-interpPos.x, -interpPos.y, -interpPos.z);
-        AxisAlignedBB bb = new AxisAlignedBB((double) pos.getX() - RenderUtil.mc.getRenderManager().viewerPosX, (double) pos.getY() - RenderUtil.mc.getRenderManager().viewerPosY,
-                (double) pos.getZ() - RenderUtil.mc.getRenderManager().viewerPosZ,
-                (double) (pos.getX() + 1) - RenderUtil.mc.getRenderManager().viewerPosX,
-                (double) (pos.getY() + 1) - RenderUtil.mc.getRenderManager().viewerPosY, (double) (pos.getZ() + 1) - RenderUtil.mc.getRenderManager().viewerPosZ);
-        drawCircleVertices(bb, radius, colour);
+    public static void drawCircle(float x, float y, float z, Double radius, GSColor colour) {
 
-    }
-
-
-    public static void drawCircleVertices(AxisAlignedBB bb, float radius, GSColor colour) {
-        float r = (float) colour.getRed() / 255.0f;
-        float g = (float) colour.getGreen() / 255.0f;
-        float b = (float) colour.getBlue() / 255.0f;
-        float a = (float) colour.getAlpha() / 255.0f;
+        GlStateManager.disableCull();
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(GL_SMOOTH);
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.disableDepth();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 0, 1);
-        GlStateManager.disableTexture2D();
-        GlStateManager.depthMask(false);
-        GL11.glEnable(2848);
-        GL11.glHint(3154, 4354);
-        GL11.glLineWidth(1f);
-        for (int i = 0; i < 360; i++) {
-            buffer.begin(3, DefaultVertexFormats.POSITION_COLOR);
-            buffer.pos(bb.getCenter().x + (Math.sin((i * 3.1415926D / 180)) * radius), bb.minY, bb.getCenter().z + (Math.cos((i * 3.1415926D / 180)) * radius)).color(r, g, b, a).endVertex();
-            buffer.pos(bb.getCenter().x + (Math.sin(((i + 1) * 3.1415926D / 180)) * radius), bb.minY, bb.getCenter().z + (Math.cos(((i + 1) * 3.1415926D / 180)) * radius)).color(r, g, b, a).endVertex();
-            tessellator.draw();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        for (int i = 0; i < 361; i++) {
+            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, 1).endVertex();
         }
-        GL11.glDisable(2848);
-        GlStateManager.depthMask(true);
-        GlStateManager.enableDepth();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
+
+        tessellator.draw();
+
+        GlStateManager.enableCull();
+        GlStateManager.enableAlpha();
+        GlStateManager.shadeModel(GL_FLAT);
+
     }
+
 
     public static void drawNametag(Entity entity, String[] text, GSColor color, int type) {
         Vec3d pos = EntityUtil.getInterpolatedPos(entity, mc.getRenderPartialTicks());
@@ -622,7 +599,7 @@ public class RenderUtil {
         GlStateManager.disableBlend();
         GlStateManager.depthMask(true);
         GlStateManager.glLineWidth(1.0f);
-        GlStateManager.shadeModel(GL11.GL_FLAT);
+        GlStateManager.shadeModel(GL_FLAT);
         glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_DONT_CARE);
     }
 }

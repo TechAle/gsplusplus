@@ -196,6 +196,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting misc = registerBoolean("Misc Section", false);
     ModeSetting typePlace = registerMode("Render Place", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
     ModeSetting placeDimension = registerMode("Place Dimension", Arrays.asList("Box", "Flat", "Slab", "Circle"), "Box", () -> misc.getValue());
+    DoubleSetting rangeCirclePl = registerDouble("Range Circle Pl", .5, .1, 1.5, () -> misc.getValue() && placeDimension.getValue().equals("Circle"));
     DoubleSetting slabHeightPlace = registerDouble("Slab height Place", .2, 0, 1, () -> misc.getValue() && placeDimension.getValue().equals("Slab"));
     DoubleSetting textYPlace = registerDouble("Text Y Place", .5, -1, 1, () -> misc.getValue());
 
@@ -301,6 +302,7 @@ public class AutoCrystalRewrite extends Module {
 
     ModeSetting typeBreak = registerMode("Render Break", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
     ModeSetting breakDimension = registerMode("Break Dimension", Arrays.asList("Box", "Flat", "Slab", "Circle"), "Box", () -> misc.getValue());
+    DoubleSetting rangeCircleBr = registerDouble("Range Circle Br", .5, .1, 1.5, () -> misc.getValue() && breakDimension.getValue().equals("Circle"));
     DoubleSetting slabHeightBreak = registerDouble("Slab height Break", .2, 0, 1, () -> misc.getValue() && breakDimension.getValue().equals("Slab"));
     DoubleSetting textYBreak = registerDouble("Text Y Break", .5, -1, 1, () -> misc.getValue());
     //region outline custom place
@@ -691,7 +693,11 @@ public class AutoCrystalRewrite extends Module {
         }
 
         boolean crystalIdExists(int id) {
-            return listWait.stream().anyMatch(e -> e.idCrystal == id);
+            try {
+                return listWait.stream().anyMatch(e -> e.idCrystal == id);
+            } catch (NullPointerException ignored) {
+                return false;
+            }
         }
 
         // Update every crystals timers
@@ -2594,12 +2600,12 @@ public class AutoCrystalRewrite extends Module {
 
         // If we have a bestBreak
         if (bestBreak != null && bestBreak.crystal != null) {
-            drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue());
+            drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false);
         }
 
         // If we have a bestPlace
         if (bestPlace != null && bestPlace.crystal != null) {
-            drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue());
+            drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true);
         }
 
         // Display everything else
@@ -2639,9 +2645,10 @@ public class AutoCrystalRewrite extends Module {
             });
     }
 
-    void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab) {
+    void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab, boolean place) {
         if (dimension.equals("Circle")) {
-            RenderUtil.drawCircle(position.x + .5F, position.getY() + 1, position.z + .5F, .8F, new GSColor(255, 255, 255));
+            RenderUtil.drawCircle(position.x + .5F, position.getY() + 1, position.z + .5F, place ? rangeCirclePl.getValue() : rangeCircleBr.getValue(),
+                    place ? firstVerticeOutlineBot.getColor() : firstVerticeOutlineBotbr.getColor());
         } else {
             AxisAlignedBB box = getBox(position);
             int mask = GeometryMasks.Quad.ALL;
