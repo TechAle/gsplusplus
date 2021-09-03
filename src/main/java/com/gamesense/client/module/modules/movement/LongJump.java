@@ -17,13 +17,15 @@ import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "Long Jump", category = Category.Movement)
 public class LongJump extends Module {
 
-    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass"), "Strafe");
+    BooleanSetting lagback = registerBoolean("Disable On LagBack", false);
+    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor"), "Far");
     DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting jumpHeightVelo = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
@@ -33,7 +35,9 @@ public class LongJump extends Module {
     DoubleSetting farSpeed = registerDouble("farSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
     IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
     DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
-    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
+    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3);
+    IntegerSetting factorMax = registerInteger("Factor Max", 0,0,50);
 
     Double playerSpeed;
 
@@ -41,14 +45,28 @@ public class LongJump extends Module {
 
     public boolean velo;
 
+    float mf;
+
     int i;
 
     private final Timer timer = new Timer();
-    private final Timer farTimer = new Timer();
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
+        mf = mc.player.jumpMovementFactor;
     }
+
+    @Override
+    public void onDisable() {
+        timer.reset();
+        mc.player.jumpMovementFactor = mf;
+    }
+
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+        if (event.getPacket() instanceof SPacketPlayerPosLook && lagback.getValue())
+            disable();
+    });
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -89,7 +107,7 @@ public class LongJump extends Module {
             if (mc.player.onGround && mc.gameSettings.keyBindForward.isKeyDown()) {
                 mc.player.motionX = dir[0] * initialFar.getValue().floatValue();
                 mc.player.motionZ = dir[1] * initialFar.getValue().floatValue();
-                mc.player.jump();
+                mc.player.motionY = jumpHeight.getValue();
                 i = 0;
             }
             if (mc.player.motionY == 0.0030162615090425808) {
@@ -102,11 +120,24 @@ public class LongJump extends Module {
 
 
             }
+        } else if (mode.getValue().equalsIgnoreCase("Factor")) {
+
+            if (mc.player.onGround) {
+
+                mc.player.jumpMovementFactor = mf;
+                mc.player.motionY = jumpHeight.getValue();
+
+            } else if (!(mc.player.jumpMovementFactor > factorMax.getValue())){
+
+                mc.player.jumpMovementFactor += speedFactor.getValue();
+
+            }
+
         }
     }
 
     @EventHandler
-    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+    private final Listener<PacketEvent.Receive> receiveListenerTwo = new Listener<>(event -> {
 
         if ((event.getPacket() instanceof SPacketExplosion || event.getPacket() instanceof SPacketEntityVelocity) && mc.player != null) {
             if (mode.getValue().equals("Bypass")) {
@@ -116,7 +147,7 @@ public class LongJump extends Module {
                 if (jump.getValue() && mc.player.onGround) {
 
                     mc.player.jumpMovementFactor = jumpHeightVelo.getValue().floatValue();
-                    mc.player.jump();
+                    mc.player.motionY = jumpHeight.getValue();
 
                 }
 
@@ -148,11 +179,6 @@ public class LongJump extends Module {
             }
         }
     });
-
-    @Override
-    public void onDisable() {
-        timer.reset();
-    }
 }
 
 
