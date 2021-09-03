@@ -14,6 +14,7 @@ import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.KeyBoardClass;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.*;
 import com.gamesense.api.util.render.GSColor;
@@ -53,6 +54,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.*;
+import org.lwjgl.input.Keyboard;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -103,6 +105,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
     IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> place.getValue());
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
+    StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
     ModeSetting limitPacketPlace = registerMode("Limit Packet Place", Arrays.asList("None", "Tick", "Time"), "None",
@@ -1036,8 +1039,12 @@ public class AutoCrystalRewrite extends Module {
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
         double minDamage = this.minDamagePlace.getValue();
-        double minFacePlaceHp = this.facePlaceValue.getValue();
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
+        double minFacePlaceHp =  this.facePlaceValue.getValue();
+        if (forceFacePlace.getText().length() > 0) {
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(forceFacePlace.getText().charAt(0))))
+                minFacePlaceHp = 36;
+        }
         double enemyRangeSQ = rangeEnemyPlace.getValue() * rangeEnemyPlace.getValue();
         double maxSelfDamage = this.maxSelfDamagePlace.getValue();
         double wallRangePlaceSQ = this.crystalWallPlace.getValue() * this.crystalWallPlace.getValue();
@@ -1888,7 +1895,11 @@ public class AutoCrystalRewrite extends Module {
         float armourPercent = armourFacePlace.getValue() / 100.0f;
         int maxYTarget = this.maxYTarget.getValue();
         int minYTarget = this.minYTarget.getValue();
-        double minFacePlaceHp = this.facePlaceValue.getValue();
+        double minFacePlaceHp =  this.facePlaceValue.getValue();
+        if (forceFacePlace.getText().length() > 0) {
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(forceFacePlace.getText().charAt(0))))
+                minFacePlaceHp = 36;
+        }
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double minDamage = this.minDamageBreak.getValue();
         double rangeSQ = this.breakRange.getValue() * this.breakRange.getValue();
