@@ -5,6 +5,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
 import com.gamesense.api.util.world.EntityUtil;
@@ -33,15 +34,17 @@ public class ScaffoldRewrite extends Module {
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
     IntegerSetting distance = registerInteger("Distance", 2, 0, 20);
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
-    IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20);
+    IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20, () -> towerMode.getValue().equals("AirJump"));
+    DoubleSetting jumpHeight = registerDouble("Air Jump Height", 0.42, 0, 1, () -> towerMode.getValue().equals("AirJump"));
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting silent = registerBoolean("Silent Switch", true);
 
+    int timer;
+
     int oldSlot;
     int newSlot;
-    int i = 0;
 
     double oldTower;
 
@@ -52,6 +55,11 @@ public class ScaffoldRewrite extends Module {
     BlockPos downPos;
 
     Vec3d vec;
+
+    @Override
+    protected void onEnable() {
+        timer = 0;
+    }
 
     public void onUpdate() {
 
@@ -154,17 +162,15 @@ public class ScaffoldRewrite extends Module {
 
                 case "AirJump": { // Best scaffold ever 100%
 
-                    if (mc.player.ticksExisted % airJumpDelay.getValue() == 0 && mc.gameSettings.keyBindJump.isKeyDown()) {
+                    if (mc.player.onGround)
+                        timer = 0;
+                    else
+                        timer++;
+
+                    if (timer == airJumpDelay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
 
                         mc.player.jump();
-
-                        i++;
-
-                        if (mc.player.onGround) {
-
-                            i = 0;
-
-                        }
+                        timer = 0;
 
                     }
                 }
