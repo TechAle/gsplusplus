@@ -837,6 +837,8 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait crystalSecondPlace = new crystalPlaceWait();
     crystalPlaceWait breakPacketLimit = new crystalPlaceWait();
     crystalPlaceWait existsCrystal = new crystalPlaceWait();
+    crystalPlaceWait crystalSecondBreak = new crystalPlaceWait();
+    crystalPlaceWait attempedCrystalBreak = new crystalPlaceWait();
     crystalTime crystalPlace = null;
     EntityEnderCrystal forceBreak = null;
     BlockPos forceBreakPlace = null;
@@ -927,6 +929,8 @@ public class AutoCrystalRewrite extends Module {
         }
         breakPacketLimit.updateCrystals();
         listPlayersBreak.removeIf(slowBreakPlayers::update);
+        crystalSecondBreak.updateCrystals();
+        attempedCrystalBreak.updateCrystals();
     }
 
     // Simple onUpdate
@@ -1031,6 +1035,20 @@ public class AutoCrystalRewrite extends Module {
                 } else
                     t.append(!cleanPlace.getValue() ? " Damage: " : " ")
                             .append((int) bestBreak.damage);
+            }
+
+        }
+
+        if (showBreakCrystalsSecond.getValue()) {
+            int temp;
+            if ((temp = crystalSecondBreak.countCrystals()) > 0) {
+                if (!place) {
+                    t.append(ChatFormatting.GRAY + "[")
+                            .append(ChatFormatting.WHITE + (cleanPlace.getValue() ? "Break c/s: " : ""))
+                            .append(temp);
+                    place = true;
+                } else t.append(cleanPlace.getValue() ? " c/s: " : " ")
+                        .append(temp);
             }
 
         }
@@ -2470,6 +2488,10 @@ public class AutoCrystalRewrite extends Module {
                 }
             }
         }
+
+        if (showBreakCrystalsSecond.getValue())
+            attempedCrystalBreak.addCrystalId(cr.getPosition(), cr.entityId, 500);
+
         return true;
     }
 
@@ -3300,6 +3322,8 @@ public class AutoCrystalRewrite extends Module {
                         if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
                             entity.setDead();
                         }
+                        if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
+                            crystalSecondBreak.addCrystal(null, 1000);
                     }
                 }
                 breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
