@@ -456,6 +456,9 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false, () -> predictSection.getValue());
     BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false,
             () -> predictSection.getValue() && manualOutHole.getValue());
+    BooleanSetting stairPredict = registerBoolean("Stair Predict", false, () -> predictSection.getValue());
+    IntegerSetting nStair = registerInteger("N Stair", 2, 1, 4, () -> predictSection.getValue() && stairPredict.getValue());
+    DoubleSetting speedActivationStair = registerDouble("Speed Activation Stair", .3, 0, 1, () -> predictSection.getValue() && stairPredict.getValue());
     //endregion
 
     //region Threading
@@ -1029,7 +1032,7 @@ public class AutoCrystalRewrite extends Module {
 
     // Main function for calculating the best crystal
     CrystalInfo.PlaceInfo getTargetPlacing(String mode) {
-        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
+        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
         double minDamage = this.minDamagePlace.getValue();
@@ -1702,7 +1705,7 @@ public class AutoCrystalRewrite extends Module {
 
 
                 // If we allow to predict the place (so place when we are near that block)
-                if (placeStrictDirection.getValue()) {
+                if (rotate.getValue() && placeStrictDirection.getValue()) {
 
                     // Check yaw
                     if (yawCheck.getValue()) {
@@ -1876,7 +1879,7 @@ public class AutoCrystalRewrite extends Module {
     //region Calculate Break Crystal
 
     CrystalInfo.NewBreakInfo getTargetBreaking(String mode) {
-        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
+        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
         double enemyRangeSQ = rangeEnemyBreaking.getValue() * rangeEnemyBreaking.getValue();
         double maxSelfDamage = maxSelfDamageBreak.getValue();

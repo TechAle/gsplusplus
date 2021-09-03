@@ -1,10 +1,7 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.player.PredictUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
@@ -51,10 +48,13 @@ public class predict extends Module {
     BooleanSetting showPredictions = registerBoolean("Show Predictions", false);
     BooleanSetting manualOutHole = registerBoolean("Manual Out Hole", false);
     BooleanSetting aboveHoleManual = registerBoolean("Above Hole Manual", false, () -> manualOutHole.getValue());
+    BooleanSetting stairPredict = registerBoolean("Stair Predict", false);
+    IntegerSetting nStair = registerInteger("N Stair", 2, 1, 4, () -> stairPredict.getValue());
+    DoubleSetting speedActivationStair = registerDouble("Speed Activation Stair", .3, 0, 1, () -> stairPredict.getValue());
     ColorSetting mainColor = registerColor("Color");
 
     public void onWorldRender(RenderEvent event) {
-        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debug.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue());
+        PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), width.getValue(), debug.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         mc.world.playerEntities.stream().filter(entity -> (!hideSelf.getValue() || entity != mc.player)).filter(this::rangeEntityCheck).forEach(entity -> {
             EntityPlayer clonedPlayer = PredictUtil.predictPlayer(entity, settings);
             RenderUtil.drawBoundingBox(clonedPlayer.getEntityBoundingBox(), width.getValue(), mainColor.getColor());
