@@ -458,7 +458,7 @@ public class AutoCrystalRewrite extends Module {
             () -> predictSection.getValue() && manualOutHole.getValue());
     BooleanSetting stairPredict = registerBoolean("Stair Predict", false, () -> predictSection.getValue());
     IntegerSetting nStair = registerInteger("N Stair", 2, 1, 4, () -> predictSection.getValue() && stairPredict.getValue());
-    DoubleSetting speedActivationStair = registerDouble("Speed Activation Stair", .3, 0, 1, () -> predictSection.getValue() && stairPredict.getValue());
+    DoubleSetting speedActivationStair = registerDouble("Speed Activation Stair", .11, 0, 1, () -> predictSection.getValue() && stairPredict.getValue());
     //endregion
 
     //region Threading
