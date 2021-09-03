@@ -67,6 +67,7 @@ public class SaveConfig {
     }
 
     private static void saveConfig() throws IOException {
+        GameSense.LOGGER.warn("saveconfig file path: "+fileName);
         if (!Files.exists(Paths.get(fileName))) {
             Files.createDirectories(Paths.get(fileName));
         }
