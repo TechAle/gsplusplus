@@ -195,12 +195,15 @@ public class AutoCrystalRewrite extends Module {
     //region Misc
     BooleanSetting misc = registerBoolean("Misc Section", false);
     ModeSetting typePlace = registerMode("Render Place", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+    ModeSetting placeDimension = registerMode("Place Dimension", Arrays.asList("Box", "Flat", "Slab", "Circle"), "Box", () -> misc.getValue());
+    DoubleSetting slabHeightPlace = registerDouble("Slab height Place", .2, 0, 1, () -> misc.getValue() && placeDimension.getValue().equals("Slab"));
+    DoubleSetting textYPlace = registerDouble("Text Y Place", .5, -1, 1, () -> misc.getValue());
 
     //region outline custom place
     // Custom outline
     BooleanSetting OutLineSection = registerBoolean("OutLine Section Custom pl", false,
             () ->  (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && misc.getValue());
-    IntegerSetting outlineWidth = registerInteger("Outline Width pl", 1, 1, 5,
+    IntegerSetting outlineWidthpl = registerInteger("Outline Width", 1, 1, 5,
             () -> (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && misc.getValue() && OutLineSection.getValue());
     // Bottom
     ModeSetting NVerticesOutlineBot = registerMode("N^ Vertices Outline Bot pl", Arrays.asList("1", "2", "4"), "4",
@@ -297,12 +300,13 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     ModeSetting typeBreak = registerMode("Render Break", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> misc.getValue());
+    ModeSetting breakDimension = registerMode("Break Dimension", Arrays.asList("Box", "Flat", "Slab", "Circle"), "Box", () -> misc.getValue());
+    DoubleSetting slabHeightBreak = registerDouble("Slab height Break", .2, 0, 1, () -> misc.getValue() && breakDimension.getValue().equals("Slab"));
+    DoubleSetting textYBreak = registerDouble("Text Y Break", .5, -1, 1, () -> misc.getValue());
     //region outline custom place
     // Custom outline
     BooleanSetting OutLineSectionbr = registerBoolean("OutLine Section Custom br", false,
             () ->  (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && misc.getValue());
-    IntegerSetting outlineWidthbr = registerInteger("Outline Width pl", 1, 1, 5,
-            () -> (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && misc.getValue() && OutLineSectionbr.getValue());
     // Bottom
     ModeSetting NVerticesOutlineBotbr = registerMode("N^ Vertices Outline Bot pl", Arrays.asList("1", "2", "4"), "4",
             () -> (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && (OutLineSectionbr.getValue() && misc.getValue()));
@@ -549,6 +553,7 @@ public class AutoCrystalRewrite extends Module {
         int width;
         int type;
         String[] text;
+        double yDiff;
 
         // Draw box (hitbox)
         public display(AxisAlignedBB box, GSColor color, int width) {
@@ -559,11 +564,12 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Draw text
-        public display(String text, BlockPos block, GSColor color) {
+        public display(String text, BlockPos block, GSColor color, double yDiff) {
             this.text = new String[]{text};
             this.block = block;
             this.color = color;
             this.type = 1;
+            this.yDiff = yDiff;
         }
 
         // Function for drawing
@@ -573,7 +579,7 @@ public class AutoCrystalRewrite extends Module {
                     RenderUtil.drawBoundingBox(box, width, color);
                     break;
                 case 1:
-                    RenderUtil.drawNametag((double) this.block.getX() + 0.5d, (double) this.block.getY() + 0.5d, (double) this.block.getZ() + 0.5d, this.text, this.color, 1);
+                    RenderUtil.drawNametag((double) this.block.getX() + 0.5d, (double) this.block.getY() + yDiff, (double) this.block.getZ() + 0.5d, this.text, this.color, 1);
                     break;
             }
         }
@@ -1469,9 +1475,9 @@ public class AutoCrystalRewrite extends Module {
         // Display crystal
         if (bestPlace.crystal != null) {
             //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
-            toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue()));
+            toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue(), textYPlace.getValue()));
             if (predictPlaceEnemy.getValue())
-                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemyPlace.getColor(), outlineWidth.getValue()));
+                toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemyPlace.getColor(), outlineWidthpl.getValue()));
 
             if (isPlacingWeb())
                 return true;
@@ -2285,9 +2291,9 @@ public class AutoCrystalRewrite extends Module {
             return breakCrystal(forceBreak);
         // Display crystal
         else if (bestBreak.crystal != null) {
-            toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue()));
+            toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue(), textYBreak.getValue()));
             if (predictBreakingEnemy.getValue())
-                toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidth.getValue()));
+                toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidthpl.getValue()));
             // Break crystal
             if (listPlayersBreak.stream().noneMatch(e -> bestBreak.target.entity.getName().equals(e.name)) || isMoving(bestBreak.target.entity.getName()))
                 return breakCrystal(bestBreak.crystal);
@@ -2588,83 +2594,12 @@ public class AutoCrystalRewrite extends Module {
 
         // If we have a bestBreak
         if (bestBreak != null && bestBreak.crystal != null) {
-            BlockPos pos = bestBreak.crystal.getPosition().add(0, -1, 0);
-            // Switch for types
-            switch (typePlace.getValue()) {
-                case "Outline": {
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(pos), outlineWidthbr.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
-                        // Else, new rendering
-                    else renderCustomOutline(getBox(pos));
-                    break;
-                }
-                case "Fill": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(pos), true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                        // Else, new rendering
-                    else renderFillCustom(getBox(pos));
-                    break;
-                }
-                case "Both": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(pos), true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                        // Else, new
-                    else renderFillCustom(getBox(pos));
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(pos), outlineWidthbr.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
-                        // Else, new
-                    else renderCustomOutline(getBox(pos));
-                    break;
-                }
-            }
+            drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue());
         }
 
         // If we have a bestPlace
         if (bestPlace != null && bestPlace.crystal != null) {
-            // Switch for types
-            switch (typePlace.getValue()) {
-                case "Outline": {
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
-                    // Else, new rendering
-                    else renderCustomOutline(getBox(bestPlace.crystal));
-                    break;
-                }
-                case "Fill": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                    // Else, new rendering
-                    else renderFillCustom(getBox(bestPlace.crystal));
-                    break;
-                }
-                case "Both": {
-                    // If 1 vertice
-                    if (isOne(false))
-                        // Old rendering
-                        RenderUtil.drawBox(getBox(bestPlace.crystal), true, 1, firstVerticeFillBot.getColor(), firstVerticeFillBot.getValue().getAlpha(), GeometryMasks.Quad.ALL);
-                    // Else, new
-                    else renderFillCustom(getBox(bestPlace.crystal));
-                    // If 1 vertice
-                    if (isOne(true))
-                        // Old rendering
-                        RenderUtil.drawBoundingBox(getBox(bestPlace.crystal), outlineWidth.getValue(), firstVerticeOutlineBot.getColor(), firstVerticeOutlineBot.getColor().getAlpha());
-                    // Else, new
-                    else renderCustomOutline(getBox(bestPlace.crystal));
-                    break;
-                }
-            }
+            drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue());
         }
 
         // Display everything else
@@ -2702,6 +2637,54 @@ public class AutoCrystalRewrite extends Module {
                     }
                 }
             });
+    }
+
+    void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab) {
+        AxisAlignedBB box = getBox(position);
+        int mask = GeometryMasks.Quad.ALL;
+        if (dimension.equals("Flat")) {
+            mask = GeometryMasks.Quad.UP;
+            box = new AxisAlignedBB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
+        }
+        else if (dimension.equals("Slab")) {
+            box = new AxisAlignedBB(box.minX, box.maxY - heightSlab, box.minZ, box.maxX, box.maxY, box.maxZ);
+        }
+
+        // Switch for types
+        switch (type) {
+            case "Outline": {
+                displayOutline(box);
+                break;
+            }
+            case "Fill": {
+                displayFill(box, mask);
+                break;
+            }
+            case "Both": {
+                displayFill(box, mask);
+
+                displayOutline(box);
+                break;
+            }
+        }
+    }
+
+    void displayOutline(AxisAlignedBB box) {
+        // If 1 vertice
+        if (isOne(true))
+            // Old rendering
+            RenderUtil.drawBoundingBox(box, outlineWidthpl.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
+            // Else, new rendering
+        else renderCustomOutline(box);
+    }
+
+    void displayFill(AxisAlignedBB box, int mask) {
+        // If 1 vertice
+        if (isOne(false))
+            // Old rendering
+            RenderUtil.drawBox(box, true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), mask);
+            // Else, new rendering
+        else renderFillCustom(box, mask);
     }
 
     // If we can break that block
@@ -2975,14 +2958,11 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
-        RenderUtil.drawBoundingBox(hole, widthPredict.getValue(), colors.toArray(new GSColor[7]));
+        RenderUtil.drawBoundingBox(hole, outlineWidthpl.getValue(), colors.toArray(new GSColor[7]));
     }
 
     // This is used for the filling the box gradient
-    void renderFillCustom(AxisAlignedBB hole) {
-
-        int mask = GeometryMasks.Quad.ALL;
-
+    void renderFillCustom(AxisAlignedBB hole, int mask) {
 
         ArrayList<GSColor> colors = new ArrayList<>();
         switch (NVerticesFillBot.getValue()) {
