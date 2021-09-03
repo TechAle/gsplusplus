@@ -2662,39 +2662,39 @@ public class AutoCrystalRewrite extends Module {
             // Switch for types
             switch (type) {
                 case "Outline": {
-                    displayOutline(box);
+                    displayOutline(box, place);
                     break;
                 }
                 case "Fill": {
-                    displayFill(box, mask);
+                    displayFill(box, mask, place);
                     break;
                 }
                 case "Both": {
-                    displayFill(box, mask);
+                    displayFill(box, mask, place);
 
-                    displayOutline(box);
+                    displayOutline(box, place);
                     break;
                 }
             }
         }
     }
 
-    void displayOutline(AxisAlignedBB box) {
+    void displayOutline(AxisAlignedBB box, boolean place) {
         // If 1 vertice
         if (isOne(true))
             // Old rendering
-            RenderUtil.drawBoundingBox(box, outlineWidthpl.getValue(), firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
+            RenderUtil.drawBoundingBox(box, outlineWidthpl.getValue(), place ? firstVerticeOutlineBot.getColor() : firstVerticeOutlineBotbr.getColor(), firstVerticeOutlineBotbr.getColor().getAlpha());
             // Else, new rendering
-        else renderCustomOutline(box);
+        else renderCustomOutline(box, place);
     }
 
-    void displayFill(AxisAlignedBB box, int mask) {
+    void displayFill(AxisAlignedBB box, int mask, boolean place) {
         // If 1 vertice
         if (isOne(false))
             // Old rendering
-            RenderUtil.drawBox(box, true, 1, firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), mask);
+            RenderUtil.drawBox(box, true, 1, place ? firstVerticeFillBot.getColor() : firstVerticeFillBotbr.getColor(), firstVerticeFillBotbr.getValue().getAlpha(), mask);
             // Else, new rendering
-        else renderFillCustom(box, mask);
+        else renderFillCustom(box, mask, place);
     }
 
     // If we can break that block
@@ -2909,125 +2909,239 @@ public class AutoCrystalRewrite extends Module {
     }
 
     // This is used for creating the box gradient
-    private void renderCustomOutline(AxisAlignedBB hole) {
+    private void renderCustomOutline(AxisAlignedBB hole, boolean place) {
 
         ArrayList<GSColor> colors = new ArrayList<>();
 
-        switch (NVerticesOutlineBotbr.getValue()) {
-            case "1":
-                colors.add(firstVerticeOutlineBot.getValue());
-                colors.add(firstVerticeOutlineBot.getValue());
-                colors.add(firstVerticeOutlineBot.getValue());
-                colors.add(firstVerticeOutlineBot.getValue());
-                break;
-            case "2":
-                if (direction2OutLineBot.getValue().equals("X")) {
-                    colors.add(firstVerticeOutlineBot.getValue());
-                    colors.add(secondVerticeOutlineBot.getValue());
-                    colors.add(firstVerticeOutlineBot.getValue());
-                    colors.add(secondVerticeOutlineBot.getValue());
-                } else {
+        if (place) {
+            switch (NVerticesOutlineBot.getValue()) {
+                case "1":
                     colors.add(firstVerticeOutlineBot.getValue());
                     colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    colors.add(firstVerticeOutlineBot.getValue());
+                    break;
+                case "2":
+                    if (direction2OutLineBot.getValue().equals("X")) {
+                        colors.add(firstVerticeOutlineBot.getValue());
+                        colors.add(secondVerticeOutlineBot.getValue());
+                        colors.add(firstVerticeOutlineBot.getValue());
+                        colors.add(secondVerticeOutlineBot.getValue());
+                    } else {
+                        colors.add(firstVerticeOutlineBot.getValue());
+                        colors.add(firstVerticeOutlineBot.getValue());
+                        colors.add(secondVerticeOutlineBot.getValue());
+                        colors.add(secondVerticeOutlineBot.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeOutlineBot.getValue());
                     colors.add(secondVerticeOutlineBot.getValue());
-                    colors.add(secondVerticeOutlineBot.getValue());
-                }
-                break;
-            case "4":
-                colors.add(firstVerticeOutlineBot.getValue());
-                colors.add(secondVerticeOutlineBot.getValue());
-                colors.add(thirdVerticeOutlineBot.getValue());
-                colors.add(fourVerticeOutlineBot.getValue());
-                break;
-        }
-        switch (NVerticesOutlineTop.getValue()) {
-            case "1":
-                colors.add(firstVerticeOutlineTop.getValue());
-                colors.add(firstVerticeOutlineTop.getValue());
-                colors.add(firstVerticeOutlineTop.getValue());
-                colors.add(firstVerticeOutlineTop.getValue());
-                break;
-            case "2":
-                if (direction2OutLineTop.getValue().equals("X")) {
-                    colors.add(firstVerticeOutlineTop.getValue());
-                    colors.add(secondVerticeOutlineTop.getValue());
-                    colors.add(firstVerticeOutlineTop.getValue());
-                    colors.add(secondVerticeOutlineTop.getValue());
-                } else {
+                    colors.add(thirdVerticeOutlineBot.getValue());
+                    colors.add(fourVerticeOutlineBot.getValue());
+                    break;
+            }
+            switch (NVerticesOutlineTop.getValue()) {
+                case "1":
                     colors.add(firstVerticeOutlineTop.getValue());
                     colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    colors.add(firstVerticeOutlineTop.getValue());
+                    break;
+                case "2":
+                    if (direction2OutLineTop.getValue().equals("X")) {
+                        colors.add(firstVerticeOutlineTop.getValue());
+                        colors.add(secondVerticeOutlineTop.getValue());
+                        colors.add(firstVerticeOutlineTop.getValue());
+                        colors.add(secondVerticeOutlineTop.getValue());
+                    } else {
+                        colors.add(firstVerticeOutlineTop.getValue());
+                        colors.add(firstVerticeOutlineTop.getValue());
+                        colors.add(secondVerticeOutlineTop.getValue());
+                        colors.add(secondVerticeOutlineTop.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeOutlineTop.getValue());
                     colors.add(secondVerticeOutlineTop.getValue());
-                    colors.add(secondVerticeOutlineTop.getValue());
-                }
-                break;
-            case "4":
-                colors.add(firstVerticeOutlineTop.getValue());
-                colors.add(secondVerticeOutlineTop.getValue());
-                colors.add(thirdVerticeOutlineTop.getValue());
-                colors.add(fourVerticeOutlineTop.getValue());
-                break;
+                    colors.add(thirdVerticeOutlineTop.getValue());
+                    colors.add(fourVerticeOutlineTop.getValue());
+                    break;
+            }
+        } else {
+            switch (NVerticesOutlineBotbr.getValue()) {
+                case "1":
+                    colors.add(firstVerticeOutlineBotbr.getValue());
+                    colors.add(firstVerticeOutlineBotbr.getValue());
+                    colors.add(firstVerticeOutlineBotbr.getValue());
+                    colors.add(firstVerticeOutlineBotbr.getValue());
+                    break;
+                case "2":
+                    if (direction2OutLineBot.getValue().equals("X")) {
+                        colors.add(firstVerticeOutlineBotbr.getValue());
+                        colors.add(secondVerticeOutlineBotbr.getValue());
+                        colors.add(firstVerticeOutlineBotbr.getValue());
+                        colors.add(secondVerticeOutlineBotbr.getValue());
+                    } else {
+                        colors.add(firstVerticeOutlineBotbr.getValue());
+                        colors.add(firstVerticeOutlineBotbr.getValue());
+                        colors.add(secondVerticeOutlineBotbr.getValue());
+                        colors.add(secondVerticeOutlineBotbr.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeOutlineBotbr.getValue());
+                    colors.add(secondVerticeOutlineBotbr.getValue());
+                    colors.add(thirdVerticeOutlineBotbr.getValue());
+                    colors.add(fourVerticeOutlineBotbr.getValue());
+                    break;
+            }
+            switch (NVerticesOutlineTopbr.getValue()) {
+                case "1":
+                    colors.add(firstVerticeOutlineTopbr.getValue());
+                    colors.add(firstVerticeOutlineTopbr.getValue());
+                    colors.add(firstVerticeOutlineTopbr.getValue());
+                    colors.add(firstVerticeOutlineTopbr.getValue());
+                    break;
+                case "2":
+                    if (direction2OutLineTop.getValue().equals("X")) {
+                        colors.add(firstVerticeOutlineTopbr.getValue());
+                        colors.add(secondVerticeOutlineTopbr.getValue());
+                        colors.add(firstVerticeOutlineTopbr.getValue());
+                        colors.add(secondVerticeOutlineTopbr.getValue());
+                    } else {
+                        colors.add(firstVerticeOutlineTopbr.getValue());
+                        colors.add(firstVerticeOutlineTopbr.getValue());
+                        colors.add(secondVerticeOutlineTopbr.getValue());
+                        colors.add(secondVerticeOutlineTopbr.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeOutlineTopbr.getValue());
+                    colors.add(secondVerticeOutlineTopbr.getValue());
+                    colors.add(thirdVerticeOutlineTopbr.getValue());
+                    colors.add(fourVerticeOutlineTopbr.getValue());
+                    break;
+            }
         }
 
         RenderUtil.drawBoundingBox(hole, outlineWidthpl.getValue(), colors.toArray(new GSColor[7]));
     }
 
     // This is used for the filling the box gradient
-    void renderFillCustom(AxisAlignedBB hole, int mask) {
+    void renderFillCustom(AxisAlignedBB hole, int mask, boolean place) {
 
         ArrayList<GSColor> colors = new ArrayList<>();
-        switch (NVerticesFillBot.getValue()) {
-            case "1":
-                colors.add(firstVerticeFillBot.getValue());
-                colors.add(firstVerticeFillBot.getValue());
-                colors.add(firstVerticeFillBot.getValue());
-                colors.add(firstVerticeFillBot.getValue());
-                break;
-            case "2":
-                if (direction2FillBot.getValue().equals("X")) {
-                    colors.add(firstVerticeFillBot.getValue());
-                    colors.add(secondVerticeFillBot.getValue());
-                    colors.add(firstVerticeFillBot.getValue());
-                    colors.add(secondVerticeFillBot.getValue());
-                } else {
+        if (place) {
+            switch (NVerticesFillBot.getValue()) {
+                case "1":
                     colors.add(firstVerticeFillBot.getValue());
                     colors.add(firstVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    colors.add(firstVerticeFillBot.getValue());
+                    break;
+                case "2":
+                    if (direction2FillBot.getValue().equals("X")) {
+                        colors.add(firstVerticeFillBot.getValue());
+                        colors.add(secondVerticeFillBot.getValue());
+                        colors.add(firstVerticeFillBot.getValue());
+                        colors.add(secondVerticeFillBot.getValue());
+                    } else {
+                        colors.add(firstVerticeFillBot.getValue());
+                        colors.add(firstVerticeFillBot.getValue());
+                        colors.add(secondVerticeFillBot.getValue());
+                        colors.add(secondVerticeFillBot.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeFillBot.getValue());
                     colors.add(secondVerticeFillBot.getValue());
-                    colors.add(secondVerticeFillBot.getValue());
-                }
-                break;
-            case "4":
-                colors.add(firstVerticeFillBot.getValue());
-                colors.add(secondVerticeFillBot.getValue());
-                colors.add(thirdVerticeFillBot.getValue());
-                colors.add(fourVerticeFillBot.getValue());
-                break;
-        }
-        switch (NVerticesFillTop.getValue()) {
-            case "1":
-                colors.add(firstVerticeFillTop.getValue());
-                colors.add(firstVerticeFillTop.getValue());
-                colors.add(firstVerticeFillTop.getValue());
-                colors.add(firstVerticeFillTop.getValue());
-                break;
-            case "2":
-                if (direction2FillTop.getValue().equals("X")) {
-                    colors.add(firstVerticeFillTop.getValue());
-                    colors.add(secondVerticeFillTop.getValue());
-                    colors.add(firstVerticeFillTop.getValue());
-                    colors.add(secondVerticeFillTop.getValue());
-                } else {
+                    colors.add(thirdVerticeFillBot.getValue());
+                    colors.add(fourVerticeFillBot.getValue());
+                    break;
+            }
+            switch (NVerticesFillTop.getValue()) {
+                case "1":
                     colors.add(firstVerticeFillTop.getValue());
                     colors.add(firstVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    colors.add(firstVerticeFillTop.getValue());
+                    break;
+                case "2":
+                    if (direction2FillTop.getValue().equals("X")) {
+                        colors.add(firstVerticeFillTop.getValue());
+                        colors.add(secondVerticeFillTop.getValue());
+                        colors.add(firstVerticeFillTop.getValue());
+                        colors.add(secondVerticeFillTop.getValue());
+                    } else {
+                        colors.add(firstVerticeFillTop.getValue());
+                        colors.add(firstVerticeFillTop.getValue());
+                        colors.add(secondVerticeFillTop.getValue());
+                        colors.add(secondVerticeFillTop.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeFillTop.getValue());
                     colors.add(secondVerticeFillTop.getValue());
-                    colors.add(secondVerticeFillTop.getValue());
-                }
-                break;
-            case "4":
-                colors.add(firstVerticeFillTop.getValue());
-                colors.add(secondVerticeFillTop.getValue());
-                colors.add(thirdVerticeFillTop.getValue());
-                colors.add(fourVerticeFillTop.getValue());
-                break;
+                    colors.add(thirdVerticeFillTop.getValue());
+                    colors.add(fourVerticeFillTop.getValue());
+                    break;
+            }
+        } else {
+            switch (NVerticesFillBotbr.getValue()) {
+                case "1":
+                    colors.add(firstVerticeFillBotbr.getValue());
+                    colors.add(firstVerticeFillBotbr.getValue());
+                    colors.add(firstVerticeFillBotbr.getValue());
+                    colors.add(firstVerticeFillBotbr.getValue());
+                    break;
+                case "2":
+                    if (direction2FillBot.getValue().equals("X")) {
+                        colors.add(firstVerticeFillBotbr.getValue());
+                        colors.add(secondVerticeFillBotbr.getValue());
+                        colors.add(firstVerticeFillBotbr.getValue());
+                        colors.add(secondVerticeFillBotbr.getValue());
+                    } else {
+                        colors.add(firstVerticeFillBotbr.getValue());
+                        colors.add(firstVerticeFillBotbr.getValue());
+                        colors.add(secondVerticeFillBotbr.getValue());
+                        colors.add(secondVerticeFillBotbr.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeFillBotbr.getValue());
+                    colors.add(secondVerticeFillBotbr.getValue());
+                    colors.add(thirdVerticeFillBotbr.getValue());
+                    colors.add(fourVerticeFillBotbr.getValue());
+                    break;
+            }
+            switch (NVerticesFillTopbr.getValue()) {
+                case "1":
+                    colors.add(firstVerticeFillTopbr.getValue());
+                    colors.add(firstVerticeFillTopbr.getValue());
+                    colors.add(firstVerticeFillTopbr.getValue());
+                    colors.add(firstVerticeFillTopbr.getValue());
+                    break;
+                case "2":
+                    if (direction2FillTop.getValue().equals("X")) {
+                        colors.add(firstVerticeFillTopbr.getValue());
+                        colors.add(secondVerticeFillTopbr.getValue());
+                        colors.add(firstVerticeFillTopbr.getValue());
+                        colors.add(secondVerticeFillTopbr.getValue());
+                    } else {
+                        colors.add(firstVerticeFillTopbr.getValue());
+                        colors.add(firstVerticeFillTopbr.getValue());
+                        colors.add(secondVerticeFillTopbr.getValue());
+                        colors.add(secondVerticeFillTopbr.getValue());
+                    }
+                    break;
+                case "4":
+                    colors.add(firstVerticeFillTopbr.getValue());
+                    colors.add(secondVerticeFillTopbr.getValue());
+                    colors.add(thirdVerticeFillTopbr.getValue());
+                    colors.add(fourVerticeFillTopbr.getValue());
+                    break;
+            }
         }
 
         RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);
