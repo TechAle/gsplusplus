@@ -9,7 +9,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-@Command.Declaration(name = "BackupConfig", syntax = "backupconfig", alias = {"backupconfig"})
+@Command.Declaration(name = "BackupConfig", syntax = "backupconfig", alias = {"backupconfig", "zipconfig"})
 public class BackupConfigCommand extends Command {
 
     public void onCommand(String command, String[] message) {
