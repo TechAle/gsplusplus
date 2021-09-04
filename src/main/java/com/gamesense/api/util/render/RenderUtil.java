@@ -435,8 +435,12 @@ public class RenderUtil {
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
 
+        int alpha = 255 - colour.getAlpha();
+
+        if (alpha == 0) alpha = 1;
+
         for (int i = 0; i < 361; i++) {
-            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, colour.getAlpha()).endVertex();
+            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, alpha).endVertex();
         }
 
         tessellator.draw();

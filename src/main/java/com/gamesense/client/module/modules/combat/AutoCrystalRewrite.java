@@ -2743,9 +2743,12 @@ public class AutoCrystalRewrite extends Module {
 
     void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab, boolean place, int alpha) {
         if (dimension.equals("Circle")) {
+
+            int alphaValue = alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha;
+
             RenderUtil.drawCircle(position.x + .5F, position.getY() + 1, position.z + .5F, place ? rangeCirclePl.getValue() : rangeCircleBr.getValue(),
-                    place ? new GSColor(firstVerticeOutlineBot.getColor(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha) :
-                            new GSColor(firstVerticeOutlineBotbr.getColor(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    place ? new GSColor(firstVerticeOutlineBot.getColor(), alphaValue) :
+                            new GSColor(firstVerticeOutlineBotbr.getColor(), alphaValue));
         } else {
             AxisAlignedBB box = getBox(position);
             int mask = GeometryMasks.Quad.ALL;
@@ -3018,112 +3021,112 @@ public class AutoCrystalRewrite extends Module {
         if (place) {
             switch (NVerticesOutlineBot.getValue()) {
                 case "1":
-                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
                     break;
                 case "2":
                     if (direction2OutLineBot.getValue().equals("X")) {
-                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
                     } else {
-                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
                     }
                     break;
                 case "4":
-                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(thirdVerticeOutlineBot.getValue(), alpha == -1 ? thirdVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(fourVerticeOutlineBot.getValue(), alpha == -1 ? fourVerticeFillBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBot.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(secondVerticeOutlineBot.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(thirdVerticeOutlineBot.getValue(), alpha == -1 ? thirdVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(fourVerticeOutlineBot.getValue(), alpha == -1 ? fourVerticeOutlineBot.getColor().getAlpha() : alpha));
                     break;
             }
             switch (NVerticesOutlineTop.getValue()) {
                 case "1":
-                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
                     break;
                 case "2":
                     if (direction2OutLineTop.getValue().equals("X")) {
-                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
                     } else {
-                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
                     }
                     break;
                 case "4":
-                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(thirdVerticeOutlineTop.getValue(), alpha == -1 ? thirdVerticeFillBot.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(fourVerticeOutlineTop.getValue(), alpha == -1 ? fourVerticeFillBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTop.getValue(), alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(secondVerticeOutlineTop.getValue(), alpha == -1 ? secondVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(thirdVerticeOutlineTop.getValue(), alpha == -1 ? thirdVerticeOutlineBot.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(fourVerticeOutlineTop.getValue(), alpha == -1 ? fourVerticeOutlineBot.getColor().getAlpha() : alpha));
                     break;
             }
         }
         else {
             switch (NVerticesOutlineBotbr.getValue()) {
                 case "1":
-                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     break;
                 case "2":
                     if (direction2OutLineBotbr.getValue().equals("X")) {
-                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     } else {
-                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     }
                     break;
                 case "4":
-                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(thirdVerticeOutlineBotbr.getValue(), alpha == -1 ? thirdVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(fourVerticeOutlineBotbr.getValue(), alpha == -1 ? fourVerticeFillBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineBotbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(secondVerticeOutlineBotbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(thirdVerticeOutlineBotbr.getValue(), alpha == -1 ? thirdVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(fourVerticeOutlineBotbr.getValue(), alpha == -1 ? fourVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     break;
             }
             switch (NVerticesOutlineTopbr.getValue()) {
                 case "1":
-                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     break;
                 case "2":
                     if (direction2OutLineTopbr.getValue().equals("X")) {
-                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     } else {
-                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                        colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     }
                     break;
                 case "4":
-                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(thirdVerticeOutlineTopbr.getValue(), alpha == -1 ? thirdVerticeFillBotbr.getColor().getAlpha() : alpha));
-                    colors.add(new GSColor(fourVerticeOutlineTopbr.getValue(), alpha == -1 ? fourVerticeFillBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(firstVerticeOutlineTopbr.getValue(), alpha == -1 ? firstVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(secondVerticeOutlineTopbr.getValue(), alpha == -1 ? secondVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(thirdVerticeOutlineTopbr.getValue(), alpha == -1 ? thirdVerticeOutlineBotbr.getColor().getAlpha() : alpha));
+                    colors.add(new GSColor(fourVerticeOutlineTopbr.getValue(), alpha == -1 ? fourVerticeOutlineBotbr.getColor().getAlpha() : alpha));
                     break;
             }
         }
