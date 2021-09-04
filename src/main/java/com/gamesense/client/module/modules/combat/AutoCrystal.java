@@ -316,7 +316,7 @@ public class AutoCrystal extends Module {
 
         if (showDamage.getValue()) {
             if (this.render != null && this.renderEntity != null) {
-                String[] damageText = {String.format("%.1f", DamageUtil.calculateDamage((double) render.getX() + 0.5d, (double) render.getY() + 1.0d, (double) render.getZ() + 0.5d, renderEntity))};
+                String[] damageText = {String.format("%.1f", DamageUtil.calculateDamage((double) render.getX() + 0.5d, (double) render.getY() + 1.0d, (double) render.getZ() + 0.5d, renderEntity, false))};
                 RenderUtil.drawNametag((double) render.getX() + 0.5d, (double) render.getY() + 0.5d, (double) render.getZ() + 0.5d, damageText, new GSColor(255, 255, 255), 1);
             }
         }

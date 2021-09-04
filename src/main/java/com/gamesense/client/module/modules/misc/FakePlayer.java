@@ -354,7 +354,7 @@ public class FakePlayer extends Module {
                                             continue;
 
                                         // Calculate damage
-                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer);
+                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer, false);
                                         if (damage > entityPlayer.getHealth()) {
                                             // If higher, new health and pop
                                             entityPlayer.setHealth(resetHealth.getValue());

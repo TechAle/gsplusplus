@@ -76,6 +76,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting tickWaitEat = registerInteger("Tick Wait Eat", 4, 0, 10,
             () -> logicTarget.getValue() && stopGapple.getValue());
     BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
+    BooleanSetting ignoreTerrain = registerBoolean("Ignore Terrain", false, () -> logicTarget.getValue());
     //endregion
 
     //region Ranges
@@ -1355,7 +1356,7 @@ public class AutoCrystalRewrite extends Module {
         .forEach(
                 crystal -> {
                     // Get damage
-                    float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self);
+                    float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self, ignoreTerrain.getValue());
                     // If we can take that damage
                     if (damage < maxSelfDamage && (!antiSuicide.getValue() || damage < self.health)) {
                         // Raytrace. We have to calculate the raytrace for both wall and raytrace option
@@ -1414,7 +1415,7 @@ public class AutoCrystalRewrite extends Module {
                 continue;
 
             // if player is out of range of this crystal, do nothing
-            float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target);
+            float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.pos.getX() + 0.5d, (double) crystal.pos.getY() + 1.0d, (double) crystal.pos.getZ() + 0.5d, target, ignoreTerrain.getValue());
             if (currentDamage == best.damage) {
                 // this new crystal is closer
                 // higher chance of being able to break it
@@ -1709,7 +1710,7 @@ public class AutoCrystalRewrite extends Module {
 
         // Check for the damafge
         float damage;
-        if ( (damage = DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player))
+        if ( (damage = DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player, ignoreTerrain.getValue()))
                 >= maxSelfDamagePlace.getValue() && (!antiSuicide.getValue() || damage < PlayerUtil.getHealth()))
             return null;
 
@@ -1725,7 +1726,7 @@ public class AutoCrystalRewrite extends Module {
                 // Distance is ok
                 .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSQ)
                 // Damage is ok
-                .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity) >= minDamagePlace.getValue())
+                .filter(entity -> DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, entity, ignoreTerrain.getValue()) >= minDamagePlace.getValue())
                 // Find any. We cares if at least 1 player is affected
                 .findAny();
 
@@ -2168,7 +2169,7 @@ public class AutoCrystalRewrite extends Module {
                             // If antiSuicide
                             if (antiSuicide.getValue() ) {
                                 // Get damage
-                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
+                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
                                 // If >, stop
                                 if (damage >= self.health) {
                                     continueFor = false;
@@ -2185,7 +2186,7 @@ public class AutoCrystalRewrite extends Module {
 
                                     // Calculate damage if before we havent calculated it
                                     if (damage == Float.MIN_VALUE)
-                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
+                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
 
                                     // For every types of break
                                     switch (chooseCrystal.getValue()) {
@@ -2264,7 +2265,7 @@ public class AutoCrystalRewrite extends Module {
                 continue;
 
             // if player is out of range of this crystal, do nothing
-            float currentDamage = DamageUtil.calculateDamageThreaded(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ, target);
+            float currentDamage = DamageUtil.calculateDamageThreaded(crystal.crystal.posX, crystal.crystal.posY, crystal.crystal.posZ, target, ignoreTerrain.getValue());
             if (currentDamage == best.damage) {
                 // this new crystal is closer
                 // higher chance of being able to break it
@@ -2890,7 +2891,7 @@ public class AutoCrystalRewrite extends Module {
                         if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
 
                             // Check the damage on us
-                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue() )
                                 continue;
 
                             // If there is a crystal, stop
@@ -2901,7 +2902,7 @@ public class AutoCrystalRewrite extends Module {
 
                             // Check damage on the target
                             float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
-                                    info);
+                                    info, ignoreTerrain.getValue());
 
                             // IF >, add
                             if (damagePlayer > damage) {
@@ -2986,7 +2987,7 @@ public class AutoCrystalRewrite extends Module {
                     if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue()) ) {
 
                         // Check damage
-                        if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player) >= maxSelfDamageSur.getValue() )
+                        if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue() )
                             continue;
 
                         // If there is a crystal, stop
@@ -2997,7 +2998,7 @@ public class AutoCrystalRewrite extends Module {
 
                         // Calculate damage
                         float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
-                                info);
+                                info, ignoreTerrain.getValue());
                         // If best
                         if (damagePlayer > damage) {
                             damage = damagePlayer;

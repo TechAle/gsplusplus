@@ -123,7 +123,7 @@ public class AntiCrystal extends Module {
                 // Check for the damage
                 if (checkDamage.getValue()) {
                     // Get it
-                    damage = (float) (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue());
+                    damage = (float) (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player, false) * biasDamage.getValue());
                     // If it's lower then damageMin and is lower the our health, exit
                     if (damage < damageMin.getValue() && damage < mc.player.getHealth())
                         return;
