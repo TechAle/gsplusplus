@@ -37,7 +37,7 @@ public class LongJump extends Module {
     DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
     DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
     DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3);
-    IntegerSetting factorMax = registerInteger("Factor Max", 0,0,50);
+    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50);
 
     Double playerSpeed;
 
