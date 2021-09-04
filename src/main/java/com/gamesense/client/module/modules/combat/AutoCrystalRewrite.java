@@ -846,7 +846,20 @@ public class AutoCrystalRewrite extends Module {
             long end = this.start + lifeTime.getValue();
             long now = System.currentTimeMillis();
             int result = (int) (((float) (end - now) / (end - start)) * 100);
-            return result < 0 ? 0 : result;
+            if (result < 0)
+                result = 0;
+            int startFade, endFade;
+            if (place) {
+                startFade = startFadePlace.getValue();
+                endFade = endFadePlace.getValue();
+            } else {
+                startFade = startFadeBreak.getValue();
+                endFade = endFadeBreak.getValue();
+            }
+
+            int value = (int) (((double) startFade - endFade) * (result / 100.0));
+
+            return value;
         }
     }
 
@@ -2057,7 +2070,7 @@ public class AutoCrystalRewrite extends Module {
 
 
                 // Calcualte best cr
-                calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
+                bestBreak = calcualteBestBreak(nThread, possibleCrystals, player.entity.posX, player.entity.posY, player.entity.posZ, target,
                         minDamage, minFacePlaceHp, minFacePlaceDamage, maxSelfDamage, maxYTarget, minYTarget, breakTimeout, new CrystalInfo.NewBreakInfo(0, null, null, 0));
 
 
