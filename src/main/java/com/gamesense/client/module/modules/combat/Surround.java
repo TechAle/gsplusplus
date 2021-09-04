@@ -24,7 +24,9 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Hoosiers
@@ -236,4 +238,52 @@ public class Surround extends Module {
 
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
+
+    Vec3d[] getSurroundMinVec() {
+
+        Vec3d[] vec = Offsets.SURROUND_MIN;
+
+        ArrayList<Integer> list = new ArrayList<Integer>();
+        ArrayList<Vec3d> vl = new ArrayList<Vec3d>();
+
+        for (int i = 0; i < vec.length; i++) {
+
+            if (BlockUtil.getPlaceableSide(new BlockPos(vec[i])) == null)
+                list.add(i);
+            else
+                list.add(0);
+
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+
+            if (list.get(i) != 0){
+
+                switch (i){
+
+                    case 0:
+                        vl.add(new Vec3d(-1, -1, 0));
+                    case 1:
+                        vl.add(new Vec3d(1, -1, 0));
+                    case 2:
+                        vl.add(new Vec3d(0, -1, -1));
+                    case 3:
+                        vl.add(new Vec3d(0, -1, 1));
+
+                }
+
+            }
+
+        }
+
+        for (int i = 0; i < vec.length; i++){
+
+            vl.add(vec[i]);
+
+        }
+
+        return (Vec3d[]) vl.stream().toArray();
+
+    }
+
 }
