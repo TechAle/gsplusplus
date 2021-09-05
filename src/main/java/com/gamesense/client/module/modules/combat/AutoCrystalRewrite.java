@@ -3,10 +3,8 @@
     Description: Place and break crystals with the power of multithreading (fuck yeha!)
     Created: 06/28/21
     TODO:
-    - StopCa doesnt work
     - Add entity predict
     - Something for making switch more controllable
-    - Option for making ka and ca compatible
  */
 package com.gamesense.client.module.modules.combat;
 
@@ -424,6 +422,8 @@ public class AutoCrystalRewrite extends Module {
             () -> misc.getValue() && switchHotbar.getValue());
     IntegerSetting tickSwitchBack = registerInteger("Tick Switch Back", 5, 0, 50,
             () -> misc.getValue() && switchHotbar.getValue() && switchBack.getValue());
+    BooleanSetting waitGappleSwitch = registerBoolean("Wait Gapple Switch", false,
+            () -> misc.getValue() && switchHotbar.getValue() && stopGapple.getValue());
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false,
             () -> misc.getValue() && switchHotbar.getValue());
     //endregion
@@ -1842,6 +1842,8 @@ public class AutoCrystalRewrite extends Module {
                 int slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
                 // If found
                 if (slot != -1) {
+                    if (waitGappleSwitch.getValue() && mc.player.inventory.getStackInSlot(mc.player.inventory.currentItem).getItem() == Items.GOLDEN_APPLE && oldSlot == slot)
+                        return null;
                     slotChange = slot;
                     return EnumHand.MAIN_HAND;
                 }
