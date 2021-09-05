@@ -84,6 +84,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting entityPredict = registerBoolean("Entity Predict", false, () -> logicTarget.getValue());
     IntegerSetting offset = registerInteger("OffSet Predict", 0,0, 2, () -> logicTarget.getValue() && entityPredict.getValue());
     IntegerSetting tryAttack = registerInteger("Try Attack", 1, 1, 10, () -> logicTarget.getValue() && entityPredict.getValue());
+    IntegerSetting delayAttacks = registerInteger("Delay Attacks", 50, 0, 1000, () -> logicTarget.getValue() && entityPredict.getValue());
     //endregion
 
     //region Ranges
@@ -3576,9 +3577,19 @@ public class AutoCrystalRewrite extends Module {
             CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
             if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
                 updateHighestID();
-                for(int i = 1 - offset.getValue(); i <= this.tryAttack.getValue(); i++) {
-                    attackID(packet.getPos(), highestId + i);
-                }
+                java.util.Timer t = new java.util.Timer();
+                t.schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                for(int i = 1 - offset.getValue(); i <= tryAttack.getValue(); i++) {
+                                    attackID(packet.getPos(), highestId + i);
+                                }
+                                t.cancel();
+                            }
+                        },
+                        delayAttacks.getValue()
+                );
 
             }
         }
