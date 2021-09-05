@@ -1,10 +1,13 @@
 /*
     Author: TechAle
-    Description: Place and break crystals with the power of multithreading
+    Description: Place and break crystals with the power of multithreading (fuck yeha!)
     Created: 06/28/21
     TODO:
-    - Please, more optimization between place and break. More whise use of variables
-    - Make more whise use of the return value
+    - StopCa doesnt work
+    - Add entity predict
+    - Something that allow to go over the minDamage but only if we are dealing idk 20% more damage to the opponent
+    - Something for making switch more controllable
+    - Option for making ka and ca compatible
  */
 package com.gamesense.client.module.modules.combat;
 
@@ -733,18 +736,21 @@ public class AutoCrystalRewrite extends Module {
         long start = Long.MAX_VALUE;
         int finish;
 
+        // Just for storing the crystals. This is for tick
         public slowBreakPlayers(String name, int finalTick, boolean ignored) {
           this.name = name;
           this.finalTick = finalTick;
           this.tick = 0;
         }
 
+        // Just storing crystal. This is time
         public slowBreakPlayers(String name, int finish) {
             this.name = name;
             this.finish = finish;
             this.start = System.currentTimeMillis();
         }
 
+        // Update the crystal, return true if we are at the end
         boolean update() {
             if (tick == Integer.MAX_VALUE)
                 return System.currentTimeMillis() - this.start >= this.finish;
@@ -760,6 +766,7 @@ public class AutoCrystalRewrite extends Module {
         public final int startTick;
         public final int finishTish;
 
+        // Simple constructor tha store every informations
         public packetBlock(BlockPos block, int startTick, int finishTick) {
             this.block = block;
             this.tick = 0;
@@ -785,9 +792,11 @@ public class AutoCrystalRewrite extends Module {
                 if (hand == null)
                     return true;
 
+                // If we cant place a crystal
                 if (!CrystalUtil.canPlaceCrystal(block, newPlace.getValue()))
                     return true;
 
+                // Place crystal and dont allow to place another crystal on the next tick
                 placeCrystal(block, hand, false);
                 placedCrystal = true;
 
@@ -797,23 +806,31 @@ public class AutoCrystalRewrite extends Module {
     }
 
     class crystalPlaced {
+        // List of crystals placed
         ArrayList<crystalTime> endCrystalPlaced = new ArrayList<>();
 
+        // Just add a new crystal with the blockPos
         void addCrystal(BlockPos pos) {
+            // If we have another crystal at the same pos, just delete it
             endCrystalPlaced.removeIf(check -> sameBlockPos(check.posCrystal, pos));
             endCrystalPlaced.add(new crystalTime(pos, 5000));
         }
 
+        // If we already have a crystal
         boolean hasCrystal(EntityEnderCrystal crystal) {
+            // Get blockpos
             BlockPos now = crystal.getPosition().add(0, -1, 0);
+            // Check blockpos
             return endCrystalPlaced.stream().anyMatch(
                     check -> sameBlockPos(check.posCrystal, now)
             );
         }
 
+        // Update every crystals and delete the one that are ready
         void updateCrystals() {
             for(int i = 0; i < endCrystalPlaced.size(); i++) {
                 if (endCrystalPlaced.get(i).isReady()) {
+                    // I hate this kind of loop
                     endCrystalPlaced.remove(i);
                     i--;
                 }
@@ -834,24 +851,30 @@ public class AutoCrystalRewrite extends Module {
             this.pos = pos;
         }
 
+        // Since we are using private, we have to use a function
         void resetTime() {
             this.start = System.currentTimeMillis();
         }
 
+        // Render a block
         void render() {
+            // IF place, render place, else render break
             if (place) {
                 drawBoxMain(typePlace.getValue(), this.pos, placeDimension.getValue(), slabHeightPlace.getValue(), true, returnGradient());
             } else
             drawBoxMain(typeBreak.getValue(), this.pos, breakDimension.getValue(), slabHeightBreak.getValue(), false, returnGradient());
-        } // ((dateEnd - new Date().getTime()) / (dateEnd - dateStart)) * 100
+        }
 
+        // This function return the gradient
         public int returnGradient() {
             long end = this.start + lifeTime.getValue();
-            long now = System.currentTimeMillis();
-            int result = (int) (((float) (end - now) / (end - start)) * 100);
+            int result = (int) (((float) (end - System.currentTimeMillis()) / (end - this.start)) * 100);
+            // We dont want a free crash, phantom would kill me lol. I want a tea
             if (result < 0)
                 result = 0;
             int startFade, endFade;
+            // What if i just start speaking italian? Nobody read comments lol
+            // Since we use the same function for both place and break, we have to find a way to different them
             if (place) {
                 startFade = startFadePlace.getValue();
                 endFade = endFadePlace.getValue();
@@ -860,53 +883,64 @@ public class AutoCrystalRewrite extends Module {
                 endFade = endFadeBreak.getValue();
             }
 
-            int value = (int) (((double) startFade - endFade) * (result / 100.0));
-
-            return value;
+            // Return the gradient
+            return (int) (((double) startFade - endFade) * (result / 100.0));
         }
     }
 
     class managerClassRenderBlocks {
+        // list of blocks we are rendering
         ArrayList<renderBlock> blocks = new ArrayList<>();
 
+        // Update every blocks. If it passed a certain time, remove them
         void update(int time) {
             blocks.removeIf(e -> System.currentTimeMillis() - e.start > time);
         }
 
+        // render every blocks
         void render() {
             blocks.forEach(e -> {
+                // Reset time of blocks that we are going to place, dont render them ofc
                 if ( (bestBreak.crystal != null && sameBlockPos(e.pos, bestBreak.crystal.getPosition().add(0, -1, 0)))
                     || ( bestPlace.crystal != null && sameBlockPos(e.pos, bestPlace.crystal)))
                     e.resetTime();
                 else
+                    // Render! Where is my pillow? I have cold
                     e.render();
             });
         }
 
+        // Add new blocks to render
         void addRender(boolean place, BlockPos pos) {
+            // I spent so much fucking time on this module lmao, but i'm happy
+            // On the result. I'm sure this is one of the best ca,
+            // I basically reached the limit of what a ca can have
             boolean render = true;
+            // For every blocks
             for(int i = 0; i < blocks.size(); i++)
+                // If we have something
                 if (sameBlockPos(blocks.get(i).pos, pos) && blocks.get(i).place == place) {
+                    // Reset time and dont render after
                     render = false;
                     blocks.get(i).resetTime();
                     break;
                 }
+            // If we can render, add it
             if (render)
                 blocks.add(new renderBlock(place, pos));
         }
 
     }
 
-    crystalPlaced endCrystalPlaced = new crystalPlaced();
-
     /// Global variables sorted by type
+    // Well, do i really have to comment all these things?
     public static boolean stopAC = false;
 
     boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
     int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack;
 
-    double xPlayerRotationWanted, yPlayerRotationWanted, xPlayerNow, yPlayerNow;
+    double xPlayerRotation, yPlayerRotation;
 
     Timer timerPlace = new Timer();
     Timer timerBreak = new Timer();
@@ -916,6 +950,10 @@ public class AutoCrystalRewrite extends Module {
 
     Vec3d lastHitVec;
 
+    /*
+        A lot of shits lmao
+        managers of things, a lot of things
+     */
     crystalPlaceWait listCrystalsPlaced = new crystalPlaceWait();
     crystalPlaceWait listCrystalsSecondWait = new crystalPlaceWait();
     crystalPlaceWait crystalSecondPlace = new crystalPlaceWait();
@@ -924,24 +962,29 @@ public class AutoCrystalRewrite extends Module {
     crystalPlaceWait crystalSecondBreak = new crystalPlaceWait();
     crystalPlaceWait attempedCrystalBreak = new crystalPlaceWait();
     managerClassRenderBlocks managerRenderBlocks = new managerClassRenderBlocks();
+    crystalPlaced endCrystalPlaced = new crystalPlaced();
     crystalTime crystalPlace = null;
     EntityEnderCrystal forceBreak = null;
     BlockPos forceBreakPlace = null;
 
-
+    /*
+        Idk also these are managers but they mostly count things
+     */
     ArrayList<display> toDisplay = new ArrayList<>();
     ArrayList<Long> durationsPlace = new ArrayList<>();
     ArrayList<Long> durationsBreaking = new ArrayList<>();
     ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
     ArrayList<slowBreakPlayers> listPlayersBreak = new ArrayList<>();
 
+    // Multithreading power!
     ThreadPoolExecutor executor =
             (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
+    // Well, we have bestPlace and bestBreak, right?
     CrystalInfo.PlaceInfo bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
     CrystalInfo.NewBreakInfo bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
 
-    // damage target crystal distance
+    // damage target crystal distance (lmao you can understand if i took this from another file by just the uppercase)
     float forcePlaceDamage;
     PlayerInfo forcePlaceTarget;
     BlockPos forcePlaceCrystal = null;
@@ -956,13 +999,15 @@ public class AutoCrystalRewrite extends Module {
         timePlace = timeBreak = 0;
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
-        yPlayerRotationWanted = xPlayerRotationWanted = yPlayerNow = xPlayerNow = Double.MAX_VALUE;
+        yPlayerRotation = xPlayerRotation = Double.MAX_VALUE;
         forceBreak = null;
         forceBreakPlace = null;
         lastHitVec = null;
+        // Idk shits happened
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         isRotating = false;
+        // Lmao
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
                 "            Never gonna run around and desert you\n" +
@@ -972,6 +1017,7 @@ public class AutoCrystalRewrite extends Module {
     }
 
     public void onDisable() {
+        // Idk shits happened and still happens
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
     }
@@ -999,12 +1045,13 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void updateCounters() {
-        // Placement
+        // Well, here we just update every managers, do i really have to comment everything?
         listCrystalsPlaced.updateCrystals();
         listCrystalsSecondWait.updateCrystals();
         crystalSecondPlace.updateCrystals();
         endCrystalPlaced.updateCrystals();
         existsCrystal.updateCrystals();
+        // PacketsBlocks is the only one that is not pretty lmao
         for(int i = 0; i < packetsBlocks.size(); i++) {
             if (!packetsBlocks.get(i).update()) {
                 packetsBlocks.remove(i);
@@ -1019,7 +1066,7 @@ public class AutoCrystalRewrite extends Module {
         managerRenderBlocks.update(lifeTime.getValue());
     }
 
-    // Simple onUpdate
+    // Simple onUpdate, boring
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
 
@@ -1029,10 +1076,16 @@ public class AutoCrystalRewrite extends Module {
         // Update counters
         updateCounters();
 
+        // If we have to stop because of gapple
         if (stopGapple(true))
             return;
 
-        // Start ca
+        // Start ca (And here we go! It's 02:30am, i want to sleep. Kinda feel alone ngl)
+        /*
+            These days have been really hard and ya, i missed coding.
+            Coding and reading help me dealing with all the shits are happening,
+            they help me distracting myself.
+         */
         switch (logic.getValue()) {
             case "Place->Break":
                 if (!placeCrystals() || !oneStop.getValue())
@@ -1054,7 +1107,7 @@ public class AutoCrystalRewrite extends Module {
                 break;
         }
 
-        // Remember this slot. This is used for preventing the bug with normal switch
+        // Remember this slot. This is used for preventing the bug with normal switch (shit that only gs has patched lmao)
         oldSlot = mc.player.inventory.currentItem;
 
     }
@@ -1064,6 +1117,7 @@ public class AutoCrystalRewrite extends Module {
         StringBuilder t = new StringBuilder();
         boolean place = false;
 
+        // Just render things, nice looking come on
         if (bestPlace.target != null) {
             if (showPlaceName.getValue()) {
                 t.append(ChatFormatting.GRAY + "[")
@@ -1084,7 +1138,6 @@ public class AutoCrystalRewrite extends Module {
             }
 
         }
-
 
         if (showPlaceCrystalsSecond.getValue()) {
             int temp;
@@ -1130,10 +1183,10 @@ public class AutoCrystalRewrite extends Module {
             if ((temp = crystalSecondBreak.countCrystals()) > 0) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
-                            .append(ChatFormatting.WHITE + (cleanPlace.getValue() ? "Break c/s: " : ""))
+                            .append(ChatFormatting.WHITE + (cleanPlace.getValue() ? "Break b/s: " : ""))
                             .append(temp);
                     place = true;
-                } else t.append(cleanPlace.getValue() ? " c/s: " : " ")
+                } else t.append(cleanPlace.getValue() ? " b/s: " : " ")
                         .append(temp);
             }
 
@@ -1151,6 +1204,7 @@ public class AutoCrystalRewrite extends Module {
 
     // Main function for calculating the best crystal
     CrystalInfo.PlaceInfo getTargetPlacing(String mode) {
+        // All this mess for just a little improvement lmao
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
         float armourPercent = armourFacePlace.getValue() / 100.0f;
@@ -1158,6 +1212,7 @@ public class AutoCrystalRewrite extends Module {
         double minFacePlaceDamage = this.minFacePlaceDmg.getValue();
         double minFacePlaceHp =  this.facePlaceValue.getValue();
         if (forceFacePlace.getText().length() > 0) {
+            // I swear lwjgl is really a pain.
             if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(forceFacePlace.getText().charAt(0))))
                 minFacePlaceHp = 36;
         }
@@ -1288,8 +1343,11 @@ public class AutoCrystalRewrite extends Module {
                 }
         }
 
+        // Just repalce every webs we removed
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
+        // Oh well, lmao everything here is likely well commented
 
         return bestPlace;
     }
@@ -1386,7 +1444,7 @@ public class AutoCrystalRewrite extends Module {
 
     // This split the list of positions in multiple list. Is used for multithreading
     List<List<PositionInfo>> splitList(List<PositionInfo> start, int nThreads) {
-        // If we have only 1  thread, return only 1 thing
+        // If we have only 1  thread, return only 1 thing (sad)
         if (nThreads == 1)
             return new ArrayList<List<PositionInfo>>() {
                 {
@@ -1501,6 +1559,10 @@ public class AutoCrystalRewrite extends Module {
         if (!canStartPlacing())
             return false;
 
+        /*
+            Why are you reading comments? Weirdo!
+         */
+
         // Get crystal hand
         EnumHand hand = getHandCrystal();
         // If no hand found
@@ -1562,6 +1624,7 @@ public class AutoCrystalRewrite extends Module {
             bestPlace = getTargetPlacing(targetPlacing.getValue());
             if (forcePlaceCrystal != null && bestPlace.crystal != null)
                 if (sameBlockPos(forcePlaceCrystal, bestPlace.crystal))
+                    // This is basically useless lmao
                     instaPlaceBol = true;
         }
 
@@ -1583,6 +1646,7 @@ public class AutoCrystalRewrite extends Module {
         }
 
         if (instaPlace.getValue() && bestPlace.target == null && forcePlaceCrystal != null) {
+            // Idk instaplace useless thing
             bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
             instaPlaceBol = true;
         }
@@ -1596,12 +1660,16 @@ public class AutoCrystalRewrite extends Module {
             if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemyPlace.getColor(), outlineWidthpl.getValue()));
 
+            // Oh well, webs are useless but okay
             if (isPlacingWeb())
                 return true;
 
+            // Place crystal
             return placeCrystal(bestPlace.crystal, hand, instaPlaceBol);
         } else {
+            // This is normal switchBack lol
             if (switchBack.getValue() && oldSlotObby != -1)
+                // Simple logic, i dont think i have to explain this lmao
                 if (tickSwitch > 0)
                     --tickSwitch;
                 else
@@ -1623,6 +1691,7 @@ public class AutoCrystalRewrite extends Module {
                 if (placeWeb(new BlockPos(bestPlace.getTarget().posX, bestPlace.getTarget().posY, bestPlace.getTarget().posZ)) && stopCrystal.getValue())
                     return true;
             }
+        // Webs are useless
         } else if (oldSlotBackWeb != -1) {
             mc.player.inventory.currentItem = oldSlotBackWeb;
             oldSlotBackWeb = -1;
@@ -1631,7 +1700,7 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
-    // Simple function for placing a web on a target
+    // Simple function for placing a web on a target. Why? They are fucking useless
     boolean placeWeb(BlockPos target) {
 
         // If it's possible to place
@@ -1783,12 +1852,15 @@ public class AutoCrystalRewrite extends Module {
                 posUp.getX(), posUp.getY(), posUp.getZ(),
                 posUp.getX() + 1.0, posUp.getY() + 2.0, posUp.getZ() + 1.0
         );
-        // 574 1 566
+
         // Check for entity
         List<Entity> a = mc.world.getEntitiesWithinAABB(Entity.class, box, entity -> entity instanceof EntityEnderCrystal && !sameBlockPos(entity.getPosition().add(0, -1, 0), pos));
 
+        // If there is a crystal near us
         if (a.size() > 0) {
+            // If we can break it
             if (breakNearCrystal.getValue()) {
+                // Break the first we see and force the break
                 forceBreak = (EntityEnderCrystal) a.get(0);
                 forceBreakPlace = pos;
             }
@@ -1815,18 +1887,24 @@ public class AutoCrystalRewrite extends Module {
                 Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                 // If we are not rotating, set new values
                 if ( !blockRotation.getValue() || !isRotating) {
-                    yPlayerRotationWanted = pitchCheck.getValue()
+                    // Shits i dont like, yawStep and pitchStep bruh
+                    /*
+                        So, if we have to check pitch/yaw, first we check if the variable
+                        is Double.MAX_VALUE, if yes our start is where we are looking
+                        if not then we are looking another thing, so we have to reasume from it
+                     */
+                    yPlayerRotation = pitchCheck.getValue()
                             ? (
-                            yPlayerRotationWanted == Double.MAX_VALUE ?
+                            yPlayerRotation == Double.MAX_VALUE ?
                                     mc.player.getPitchYaw().x
-                                    : yPlayerRotationWanted
+                                    : yPlayerRotation
                     )
                             : Double.MIN_VALUE;
-                    xPlayerRotationWanted = yawCheck.getValue()
+                    xPlayerRotation = yawCheck.getValue()
                             ? (
-                            xPlayerRotationWanted == Double.MAX_VALUE ?
+                            xPlayerRotation == Double.MAX_VALUE ?
                                     RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                                    : xPlayerRotationWanted
+                                    : xPlayerRotation
                     )
                             : Double.MIN_VALUE;
                     isRotating = true;
@@ -1840,7 +1918,7 @@ public class AutoCrystalRewrite extends Module {
                     // Check yaw
                     if (yawCheck.getValue()) {
                         // Get first if + or -
-                        double distanceDo = rotationWanted.x - xPlayerRotationWanted;
+                        double distanceDo = rotationWanted.x - xPlayerRotation;
                         if (Math.abs(distanceDo) > 180) {
                             distanceDo = RotationUtil.normalizeAngle(distanceDo);
                         }
@@ -1853,15 +1931,14 @@ public class AutoCrystalRewrite extends Module {
                     // Check pitch
                     if (pitchCheck.getValue()) {
                         // Get first if + or -
-                        double distanceDo = rotationWanted.y - yPlayerRotationWanted;
+                        double distanceDo = rotationWanted.y - yPlayerRotation;
                         // Check if distance is > of what we want
-
                         if (Math.abs(distanceDo) > pitchStep.getValue()) {
                             return true;
                         }
                     }
 
-                } else if (!(xPlayerRotationWanted == rotationWanted.x && yPlayerRotationWanted == rotationWanted.y))
+                } else if (!(xPlayerRotation == rotationWanted.x && yPlayerRotation == rotationWanted.y))
                     return true;
             }
         }
@@ -2009,6 +2086,8 @@ public class AutoCrystalRewrite extends Module {
     //region Calculate Break Crystal
 
     CrystalInfo.NewBreakInfo getTargetBreaking(String mode) {
+        // My cat is washing himself lol, now that i remember i have to talk to one of my friend lmao, i forgot to text her
+        // Ok done
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
         double enemyRangeSQ = rangeEnemyBreaking.getValue() * rangeEnemyBreaking.getValue();
@@ -2345,7 +2424,7 @@ public class AutoCrystalRewrite extends Module {
 
     boolean canStartBreaking() {
         switch (breakDelay.getValue()) {
-            // Tick, check if tick == 0, else -1
+            // Tick, check if tick == 0, else --
             case "Tick":
                 if (tickBeforeBreak == 0)
                     return true;
@@ -2361,6 +2440,7 @@ public class AutoCrystalRewrite extends Module {
                 }
                 break;
             case "Vanilla":
+                // Vanilla speed, idk how this works but it break a crystal N times per second (1 second = 20 ticks)
                 if (timerBreak.getTimePassed() / 50L >= 20 - vanillaSpeedBreak.getValue()) {
                     timerBreak.reset();
                     return true;
@@ -2385,6 +2465,8 @@ public class AutoCrystalRewrite extends Module {
 
         /*
             Looking crystal break code
+            Oh lmao how everything works without the code for looking the crystal
+            Oh well.. Nevermind, for me these 3 lines do not exists since everything work fine
          */
 
         // For debugging timeCalcPlacement
@@ -2426,10 +2508,15 @@ public class AutoCrystalRewrite extends Module {
         return false;
     }
 
+    // If a player is moving given a name
     boolean isMoving(String name) {
+        // Check for everyone
         for(EntityPlayer e : mc.world.playerEntities) {
+            // If same name
             if (e.getName().equals(name)) {
+                // Check speed
                 if(Math.abs(e.posX - e.prevPosX) + Math.abs(e.posZ - e.prevPosZ) > speedActivation.getValue()) {
+                    // If it is above, remove it from the list of players of slowBreak
                     listPlayersBreak.removeIf(f -> f.name.equals(name));
                     return true;
                 } else return false;
@@ -2456,18 +2543,19 @@ public class AutoCrystalRewrite extends Module {
                     Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
                     // If we are not rotating, set new values
                     if ( !blockRotation.getValue() || !isRotating) {
-                        yPlayerRotationWanted = pitchCheck.getValue()
+                        // I wrote the explaination in place, go and read it lol
+                        yPlayerRotation = pitchCheck.getValue()
                                 ? (
-                                yPlayerRotationWanted == Double.MAX_VALUE ?
+                                yPlayerRotation == Double.MAX_VALUE ?
                                         mc.player.getPitchYaw().x
-                                        : yPlayerRotationWanted
+                                        : yPlayerRotation
                         )
                                 : Double.MIN_VALUE;
-                        xPlayerRotationWanted = yawCheck.getValue()
+                        xPlayerRotation = yawCheck.getValue()
                                 ? (
-                                xPlayerRotationWanted == Double.MAX_VALUE ?
+                                xPlayerRotation == Double.MAX_VALUE ?
                                         RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                                        : xPlayerRotationWanted
+                                        : xPlayerRotation
                         )
                                 : Double.MIN_VALUE;
                         isRotating = true;
@@ -2480,7 +2568,7 @@ public class AutoCrystalRewrite extends Module {
                         // Check yaw
                         if (yawCheck.getValue()) {
                             // Get first if + or -
-                            double distanceDo = rotationWanted.x - xPlayerRotationWanted;
+                            double distanceDo = rotationWanted.x - xPlayerRotation;
                             if (Math.abs(distanceDo) > 180) {
                                 distanceDo = RotationUtil.normalizeAngle(distanceDo);
                             }
@@ -2493,7 +2581,7 @@ public class AutoCrystalRewrite extends Module {
                         // Check pitch
                         if (pitchCheck.getValue()) {
                             // Get first if + or -
-                            double distanceDo = rotationWanted.y - yPlayerRotationWanted;
+                            double distanceDo = rotationWanted.y - yPlayerRotation;
                             // Check if distance is > of what we want
 
                             if (Math.abs(distanceDo) > pitchStep.getValue()) {
@@ -2501,22 +2589,24 @@ public class AutoCrystalRewrite extends Module {
                             }
                         }
 
-                    } else if (!(xPlayerRotationWanted == rotationWanted.x && yPlayerRotationWanted == rotationWanted.y))
+                    } else if (!(xPlayerRotation == rotationWanted.x && yPlayerRotation == rotationWanted.y))
                         return true;
                 }
         }
-        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")
-        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[0].contains("damageBoost")
-        // mc.player.getActivePotionEffects().toArray()[0].toString().split(" ")[2].charAt(0) > 49
+
         int switchBack = -1;
+        // If weakness and we dont have strenght 2
         if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
             && mc.player.getActivePotionEffects().stream().noneMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0)) {
+            // switch to sword
             int slotSword = InventoryUtil.findFirstItemSlot(ItemSword.class, 0, 8);
             if (slotSword == -1)
                 return false;
             if (slotSword != mc.player.inventory.currentItem) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(slotSword));
                 mc.player.inventory.currentItem = slotSword;
+                // Apparently you have to wait 1 tick or else the sword would not count
+                return false;
             }
         }
 
@@ -2539,7 +2629,7 @@ public class AutoCrystalRewrite extends Module {
             mc.world.getLoadedEntityList();
         }
 
-
+        // Add limitBreak things
         switch(limitBreakPacket.getValue()) {
             case "Tick":
                 breakPacketLimit.addCrystalId(cr.getPosition(), cr.entityId, 0, lomitBreakPacketTick.getValue());
@@ -2554,13 +2644,16 @@ public class AutoCrystalRewrite extends Module {
         checkTimeBreak = true;
         timeBreak = System.currentTimeMillis();
 
+        // placeAfter things
         if (placeAfterBreak.getValue()) {
             BlockPos position = forceBreak == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace;
+            // instaPlace is fucking useless
             if (instaPlace.getValue()) {
                 EnumHand hand = getHandCrystal();
                 if (hand != null)
                     placeCrystal(position, hand, true);
             } else {
+                // ForcePlace is fine
                 forcePlaceCrystal = position;
                 if (forceBreak == null) {
                     forcePlaceDamage = bestBreak.damage;
@@ -2571,13 +2664,17 @@ public class AutoCrystalRewrite extends Module {
                 }
             }
         }
+        // Reset forceBreak
         forceBreak = null;
         forceBreakPlace = null;
 
+        // If we are silent switching lol
         if (switchBack != -1)
             mc.player.connection.sendPacket(new CPacketHeldItemChange(switchBack));
 
+        // Ehm, isnt this always true? idk if u put this then it means sometimes somehow it crashed, lets not touch it
         if (bestBreak.target != null) {
+            // Apparently this is for slowBreak, nice!
             if (Math.abs(bestBreak.target.entity.posX - bestBreak.target.entity.prevPosX) + Math.abs(bestBreak.target.entity.posZ - bestBreak.target.entity.prevPosZ) < speedActivation.getValue()) {
                 switch (slowBreak.getValue()) {
                     case "Tick":
@@ -2590,12 +2687,14 @@ public class AutoCrystalRewrite extends Module {
             }
         }
 
+        // for showing break crystal per second, this is temporany waiting the crystal to spawn
         if (showBreakCrystalsSecond.getValue())
             attempedCrystalBreak.addCrystalId(cr.getPosition(), cr.entityId, 500);
 
         return true;
     }
 
+    // Function swing arm
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
         EnumHand[] handSwing;
         if (handSwingDef == null) {
@@ -2726,13 +2825,17 @@ public class AutoCrystalRewrite extends Module {
         // If we have a bestBreak
         if (bestBreak != null && bestBreak.crystal != null) {
             drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
-            managerRenderBlocks.addRender(false , bestBreak.crystal.getPosition().add(0, -1, 0));
+            // If fadeCa, add it to render
+            if (fadeCa.getValue())
+                managerRenderBlocks.addRender(false , bestBreak.crystal.getPosition().add(0, -1, 0));
         }
 
         // If we have a bestPlace
         if (bestPlace != null && bestPlace.crystal != null) {
             drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
-            managerRenderBlocks.addRender(true , bestPlace.crystal);
+            // If fadeCa, add it to render
+            if (fadeCa.getValue())
+                managerRenderBlocks.addRender(true , bestPlace.crystal);
         }
 
         // Display everything else
@@ -2773,16 +2876,21 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab, boolean place, int alpha) {
+        // If we are drawing a circle, we have to follow this
         if (dimension.equals("Circle")) {
 
+            // Get the real alpha
             int alphaValue = alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha;
 
+            // Draw circle (thanks cosmos!)
             RenderUtil.drawCircle(position.x + .5F, position.getY() + 1, position.z + .5F, place ? rangeCirclePl.getValue() : rangeCircleBr.getValue(),
                     place ? new GSColor(firstVerticeOutlineBot.getColor(), alphaValue) :
                             new GSColor(firstVerticeOutlineBotbr.getColor(), alphaValue));
         } else {
+            // Get box
             AxisAlignedBB box = getBox(position);
             int mask = GeometryMasks.Quad.ALL;
+            // For custom dimensions
             if (dimension.equals("Flat")) {
                 mask = GeometryMasks.Quad.UP;
                 box = new AxisAlignedBB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
@@ -2790,7 +2898,7 @@ public class AutoCrystalRewrite extends Module {
                 box = new AxisAlignedBB(box.minX, box.maxY - heightSlab, box.minZ, box.maxX, box.maxY, box.maxZ);
             }
 
-            // Switch for types
+            // Switch for types, isnt this really clean!?!? I mean, not the code above lol
             switch (type) {
                 case "Outline": {
                     displayOutline(box, place, alpha);
@@ -3049,6 +3157,10 @@ public class AutoCrystalRewrite extends Module {
 
         ArrayList<GSColor> colors = new ArrayList<>();
 
+        /*
+            That's a really long code. It's not complex, just long
+         */
+
         if (place) {
             switch (NVerticesOutlineBot.getValue()) {
                 case "1":
@@ -3169,6 +3281,11 @@ public class AutoCrystalRewrite extends Module {
     void renderFillCustom(AxisAlignedBB hole, int mask, boolean place, int alpha) {
 
         ArrayList<GSColor> colors = new ArrayList<>();
+
+        /*
+            Long but not complex
+         */
+
         if (place) {
             switch (NVerticesFillBot.getValue()) {
                 case "1":
@@ -3337,34 +3454,40 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = null;
             tick = 0;
             isRotating = false;
-            yPlayerRotationWanted = xPlayerRotationWanted = Double.MAX_VALUE;
+            yPlayerRotation = xPlayerRotation = Double.MAX_VALUE;
         } else {
             // If we have to rotate
             Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
             Vec2f nowRotation;
 
+            // If we have to check or one or the other
             if (yawCheck.getValue() || pitchCheck.getValue()) {
 
-                if (yPlayerRotationWanted == Double.MIN_VALUE)
-                    yPlayerRotationWanted = rotationWanted.y;
+                // This should never happened, but it happened sometimes somehow.
+                if (yPlayerRotation == Double.MIN_VALUE)
+                    yPlayerRotation = rotationWanted.y;
                 else {
                     // Get first if + or -
-                    double distanceDo = rotationWanted.y - yPlayerRotationWanted;
+                    double distanceDo = rotationWanted.y - yPlayerRotation;
                     int direction = distanceDo > 0 ? 1 : -1;
-                    // Check if distance is > of what we want
 
+                    // Check if distance is > of what we want
                     if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                        yPlayerRotationWanted = RotationUtil.normalizeAngle(yPlayerRotationWanted + pitchStep.getValue() * direction);
+                        // We have to continue the smooth rotation
+                        yPlayerRotation = RotationUtil.normalizeAngle(yPlayerRotation + pitchStep.getValue() * direction);
+                        // ofc we have to reset tick, we are still rotating
                         tick = 0;
                     } else {
-                        yPlayerRotationWanted = rotationWanted.y;
+                        // Go straight
+                        yPlayerRotation = rotationWanted.y;
                     }
                 }
-                if (xPlayerRotationWanted == Double.MIN_VALUE)
-                    xPlayerRotationWanted = rotationWanted.x;
+                // Like before
+                if (xPlayerRotation == Double.MIN_VALUE)
+                    xPlayerRotation = rotationWanted.x;
                 else {
                     // Get first if + or -
-                    double distanceDo = rotationWanted.x - xPlayerRotationWanted;
+                    double distanceDo = rotationWanted.x - xPlayerRotation;
                     if (Math.abs(distanceDo) > 180) {
                         distanceDo = RotationUtil.normalizeAngle(distanceDo);
                     }
@@ -3372,13 +3495,13 @@ public class AutoCrystalRewrite extends Module {
                     // Check if distance is > of what we want
 
                     if (Math.abs(distanceDo) > yawStep.getValue()) {
-                        xPlayerRotationWanted = RotationUtil.normalizeAngle(xPlayerRotationWanted + yawStep.getValue() * direction);
+                        xPlayerRotation = RotationUtil.normalizeAngle(xPlayerRotation + yawStep.getValue() * direction);
                         tick = 0;
                     } else {
-                        xPlayerRotationWanted = rotationWanted.x;
+                        xPlayerRotation = rotationWanted.x;
                     }
                 }
-                nowRotation = new Vec2f((float) xPlayerRotationWanted, (float) yPlayerRotationWanted);
+                nowRotation = new Vec2f((float) xPlayerRotation, (float) yPlayerRotation);
             } else {
                 nowRotation = rotationWanted;
             }
@@ -3415,10 +3538,14 @@ public class AutoCrystalRewrite extends Module {
                         crystalPlace = null;
                     }
 
+                // If we have to check for crystal seconds
                 if (showPlaceCrystalsSecond.getValue())
+                    // Check if we tried to place something
                     if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
+                        // If yes, add
                         crystalSecondPlace.addCrystal(null, 1000);
 
+                // firstHit thing for the break
                 switch(firstHit.getValue()) {
                     case "Tick":
                         existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
@@ -3431,13 +3558,17 @@ public class AutoCrystalRewrite extends Module {
         }
         else
         if (event.getPacket() instanceof SPacketSoundEffect) {
+            // Sound predict
             final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
             if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
                 for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
                     if (entity instanceof EntityEnderCrystal) {
+                        // SetDead, that's just visual lol
                         if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
                             entity.setDead();
                         }
+
+                        // For not spamming of packets lol
                         if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
                             crystalSecondBreak.addCrystal(null, 1000);
                     }
@@ -3453,3 +3584,7 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
 }
+
+/*
+    Oh wow we are at the end! That's a really looong file
+ */
