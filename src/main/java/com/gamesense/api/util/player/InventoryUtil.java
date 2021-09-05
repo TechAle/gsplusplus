@@ -1,7 +1,6 @@
 package com.gamesense.api.util.player;
 
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.combat.AutoCrystal;
 import com.gamesense.client.module.modules.combat.OffHand;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockObsidian;

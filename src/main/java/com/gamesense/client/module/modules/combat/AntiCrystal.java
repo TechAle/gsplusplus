@@ -147,13 +147,14 @@ public class AntiCrystal extends Module {
     }
 
     public boolean usCrystal(Entity crystal) {
-        AutoCrystal autoCrystal = ModuleManager.getModule(AutoCrystal.class);
-
+        AutoCrystalRewrite autoCrystal = ModuleManager.getModule(AutoCrystalRewrite.class);
+        /*
         if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
             return autoCrystal.targets.stream().filter(placeInfo -> placeInfo.crystal.equals(new BlockPos((int) crystal.posX, crystal.posY - 1, (int) crystal.posZ))).findFirst().orElse(null) != null;
         } else {
             return false;
-        }
+        }*/
+        return false;
     }
 
     // This function check if the offHand has "Plates" as value
@@ -192,8 +193,8 @@ public class AntiCrystal extends Module {
 
         boolean stoppedAC = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedAC = true;
         }
 
@@ -223,7 +224,7 @@ public class AntiCrystal extends Module {
         }
 
         if (stoppedAC) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
             stoppedAC = false;
         }
 

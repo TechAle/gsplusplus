@@ -123,7 +123,7 @@ public class AutoAnvil extends Module {
 
         noMaterials = false;
         firstRun = true;
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
         // If offHand was enabled
         if (slot_mat[0] == -2) {
             OffHand.removeItem(0);
@@ -335,8 +335,8 @@ public class AutoAnvil extends Module {
         // Stop CA
         boolean stoppedAC = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedAC = true;
         }
 
@@ -374,7 +374,7 @@ public class AutoAnvil extends Module {
 
         // Re-Active ca
         if (stoppedAC) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
             stoppedAC = false;
         }
 

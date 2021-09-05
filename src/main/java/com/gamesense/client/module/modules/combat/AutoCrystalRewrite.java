@@ -5,7 +5,6 @@
     TODO:
     - StopCa doesnt work
     - Add entity predict
-    - Something that allow to go over the minDamage but only if we are dealing idk 20% more damage to the opponent
     - Something for making switch more controllable
     - Option for making ka and ca compatible
  */
@@ -78,18 +77,17 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting stopGapple = registerBoolean("Stop Gapple", false, () -> logicTarget.getValue());
     IntegerSetting tickWaitEat = registerInteger("Tick Wait Eat", 4, 0, 10,
             () -> logicTarget.getValue() && stopGapple.getValue());
-    BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
+    public BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     BooleanSetting ignoreTerrain = registerBoolean("Ignore Terrain", false, () -> logicTarget.getValue());
     BooleanSetting bindIgnoreTerrain = registerBoolean("Bind IgnoreTerrain", false, () -> logicTarget.getValue() && ignoreTerrain.getValue());
-    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
     //endregion
 
     //region Ranges
     BooleanSetting ranges = registerBoolean("Range Section", false);
     DoubleSetting rangeEnemyPlace = registerDouble("Range Enemy Place", 7, 0, 12, () -> ranges.getValue());
     DoubleSetting rangeEnemyBreaking = registerDouble("Range Enemy Breaking", 7, 0, 12, () -> ranges.getValue());
-    DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
-    DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
+    public DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
+    public DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
@@ -113,7 +111,6 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
     IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> place.getValue());
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
-    StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
     BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
     ModeSetting limitPacketPlace = registerMode("Limit Packet Place", Arrays.asList("None", "Tick", "Time"), "None",
@@ -545,6 +542,11 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting showBreakCrystalsSecond = registerBoolean("Show c/s break", false, () -> hudDisplayShow.getValue());
     BooleanSetting cleanBreak = registerBoolean("Clean break", true, () -> hudDisplayShow.getValue());
 
+    //endregion
+
+    //region Binds
+    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
+    StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
     //endregion
     //endregion
 
@@ -1008,6 +1010,7 @@ public class AutoCrystalRewrite extends Module {
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         isRotating = false;
+        stopAC = false;
         // Lmao
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
