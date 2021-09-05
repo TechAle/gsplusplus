@@ -31,6 +31,7 @@ import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.mixin.mixins.accessor.AccessorCPacketAttack;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -47,13 +48,15 @@ import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.*;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.*;
-import net.minecraft.network.play.server.SPacketSoundEffect;
-import net.minecraft.network.play.server.SPacketSpawnObject;
+import net.minecraft.network.play.server.*;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.*;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.*;
@@ -78,6 +81,9 @@ public class AutoCrystalRewrite extends Module {
     public BooleanSetting newPlace = registerBoolean("1.13 mode", false, () -> logicTarget.getValue());
     BooleanSetting ignoreTerrain = registerBoolean("Ignore Terrain", false, () -> logicTarget.getValue());
     BooleanSetting bindIgnoreTerrain = registerBoolean("Bind IgnoreTerrain", false, () -> logicTarget.getValue() && ignoreTerrain.getValue());
+    BooleanSetting entityPredict = registerBoolean("Entity Predict", false, () -> logicTarget.getValue());
+    IntegerSetting offset = registerInteger("OffSet Predict", 0,0, 2, () -> logicTarget.getValue() && entityPredict.getValue());
+    IntegerSetting tryAttack = registerInteger("Try Attack", 1, 1, 10, () -> logicTarget.getValue() && entityPredict.getValue());
     //endregion
 
     //region Ranges
@@ -941,7 +947,7 @@ public class AutoCrystalRewrite extends Module {
 
     boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack;
+    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack, highestId = -100000;
 
     double xPlayerRotation, yPlayerRotation;
 
@@ -1079,6 +1085,10 @@ public class AutoCrystalRewrite extends Module {
 
         // Update counters
         updateCounters();
+
+        // If entityPredict, lets update highest id
+        if (entityPredict.getValue())
+            updateHighestID();
 
         // If we have to stop because of gapple
         if (stopGapple(true))
@@ -3454,6 +3464,34 @@ public class AutoCrystalRewrite extends Module {
         return output;
     }
 
+    @SubscribeEvent
+    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        this.highestId = -10000;
+    }
+
+    void updateHighestID() {
+        for (Entity entity : mc.world.loadedEntityList) {
+            if (entity.getEntityId() <= highestId) continue;
+            highestId = entity.getEntityId();
+        }
+    }
+
+    void checkID(int id) {
+        if (id > highestId)
+            highestId = id;
+    }
+
+    void attackID(BlockPos pos, int id) {
+        Entity entity = mc.world.getEntityByID(id);
+        if (entity == null || entity instanceof EntityEnderCrystal) {
+            CPacketUseEntity attack = new CPacketUseEntity();
+            ((AccessorCPacketAttack) attack).setId(id);
+            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+            mc.player.connection.sendPacket((Packet)attack);
+            mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
+        }
+    }
+
 
     //endregion
 
@@ -3528,6 +3566,24 @@ public class AutoCrystalRewrite extends Module {
         }
     });
 
+    /*
+            if (entityPredict.getValue())
+            for(int i = 1 - offset.getValue(); i < this.tryAttack.getValue(); i++)
+     */
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
+        if  (event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
+            CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
+            if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
+                updateHighestID();
+                for(int i = 1 - offset.getValue(); i <= this.tryAttack.getValue(); i++) {
+                    attackID(packet.getPos(), highestId + i);
+                }
+
+            }
+        }
+    });
+
     // This is used for packet recive thing
     @SuppressWarnings("unused")
     @EventHandler
@@ -3537,6 +3593,8 @@ public class AutoCrystalRewrite extends Module {
         if (event.getPacket() instanceof SPacketSpawnObject) {
             // Get it
             SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
+            if (entityPredict.getValue())
+                checkID(SpawnObject.getEntityID());
             // Idk why 51
             if (SpawnObject.getType() == 51 ) {
                 double[] positions = {
@@ -3592,6 +3650,16 @@ public class AutoCrystalRewrite extends Module {
                 }
                 breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
             }
+        } else if (event.getPacket() instanceof SPacketSpawnExperienceOrb) {
+            this.checkID(((SPacketSpawnExperienceOrb)event.getPacket()).getEntityID());
+        } else if (event.getPacket() instanceof SPacketSpawnPlayer) {
+            this.checkID(((SPacketSpawnPlayer)event.getPacket()).getEntityID());
+        } else if (event.getPacket() instanceof SPacketSpawnGlobalEntity) {
+            this.checkID(((SPacketSpawnGlobalEntity)event.getPacket()).getEntityId());
+        } else if (event.getPacket() instanceof SPacketSpawnPainting) {
+            this.checkID(((SPacketSpawnPainting)event.getPacket()).getEntityID());
+        } else if (event.getPacket() instanceof SPacketSpawnMob) {
+            this.checkID(((SPacketSpawnMob)event.getPacket()).getEntityID());
         }
 
 
