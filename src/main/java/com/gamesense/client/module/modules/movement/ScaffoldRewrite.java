@@ -72,18 +72,15 @@ public class ScaffoldRewrite extends Module {
         if (logic.getValue().equalsIgnoreCase("Predict")) {
             predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
 
-            scaffold = predPlayer.getPosition().add(0, -1, 0);
+            scaffold = (new BlockPos(predPlayer.posX,predPlayer.posY-1,predPlayer.posZ));
 
             if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
             scaffold = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ).down();
 
-            vec = (EntityUtil.getInterpolatedPos(mc.player, distance.getValue()));
+            scaffold.add(mc.player.motionX * distance.getValue(), 0, mc.player.motionZ * distance.getValue());
 
-            Vec3i veci = new Vec3i(vec.x, 0, vec.z);
-
-            scaffold.add(veci);
         }
 
         // Courtesy of KAMI, this block finding algo
@@ -169,7 +166,7 @@ public class ScaffoldRewrite extends Module {
 
                     if (timer == airJumpDelay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        mc.player.jump();
+                        mc.player.motionY = jumpHeight.getValue();
                         timer = 0;
 
                     }
@@ -236,17 +233,18 @@ public class ScaffoldRewrite extends Module {
         BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
 
 
-            placeBlockPacket(xppos,false);
+        if (!mc.player.onGround){
+            placeBlockPacket(xppos, false);
             if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
-                placeBlockPacket(xmpos,false);
+                placeBlockPacket(xmpos, false);
                 if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
-                    placeBlockPacket(zppos,false);
+                    placeBlockPacket(zppos, false);
                     if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
                         placeBlockPacket(zmpos, false);
                     }
                 }
             }
-
+        }
     }
 
 }
