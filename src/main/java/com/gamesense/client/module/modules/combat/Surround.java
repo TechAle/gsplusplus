@@ -26,6 +26,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ import java.util.List;
 public class Surround extends Module {
 
     ModeSetting jumpMode = registerMode("Jump", Arrays.asList("Continue", "Pause", "Disable"), "Continue");
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Anti City"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum","Anti City"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
@@ -156,14 +157,17 @@ public class Surround extends Module {
 
             while (blocksPlaced <= blocksPerTick.getValue()) {
                 int maxSteps;
-                Vec3d[] offsetPattern;
+                Object[] offsetPattern;
 
                 if ("Anti City".equals(offsetMode.getValue())) {
                     offsetPattern = Offsets.SURROUND_CITY;
                     maxSteps = Offsets.SURROUND_CITY.length;
-                } else {
+                } else if ("Normal".equals(offsetMode.getValue())) {
                     offsetPattern = Offsets.SURROUND;
                     maxSteps = Offsets.SURROUND.length;
+                } else {
+                    offsetPattern = getSurroundMinVec();
+                    maxSteps = offsetPattern.length;
                 }
 
                 if (offsetSteps >= maxSteps) {
@@ -171,7 +175,7 @@ public class Surround extends Module {
                     break;
                 }
 
-                BlockPos offsetPos = new BlockPos(offsetPattern[offsetSteps]);
+                BlockPos offsetPos = new BlockPos((Vec3d) offsetPattern[offsetSteps]);
                 BlockPos targetPos = new BlockPos(mc.player.getPositionVector()).add(offsetPos.getX(), offsetPos.getY(), offsetPos.getZ());
 
                 boolean tryPlacing = true;
@@ -239,50 +243,46 @@ public class Surround extends Module {
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
 
-    Vec3d[] getSurroundMinVec() {
+    Object[] getSurroundMinVec() {
 
         Vec3d[] vec = Offsets.SURROUND_MIN;
 
         ArrayList<Integer> list = new ArrayList<Integer>();
         ArrayList<Vec3d> vl = new ArrayList<Vec3d>();
 
-        for (int i = 0; i < vec.length; i++) {
+        for (Vec3d vec3d : vec) {
 
-            if (BlockUtil.getPlaceableSide(new BlockPos(vec[i])) == null)
-                list.add(i);
-            else
+            if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null)
                 list.add(0);
+            else
+                list.add(1);
 
         }
 
-        for (int i = 1; i < list.size(); i++) {
+        for (int i = 0; i < list.size(); i++) {
 
-            if (list.get(i) != 0){
+            if (list.get(i) != 0) {
 
-                switch (i){
-
-                    case 0:
-                        vl.add(new Vec3d(-1, -1, 0));
-                    case 1:
-                        vl.add(new Vec3d(1, -1, 0));
-                    case 2:
-                        vl.add(new Vec3d(0, -1, -1));
-                    case 3:
-                        vl.add(new Vec3d(0, -1, 1));
-
+                if (list.get(i) == 1) {
+                    switch (i) {
+                        case 0:
+                            new Vec3d(-1, -1, 0);
+                        case 1:
+                            new Vec3d(1, -1, 0);
+                        case 2:
+                            new Vec3d(0, -1, -1);
+                        case 3:
+                            new Vec3d(0, -1, 1);
+                    }
                 }
 
             }
 
         }
 
-        for (int i = 0; i < vec.length; i++){
+        Collections.addAll(vl, vec);
 
-            vl.add(vec[i]);
-
-        }
-
-        return (Vec3d[]) vl.stream().toArray();
+        return vl.toArray();
 
     }
 
