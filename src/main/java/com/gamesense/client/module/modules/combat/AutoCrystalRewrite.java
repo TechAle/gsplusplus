@@ -161,8 +161,6 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue());
     BooleanSetting hideClientbr = registerBoolean("Hide Client br", false,
             () -> breakSection.getValue() && swingModebr.getValue().equals("Server"));
-    ModeSetting swingHandbr = registerMode("Hand Break", Arrays.asList("Both", "Offhand", "Mainhand"), "Offhand",
-            () -> breakSection.getValue() && !swingModebr.getValue().equals("None"));
     ModeSetting breakTypeCrystal = registerMode("Break Type", Arrays.asList("Packet", "Vanilla"), "Packet",
             () -> breakSection.getValue());
     ModeSetting limitBreakPacket = registerMode("Limit Break Packet", Arrays.asList("Tick", "Time", "None"), "None",
@@ -223,10 +221,10 @@ public class AutoCrystalRewrite extends Module {
             () -> (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && (OutLineSection.getValue() && misc.getValue()));
     ModeSetting direction2OutLineBot = registerMode("Direction Outline Bot pl", Arrays.asList("X", "Z"), "X",
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
-                    (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineBot.getValue().equals("2") && misc.getValue());
+                    (OutLineSection.getValue() ) && NVerticesOutlineBot.getValue().equals("2") );
     ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot pl", new GSColor(255, 16, 19, 50),
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
-                    (OutLineSection.getValue() && misc.getValue() && misc.getValue())
+                    (OutLineSection.getValue()  )
             , true);
     ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot pl", new GSColor(0, 0, 255, 50),
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
@@ -242,8 +240,8 @@ public class AutoCrystalRewrite extends Module {
                     && NVerticesOutlineBot.getValue().equals("4"), true);
     // Top
     ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top pl", Arrays.asList("1", "2", "4"), "4",
-            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) && misc.getValue() &&
-                    (OutLineSection.getValue() && misc.getValue()));
+            () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both"))  &&
+                    (OutLineSection.getValue() ));
     ModeSetting direction2OutLineTop = registerMode("Direction Outline Top pl", Arrays.asList("X", "Z"), "X",
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && misc.getValue()) && NVerticesOutlineTop.getValue().equals("2"));
@@ -519,7 +517,6 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
-    BooleanSetting strictDirection = registerBoolean("Strict Direction", false, () -> strict.getValue() && rotate.getValue());
     //endregion
 
     //region Debug
@@ -917,12 +914,12 @@ public class AutoCrystalRewrite extends Module {
             // I basically reached the limit of what a ca can have
             boolean render = true;
             // For every blocks
-            for(int i = 0; i < blocks.size(); i++)
-                // If we have something
-                if (sameBlockPos(blocks.get(i).pos, pos) && blocks.get(i).place == place) {
+            // If we have something
+            for (renderBlock block : blocks)
+                if (sameBlockPos(block.pos, pos) && block.place == place) {
                     // Reset time and dont render after
                     render = false;
-                    blocks.get(i).resetTime();
+                    block.resetTime();
                     break;
                 }
             // If we can render, add it
@@ -1157,7 +1154,7 @@ public class AutoCrystalRewrite extends Module {
             if (showBreakName.getValue()) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
-                            .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break Name: " : ""))
+                            .append(ChatFormatting.WHITE + (!cleanBreak.getValue() ? "Break Name: " : ""))
                             .append(bestBreak.target.entity.getName());
                     place = true;
                 } else
@@ -1168,7 +1165,7 @@ public class AutoCrystalRewrite extends Module {
             if (showBreakDamage.getValue()) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
-                            .append(ChatFormatting.WHITE + (!cleanPlace.getValue() ? "Break damage: " : ""))
+                            .append(ChatFormatting.WHITE + (!cleanBreak.getValue() ? "Break damage: " : ""))
                             .append((int) bestBreak.damage);
                     place = true;
                 } else
@@ -1183,7 +1180,7 @@ public class AutoCrystalRewrite extends Module {
             if ((temp = crystalSecondBreak.countCrystals()) > 0) {
                 if (!place) {
                     t.append(ChatFormatting.GRAY + "[")
-                            .append(ChatFormatting.WHITE + (cleanPlace.getValue() ? "Break b/s: " : ""))
+                            .append(ChatFormatting.WHITE + (cleanBreak.getValue() ? "Break b/s: " : ""))
                             .append(temp);
                     place = true;
                 } else t.append(cleanPlace.getValue() ? " b/s: " : " ")
@@ -1303,7 +1300,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
-                    players = getPlayersThreaded(nThread, players, settings, placeTimeout);
+                    players = getPlayersThreaded(nThread, players, settings, predictPlaceTimeout.getValue());
                 }
 
                 // Get our information
@@ -2189,7 +2186,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If predict
                 if (predictPlaceEnemy.getValue()) {
-                    players = getPlayersThreaded(nThread, players, settings, breakTimeout);
+                    players = getPlayersThreaded(nThread, players, settings, predictBreakTimeout.getValue());
                 }
 
                 // Get our information
@@ -2667,10 +2664,6 @@ public class AutoCrystalRewrite extends Module {
         // Reset forceBreak
         forceBreak = null;
         forceBreakPlace = null;
-
-        // If we are silent switching lol
-        if (switchBack != -1)
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(switchBack));
 
         // Ehm, isnt this always true? idk if u put this then it means sometimes somehow it crashed, lets not touch it
         if (bestBreak.target != null) {
