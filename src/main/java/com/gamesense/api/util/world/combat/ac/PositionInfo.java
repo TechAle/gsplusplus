@@ -9,6 +9,9 @@ public class PositionInfo {
     public BlockPos pos;
     public EntityEnderCrystal crystal;
     private final double selfDamage;
+    public double getSelfDamage() {
+        return this.selfDamage;
+    }
     public double rapp;
     public double damage;
     public double distance;

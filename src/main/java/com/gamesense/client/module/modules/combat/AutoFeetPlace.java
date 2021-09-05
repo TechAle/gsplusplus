@@ -81,7 +81,7 @@ public class AutoFeetPlace extends Module {
             isSneaking = false;
         }
 
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
 
         if (offhandObby.getValue() && ModuleManager.isModuleEnabled(OffHand.class)) {
             OffHand.removeItem(0);

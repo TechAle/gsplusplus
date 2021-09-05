@@ -63,7 +63,7 @@ public class ScaffoldRewrite extends Module {
 
         }
 
-        predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
+        predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false, false, 0, 0));
 
         scaffold = predPlayer.getPosition().add(0, -1, 0);
 

@@ -292,8 +292,8 @@ public class AutoCity extends Module {
             for (BlockPos pos : square) {
                 if (this.canPlaceCrystal(pos.down(), ignoreCrystals.getValue())) {
 
-                    if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, player) >= minDamage.getValue()) {
-                        if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, mc.player) <= maxDamage.getValue()) {
+                    if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, player, false) >= minDamage.getValue()) {
+                        if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, mc.player, false) <= maxDamage.getValue()) {
                             cityableSides.add(blockPos);
                         }
                         break;

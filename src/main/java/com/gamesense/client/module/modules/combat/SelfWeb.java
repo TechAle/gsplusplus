@@ -75,7 +75,7 @@ public class SelfWeb extends Module {
             oldSlot = -1;
         }
 
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
 
         centeredBlock = Vec3d.ZERO;
         outOfTargetBlock = false;

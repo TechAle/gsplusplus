@@ -258,8 +258,8 @@ public class CevBreaker extends Module {
 
         cur_item = -1;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedCa = true;
         }
 
@@ -303,7 +303,7 @@ public class CevBreaker extends Module {
             setDisabledMessage("Materials missing:" + materialsNeeded);
 
         if (stoppedCa) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
             stoppedCa = false;
         }
 
@@ -317,7 +317,7 @@ public class CevBreaker extends Module {
             oldSlot = -1;
         }
 
-        noMaterials = isPossible = AutoCrystal.stopAC = isActive = forceBrk = false;
+        noMaterials = isPossible = AutoCrystalRewrite.stopAC = isActive = forceBrk = false;
     }
 
     private String getMissingMaterials() {
