@@ -82,7 +82,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting ignoreTerrain = registerBoolean("Ignore Terrain", false, () -> logicTarget.getValue());
     BooleanSetting bindIgnoreTerrain = registerBoolean("Bind IgnoreTerrain", false, () -> logicTarget.getValue() && ignoreTerrain.getValue());
     BooleanSetting entityPredict = registerBoolean("Entity Predict", false, () -> logicTarget.getValue());
-    IntegerSetting offset = registerInteger("OffSet Predict", 0,0, 2, () -> logicTarget.getValue() && entityPredict.getValue());
+    IntegerSetting offset = registerInteger("OffSet Predict", 0,0, 10, () -> logicTarget.getValue() && entityPredict.getValue());
     IntegerSetting tryAttack = registerInteger("Try Attack", 1, 1, 10, () -> logicTarget.getValue() && entityPredict.getValue());
     IntegerSetting delayAttacks = registerInteger("Delay Attacks", 50, 0, 1000, () -> logicTarget.getValue() && entityPredict.getValue());
     //endregion
@@ -3573,7 +3573,7 @@ public class AutoCrystalRewrite extends Module {
      */
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
-        if  (event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
+        if  ( entityPredict.getValue() && event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
             CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
             if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
                 updateHighestID();
