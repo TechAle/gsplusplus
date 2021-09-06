@@ -84,7 +84,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting entityPredict = registerBoolean("Entity Predict", false, () -> logicTarget.getValue());
     IntegerSetting offset = registerInteger("OffSet Predict", 0,0, 10, () -> logicTarget.getValue() && entityPredict.getValue());
     IntegerSetting tryAttack = registerInteger("Try Attack", 1, 1, 10, () -> logicTarget.getValue() && entityPredict.getValue());
-    IntegerSetting delayAttacks = registerInteger("Delay Attacks", 50, 0, 1000, () -> logicTarget.getValue() && entityPredict.getValue());
+    IntegerSetting delayAttacks = registerInteger("Delay Attacks", 50, 0, 500, () -> logicTarget.getValue() && entityPredict.getValue());
+    IntegerSetting midDelayAttacks = registerInteger("Mid Delay Attack", 5, 0, 100, () -> logicTarget.getValue() && entityPredict.getValue());
     //endregion
 
     //region Ranges
@@ -3576,20 +3577,23 @@ public class AutoCrystalRewrite extends Module {
         if  ( entityPredict.getValue() && event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
             CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
             if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
-                updateHighestID();
-                java.util.Timer t = new java.util.Timer();
-                t.schedule(
-                        new java.util.TimerTask() {
-                            @Override
-                            public void run() {
-                                for(int i = 1 - offset.getValue(); i <= tryAttack.getValue(); i++) {
-                                    attackID(packet.getPos(), highestId + i);
+                int idx = 0;
+                for(int i = 1 - offset.getValue(); i <= tryAttack.getValue(); i++) {
+                    updateHighestID();
+                    java.util.Timer t = new java.util.Timer();
+                    int finalI = i;
+                    t.schedule(
+                            new java.util.TimerTask() {
+                                @Override
+                                public void run() {
+                                    attackID(packet.getPos(), highestId + finalI);
+                                    t.cancel();
                                 }
-                                t.cancel();
-                            }
-                        },
-                        delayAttacks.getValue()
-                );
+                            },
+                            delayAttacks.getValue() + (++idx * midDelayAttacks.getValue())
+                    );
+
+                }
 
             }
         }
