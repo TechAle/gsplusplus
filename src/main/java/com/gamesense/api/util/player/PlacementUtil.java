@@ -2,7 +2,7 @@ package com.gamesense.api.util.player;
 
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.combat.AutoCrystal;
+import com.gamesense.client.module.modules.combat.AutoCrystalRewrite;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -115,8 +115,8 @@ public class PlacementUtil {
 
         boolean stoppedAC = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedAC = true;
         }
 
@@ -131,7 +131,7 @@ public class PlacementUtil {
         }
 
         if (stoppedAC) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
         }
 
         return action == EnumActionResult.SUCCESS;
@@ -171,8 +171,8 @@ public class PlacementUtil {
 
         boolean stoppedAC = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedAC = true;
         }
 
@@ -188,7 +188,7 @@ public class PlacementUtil {
             }
 
             if (stoppedAC) {
-                AutoCrystal.stopAC = false;
+                AutoCrystalRewrite.stopAC = false;
             }
 
             return action == EnumActionResult.SUCCESS;

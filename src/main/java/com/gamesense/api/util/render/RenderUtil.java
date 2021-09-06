@@ -20,8 +20,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.glu.Sphere;
 
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glHint;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author 086
@@ -427,6 +426,32 @@ public class RenderUtil {
         GlStateManager.popMatrix();
     }
 
+    public static void drawCircle(float x, float y, float z, Double radius, GSColor colour) {
+
+        GlStateManager.disableCull();
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(GL_SMOOTH);
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        int alpha = 255 - colour.getAlpha();
+
+        if (alpha == 0) alpha = 1;
+
+        for (int i = 0; i < 361; i++) {
+            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, alpha).endVertex();
+        }
+
+        tessellator.draw();
+
+        GlStateManager.enableCull();
+        GlStateManager.enableAlpha();
+        GlStateManager.shadeModel(GL_FLAT);
+
+    }
+
+
     public static void drawNametag(Entity entity, String[] text, GSColor color, int type) {
         Vec3d pos = EntityUtil.getInterpolatedPos(entity, mc.getRenderPartialTicks());
         drawNametag(pos.x, pos.y + entity.height, pos.z, text, color, type);
@@ -578,7 +603,7 @@ public class RenderUtil {
         GlStateManager.disableBlend();
         GlStateManager.depthMask(true);
         GlStateManager.glLineWidth(1.0f);
-        GlStateManager.shadeModel(GL11.GL_FLAT);
+        GlStateManager.shadeModel(GL_FLAT);
         glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_DONT_CARE);
     }
 }

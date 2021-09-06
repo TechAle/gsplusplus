@@ -364,7 +364,7 @@ public class OffHand extends Module {
             for (Entity t : mc.world.loadedEntityList) {
                 // If it's a crystal
                 if (t instanceof EntityEnderCrystal && mc.player.getDistance(t) <= 12) {
-                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
+                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player, false) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
                         return true;
                     }
                 }

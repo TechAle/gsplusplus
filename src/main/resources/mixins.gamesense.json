@@ -27,6 +27,7 @@
     "MixinRenderManager",
     "MixinRenderPlayer",
     "MixinWorld",
+    "accessor.AccessorCPacketAttack",
     "accessor.AccessorEntityPlayerSP"
   ]
 }

@@ -68,7 +68,7 @@ public class Scaffold extends Module {
     @Override
     public void onUpdate() {
 
-        predictSettings = new PredictUtil.PredictSettings(tickPredict.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false);
+        predictSettings = new PredictUtil.PredictSettings(tickPredict.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false, false, 0, 0);
 
         supportBlock = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
 

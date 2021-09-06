@@ -85,7 +85,7 @@ public class Surround extends Module {
             oldSlot = -1;
         }
 
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
 
         if (offhandObby.getValue() && ModuleManager.isModuleEnabled(OffHand.class)) {
             OffHand.removeItem(0);
