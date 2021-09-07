@@ -4,7 +4,6 @@ import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.world.MotionUtil;
@@ -12,6 +11,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.MathHelper;
 
@@ -21,10 +21,12 @@ import java.util.Arrays;
 public class ElytraFlightRewrite extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
+    ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> mode.getValue().equals("Control"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, 0, 3);
+    BooleanSetting setVelo = registerBoolean("Set Velocity", false, () -> mode.getValue().equals("Control"));
 
     boolean setAng;
 
@@ -33,11 +35,9 @@ public class ElytraFlightRewrite extends Module {
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        PlayerMoveEvent e = event;
-
         if (mc.player.isElytraFlying()) {
 
-            mc.timer.tickLength = 50;
+            mc.timer.tickLength = 50f;
 
             if (mode.getValue().equals("Boost")) {
                 if (mc.gameSettings.keyBindJump.isKeyDown() || mc.gameSettings.keyBindForward.isKeyDown()) {
@@ -50,24 +50,30 @@ public class ElytraFlightRewrite extends Module {
 
                 if (upMode.getValue().equalsIgnoreCase("Jump")) {
 
+                    if (setVelo.getValue()) {
+
+                        mc.player.setVelocity(0, 0, 0);
+
+                    }
+
                     if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        e.setY(ySpeed.getValue());
+                        event.setY(ySpeed.getValue());
 
                     } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                        e.setY(-ySpeed.getValue());
+                        event.setY(-ySpeed.getValue());
 
                     } else {
 
-                        e.setY(-glideSpeed.getValue() - 0.0001);
+                        event.setY(-glideSpeed.getValue() - 0.0001);
 
                     }
 
                     if (!(MotionUtil.isMoving(mc.player))) {
 
-                        e.setX(0);
-                        e.setZ(0);
+                        mc.player.motionX = (0);
+                        mc.player.motionZ = (0);
 
                     } else {
 
@@ -86,20 +92,19 @@ public class ElytraFlightRewrite extends Module {
 
                         if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                            e.setY(-ySpeed.getValue());
+                            event.setY(-ySpeed.getValue());
 
                         } else {
 
-                            e.setY(-glideSpeed.getValue() - 0.0001);
+                            event.setY(-glideSpeed.getValue() - 0.0001);
 
                         }
 
 
                         if (!(MotionUtil.isMoving(mc.player))) {
 
-                            e.setX(0);
-                            e.setZ(0);
-
+                            mc.player.motionX = (0);
+                            mc.player.motionZ = (0);
                         } else {
 
                             MotionUtil.setSpeed(mc.player, speed.getValue());
@@ -111,21 +116,72 @@ public class ElytraFlightRewrite extends Module {
 
                         if (!MotionUtil.isMoving(mc.player)) {
 
-                            e.setY(0);
+                            event.setY(0);
 
                         }
 
                     }
                 }
             }
+        } else {
+
+            if (mc.gameSettings.keyBindJump.isKeyDown()){
+                switch (toMode.getValue()) {
+
+                    case "PacketFly": {
+
+                        if (mc.player.onGround) {
+
+                            mc.player.jump();
+
+                        } else if (mc.player.motionY < 0) {
+
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0025, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+
+                        }
+
+                    }
+                    case "Timer": {
+
+                        if (mc.player.onGround) {
+                            mc.player.jump();
+                        } else if (mc.player.motionY < 0) {
+                            mc.timer.tickLength = 300f;
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+                        }
+
+                    }
+                    default: {
+
+                        if (!mc.player.onGround && mc.player.motionY < 0) {
+
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+
+                        }
+
+                    }
+
+                }
+            }
+
+
         }
+
     });
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
         if (event.getPacket() instanceof CPacketPlayer && setAng) {
 
-                ((CPacketPlayer) event.getPacket()).pitch = (float) 0;
+            ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
+
+            if (setVelo.getValue()) {
+
+                mc.player.setVelocity(0, 0, 0);
+
+            }
 
         }
 

@@ -13,7 +13,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import com.gamesense.client.module.modules.misc.Trigger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -37,6 +36,8 @@ public class FootConcrete extends Module {
     BooleanSetting useTimer = registerBoolean("useTimer", true, () -> jumpMode.getValue().equals("real"));
     DoubleSetting timerSpeed = registerDouble("timerSpeed", 20, 1, 50, () -> useTimer.getValue() && jumpMode.getValue().equals("real"));
     BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight", false);
+    IntegerSetting absCutoff = registerInteger("absoluteCutOff", 20,0,256, () -> absoluteClipHeight.getValue());
+    IntegerSetting cutOffHeight = registerInteger("cutOffClipHeight", -5, -25, 25, () -> absCutoff.isVisible());
     IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
     BooleanSetting allowEchest = registerBoolean("allowEchest", true);
@@ -74,10 +75,6 @@ public class FootConcrete extends Module {
         if (rotate.getValue()) {
 
             rotation = true;
-
-        } else {
-
-            rotation = ModuleManager.getModule(Trigger.class).cc;
 
         }
 
@@ -178,8 +175,12 @@ public class FootConcrete extends Module {
 
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ, true));
 
-                    } else {
+                    } else if (mc.player.posY < absCutoff.getValue()){
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, clipHeight.getValue(), mc.player.posZ, true));
+                    } else {
+
+                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + cutOffHeight.getValue(), mc.player.posZ, true));
+
                     }
 
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));

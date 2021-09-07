@@ -3,13 +3,13 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
+import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -17,14 +17,17 @@ import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Hoosiers
@@ -35,12 +38,11 @@ import java.util.Arrays;
 public class Surround extends Module {
 
     ModeSetting jumpMode = registerMode("Jump", Arrays.asList("Continue", "Pause", "Disable"), "Continue");
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Anti City"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum","Anti City"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
-    BooleanSetting centerPlayer = registerBoolean("Center Player", false);
-    BooleanSetting alwaysCenter = registerBoolean("Always Center", false);
+    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Snap", "Motion", "None"), "Snap");
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
@@ -53,7 +55,6 @@ public class Surround extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
-    private boolean isSneaking = false;
     boolean hasPlaced;
 
     public void onEnable() {
@@ -63,7 +64,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (centerPlayer.getValue() && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !(HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None"))) {
+        if (centreMode.getValue().equalsIgnoreCase("Motion")) {
             mc.player.motionX = 0;
             mc.player.motionZ = 0;
         }
@@ -130,8 +131,21 @@ public class Surround extends Module {
 
         activedOff = true;
 
-        if (centerPlayer.getValue() && centeredBlock != Vec3d.ZERO && mc.player.onGround && alwaysCenter.getValue() || centerPlayer.getValue() && mc.player.onGround && !HoleUtil.isHole(new BlockPos(mc.player.posX,mc.player.posY-1,mc.player.posZ),true, true).getType().equals("None")) {
-            PlayerUtil.centerPlayer(centeredBlock);
+        if (HoleUtil.isHole((new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
+
+            // if statement to check if we need to center. needs work
+            if (intersects(mc.player)) {
+
+                if (centreMode.getValue().equalsIgnoreCase("Motion")) {
+                    PlayerUtil.centerPlayer(centeredBlock);
+                } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
+                    mc.player.setPositionAndUpdate(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5); // Updating makes it look different lol
+
+                }
+            }
+
         }
 
         if (delayTimer.getTimePassed() / 50L >= delayTicks.getValue()) {
@@ -143,19 +157,17 @@ public class Surround extends Module {
 
             while (blocksPlaced <= blocksPerTick.getValue()) {
                 int maxSteps;
-                Vec3d[] offsetPattern;
+                Object[] offsetPattern;
 
-                switch (offsetMode.getValue()) {
-                    case "Anti City": {
-                        offsetPattern = Offsets.SURROUND_CITY;
-                        maxSteps = Offsets.SURROUND_CITY.length;
-                        break;
-                    }
-                    default: {
-                        offsetPattern = Offsets.SURROUND;
-                        maxSteps = Offsets.SURROUND.length;
-                        break;
-                    }
+                if ("Anti City".equals(offsetMode.getValue())) {
+                    offsetPattern = Offsets.SURROUND_CITY;
+                    maxSteps = Offsets.SURROUND_CITY.length;
+                } else if ("Normal".equals(offsetMode.getValue())) {
+                    offsetPattern = Offsets.SURROUND;
+                    maxSteps = Offsets.SURROUND.length;
+                } else {
+                    offsetPattern = getSurroundMinVec();
+                    maxSteps = offsetPattern.length;
                 }
 
                 if (offsetSteps >= maxSteps) {
@@ -163,7 +175,7 @@ public class Surround extends Module {
                     break;
                 }
 
-                BlockPos offsetPos = new BlockPos(offsetPattern[offsetSteps]);
+                BlockPos offsetPos = new BlockPos((Vec3d) offsetPattern[offsetSteps]);
                 BlockPos targetPos = new BlockPos(mc.player.getPositionVector()).add(offsetPos.getX(), offsetPos.getY(), offsetPos.getZ());
 
                 boolean tryPlacing = true;
@@ -195,6 +207,12 @@ public class Surround extends Module {
         }
     }
 
+    private boolean intersects(Entity pl) {
+
+        return true; // will be made to check collision
+
+    }
+
     private boolean placeBlock(BlockPos pos) {
         EnumHand handSwing = EnumHand.MAIN_HAND;
 
@@ -224,4 +242,48 @@ public class Surround extends Module {
 
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
+
+    Object[] getSurroundMinVec() {
+
+        Vec3d[] vec = Offsets.SURROUND_MIN;
+
+        ArrayList<Integer> list = new ArrayList<Integer>();
+        ArrayList<Vec3d> vl = new ArrayList<Vec3d>();
+
+        for (Vec3d vec3d : vec) {
+
+            if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null)
+                list.add(0);
+            else
+                list.add(1);
+
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+
+            if (list.get(i) != 0) {
+
+                if (list.get(i) == 1) {
+                    switch (i) {
+                        case 0:
+                            new Vec3d(-1, -1, 0);
+                        case 1:
+                            new Vec3d(1, -1, 0);
+                        case 2:
+                            new Vec3d(0, -1, -1);
+                        case 3:
+                            new Vec3d(0, -1, 1);
+                    }
+                }
+
+            }
+
+        }
+
+        Collections.addAll(vl, vec);
+
+        return vl.toArray();
+
+    }
+
 }

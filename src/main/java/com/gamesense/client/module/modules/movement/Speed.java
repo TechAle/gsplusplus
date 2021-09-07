@@ -1,6 +1,8 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
@@ -14,27 +16,34 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
 /**
- * @author Crystallinqq/Auto for original code
- * @source https://github.com/Crystallinqq/Mercury-Client/blob/master/src/main/java/fail/mercury/client/client/modules/movement/Speed.java
- * @reworked by Hoosiers on 11/1/2020
+ * @author Crystallinqq
+ * @author Auto
+ * @author Hoosiers
+ * @author Doogie13
+ * @Source https://github.com/Crystallinqq/Mercury-Client/blob/master/src/main/java/fail/mercury/client/client/modules/movement/Speed.java (for yport and strafe)
  */
 
 @Module.Declaration(name = "Speed", category = Category.Movement)
 public class Speed extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "Fake", "YPort"), "Strafe");
-    DoubleSetting speed = registerDouble("speed", 2.15,0,10, () -> mode.getValue().equals("Strafe"));
-    DoubleSetting yPortSpeed = registerDouble("yPortSpeed", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "YPort"), "Strafe");
+    DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
+    DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
+    DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 0.13, 0.01, 0.3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
-    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300,0,1000);
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000);
 
     private boolean slowDown;
     private double playerSpeed;
     private final Timer timer = new Timer();
+
+    int og;
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
@@ -64,10 +73,10 @@ public class Speed extends Module {
         }
 
         if (mc.player.onGround) {
-            mc.player.jump();
-            MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() + yPortSpeed.getValue());
+            mc.player.jump(); // motion = 0.42
+            MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() + yPortSpeed.getValue()); // set speed
         } else {
-            mc.player.motionY = -1;
+            mc.player.motionY = -1; // return to ground instantly }
         }
     }
 
@@ -105,6 +114,37 @@ public class Speed extends Module {
             event.setX(dir[0]);
             event.setZ(dir[1]);
         }
+    });
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        if (mode.getValue().equalsIgnoreCase("OnGround") && event.getPacket() instanceof CPacketPlayer) {
+
+            if (mc.player.onGround) {
+                double[] dir = MotionUtil.forward(onGroundSpeed.getValue());
+                switch (og) {
+
+                    case 0: {
+                        ((CPacketPlayer) event.getPacket()).y = 0.42;
+                        ((CPacketPlayer) event.getPacket()).onGround = false;
+                        mc.player.motionX += dir[0];
+                        mc.player.motionZ += dir[1];
+                        og++;
+
+                    }
+                    case 1: {
+                        og++;
+
+                    } case 2: {
+
+                        og = 0;
+
+                    }
+                }
+            }
+        }
+
     });
 
     public String getHudInfo() {
