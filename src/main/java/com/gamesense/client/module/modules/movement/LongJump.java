@@ -28,7 +28,7 @@ public class LongJump extends Module {
     ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor"), "Far");
     DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting jumpHeightVelo = registerDouble("Jump Height", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
+    DoubleSetting jumpHeightVelo = registerDouble("Jump Height Velocity", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     BooleanSetting allowY = registerBoolean("Velocity Multiply", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting xzvelocity = registerDouble("XZ Velocity Multiplier", 0.1,0,5, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting yvelocity = registerDouble("Y Velocity Multiplier", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("Bypass"));
@@ -36,12 +36,13 @@ public class LongJump extends Module {
     IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
     DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
     DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
-    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3);
-    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50);
+    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Factor"));
+    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Factor"));
 
     Double playerSpeed;
 
     boolean slowDown;
+    boolean hasaccel;
 
     public boolean velo;
 
@@ -110,7 +111,8 @@ public class LongJump extends Module {
                 mc.player.motionY = jumpHeight.getValue();
                 i = 0;
             }
-            if (mc.player.motionY == 0.0030162615090425808) {
+            if (mc.player.motionY <= 0 && !hasaccel) {
+                hasaccel = !mc.player.onGround;
                 if (farAccel.getValue().equals(0)) {
                     mc.player.jumpMovementFactor = farSpeed.getValue().floatValue();
                 } else {
