@@ -726,7 +726,13 @@ public class AutoCrystalRewrite extends Module {
         // Update every crystals timers
         void updateCrystals() {
             for(int i = 0; i < listWait.size(); i++) {
-                if (listWait.get(i).isReady()) {
+                try {
+                    if (listWait.get(i).isReady()) {
+                        listWait.remove(i);
+                        i--;
+                    }
+                }
+                catch(NullPointerException e) {
                     listWait.remove(i);
                     i--;
                 }
@@ -3568,10 +3574,6 @@ public class AutoCrystalRewrite extends Module {
         }
     });
 
-    /*
-            if (entityPredict.getValue())
-            for(int i = 1 - offset.getValue(); i < this.tryAttack.getValue(); i++)
-     */
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
         if  ( entityPredict.getValue() && event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
