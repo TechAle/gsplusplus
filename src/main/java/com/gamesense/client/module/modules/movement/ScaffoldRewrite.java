@@ -70,7 +70,10 @@ public class ScaffoldRewrite extends Module {
 
 
         if (logic.getValue().equalsIgnoreCase("Predict")) {
-            predPlayer = PredictUtil.predictPlayer(mc.player, new PredictUtil.PredictSettings(distance.getValue(), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false));
+
+            PredictUtil.PredictSettings predset = new PredictUtil.PredictSettings((Integer) (distance.getValue()), false, 0, 0, 0, 0, 0, 0, false, 0, false, false, false, false, false, 0, 696969);
+
+            predPlayer = PredictUtil.predictPlayer(mc.player, predset);
 
             scaffold = (new BlockPos(predPlayer.posX,predPlayer.posY-1,predPlayer.posZ));
 

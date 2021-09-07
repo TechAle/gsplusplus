@@ -44,9 +44,6 @@ public class Speed extends Module {
     private final Timer timer = new Timer();
 
     int og;
-    int speedPhaseOG;
-
-    double speedOG;
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
