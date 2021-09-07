@@ -27,7 +27,7 @@ public class AutoCreeper extends Module {
 
     // Module to get me used to combat stuff idk
 
-    IntegerSetting delay = registerInteger("Speed", 3, 0, 20);
+    IntegerSetting delay = registerInteger("Delay", 3, 0, 20);
     DoubleSetting range = registerDouble("Range", 5, 0, 6);
     BooleanSetting rotate = registerBoolean("Rotate", true);
     BooleanSetting silent = registerBoolean("Silent Switch", true);
