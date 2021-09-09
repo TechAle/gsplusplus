@@ -3,17 +3,19 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
-import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import net.minecraft.util.NonNullList;
+import com.google.common.collect.Sets;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.Math.*;
 
@@ -21,24 +23,34 @@ import static java.lang.Math.*;
 public class HoleSnap extends Module {
 
     DoubleSetting range = registerDouble("Range", 0, 4, 10);
+    DoubleSetting sens = registerDouble("Sens", 0.5, 0.5, 1);
 
     BlockPos hole;
 
     double yawRad,
-            dist,
             speed;
+
+    double lastDist = -1;
+    int distPos = -1;
+
+    private ConcurrentHashMap<AxisAlignedBB, Integer> holes;
 
     @Override
     protected void onEnable() {
+
+        hole = null;
 
         hole = findHoles();
 
         if (hole == null)
             disable();
-        else
-            hole = new BlockPos(BlockUtil.getCenterOfBlock(hole.getX(), hole.getY(), hole.getZ()));
+
     }
 
+    @Override
+    protected void onDisable() {
+        hole = null;
+    }
 
     @Override
     public void onUpdate() {
@@ -48,20 +60,19 @@ public class HoleSnap extends Module {
         } else {
 
 
-            yawRad = RotationUtil.getRotationTo(mc.player.getPositionVector(), new Vec3d(hole)).x * PI / 180;
-            dist = mc.player.getPositionVector().distanceTo(new Vec3d(hole));
+            yawRad = RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), new Vec3d(hole)).x * PI / 180;
 
             if (mc.player.onGround)
-                speed = Math.min(0.2805, dist / 2.0);
+                speed = 0.2805;
             else
                 speed = (mc.player.motionX * mc.player.motionZ) / 2;
 
             mc.player.motionX = -sin(yawRad) * speed;
             mc.player.motionZ = cos(yawRad) * speed;
 
-
-            if (mc.player.getDistance(hole.getX(), hole.getY(), hole.getZ()) < 0.5) {
-                mc.player.setPosition(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
+            if (mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) < 0.5) {
+                mc.player.setPositionAndUpdate(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
+                mc.player.setVelocity(0, 0, 0);
                 disable();
             }
 
@@ -70,50 +81,68 @@ public class HoleSnap extends Module {
     }
 
     private BlockPos findHoles() {
-        NonNullList<BlockPos> holes = NonNullList.create();
 
-        //from old HoleFill module, really good way to do this
-        List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range.getValue().floatValue(), range.getValue().intValue(), false, true, 0);
+        if (holes == null) {
+            holes = new ConcurrentHashMap<>();
+        } else {
+            holes.clear();
+        }
 
-        blockPosList.forEach(pos -> {
+        int range = (int) Math.ceil(this.range.getValue());
+
+        HashSet<BlockPos> possibleHoles = Sets.newHashSet();
+        List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range, range, false, true, 0);
+
+        for (BlockPos pos : blockPosList) {
+
+            if (!mc.world.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+
+            if (mc.world.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+            if (!mc.world.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+
+            if (mc.world.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
+                possibleHoles.add(pos);
+            }
+        }
+
+        possibleHoles.forEach(pos -> {
             HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
             HoleUtil.HoleType holeType = holeInfo.getType();
             if (holeType != HoleUtil.HoleType.NONE) {
+                HoleUtil.BlockSafety holeSafety = holeInfo.getSafety();
                 AxisAlignedBB centreBlocks = holeInfo.getCentre();
 
                 if (centreBlocks == null)
                     return;
 
+                int typeHole;
+                if (holeSafety == HoleUtil.BlockSafety.UNBREAKABLE) {
+                    typeHole = 0;
+                } else {
+                    typeHole = 1;
+                }
+
+                if (holeType == HoleUtil.HoleType.SINGLE) {
+                    holes.put(centreBlocks, typeHole);
+                }
 
             }
-            if (holeType == HoleUtil.HoleType.SINGLE) {
-                holes.add(pos);
+
+            for (int i = 0; i < holes.size(); i++) {
+
+                if (mc.player.getDistanceSq(BlockPos.fromLong(holes.get(i))) > lastDist) {
+                    distPos = i;
+                    lastDist = mc.player.getDistanceSq(BlockPos.fromLong(holes.get(i)));
+                }
+
             }
         });
-
-        float holeDist;
-        float lastHoleDist = 99;
-        int holePos = -1;
-
-        for (int i = 0; i < holes.size(); i++) {
-
-            BlockPos current = new BlockPos(holes.get(i));
-            holeDist = ((float) current.distanceSq(mc.player.posX, mc.player.posY, mc.player.posZ));
-
-            if (holeDist < lastHoleDist)
-                lastHoleDist = holeDist;
-            holePos = i;
-
-        }
-
-        try {
-            return holes.get(holePos);
-        } catch (ArrayIndexOutOfBoundsException ignored) {
-
-            return null;
-
-        }
-
+        return (BlockPos.fromLong(holes.get(distPos)));
     }
-
 }
