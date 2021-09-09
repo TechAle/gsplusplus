@@ -21,6 +21,12 @@ public class PlayerUtil {
         return new BlockPos(Math.floor(mc.player.posX), Math.floor(mc.player.posY), Math.floor(mc.player.posZ));
     }
 
+    public static boolean nullCheck() {
+
+        return !(mc.world == null || mc.player == null);
+
+    }
+
     // Find closest target
     // 0b00101010: replaced getDistance with getDistanceSq as speeds up calculation
     public static EntityPlayer findClosestTarget(double rangeMax, EntityPlayer aimTarget) {
