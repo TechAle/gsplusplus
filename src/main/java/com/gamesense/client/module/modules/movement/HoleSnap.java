@@ -23,7 +23,6 @@ import static java.lang.Math.*;
 public class HoleSnap extends Module {
 
     DoubleSetting range = registerDouble("Range", 0, 4, 10);
-    DoubleSetting sens = registerDouble("Sens", 0.5, 0.5, 1);
 
     BlockPos hole;
 
