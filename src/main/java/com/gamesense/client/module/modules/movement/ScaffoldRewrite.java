@@ -32,7 +32,8 @@ import java.util.Arrays;
 public class ScaffoldRewrite extends Module {
 
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
-    IntegerSetting distance = registerInteger("Distance", 2, 0, 20);
+    IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20);
+    IntegerSetting distanceP = registerInteger("Distance Player", 2,0,20);
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
     IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20, () -> towerMode.getValue().equals("AirJump"));
     DoubleSetting jumpHeight = registerDouble("Air Jump Height", 0.42, 0, 1, () -> towerMode.getValue().equals("AirJump"));
@@ -53,8 +54,6 @@ public class ScaffoldRewrite extends Module {
     BlockPos scaffold;
     BlockPos towerPos;
     BlockPos downPos;
-
-    Vec3d vec;
 
     @Override
     protected void onEnable() {
@@ -82,7 +81,9 @@ public class ScaffoldRewrite extends Module {
 
             scaffold = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ).down();
 
-            scaffold.add(mc.player.motionX * distance.getValue(), 0, mc.player.motionZ * distance.getValue());
+            double[] dir = MotionUtil.forward(distanceP.getValue());
+
+            scaffold.add(dir[0], 0, dir[1]);
 
         }
 
