@@ -228,7 +228,7 @@ public class ScaffoldRewrite extends Module {
         }
 
         if (mc.world != null) {
-            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
+            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue() && !keepRot.getValue());
         }
 
         //Switch back
