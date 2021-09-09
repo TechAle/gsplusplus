@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -8,12 +9,15 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockFalling;
@@ -21,8 +25,10 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
@@ -40,6 +46,7 @@ public class ScaffoldRewrite extends Module {
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting rotate = registerBoolean("Rotate", false);
+    BooleanSetting keepRot = registerBoolean("Keep rotated", false, () -> rotate.getValue());
     BooleanSetting silent = registerBoolean("Silent Switch", true);
 
     int timer;
@@ -54,6 +61,9 @@ public class ScaffoldRewrite extends Module {
     BlockPos scaffold;
     BlockPos towerPos;
     BlockPos downPos;
+    BlockPos rotPos;
+
+    Vec2f rot;
 
     @Override
     protected void onEnable() {
@@ -61,6 +71,8 @@ public class ScaffoldRewrite extends Module {
     }
 
     public void onUpdate() {
+
+        mc.player.rotationPitch += 0.00001; // literally just get new packet that we cant even see for keepRotation to consistantly have rotation packets to use
 
         oldSlot = mc.player.inventory.currentItem;
 
@@ -201,6 +213,9 @@ public class ScaffoldRewrite extends Module {
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
+        rotPos = pos;
+        rot = RotationUtil.getRotationTo(new Vec3d(rotPos));
+
         if (silent.getValue()){
             mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
         } else {
@@ -210,8 +225,8 @@ public class ScaffoldRewrite extends Module {
         }
 
 
-        if (mc.world != null && pos != null) {
-            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue());
+        if (mc.world != null) {
+            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue() && !keepRot.getValue());
         }
 
         //Switch back
@@ -220,7 +235,6 @@ public class ScaffoldRewrite extends Module {
         }
 
         if (allowSupport) {
-            assert pos != null;
             if (mc.world.getBlockState(pos).getBlock() instanceof BlockAir) {
 
                 clutch();
@@ -250,6 +264,21 @@ public class ScaffoldRewrite extends Module {
             }
         }
     }
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        if (rotate.getValue() && keepRot.getValue()) {
+
+            if (event.getPacket() instanceof CPacketPlayer) {
+
+                ((CPacketPlayer) event.getPacket()).yaw = rot.x;
+                ((CPacketPlayer) event.getPacket()).pitch = rot.y;
+
+            }
+
+        }
+    });
 
 }
 
