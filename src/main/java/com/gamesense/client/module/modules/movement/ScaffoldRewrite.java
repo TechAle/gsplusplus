@@ -10,6 +10,7 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
 import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -26,6 +27,8 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -224,9 +227,8 @@ public class ScaffoldRewrite extends Module {
 
         }
 
-
         if (mc.world != null) {
-            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue() && !keepRot.getValue());
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
         }
 
         //Switch back
