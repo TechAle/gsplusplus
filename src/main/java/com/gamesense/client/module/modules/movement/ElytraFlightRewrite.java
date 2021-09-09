@@ -173,7 +173,7 @@ public class ElytraFlightRewrite extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof CPacketPlayer && setAng) {
+        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
 
             ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
 
