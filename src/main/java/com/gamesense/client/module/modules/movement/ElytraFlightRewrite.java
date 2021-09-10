@@ -83,6 +83,12 @@ public class ElytraFlightRewrite extends Module {
 
 
                 } else if (upMode.getValue().equalsIgnoreCase("Aim")) {
+                    
+                    if (setVelo.getValue()) {
+
+                        mc.player.setVelocity(0, 0, 0);
+
+                    }
 
                     if (mc.player.rotationPitch > 0 || (upTimer.getTimePassed() >= 1500)) {
 

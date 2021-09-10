@@ -123,7 +123,7 @@ public class TntMineCart extends Module {
                         else
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
 
-                        mc.getConnection().sendPacket(new CPacketPlayerTryUseItemOnBlock(new BlockPos(target.getPositionVector()), EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
+                        mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(new BlockPos(target.getPositionVector()), EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
 
                         if (silent.getValue())
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));

@@ -1,28 +1,38 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.google.common.collect.Sets;
-import net.minecraft.init.Blocks;
+import it.unimi.dsi.fastutil.booleans.BooleanSet;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Math.*;
 
 @Module.Declaration(name = "HoleSnap", category = Category.Movement)
 public class HoleSnap extends Module {
 
-    DoubleSetting range = registerDouble("Range", 0, 4, 10);
+    DoubleSetting range = registerDouble("Range", 4, 0, 10);
+    BooleanSetting render = registerBoolean("Render", true);
+    IntegerSetting width = registerInteger("Width", 2,0,10);
+    ColorSetting colour = registerColor("Colour", new GSColor(0,255,0));
 
     BlockPos hole;
 
@@ -69,6 +79,9 @@ public class HoleSnap extends Module {
             mc.player.motionX = -sin(yawRad) * speed;
             mc.player.motionZ = cos(yawRad) * speed;
 
+            if (render.getValue())
+                RenderUtil.drawLine(mc.player.posX,Math.floor(mc.player.posY),mc.player.posZ,hole.x,Math.floor(hole.y),hole.z, colour.getColor(), width.getValue());
+
             if (mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) < 0.5) {
                 mc.player.setPositionAndUpdate(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
                 mc.player.setVelocity(0, 0, 0);
@@ -81,67 +94,49 @@ public class HoleSnap extends Module {
 
     private BlockPos findHoles() {
 
-        if (holes == null) {
-            holes = new ConcurrentHashMap<>();
-        } else {
-            holes.clear();
-        }
+        NonNullList<BlockPos> holes = NonNullList.create();
 
-        int range = (int) Math.ceil(this.range.getValue());
+        //from old HoleFill module, really good way to do this
+        List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range.getValue().floatValue(), range.getValue().intValue(), false, true, 0);
 
-        HashSet<BlockPos> possibleHoles = Sets.newHashSet();
-        List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range, range, false, true, 0);
-
-        for (BlockPos pos : blockPosList) {
-
-            if (!mc.world.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-
-            if (mc.world.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-            if (!mc.world.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-
-            if (mc.world.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
-                possibleHoles.add(pos);
-            }
-        }
-
-        possibleHoles.forEach(pos -> {
+        blockPosList.forEach(pos -> {
             HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
             HoleUtil.HoleType holeType = holeInfo.getType();
             if (holeType != HoleUtil.HoleType.NONE) {
-                HoleUtil.BlockSafety holeSafety = holeInfo.getSafety();
                 AxisAlignedBB centreBlocks = holeInfo.getCentre();
 
                 if (centreBlocks == null)
                     return;
 
-                int typeHole;
-                if (holeSafety == HoleUtil.BlockSafety.UNBREAKABLE) {
-                    typeHole = 0;
-                } else {
-                    typeHole = 1;
+                if (holeType == HoleUtil.HoleType.SINGLE && mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0,1,0)) && mc.world.isAirBlock(pos.add(0,2,0)) && pos.getY() <= mc.player.posY) {
+                    holes.add(pos);
                 }
-
-                if (holeType == HoleUtil.HoleType.SINGLE) {
-                    holes.put(centreBlocks, typeHole);
-                }
-
             }
+        });
 
-            for (int i = 0; i < holes.size(); i++) {
+
+        for (int i = 0; i < holes.size(); i++) {
+
+            if (mc.player.getDistanceSq(holes.get(i)) > lastDist) {
+                distPos = i;
+                lastDist = mc.player.getDistanceSq(holes.get(i));
+            }
+        }
+
+        try{
+            return holes.get(distPos);
+        } catch (IndexOutOfBoundsException e) {
+            disable();
+            return null;
+        }
+
+    }
+}
+/*            for (int i = 0; i < holes.size(); i++) {
 
                 if (mc.player.getDistanceSq(BlockPos.fromLong(holes.get(i))) > lastDist) {
                     distPos = i;
                     lastDist = mc.player.getDistanceSq(BlockPos.fromLong(holes.get(i)));
                 }
 
-            }
-        });
-        return (BlockPos.fromLong(holes.get(distPos)));
-    }
-}
+            }*/

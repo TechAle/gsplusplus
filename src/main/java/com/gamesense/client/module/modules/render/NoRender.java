@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.BossbarEvent;
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
@@ -10,6 +11,8 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.play.client.CPacketEnchantItem;
+import net.minecraft.network.play.server.SPacketEntity;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.client.event.RenderBlockOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
