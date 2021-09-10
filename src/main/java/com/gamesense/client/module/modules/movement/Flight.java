@@ -20,8 +20,9 @@ public class Flight extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage"), "Static");
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI"), "WI");
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10);
+    ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting packetSpeed = registerDouble("Packet Speed", 0.0624, 0, 0.1, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10);
 
