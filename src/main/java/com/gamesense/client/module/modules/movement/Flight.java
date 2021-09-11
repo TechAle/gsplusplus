@@ -22,6 +22,7 @@ public class Flight extends Module {
     BooleanSetting antiKick = registerBoolean("Anti Kick", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0.5, 1.5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10);
 
@@ -70,7 +71,7 @@ public class Flight extends Module {
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
-                double[] dir = MotionUtil.forward(0.0624 * speed.getValue());
+                double[] dir = MotionUtil.forward(0.0624 * packetSpeed.getValue());
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), false));
                 mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
