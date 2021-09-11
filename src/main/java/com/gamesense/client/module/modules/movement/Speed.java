@@ -7,6 +7,8 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -33,6 +35,7 @@ import java.util.Arrays;
 public class Speed extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "YPort"), "Strafe");
+    BooleanSetting deg = registerBoolean("45 Degree Boost", false);
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
     DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 0.13, 0.01, 0.3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
@@ -58,6 +61,9 @@ public class Speed extends Module {
             disable();
             return;
         }
+
+        mc.player.rotationPitch += 0.00001; // literally just get new packet that we cant even see for keepRotation to consistantly have rotation packets to use
+
 
         if (Anchor.active)
             return;
@@ -98,7 +104,7 @@ public class Speed extends Module {
                 }
 
                 event.setY(mc.player.motionY = speedY);
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : deg.getValue() ? speed.getValue() * 1.01980198 : speed.getValue());
                 slowDown = true;
                 timer.reset();
             } else {
@@ -145,6 +151,13 @@ public class Speed extends Module {
             }
         }
 
+        if (deg.getValue() && mc.player != null) { // we add 45° to our rotation and increase speed by set amount
+            if (event.getPacket() instanceof CPacketPlayer) {
+
+                ((CPacketPlayer) event.getPacket()).yaw = mc.player.rotationYaw + 45;
+
+            }
+        }
     });
 
     public String getHudInfo() {
