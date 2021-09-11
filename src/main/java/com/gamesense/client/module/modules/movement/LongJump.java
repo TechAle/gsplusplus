@@ -21,7 +21,7 @@ import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "Long Jump", category = Category.Movement)
+@Module.Declaration(name = "LongJump", category = Category.Movement)
 public class LongJump extends Module {
 
     BooleanSetting lagback = registerBoolean("Disable On LagBack", false);
