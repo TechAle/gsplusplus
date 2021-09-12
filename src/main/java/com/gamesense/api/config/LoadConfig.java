@@ -54,6 +54,7 @@ public class LoadConfig {
             loadAutoGG();
             loadAutoReply();
             loadAutoRespawn();
+            GameSense.LOGGER.info("Loadconfig initialized!");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -62,7 +63,7 @@ public class LoadConfig {
     public static void setProfile(String profile){
         GameSense.LOGGER.info("LoadConfig profile was set to " + profile);
 
-        fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile;
+        fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile+"/";
     }
 
     //big shoutout to lukflug for helping/fixing this

@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -36,10 +37,13 @@ public class ProfileManager {
     private static final String miscName = "Misc/";
     private static final String profilesPath = "profiles/";
 
+    public static Boolean profileFolder = false;
+
     private static String currentProfile = "";
 
     public static void init() {
         try {
+            if(!profileFolder)
             currentProfile = loadCurrentProfile();
             LoadConfig.setProfile(currentProfile);
             SaveConfig.setProfile(currentProfile);
@@ -53,7 +57,6 @@ public class ProfileManager {
         currentProfile = configName;
         try {
             saveCurrentProfile();
-            saveConfig();
             SaveConfig.setProfile(currentProfile);
             SaveConfig.init();
 
@@ -63,14 +66,31 @@ public class ProfileManager {
         GameSense.LOGGER.info("Created new config "+currentProfile);
     }
 
-    public static Collection<String> getProfiles() throws IOException{
+
+
+    public static Collection<String> getProfiles() {
 
         ArrayList<String> profiles = new ArrayList<>();
 
-        Path dir = Paths.get(fileName+profilesPath);
-        Files.walk(dir).forEach(path -> {
-            if(path.toFile().isDirectory())  profiles.add(path.toFile().getName());
-        });
+        profiles.add("default");
+
+        try {
+            File dir = new File(fileName + profilesPath);
+
+            Arrays.asList(dir.listFiles()).forEach(file -> {
+                if(file.isDirectory()) profiles.add(file.getName());
+            });
+
+        }catch(NullPointerException e){
+            e.printStackTrace();
+            try {
+                Files.createDirectories(Paths.get(fileName + profilesPath));
+            }catch(IOException ioException){
+                e.printStackTrace();
+            }
+        }
+
+        //if(profiles.isEmpty()) profiles.add();
 
         return profiles;
     }
@@ -79,22 +99,6 @@ public class ProfileManager {
         if (!Files.exists(Paths.get(fileName + profilesPath))) {
             Files.createDirectories(Paths.get(fileName + profilesPath));
         }
-
-        if(currentProfile.equals("")) return;
-
-        if (!Files.exists(Paths.get(fileName + profilesPath + currentProfile))) {
-            Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile));
-        }
-        if (!Files.exists(Paths.get(fileName + profilesPath + currentProfile + moduleName ))) {
-            Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile + moduleName));
-        }
-        if (!Files.exists(Paths.get(fileName + profilesPath + mainName))) {
-            Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile + mainName));
-        }
-        if (!Files.exists(Paths.get(fileName + profilesPath + miscName))) {
-            Files.createDirectories(Paths.get(fileName + profilesPath + currentProfile + miscName));
-        }
-        GameSense.LOGGER.info("created new config directory");
     }
 
     private static void registerFiles(String location, String name) throws IOException {
@@ -149,6 +153,7 @@ public class ProfileManager {
     }
 
     public static void setCurrentProfile(String newProfile) {
+        GameSense.LOGGER.info("Setting current profile " + newProfile);
         currentProfile = newProfile;
         LoadConfig.setProfile(currentProfile);
         SaveConfig.setProfile(currentProfile);

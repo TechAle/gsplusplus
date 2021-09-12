@@ -69,15 +69,19 @@ public class SaveConfig {
     private static void saveConfig() throws IOException {
         GameSense.LOGGER.warn("saveconfig file path: "+fileName);
         if (!Files.exists(Paths.get(fileName))) {
+            GameSense.LOGGER.warn("created dir: "+fileName);
             Files.createDirectories(Paths.get(fileName));
         }
         if (!Files.exists(Paths.get(fileName + moduleName))) {
+            GameSense.LOGGER.warn("created dir: "+fileName+moduleName);
             Files.createDirectories(Paths.get(fileName + moduleName));
         }
         if (!Files.exists(Paths.get(fileName + mainName))) {
+            GameSense.LOGGER.warn("created dir: "+fileName+mainName);
             Files.createDirectories(Paths.get(fileName + mainName));
         }
         if (!Files.exists(Paths.get(fileName + miscName))) {
+            GameSense.LOGGER.warn("created dir: "+fileName+miscName);
             Files.createDirectories(Paths.get(fileName + miscName));
         }
     }
