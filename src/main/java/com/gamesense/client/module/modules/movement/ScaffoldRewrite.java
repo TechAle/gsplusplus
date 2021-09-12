@@ -36,7 +36,7 @@ public class ScaffoldRewrite extends Module {
 
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
-    IntegerSetting distanceP = registerInteger("Distance Player", 2,0,20, () -> logic.getValue().equalsIgnoreCase("Player"));
+    IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
     IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20, () -> towerMode.getValue().equals("AirJump"));
     DoubleSetting jumpHeight = registerDouble("Air Jump Height", 0.42, 0, 1, () -> towerMode.getValue().equals("AirJump"));
@@ -62,7 +62,6 @@ public class ScaffoldRewrite extends Module {
     BlockPos rotPos;
 
     Vec2f rot;
-
     @Override
     protected void onEnable() {
         timer = 0;
@@ -70,9 +69,13 @@ public class ScaffoldRewrite extends Module {
 
     public void onUpdate() {
 
-        mc.player.rotationPitch += 0.00001; // literally just get new packet that we cant even see for keepRotation to consistantly have rotation packets to use
+//      literally just get new packet that we cant even see for keepRotation to consistently have rotation packets to use
+        if (mc.player.ticksExisted % 2 == 0)
+            mc.player.rotationPitch += 0.00001;
+        else
+            mc.player.rotationPitch -= 0.00001;
 
-        oldSlot = mc.player.inventory.currentItem;
+            oldSlot = mc.player.inventory.currentItem;
 
         towerPos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ);
         downPos = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
@@ -84,7 +87,7 @@ public class ScaffoldRewrite extends Module {
 
             predPlayer = PredictUtil.predictPlayer(mc.player, predset);
 
-            scaffold = (new BlockPos(predPlayer.posX,predPlayer.posY-1,predPlayer.posZ));
+            scaffold = (new BlockPos(predPlayer.posX, predPlayer.posY - 1, predPlayer.posZ));
 
             if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
                 scaffold.y = ModuleManager.getModule(Speed.class).yl;
@@ -99,7 +102,6 @@ public class ScaffoldRewrite extends Module {
 
             if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
                 scaffold.y = ModuleManager.getModule(Speed.class).yl;
-
 
 
         }
@@ -191,6 +193,7 @@ public class ScaffoldRewrite extends Module {
                         timer = 0;
 
                     }
+
                 }
             }
 
@@ -215,13 +218,12 @@ public class ScaffoldRewrite extends Module {
         }
     }
 
-
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
         rotPos = pos;
         rot = RotationUtil.getRotationTo(new Vec3d(rotPos));
 
-        if (silent.getValue()){
+        if (silent.getValue()) {
             mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
         } else {
 
@@ -255,7 +257,7 @@ public class ScaffoldRewrite extends Module {
         BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
 
 
-        if (!mc.player.onGround){
+        if (!mc.player.onGround) {
             placeBlockPacket(xppos, false);
             if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
                 placeBlockPacket(xmpos, false);
