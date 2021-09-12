@@ -34,7 +34,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "Speed", category = Category.Movement)
 public class Speed extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "YPort"), "Strafe");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort"), "Strafe");
     BooleanSetting deg = registerBoolean("45 Degree Boost", false);
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
@@ -161,14 +161,6 @@ public class Speed extends Module {
     });
 
     public String getHudInfo() {
-        String t = "";
-        if (mode.getValue().equalsIgnoreCase("Strafe")) {
-            t = "[" + ChatFormatting.WHITE + "Strafe" + ChatFormatting.GRAY + "]";
-        } else if (mode.getValue().equalsIgnoreCase("YPort")) {
-            t = "[" + ChatFormatting.WHITE + "YPort" + ChatFormatting.GRAY + "]";
-        } else if (mode.getValue().equalsIgnoreCase("Fake")) {
-            t = "[" + ChatFormatting.WHITE + "Fake" + ChatFormatting.GRAY + "]";
-        }
-        return t;
+        return "[" + ChatFormatting.WHITE + mode.getValue() + ChatFormatting.GRAY + "]";
     }
 }

@@ -12,6 +12,7 @@ import com.lukflug.panelstudio.hud.HUDList;
 import com.lukflug.panelstudio.hud.ListComponent;
 import com.lukflug.panelstudio.setting.Labeled;
 import com.lukflug.panelstudio.theme.ITheme;
+import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
@@ -82,5 +83,13 @@ public class LagNotifier extends HUDModule {
         public boolean sortRight() {
             return false;
         }
+    }
+
+    @Override
+    public String getHudInfo() {
+        if (lag) {
+            return "[" + ChatFormatting.RED + tmr + ChatFormatting.WHITE + "]";
+        } else
+            return "";
     }
 }
