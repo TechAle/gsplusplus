@@ -34,10 +34,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Motion", "Jump", "Clip"), "Jump");
-    DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -5, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
-    DoubleSetting motionMotion = registerDouble("Motion Speed", 0.42, 0.4, 0.45, () -> towerMode.getValue().equalsIgnoreCase("Motion"));
-    DoubleSetting clipSpeed = registerDouble("Clip Speed", 2, 0, 20, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Motion", "Jump"), "Jump");
     DoubleSetting downSpeed = registerDouble("Down Speed", 0, 0, 0.25);
     BooleanSetting rotate = registerBoolean("Rotate", true);
 
@@ -47,6 +44,7 @@ public class Scaffold extends Module {
 
     int oldSlot;
     int targetBlockSlot;
+    int timer;
 
     double oldTower;
     boolean doDown;
@@ -178,32 +176,23 @@ public class Scaffold extends Module {
 
                     if (mc.player.motionY == 0.0030162615090425808 ) {
 
-                        mc.player.motionY = jumpMotion.getValue(); // go down faster
+                        mc.player.motionY = -69; // go down faster
 
                     }
                     break;
 
                 case "Motion": {
 
-                    if (mc.player.onGround) {
-                        mc.player.isAirBorne = true;
-                        mc.player.motionY = motionMotion.getValue();
-                        oldTower = mc.player.posY;
-                    }
+                    if (mc.player.onGround)
+                        timer = 0;
+                    else
+                        timer++;
 
-                    if (mc.player.posY > oldTower + 0.42) {
+                    if (timer == 2 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ);
-                        mc.player.motionY = 0.42;
-                        oldTower = mc.player.posY;
-                    }
+                        mc.player.motionY = .42;
+                        timer = 0;
 
-                }
-                case "Clip": {
-
-                    if (clipTimer.hasReached(clipSpeed.getValue().longValue(), true)) {
-                        PlayerUtil.fakeJump();
-                        mc.player.posY += 1.16;
                     }
 
                 }
