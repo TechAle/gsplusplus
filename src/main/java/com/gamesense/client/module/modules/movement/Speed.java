@@ -48,8 +48,11 @@ public class Speed extends Module {
 
     int og;
 
+    public int yl;
+
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
+        yl = ((int) mc.player.posY);
     }
 
     public void onDisable() {

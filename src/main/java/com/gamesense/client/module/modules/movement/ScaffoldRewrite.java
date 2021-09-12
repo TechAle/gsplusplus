@@ -6,12 +6,9 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
 import com.gamesense.api.util.player.RotationUtil;
-import com.gamesense.api.util.world.BlockUtil;
-import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -27,13 +24,10 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 
 import java.util.Arrays;
 
@@ -41,13 +35,14 @@ import java.util.Arrays;
 public class ScaffoldRewrite extends Module {
 
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
-    IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20);
-    IntegerSetting distanceP = registerInteger("Distance Player", 2,0,20);
+    IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
+    IntegerSetting distanceP = registerInteger("Distance Player", 2,0,20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
     IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20, () -> towerMode.getValue().equals("AirJump"));
     DoubleSetting jumpHeight = registerDouble("Air Jump Height", 0.42, 0, 1, () -> towerMode.getValue().equals("AirJump"));
     DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
     DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting keepRot = registerBoolean("Keep rotated", false, () -> rotate.getValue());
     BooleanSetting silent = registerBoolean("Silent Switch", true);
@@ -91,7 +86,9 @@ public class ScaffoldRewrite extends Module {
 
             scaffold = (new BlockPos(predPlayer.posX,predPlayer.posY-1,predPlayer.posZ));
 
-            if (mc.gameSettings.keyBindSprint.isKeyDown()) scaffold.add(0, -1, 0);
+            if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
+                scaffold.y = ModuleManager.getModule(Speed.class).yl;
+
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
             scaffold = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ).down();
@@ -99,6 +96,11 @@ public class ScaffoldRewrite extends Module {
             double[] dir = MotionUtil.forward(distanceP.getValue());
 
             scaffold.add(dir[0], 0, dir[1]);
+
+            if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
+                scaffold.y = ModuleManager.getModule(Speed.class).yl;
+
+
 
         }
 
