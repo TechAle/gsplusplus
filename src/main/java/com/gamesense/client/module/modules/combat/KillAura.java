@@ -3,8 +3,10 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Pair;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
@@ -47,6 +49,8 @@ import java.util.Optional;
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
 
+    BooleanSetting hitDelay = registerBoolean("Hit Delay", false);
+    IntegerSetting hitSpeed = registerInteger("Hit Speed", 8,1,20, () -> !hitDelay.getValue());
     BooleanSetting players = registerBoolean("Players", true);
     BooleanSetting hostileMobs = registerBoolean("Monsters", false);
     BooleanSetting passiveMobs = registerBoolean("Animals", false);
@@ -60,6 +64,11 @@ public class KillAura extends Module {
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
 
     private boolean isAttacking = false;
+
+    boolean calcDelay = true;
+    int thisDelay;
+
+    Timer timer = new Timer();
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
@@ -115,6 +124,34 @@ public class KillAura extends Module {
                 mc.player.inventory.currentItem = temp;
             }
         }
+    }
+
+    void docalcdelay() {
+
+        if (calcDelay) {
+
+            thisDelay = hitSpeed.getValue();
+            calcDelay = false;
+
+        }
+
+    }
+
+    boolean getDelay() {
+
+        if (timer.getTimePassed() / 50L >= thisDelay)
+            return true;
+        else {
+            docalcdelay();
+            return false;
+        }
+
+    }
+
+    int getRand(int min, int max) {
+
+        return (((int) (Math.random() * (max - min))) + min);
+
     }
 
     @SuppressWarnings("unused")
@@ -185,10 +222,11 @@ public class KillAura extends Module {
     }
 
     private void attack(Entity e) {
-        if (mc.player.getCooledAttackStrength(0.0f) >= 1.0f) {
+        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || getDelay() && !hitDelay.getValue()) {
             isAttacking = true;
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
+            calcDelay = true;
             isAttacking = false;
         }
     }
