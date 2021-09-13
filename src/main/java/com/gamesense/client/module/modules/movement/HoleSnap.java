@@ -70,9 +70,10 @@ public class HoleSnap extends Module {
 
 
             yawRad = RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), new Vec3d(hole)).x * PI / 180;
+            double dist = mc.player.getPositionVector().distanceTo(new Vec3d(hole.getX(), hole.getY(), hole.getZ()));
 
             if (mc.player.onGround)
-                speed = 0.2805;
+                speed = Math.min(0.2805, dist / 2.0);
             else
                 speed = (mc.player.motionX * mc.player.motionZ) / 2;
 
