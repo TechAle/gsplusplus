@@ -8,6 +8,8 @@ public class BoatFix extends Module {
 
     @Override
     public void onUpdate() {
-        mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
+        if (mc.player.ridingEntity != null){
+            mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
+        }
     }
 }

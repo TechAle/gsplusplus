@@ -66,21 +66,18 @@ public class ElytraFlightRewrite extends Module {
 
                     } else {
 
-                        event.setY(-glideSpeed.getValue() - 0.0001);
+                        event.setY(-glideSpeed.getValue());
 
                     }
 
-                    if (!(MotionUtil.isMoving(mc.player))) {
-
-                        mc.player.motionX = (0);
-                        mc.player.motionZ = (0);
-
+                    if (MotionUtil.isMoving(mc.player)) {
+                        MotionUtil.setSpeed(mc.player, speed.getValue());
                     } else {
 
-                        MotionUtil.setSpeed(mc.player, speed.getValue());
+                        event.setX(0);
+                        event.setZ(0);
 
                     }
-
 
                 } else if (upMode.getValue().equalsIgnoreCase("Aim")) {
                     
@@ -91,29 +88,26 @@ public class ElytraFlightRewrite extends Module {
                     }
 
                     if (mc.player.rotationPitch > 0 || (upTimer.getTimePassed() >= 1500)) {
+                        if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        upTimer.reset();
+                            event.setY(ySpeed.getValue());
 
-                        setAng = true;
-
-                        if (mc.gameSettings.keyBindSneak.isKeyDown()) {
+                        } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
                             event.setY(-ySpeed.getValue());
 
                         } else {
 
-                            event.setY(-glideSpeed.getValue() - 0.0001);
+                            event.setY(-glideSpeed.getValue());
 
                         }
 
-
-                        if (!(MotionUtil.isMoving(mc.player))) {
-
-                            mc.player.motionX = (0);
-                            mc.player.motionZ = (0);
+                        if (MotionUtil.isMoving(mc.player)) {
+                            MotionUtil.setSpeed(mc.player, speed.getValue());
                         } else {
 
-                            MotionUtil.setSpeed(mc.player, speed.getValue());
+                            event.setX(0);
+                            event.setZ(0);
 
                         }
                     } else {

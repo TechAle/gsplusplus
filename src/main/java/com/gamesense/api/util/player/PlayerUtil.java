@@ -73,6 +73,10 @@ public class PlayerUtil {
         return closestTarget;
     }
 
+    public static boolean isPlayerClipped(){ // credit to cosmos
+    return !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0.125D, 0.15D, 0.125D)).isEmpty();
+}
+
     // Find player you are looking
     public static EntityPlayer findLookingPlayer(double rangeMax) {
         // Get player

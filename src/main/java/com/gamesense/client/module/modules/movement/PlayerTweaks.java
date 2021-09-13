@@ -48,6 +48,7 @@ public class PlayerTweaks extends Module {
 
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
+    BooleanSetting timerWebs = registerBoolean("No Slow Webs", false, () -> noSlow.getValue());
     BooleanSetting noSlowStrict = registerBoolean("Strict No Slow", false, () -> noSlow.getValue());
     @SuppressWarnings("unused")
     @EventHandler
@@ -287,6 +288,9 @@ public class PlayerTweaks extends Module {
                 }
             }
         }
+
+        if (mc.player.isInWeb && timerWebs.getValue() && noSlow.getValue())
+            mc.timer.tickLength = 2000; // timer 40
 
     }
 

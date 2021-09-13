@@ -220,6 +220,9 @@ public class ScaffoldRewrite extends Module {
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
+        if (!mc.world.isAirBlock(pos))
+            return;
+
         rotPos = pos;
         rot = RotationUtil.getRotationTo(new Vec3d(rotPos));
 
