@@ -35,6 +35,8 @@ public class FootWalker extends Module {
             beforeShiftJump;
     BooleanSetting allowEchest = registerBoolean("Allow Echest", true);
     BooleanSetting onlyEchest = registerBoolean("Only Echest", false, () -> allowEchest.getValue());
+    BooleanSetting allowAnvil = registerBoolean("Allow Anvil", true);
+    BooleanSetting onlyAnvil = registerBoolean("Only Anvil", false, () -> allowAnvil.getValue());
     BooleanSetting instaActive = registerBoolean("Insta Active", true);
     BooleanSetting disactiveAfter = registerBoolean("Insta disactive", true);
     BooleanSetting alwaysActive = registerBoolean("Always Active", false);
@@ -144,13 +146,18 @@ public class FootWalker extends Module {
         if (mc.player.onGround) {
 
             // Get block
-            int slotBlock = onlyEchest.getValue() ? -1 : InventoryUtil.findObsidianSlot(false, false);
+            int slotBlock = onlyEchest.getValue() ? -1 :
+                    onlyAnvil.getValue() ? -1 :
+                    InventoryUtil.findObsidianSlot(false, false);
 
             // If nothing found
             if (slotBlock == -1) {
                 // Get echest
                 if (allowEchest.getValue())
                     slotBlock = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+
+                if (allowAnvil.getValue())
+                    slotBlock = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
             }
 
             // If nothing found, return
