@@ -32,6 +32,7 @@ import java.util.Arrays;
 public class FootConcrete extends Module {
     ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real"));
+    BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake"));
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real"));
     BooleanSetting useTimer = registerBoolean("useTimer", true, () -> jumpMode.getValue().equals("real"));
     DoubleSetting timerSpeed = registerDouble("timerSpeed", 20, 1, 50, () -> useTimer.getValue() && jumpMode.getValue().equals("real"));
@@ -71,6 +72,9 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
 
     public void onEnable() {
+
+        if (smooth.getValue()) // so the server sends us to EXACTLY the same spot we clipped from (will test on footwalker)
+            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX,mc.player.posY,mc.player.posZ,mc.player.rotationYaw,mc.player.rotationPitch,mc.player.onGround));
 
         if (rotate.getValue()) {
 
