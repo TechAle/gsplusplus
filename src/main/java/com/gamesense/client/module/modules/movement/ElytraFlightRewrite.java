@@ -13,6 +13,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.MovementInput;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.Arrays;
@@ -22,7 +23,7 @@ public class ElytraFlightRewrite extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
-    ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> mode.getValue().equals("Control"));
+    ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10);
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10);
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, 0, 3);
@@ -70,8 +71,13 @@ public class ElytraFlightRewrite extends Module {
 
                     }
 
-                    if (MotionUtil.isMoving(mc.player)) {
-                        MotionUtil.setSpeed(mc.player, speed.getValue());
+                    if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
+
+                        double[] dir = MotionUtil.forward(speed.getValue());
+
+                        event.setX(dir[0]);
+                        event.setZ(dir[1]);
+
                     } else {
 
                         event.setX(0);
@@ -102,8 +108,13 @@ public class ElytraFlightRewrite extends Module {
 
                         }
 
-                        if (MotionUtil.isMoving(mc.player)) {
-                            MotionUtil.setSpeed(mc.player, speed.getValue());
+                        if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
+
+                            double[] dir = MotionUtil.forward(speed.getValue());
+
+                            event.setX(dir[0]);
+                            event.setZ(dir[1]);
+
                         } else {
 
                             event.setX(0);
