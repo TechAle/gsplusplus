@@ -718,7 +718,7 @@ public class AutoCrystalRewrite extends Module {
         boolean crystalIdExists(int id) {
             try {
                 return listWait.stream().anyMatch(e -> e.idCrystal == id);
-            } catch (NullPointerException ignored) {
+            } catch (NullPointerException | ConcurrentModificationException ignored) {
                 return false;
             }
         }
