@@ -35,6 +35,11 @@ public class AntiAim extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
+        if (mc.player.ticksExisted % 2 == 0)
+            mc.player.rotationPitch += 0.0001;
+        else
+            mc.player.rotationPitch -= 0.0001;
+
         Packet packet = event.getPacket();
         Random r = new Random();
 

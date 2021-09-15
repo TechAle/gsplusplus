@@ -1,160 +1,159 @@
 package com.gamesense.client.module.modules.combat;
 
-import com.gamesense.api.event.events.PacketEvent;
+
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import me.zero.alpine.listener.EventHandler;
-import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemBlock;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.client.CPacketPlayerDigging;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
 
 import java.util.Objects;
 
 @Module.Declaration(name = "TntMineCart", category = Category.Combat)
 public class TntMineCart extends Module {
 
-    IntegerSetting delay = registerInteger("Delay", 3, 0, 20);
-    BooleanSetting rotate = registerBoolean("Rotate", true);
-    BooleanSetting silent = registerBoolean("Silent Switch", true);
+    DoubleSetting range = registerDouble("Range", 5, 0, 10);
+    IntegerSetting delay = registerInteger("Cart Delay", 3, 0, 20);
+    IntegerSetting torchDelay = registerInteger("Torch Delay", 10, 0, 40);
+    BooleanSetting rotate = registerBoolean("Rotate", false);
 
-    EntityPlayer target;
+    Entity target;
+    BlockPos tpos;
+    Timer torchT = new Timer();
+    Timer retry = new Timer();
 
-    int slot;
-    int oldSlot;
-    int phase;
-
-    Vec2f rot;
+    boolean allowMC = true;
+    boolean allowTorch = true;
 
     @Override
     protected void onEnable() {
-        phase = 0;
-    }
-
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (rotate.getValue() && target != null) {
-            rot = RotationUtil.getRotationTo(target.getPositionVector());
-            if (event.getPacket() instanceof CPacketPlayer) {
-
-                ((CPacketPlayer) event.getPacket()).yaw = rot.x;
-                ((CPacketPlayer) event.getPacket()).pitch = rot.y;
-
-            }
-        }
-    });
-
-    public static int getSlot(Block blockToFind) {
-
-        int slot = -1;
-        for (int i = 0; i < 9; i++) {
-
-            ItemStack stack = mc.player.inventory.getStackInSlot(i);
-
-            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
-                continue;
-            }
-
-            Block block = ((ItemBlock) stack.getItem()).getBlock();
-            if (block.equals(blockToFind)) {
-                slot = i;
-                break;
-            }
-
-        }
-
-        return slot;
-
+        target = getTarget();
+        tpos = new BlockPos(target.getPositionVector());
+        allowMC = true;
+        allowTorch = true;
     }
 
     @Override
     public void onUpdate() {
-        if (target != null){
-            if (mc.world.isAirBlock(new BlockPos(target.getPositionVector())))
-                phase = 0;
-            else
-                phase = 1;
+        if (PlayerUtil.nullCheck()) {
 
-            switch (phase) {
-                case 0: {
+            if (getTargetValid(target)) {
 
-                    target = getTarget();
-                    oldSlot = mc.player.inventory.currentItem;
-                    slot = getSlot(Blocks.ACTIVATOR_RAIL);
+                disable();
+                return;
 
-                    if (!silent.getValue())
-                        mc.player.inventory.changeCurrentItem(slot);
+            }
 
-                    else
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            if (!(BlockUtil.getBlock(tpos) == Blocks.ACTIVATOR_RAIL)) {
 
-                    PlacementUtil.place(new BlockPos(target.getPositionVector()), EnumHand.MAIN_HAND, false); // we are already rotating with the listener
+                if (delay.getValue() % mc.player.ticksExisted == 0 && !(torchT.getTimePassed() / 50 >= torchDelay.getValue())) {
 
-                    if (silent.getValue())
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                    if (!(getSlot(Blocks.REDSTONE_TORCH) == -1)) {
+                        mc.player.inventory.currentItem = getSlot(Blocks.ACTIVATOR_RAIL);
+                    } else disable();
+
+                    mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(tpos, EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
+
+                    allowTorch = true;
 
                 }
-                case 1: {
+            } else if (!(torchT.getTimePassed() / 50 >= torchDelay.getValue())) {
 
-                    if (mc.player.ticksExisted % delay.getValue() == 0) {
-                        target = getTarget();
-                        oldSlot = mc.player.inventory.currentItem;
-                        slot = getSlot(Blocks.TNT);
+                allowMC = false;
 
-                        if (!silent.getValue())
-                            mc.player.inventory.changeCurrentItem(slot);
+                PlacementUtil.place(tpos.add(0, 1, 0), EnumHand.MAIN_HAND, rotate.getValue());
 
-                        else
-                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                allowTorch = false;
 
-                        mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(new BlockPos(target.getPositionVector()), EnumFacing.NORTH, EnumHand.MAIN_HAND, 0, 0, 0));
+                if (!(getSlot(Blocks.REDSTONE_TORCH) == -1)) {
+                    mc.player.inventory.currentItem = getSlot(Blocks.REDSTONE_TORCH);
+                } else disable();
 
-                        if (silent.getValue())
-                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                    }
-                }
-                case 2: {
+                mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.START_DESTROY_BLOCK, tpos.add(0, 1, 0), Objects.requireNonNull(BlockUtil.getPlaceableSide(tpos.add(0, 1, 0)))));
+                mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.STOP_DESTROY_BLOCK, tpos.add(0, 1, 0), Objects.requireNonNull(BlockUtil.getPlaceableSide(tpos.add(0, 1, 0)))));
 
-                    target = getTarget();
-                    oldSlot = mc.player.inventory.currentItem;
-                    slot = getSlot(Blocks.REDSTONE_TORCH);
+                retry.reset();
 
-                    if (!silent.getValue())
-                        mc.player.inventory.changeCurrentItem(slot);
+            } else if (retry.getTimePassed() >= 400) {
 
-                    else
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                allowTorch = true;
+                allowMC = true;
 
-                    PlacementUtil.place(new BlockPos(target.getPositionVector()).add(0,1,0), EnumHand.MAIN_HAND, false);
-
-                    if (silent.getValue())
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-
-                }
             }
         }
+
+
     }
 
-    public EntityPlayer getTarget() {
+    Entity getTarget() {
 
-        target = PlayerUtil.findClosestTarget();
-        return target;
+        return PlayerUtil.findClosestTarget(range.getValue(), null);
+
+    }
+
+    boolean getTargetValid(Entity existing) {
+
+        return target.getDistance(mc.player) > range.getValue();
+
+    }
+
+    int getSlot(Item item) {
+
+        int newSlot = -1;
+
+        for (int i = 0; i < 9; i++) {
+            // filter out non-block items
+            ItemStack stack =
+                    mc.player.inventory.getStackInSlot(i);
+
+
+            // filter out non-solid blocks
+            if (!(stack.getItem().getClass() == item.getClass()))
+                continue;
+
+
+            newSlot = i;
+            break;
+        }
+
+        return newSlot;
+
+    }
+
+    int getSlot(Block block) {
+
+        int newSlot = -1;
+
+        for (int i = 0; i < 9; i++) {
+            // filter out non-block items
+            ItemStack stack =
+                    mc.player.inventory.getStackInSlot(i);
+
+
+            // filter out non-solid blocks
+            if (!(Block.getBlockFromItem(stack.getItem()).getClass() == block.getClass()))
+                continue;
+
+
+            newSlot = i;
+            break;
+        }
+
+        return newSlot;
 
     }
 
