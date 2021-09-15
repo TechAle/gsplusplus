@@ -66,12 +66,12 @@ public class KillAura extends Module {
     private boolean isAttacking = false;
 
     boolean calcDelay = true;
-    int thisDelay;
-
-    Timer timer = new Timer();
+    int i;
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
+
+        i++;
 
         final double rangeSq = range.getValue() * range.getValue();
         Optional<Entity> optionalTarget = mc.world.loadedEntityList.stream()
@@ -124,28 +124,6 @@ public class KillAura extends Module {
                 mc.player.inventory.currentItem = temp;
             }
         }
-    }
-
-    void docalcdelay() {
-
-        if (calcDelay) {
-
-            thisDelay = hitSpeed.getValue();
-            calcDelay = false;
-
-        }
-
-    }
-
-    boolean getDelay() {
-
-        if (timer.getTimePassed() / 50L >= thisDelay)
-            return true;
-        else {
-            docalcdelay();
-            return false;
-        }
-
     }
 
     int getRand(int min, int max) {
@@ -222,12 +200,13 @@ public class KillAura extends Module {
     }
 
     private void attack(Entity e) {
-        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || getDelay() && !hitDelay.getValue()) {
+        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || i == hitSpeed.getValue() && !hitDelay.getValue()) {
             isAttacking = true;
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
             calcDelay = true;
             isAttacking = false;
+            i = 0;
         }
     }
 

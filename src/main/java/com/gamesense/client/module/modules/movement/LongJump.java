@@ -129,7 +129,7 @@ public class LongJump extends Module {
                 mc.player.jumpMovementFactor = mf;
                 mc.player.motionY = jumpHeight.getValue();
 
-            } else if (!(mc.player.jumpMovementFactor / 10 > factorMax.getValue() / 10)){
+            } else if (!(mc.player.jumpMovementFactor / 10 > factorMax.getValue() / 100)){
 
                 mc.player.jumpMovementFactor += speedFactor.getValue() / 10;
 
