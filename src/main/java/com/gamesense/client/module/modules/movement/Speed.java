@@ -125,7 +125,6 @@ public class Speed extends Module {
             double[] dir = MotionUtil.forward(speedCustom.getValue() * 10);
             event.setX(dir[0]);
             event.setZ(dir[1]);
-
             if (customHop.getValue() && mc.player.onGround) {
 
                 mc.player.motionY = customHeight.getValue();
@@ -150,9 +149,6 @@ public class Speed extends Module {
             disable();
             return;
         }
-
-        mc.player.rotationPitch += 0.00001; // literally just get new packet that we cant even see for keepRotation to consistantly have rotation packets to use
-
 
         if (Anchor.active)
             return;
