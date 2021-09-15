@@ -94,7 +94,7 @@ public class Speed extends Module {
 
             if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
-                    speedY += (Objects.requireNonNull(mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST)).getAmplifier() + 1) * 0.1f;
+                    speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
                 }
 
                 event.setY(mc.player.motionY = speedY);
@@ -106,7 +106,7 @@ public class Speed extends Module {
                     playerSpeed -= (EntityUtil.isColliding(0, -0.8, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid()) ? 0.4 : 0.7 * (playerSpeed = MotionUtil.getBaseMoveSpeed());
                     slowDown = false;
                 } else {
-                    playerSpeed -= playerSpeed / speed.getValue();
+                    playerSpeed -= playerSpeed / 159.0;
                 }
             }
             playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
@@ -114,6 +114,13 @@ public class Speed extends Module {
             event.setX(dir[0]);
             event.setZ(dir[1]);
         } else if (mode.getValue().equalsIgnoreCase("Custom")) {
+
+            /*
+            AIR_FRICTION = 0.98;
+            WATER_FRICTION = 0.89;
+            LAVA_FRICTION = 0.535;
+            BUNNY_DIV_FRICTION = 160.0 - MIN_DIF;
+            */
 
             double[] dir = MotionUtil.forward(speedCustom.getValue() * 10);
             event.setX(dir[0]);
