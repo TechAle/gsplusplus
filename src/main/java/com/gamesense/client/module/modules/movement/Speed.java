@@ -115,7 +115,7 @@ public class Speed extends Module {
             event.setZ(dir[1]);
         } else if (mode.getValue().equalsIgnoreCase("Custom")) {
 
-            double[] dir = MotionUtil.forward(speedCustom.getValue());
+            double[] dir = MotionUtil.forward(speedCustom.getValue() * 10);
             event.setX(dir[0]);
             event.setZ(dir[1]);
 
