@@ -277,16 +277,18 @@ public class ScaffoldRewrite extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
 
-        if (rotate.getValue() && keepRot.getValue()) {
+        try {
+            if (rotate.getValue() && keepRot.getValue()) {
 
-            if (event.getPacket() instanceof CPacketPlayer) {
+                if (event.getPacket() instanceof CPacketPlayer) {
 
-                ((CPacketPlayer) event.getPacket()).yaw = rot.x;
-                ((CPacketPlayer) event.getPacket()).pitch = rot.y;
+                    ((CPacketPlayer) event.getPacket()).yaw = rot.x;
+                    ((CPacketPlayer) event.getPacket()).pitch = rot.y;
+
+                }
 
             }
-
-        }
+        } catch (NullPointerException ignored) {}
     });
 
 }

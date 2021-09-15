@@ -78,7 +78,7 @@ public class Surround extends Module {
         PlacementUtil.onDisable();
         if (mc.player == null | mc.world == null) return;
 
-        if (outOfTargetBlock) setDisabledMessage("No obsidian detected... Surround turned OFF!");
+        if (outOfTargetBlock) setDisabledMessage("No valid blocks detected... Surround turned OFF!");
 
         if (oldSlot != mc.player.inventory.currentItem && oldSlot != -1 && oldSlot != 9) {
             mc.player.inventory.currentItem = oldSlot;
@@ -225,7 +225,7 @@ public class Surround extends Module {
 
         if (targetBlockSlot == 9) {
             activedOff = true;
-            if (mc.player.getHeldItemOffhand().getItem() instanceof ItemBlock && ((ItemBlock) mc.player.getHeldItemOffhand().getItem()).getBlock() instanceof BlockObsidian) {
+            if (mc.player.getHeldItemOffhand().getItem() instanceof ItemBlock && ((ItemBlock) mc.player.getHeldItemOffhand().getItem()).getBlock().blockHardness > 6) {
                 handSwing = EnumHand.OFF_HAND;
             } else return false;
         }
