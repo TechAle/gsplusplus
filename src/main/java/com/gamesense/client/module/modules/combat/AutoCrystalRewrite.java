@@ -191,6 +191,8 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue());
     BooleanSetting instaPlace = registerBoolean("Insta Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue());
+    BooleanSetting checkinstaPlace = registerBoolean("Check Insta Place", false,
+            () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     BooleanSetting forcePlace = registerBoolean("Force Place", false,
             () -> breakSection.getValue() && placeAfterBreak.getValue() && instaPlace.getValue());
     BooleanSetting antiWeakness = registerBoolean("Anti Weakness", false, () -> breakSection.getValue());
@@ -2688,9 +2690,15 @@ public class AutoCrystalRewrite extends Module {
             BlockPos position = forceBreak == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace;
             // instaPlace is fucking useless
             if (instaPlace.getValue()) {
-                EnumHand hand = getHandCrystal();
-                if (hand != null)
-                    placeCrystal(position, hand, true);
+                BlockPos crystal = null;
+                if (checkinstaPlace.getValue())
+                    crystal = getTargetPlacing(targetPlacing.getValue()).crystal;
+                // Ok, lets make instaPlace actual useful
+                if (!checkinstaPlace.getValue() || (crystal != null && sameBlockPos(position, crystal))) {
+                    EnumHand hand = getHandCrystal();
+                    if (hand != null)
+                        placeCrystal(position, hand, true);
+                }
             } else {
                 // ForcePlace is fine
                 forcePlaceCrystal = position;
