@@ -9,6 +9,7 @@ import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 
@@ -195,6 +196,9 @@ public class PredictUtil {
         clonedPlayer.prevPosX = entity.prevPosX;
         clonedPlayer.prevPosY = entity.prevPosY;
         clonedPlayer.prevPosZ = entity.prevPosZ;
+        for(PotionEffect effect : entity.getActivePotionEffects()) {
+            clonedPlayer.addPotionEffect(effect);
+        }
         return clonedPlayer;
     }
 
