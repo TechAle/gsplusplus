@@ -105,6 +105,10 @@ public class LongJump extends Module {
     public void onUpdate() {
         double[] dir = MotionUtil.forward(playerSpeed);
         if (mode.getValue().equalsIgnoreCase("Far")) {
+
+            if (mc.player.onGround)
+                hasaccel=false;
+
             if (mc.player.onGround && mc.gameSettings.keyBindForward.isKeyDown()) {
                 mc.player.motionX = dir[0] * initialFar.getValue().floatValue();
                 mc.player.motionZ = dir[1] * initialFar.getValue().floatValue();

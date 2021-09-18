@@ -22,6 +22,7 @@ public class Flight extends Module {
 
     ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
 
+    ModeSetting packetMode = registerMode("Packet Mode", Arrays.asList("Position", "Update"), "Position");
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -68,20 +69,32 @@ public class Flight extends Module {
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                if (packetMode.getValue().equalsIgnoreCase("Position")){
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, false));
+                } else {
+                    mc.player.setPosition(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ);
+                }
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
-
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                if (packetMode.getValue().equalsIgnoreCase("Position")){
+                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                } else {
+                    mc.player.setPosition(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ);
+                }
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
                 double[] dir = MotionUtil.forward(0.0624 * packetFactor.getValue());
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), mc.player.onGround));
+
+                if (packetMode.getValue().equalsIgnoreCase("Position")){
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), mc.player.onGround));
+                } else {
+                    mc.player.setPosition(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]));
+                }
                 bounded = true;
 
             }
