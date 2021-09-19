@@ -118,7 +118,7 @@ public class HoleSnap extends Module {
 
         for (int i = 0; i < holes.size(); i++) {
 
-            if (mc.player.getDistanceSq(holes.get(i)) > lastDist) {
+            if (mc.player.getDistanceSq(holes.get(i)) < lastDist) {
                 distPos = i;
                 lastDist = mc.player.getDistanceSq(holes.get(i));
             }

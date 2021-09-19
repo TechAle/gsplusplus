@@ -21,7 +21,6 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -234,8 +233,7 @@ public class PlayerTweaks extends Module {
                 continue;
             }
 
-            Block block = ((ItemBlock) stack.getItem()).getBlock();
-            if (block.equals(blockToFind)) {
+            if (stack.getItem() == blockToFind) {
                 slot = i;
                 break;
             }

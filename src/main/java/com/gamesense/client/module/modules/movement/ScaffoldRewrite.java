@@ -8,7 +8,7 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -17,7 +17,6 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -27,7 +26,6 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
@@ -45,7 +43,6 @@ public class ScaffoldRewrite extends Module {
     BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting keepRot = registerBoolean("Keep rotated", false, () -> rotate.getValue());
-    BooleanSetting silent = registerBoolean("Silent Switch", true);
 
     int timer;
 
@@ -62,6 +59,24 @@ public class ScaffoldRewrite extends Module {
     BlockPos rotPos;
 
     Vec2f rot;
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        try {
+            if (rotate.getValue() && keepRot.getValue()) {
+
+                if (event.getPacket() instanceof CPacketPlayer) {
+
+                    ((CPacketPlayer) event.getPacket()).yaw = rot.x;
+                    ((CPacketPlayer) event.getPacket()).pitch = rot.y;
+
+                }
+
+            }
+        } catch (NullPointerException ignored) {
+        }
+    });
+
     @Override
     protected void onEnable() {
         timer = 0;
@@ -75,7 +90,7 @@ public class ScaffoldRewrite extends Module {
         else
             mc.player.rotationPitch -= 0.00001;
 
-            oldSlot = mc.player.inventory.currentItem;
+        oldSlot = mc.player.inventory.currentItem;
 
         towerPos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ);
         downPos = new BlockPos(mc.player.posX, mc.player.posY - 2, mc.player.posZ);
@@ -220,36 +235,22 @@ public class ScaffoldRewrite extends Module {
 
     void placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
-        if (!mc.world.isAirBlock(pos))
-            return;
+        boolean shouldplace = mc.world.getBlockState(pos).getBlock().isReplaceable(mc.world,pos) && BlockUtil.getPlaceableSide(pos) != null;
 
-        rotPos = pos;
-        rot = RotationUtil.getRotationTo(new Vec3d(rotPos));
+        if (shouldplace) {
 
-        if (silent.getValue()) {
             mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
-        } else {
-
             mc.player.inventory.currentItem = newSlot;
 
-        }
 
-        if (mc.world != null) {
-            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue() && !keepRot.getValue());
-        }
+            PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue(), false);
 
-        //Switch back
-        if (silent.getValue()) {
             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-        }
+            mc.player.inventory.currentItem = oldSlot;
 
-        if (allowSupport) {
-            if (mc.world.getBlockState(pos).getBlock() instanceof BlockAir) {
+        } else if (allowSupport)
+            clutch();
 
-                clutch();
-
-            }
-        }
     }
 
     public void clutch() {
@@ -273,23 +274,6 @@ public class ScaffoldRewrite extends Module {
             }
         }
     }
-
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        try {
-            if (rotate.getValue() && keepRot.getValue()) {
-
-                if (event.getPacket() instanceof CPacketPlayer) {
-
-                    ((CPacketPlayer) event.getPacket()).yaw = rot.x;
-                    ((CPacketPlayer) event.getPacket()).pitch = rot.y;
-
-                }
-
-            }
-        } catch (NullPointerException ignored) {}
-    });
 
 }
 

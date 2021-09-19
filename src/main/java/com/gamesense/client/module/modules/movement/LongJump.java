@@ -24,20 +24,29 @@ import java.util.Arrays;
 @Module.Declaration(name = "LongJump", category = Category.Movement)
 public class LongJump extends Module {
 
-    BooleanSetting lagback = registerBoolean("Disable On LagBack", false);
-    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor"), "Far");
+    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor", "Normal"), "Far");
+
     DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+
+
+
+    DoubleSetting farSpeed = registerDouble("farSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
+    IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
+    DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
+
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting jumpHeightVelo = registerDouble("Jump Height Velocity", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     BooleanSetting allowY = registerBoolean("Velocity Multiply", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting xzvelocity = registerDouble("XZ Velocity Multiplier", 0.1,0,5, () -> mode.getValue().equalsIgnoreCase("Bypass"));
     DoubleSetting yvelocity = registerDouble("Y Velocity Multiplier", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting farSpeed = registerDouble("farSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
-    IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
-    DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
-    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
+
     DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Factor"));
     DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Factor"));
+
+    DoubleSetting normalSpeed = registerDouble("Normal Speed", 3,0,10);
+
+    BooleanSetting lagback = registerBoolean("Disable On LagBack", false);
+    DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
 
     Double playerSpeed;
 
@@ -136,6 +145,17 @@ public class LongJump extends Module {
             } else if (!(mc.player.jumpMovementFactor / 10 > factorMax.getValue() / 100)){
 
                 mc.player.jumpMovementFactor += speedFactor.getValue() / 10;
+
+            }
+
+        } else if (mode.getValue().equalsIgnoreCase("Normal")) {
+
+            if (mc.player.onGround && MotionUtil.isMoving(mc.player)) {
+
+                mc.player.motionY = jumpHeight.getValue();
+
+                mc.player.motionX = dir[0] * normalSpeed.getValue();
+                mc.player.motionZ = dir[1] * normalSpeed.getValue();
 
             }
 

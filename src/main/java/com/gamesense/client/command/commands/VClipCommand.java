@@ -18,7 +18,7 @@ public class VClipCommand extends Command {
             String main = message[0];
 
             try {
-                amount = Integer.parseInt(main);
+                amount = Double.parseDouble(main);
                 MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + main + " blocks up", true);
 
             } catch (NumberFormatException e) {
