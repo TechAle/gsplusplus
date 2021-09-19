@@ -46,6 +46,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "PlayerTweaks", category = Category.Movement)
 public class PlayerTweaks extends Module {
 
+    BooleanSetting boatFix = registerBoolean("Boat Yaw Fix", false);
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting timerWebs = registerBoolean("No Slow Webs", false, () -> noSlow.getValue());
@@ -266,6 +267,11 @@ public class PlayerTweaks extends Module {
     }
 
     public void onUpdate() {
+
+            if (mc.player.ridingEntity != null && boatFix.getValue()){
+                mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
+            }
+
         if (guiMove.getValue() && mc.currentScreen != null) {
             if (!(mc.currentScreen instanceof GuiChat)) {
                 if (Keyboard.isKeyDown(200)) {
