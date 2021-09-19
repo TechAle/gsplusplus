@@ -1,4 +1,4 @@
-# GS++
+# GameSense++
 <!-- PROJECT SHIELDS -->
 [![license](https://img.shields.io/badge/License-GPL_v3.0-white.svg)](https://github.com/lukflug/gamesense-client/blob/master/LICENSE)
 ![minecraft](https://img.shields.io/badge/Minecraft-1.12.2-blue.svg)
@@ -6,12 +6,12 @@
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
-* [Information](#Information)
-    * [About](#About)
-    * [Questions](#Questions)
-* [gs++ Contributors](#gs Contributors)
-* [GameSense Contributors](#GameSense Contributors)
-* [GameSense Credits](#GameSense Credits)
+
+* [About](#about)
+* [Questions](#questions)
+* [gs++ Contributors](#gs-contributors)
+* [GameSense Contributors](#gamesense-contributors)
+* [GameSense Credits](#gamesense-credits)
 
 
 <!-- INFORMATION -->
