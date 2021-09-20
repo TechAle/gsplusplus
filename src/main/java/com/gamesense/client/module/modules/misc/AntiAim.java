@@ -10,6 +10,7 @@ import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.Packet;
+import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 import scala.util.Random;
 
@@ -35,10 +36,7 @@ public class AntiAim extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
-        if (mc.player.ticksExisted % 2 == 0)
-            mc.player.rotationPitch += 0.0001;
-        else
-            mc.player.rotationPitch -= 0.0001;
+        mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,mc.player.rotationPitch,mc.player.onGround));
 
         Packet packet = event.getPacket();
         Random r = new Random();

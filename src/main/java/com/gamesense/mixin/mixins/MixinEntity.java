@@ -5,7 +5,6 @@ import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.movement.SafeWalk;
 import com.gamesense.client.module.modules.movement.Scaffold;
-import com.gamesense.client.module.modules.movement.ScaffoldRewrite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,6 +28,6 @@ public class MixinEntity {
 
     @Redirect(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isSneaking()Z"))
     public boolean isSneaking(Entity entity) {
-        return (ModuleManager.isModuleEnabled(Scaffold.class) || ModuleManager.isModuleEnabled(ScaffoldRewrite.class)) && !Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown()|| ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
+        return (ModuleManager.isModuleEnabled(Scaffold.class)) && !Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown()|| ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
     }
 }
