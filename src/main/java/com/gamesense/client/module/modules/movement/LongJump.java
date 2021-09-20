@@ -24,7 +24,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "LongJump", category = Category.Movement)
 public class LongJump extends Module {
 
-    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor", "Normal"), "Far");
+    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor", "Ground"), "Far");
 
     DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
 
@@ -43,7 +43,7 @@ public class LongJump extends Module {
     DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Factor"));
     DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Factor"));
 
-    DoubleSetting normalSpeed = registerDouble("Normal Speed", 3,0,10);
+    DoubleSetting normalSpeed = registerDouble("Normal Speed", 3,0,10, () -> mode.getValue().equalsIgnoreCase("Ground"));
 
     BooleanSetting lagback = registerBoolean("Disable On LagBack", false);
     DoubleSetting jumpHeight = registerDouble("jumpHeight", 0.41, 0, 1);
@@ -148,7 +148,7 @@ public class LongJump extends Module {
 
             }
 
-        } else if (mode.getValue().equalsIgnoreCase("Normal")) {
+        } else if (mode.getValue().equalsIgnoreCase("Ground")) {
 
             if (mc.player.onGround && MotionUtil.isMoving(mc.player)) {
 
