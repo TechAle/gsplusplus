@@ -1,3 +1,4 @@
+/*
 package com.gamesense.client.module.modules.misc;
 
 
@@ -5,6 +6,7 @@ import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -36,7 +38,9 @@ public class AntiAim extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
-        mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,mc.player.rotationPitch,mc.player.onGround));
+        if (PlayerUtil.nullCheck()){
+            mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
+        }
 
         Packet packet = event.getPacket();
         Random r = new Random();
@@ -83,4 +87,4 @@ public class AntiAim extends Module {
         nextVal += speenSpeed.getValue();
 
     }
-}
+}*/
