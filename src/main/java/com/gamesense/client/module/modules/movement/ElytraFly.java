@@ -19,7 +19,7 @@ import net.minecraft.util.math.MathHelper;
 import java.util.Arrays;
 
 @Module.Declaration(name = "ElytraFlightRewrite", category = Category.Movement)
-public class ElytraFlightRewrite extends Module {
+public class ElytraFly extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
