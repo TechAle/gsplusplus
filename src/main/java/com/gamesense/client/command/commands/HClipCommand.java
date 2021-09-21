@@ -23,7 +23,10 @@ public class HClipCommand extends Command {
 
             try {
                 amount = Double.parseDouble(main);
-                MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + main + " blocks forward.", true);
+                if (amount >= 0){
+                    MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + amount + " blocks forward.", true);
+                } else
+                    MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + -amount + " blocks backward.", true);
 
                 final Vec3d dir = new Vec3d(Math.cos((mc.player.rotationYaw + 90f) * Math.PI / 180.0f), 0, Math.sin((mc.player.rotationYaw + 90f) * Math.PI / 180.0f));
 
