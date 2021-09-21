@@ -45,10 +45,11 @@ import java.util.Arrays;
 @Module.Declaration(name = "PlayerTweaks", category = Category.Movement)
 public class PlayerTweaks extends Module {
 
-    BooleanSetting boatFix = registerBoolean("Boat Yaw Fix", false);
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
-    BooleanSetting timerWebs = registerBoolean("No Slow Webs", false, () -> noSlow.getValue());
+    public BooleanSetting webT = registerBoolean("No Slow Web", false);
+    public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
+    BooleanSetting boatFix = registerBoolean("Boat Yaw Fix", false);
     BooleanSetting noSlowStrict = registerBoolean("Strict No Slow", false, () -> noSlow.getValue());
     @SuppressWarnings("unused")
     @EventHandler
@@ -66,7 +67,6 @@ public class PlayerTweaks extends Module {
         } else
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
     });
-    public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     BooleanSetting noPush = registerBoolean("No Push", false);
     @SuppressWarnings("unused")
     @EventHandler
@@ -174,7 +174,7 @@ public class PlayerTweaks extends Module {
                     int oldSlot = mc.player.inventory.currentItem;
                     int slot = catchM.getValue().equalsIgnoreCase("Web") ? getSlot(Blocks.WEB) : getSlot(Items.WATER_BUCKET);
 
-                    if (slot != -1){
+                    if (slot != -1) {
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
 
                         if (catchM.getValue().equalsIgnoreCase("Web")) {
@@ -183,7 +183,7 @@ public class PlayerTweaks extends Module {
                             } catch (NullPointerException ignored) {
                             }
                         } else {
-                            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0,0,0));
+                            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0, 0, 0));
                         }
 
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
@@ -266,9 +266,14 @@ public class PlayerTweaks extends Module {
 
     public void onUpdate() {
 
-            if (mc.player.ridingEntity != null && boatFix.getValue()){
-                mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
-            }
+        if (mc.player.ridingEntity != null && boatFix.getValue()) {
+            mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
+        }
+
+        if (!ModuleManager.getModule(Timer.class).isEnabled() && mc.player.isInWeb && webT.getValue())
+            mc.timer.tickLength = 1;
+        else
+            mc.timer.tickLength = 50;
 
         if (guiMove.getValue() && mc.currentScreen != null) {
             if (!(mc.currentScreen instanceof GuiChat)) {
@@ -292,10 +297,6 @@ public class PlayerTweaks extends Module {
                 }
             }
         }
-
-        if (mc.player.isInWeb && timerWebs.getValue() && noSlow.getValue())
-            mc.timer.tickLength = 2000; // timer 40
-
     }
 
     private boolean predict(BlockPos blockPos) {
@@ -308,9 +309,10 @@ public class PlayerTweaks extends Module {
         BlockPos e = null;
 
         for (int i = 0; i < 5; i++) {
-        // get down block and add 1
-            if (!mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()).add(0,-i,0))){
-                e = new BlockPos(mc.player.getPositionVector()).add(0,-i+1,0); break;
+            // get down block and add 1
+            if (!mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()).add(0, -i, 0))) {
+                e = new BlockPos(mc.player.getPositionVector()).add(0, -i + 1, 0);
+                break;
             }
         }
 

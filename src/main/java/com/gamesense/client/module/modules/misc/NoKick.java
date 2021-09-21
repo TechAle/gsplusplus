@@ -8,6 +8,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.init.SoundEvents;
+import net.minecraft.network.play.client.CPacketUpdateSign;
 import net.minecraft.network.play.server.SPacketSoundEffect;
 
 /**
@@ -20,6 +21,7 @@ public class NoKick extends Module {
     public BooleanSetting noPacketKick = registerBoolean("Packet", true);
     BooleanSetting noSlimeCrash = registerBoolean("Slime", false);
     BooleanSetting noOffhandCrash = registerBoolean("Offhand", false);
+    BooleanSetting noSignCrash = registerBoolean("Cancel Sign Edit", false);
 
     public void onUpdate() {
         if (mc.world != null && noSlimeCrash.getValue()) {
@@ -44,5 +46,16 @@ public class NoKick extends Module {
                 }
             }
         }
+    });
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        if (event.getPacket() instanceof CPacketUpdateSign && noSignCrash.getValue()) {
+
+            event.cancel();
+
+        }
+
     });
 }
