@@ -18,10 +18,11 @@ import net.minecraft.util.math.MathHelper;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "ElytraFlightRewrite", category = Category.Movement)
+@Module.Declaration(name = "ElytraFly", category = Category.Movement)
 public class ElytraFly extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
+    BooleanSetting packet = registerBoolean("Packet", false);
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10);
@@ -48,6 +49,9 @@ public class ElytraFly extends Module {
                 }
 
             } else if (mode.getValue().equals("Control")) {
+
+                if (packet.getValue())
+                    mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                 if (upMode.getValue().equalsIgnoreCase("Jump")) {
 

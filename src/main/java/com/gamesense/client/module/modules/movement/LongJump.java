@@ -24,24 +24,24 @@ import java.util.Arrays;
 @Module.Declaration(name = "LongJump", category = Category.Movement)
 public class LongJump extends Module {
 
-    ModeSetting mode = registerMode("mode", Arrays.asList("Strafe", "Far", "Bypass", "Factor", "Ground"), "Far");
+    ModeSetting mode = registerMode("mode", Arrays.asList("Bhop", "Peak", "Ground", "Velocity", "Continuous"), "Peak");
 
-    DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting speed = registerDouble("strafeSpeed", 2.15, 0, 10, () -> mode.getValue().equalsIgnoreCase("Bhop"));
 
 
 
-    DoubleSetting farSpeed = registerDouble("farSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
-    IntegerSetting farAccel = registerInteger("farAccelerate", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Far"));
-    DoubleSetting initialFar = registerDouble("initialFarSpeed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Far"));
+    DoubleSetting farSpeed = registerDouble("Peak Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Peak"));
+    IntegerSetting farAccel = registerInteger("Peak Acceleration", 0, 1, 5, () -> mode.getValue().equalsIgnoreCase("Peak"));
+    DoubleSetting initialFar = registerDouble("Peak Hop Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Peak"));
 
-    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting jumpHeightVelo = registerDouble("Jump Height Velocity", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    BooleanSetting allowY = registerBoolean("Velocity Multiply", true, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting xzvelocity = registerDouble("XZ Velocity Multiplier", 0.1,0,5, () -> mode.getValue().equalsIgnoreCase("Bypass"));
-    DoubleSetting yvelocity = registerDouble("Y Velocity Multiplier", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("Bypass"));
+    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equalsIgnoreCase("Velocity"));
+    DoubleSetting jumpHeightVelo = registerDouble("Jump Height Velocity", 1,0,10, () -> mode.getValue().equalsIgnoreCase("Velocity"));
+    BooleanSetting allowY = registerBoolean("Velocity Multiply", true, () -> mode.getValue().equalsIgnoreCase("Velocity"));
+    DoubleSetting xzvelocity = registerDouble("XZ Velocity Multiplier", 0.1,0,5, () -> mode.getValue().equalsIgnoreCase("Velocity"));
+    DoubleSetting yvelocity = registerDouble("Y Velocity Multiplier", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("Velocity"));
 
-    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Factor"));
-    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Factor"));
+    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Continuous"));
+    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Continuous"));
 
     DoubleSetting normalSpeed = registerDouble("Normal Speed", 3,0,10, () -> mode.getValue().equalsIgnoreCase("Ground"));
 
@@ -80,7 +80,7 @@ public class LongJump extends Module {
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
-        if (mode.getValue().equals("Strafe")) {
+        if (mode.getValue().equals("Bhop")) {
             if (mc.player.isInLava() || mc.player.isInWater() || mc.player.isOnLadder() || mc.player.isInWeb || Anchor.active) {
                 return;
             }
@@ -113,7 +113,7 @@ public class LongJump extends Module {
     @Override
     public void onUpdate() {
         double[] dir = MotionUtil.forward(playerSpeed);
-        if (mode.getValue().equalsIgnoreCase("Far")) {
+        if (mode.getValue().equalsIgnoreCase("Peak")) {
 
             if (mc.player.onGround)
                 hasaccel=false;
@@ -135,7 +135,7 @@ public class LongJump extends Module {
 
 
             }
-        } else if (mode.getValue().equalsIgnoreCase("Factor")) {
+        } else if (mode.getValue().equalsIgnoreCase("Continuous")) {
 
             if (mc.player.onGround) {
 
@@ -166,7 +166,7 @@ public class LongJump extends Module {
     private final Listener<PacketEvent.Receive> receiveListenerTwo = new Listener<>(event -> {
 
         if ((event.getPacket() instanceof SPacketExplosion || event.getPacket() instanceof SPacketEntityVelocity) && mc.player != null) {
-            if (mode.getValue().equals("Bypass")) {
+            if (mode.getValue().equals("Velocity")) {
 
                 double[] dir = MotionUtil.forward(1);
 

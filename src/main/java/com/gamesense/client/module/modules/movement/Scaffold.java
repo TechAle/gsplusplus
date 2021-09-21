@@ -29,7 +29,7 @@ import net.minecraft.util.math.Vec2f;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "ScaffoldRewrite", category = Category.Movement)
+@Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
@@ -248,9 +248,8 @@ public class Scaffold extends Module {
             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
             mc.player.inventory.currentItem = oldSlot;
 
-        } else if (allowSupport)
+        } else if (allowSupport && BlockUtil.getPlaceableSide(pos) == null)
             clutch();
-
     }
 
     public void clutch() {
@@ -261,15 +260,13 @@ public class Scaffold extends Module {
         BlockPos zmpos = new BlockPos(mc.player.posX, mc.player.posY - 1, mc.player.posZ - 1);
 
 
-        if (!mc.player.onGround) {
-            placeBlockPacket(xppos, false);
-            if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
-                placeBlockPacket(xmpos, false);
-                if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
-                    placeBlockPacket(zppos, false);
-                    if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
-                        placeBlockPacket(zmpos, false);
-                    }
+        placeBlockPacket(xppos, false);
+        if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+            placeBlockPacket(xmpos, false);
+            if (mc.world.getBlockState(xmpos).getMaterial().isReplaceable()) {
+                placeBlockPacket(zppos, false);
+                if (mc.world.getBlockState(xppos).getMaterial().isReplaceable()) {
+                    placeBlockPacket(zmpos, false);
                 }
             }
         }
