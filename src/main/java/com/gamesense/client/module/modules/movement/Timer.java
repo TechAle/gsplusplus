@@ -26,10 +26,14 @@ public class Timer extends Module {
 
     @Override
     public void onUpdate() {
-        if (!onMove.getValue() && !onSpeedOnly.getValue()|| MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()|| onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class) && !onMove.getValue() && MotionUtil.isMoving(mc.player)) {
+        if ((!onMove.getValue() && !onSpeedOnly.getValue()|| MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()|| onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class) && !onMove.getValue() && MotionUtil.isMoving(mc.player)) && !(!(mc.player.onGround) && ModuleManager.getModule(PlayerTweaks.class).webT.getValue() && mc.player.isInWeb)) {
             doTimer();
         } else {
-            mc.timer.tickLength = 50;
+            if (!(mc.player.onGround) && ModuleManager.getModule(PlayerTweaks.class).webT.getValue() && mc.player.isInWeb)
+                mc.timer.tickLength = 1;
+            else{
+                mc.timer.tickLength = 50;
+            }
         }
     }
 
