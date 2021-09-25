@@ -7,8 +7,10 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -28,6 +30,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static java.lang.Math.PI;
+import static java.lang.Math.sin;
 
 /**
  * @author Hoosiers
@@ -141,7 +146,7 @@ public class Surround extends Module {
                 } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
 
                     mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
-                    mc.player.setPositionAndUpdate(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5); // Updating makes it look different lol
+                    mc.player.setPositionAndUpdate(calcX(), mc.player.posY, calcZ()); // Updating makes it look different lol
 
                 }
             }
@@ -284,6 +289,26 @@ public class Surround extends Module {
 
         return vl.toArray();
 
+    }
+
+    double calcX() {
+
+        float yawRad = (float) (RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), mc.player.getPositionVector()).x * PI / 180);
+
+        if (Math.floor(mc.player.posX) + 0.5 > MotionUtil.getMotion(20.20))
+            return -sin(yawRad) * MotionUtil.getMotion(20.20) + mc.player.posX;
+        else
+            return (Math.floor(mc.player.posX) + .5);
+    }
+
+    double calcZ() {
+
+        float yawRad = (float) (RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), mc.player.getPositionVector()).x * PI / 180);
+
+        if (Math.floor(mc.player.posZ) + 0.5 > MotionUtil.getMotion(20.20))
+            return -sin(yawRad) * MotionUtil.getMotion(20.20) + mc.player.posZ;
+        else
+            return (Math.floor(mc.player.posZ) + .5);
     }
 
 }

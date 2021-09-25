@@ -4,6 +4,7 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.render.GSColor;
@@ -31,16 +32,16 @@ public class HoleSnap extends Module {
 
     DoubleSetting range = registerDouble("Range", 4, 0, 10);
     BooleanSetting render = registerBoolean("Render", true);
-    IntegerSetting width = registerInteger("Width", 2,0,10);
-    ColorSetting colour = registerColor("Colour", new GSColor(0,255,0));
+    IntegerSetting width = registerInteger("Width", 2, 0, 10, () -> render.getValue());
+    ColorSetting colour = registerColor("Colour", new GSColor(0, 255, 0), () -> render.getValue());
 
     BlockPos hole;
 
     double yawRad,
             speed;
 
-    double lastDist = -1;
-    int distPos = -1;
+    double lastDist;
+    BlockPos distPos;
 
     private ConcurrentHashMap<AxisAlignedBB, Integer> holes;
 
@@ -81,7 +82,7 @@ public class HoleSnap extends Module {
             mc.player.motionZ = cos(yawRad) * speed;
 
             if (render.getValue())
-                RenderUtil.drawLine(mc.player.posX,Math.floor(mc.player.posY),mc.player.posZ,hole.x,Math.floor(hole.y),hole.z, colour.getColor(), width.getValue());
+                RenderUtil.drawLine(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ, hole.x, Math.floor(hole.y), hole.z, colour.getColor(), width.getValue());
 
             if (mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) < 0.5) {
                 mc.player.setPositionAndUpdate(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
@@ -109,28 +110,29 @@ public class HoleSnap extends Module {
                 if (centreBlocks == null)
                     return;
 
-                if (holeType == HoleUtil.HoleType.SINGLE && mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0,1,0)) && mc.world.isAirBlock(pos.add(0,2,0)) && pos.getY() <= mc.player.posY) {
+                if (holeType == HoleUtil.HoleType.SINGLE && mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos.add(0, 2, 0)) && pos.getY() <= mc.player.posY) {
                     holes.add(pos);
                 }
             }
         });
 
+        distPos = new BlockPos(Double.POSITIVE_INFINITY, 69, 429);
+        lastDist = (int) Double.POSITIVE_INFINITY;
 
-        for (int i = 0; i < holes.size(); i++) {
+        for (BlockPos blockPos : holes) {
 
-            if (mc.player.getDistanceSq(holes.get(i)) < lastDist) {
-                distPos = i;
-                lastDist = mc.player.getDistanceSq(holes.get(i));
+            if (mc.player.getDistanceSq(blockPos) < lastDist) {
+                distPos = blockPos;
+                lastDist = mc.player.getDistanceSq(blockPos);
             }
+
         }
 
-        try{
-            return holes.get(distPos);
-        } catch (IndexOutOfBoundsException e) {
-            disable();
+        if (!distPos.equals(new BlockPos(Double.POSITIVE_INFINITY, 69, 429))) {
+            return distPos;
+        } else {
             return null;
         }
-
     }
 }
 /*            for (int i = 0; i < holes.size(); i++) {
