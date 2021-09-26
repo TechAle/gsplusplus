@@ -1,3 +1,4 @@
+/*
 package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.event.events.PacketEvent;
@@ -83,3 +84,4 @@ public class AntiAim extends Module {
 
     }
 }
+*/
