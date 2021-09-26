@@ -9,7 +9,6 @@ import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.EntityUtil;
-import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -20,13 +19,10 @@ import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.NonNullList;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Doogie13
@@ -44,7 +40,7 @@ public class FootConcrete extends Module {
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
-    IntegerSetting range = registerInteger("clipRange", 50, 1, 256, () -> general.getValue());
+    IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
 
 
@@ -217,25 +213,7 @@ public class FootConcrete extends Module {
         }
     }
 
-    BlockPos getTwo() {
-
-        HoleUtil.HoleInfo hole = HoleUtil.isHole(new BlockPos(mc.player.getPositionVector()), false, true);
-        AxisAlignedBB aabb = hole.getCentre();
-        Vec3d posV = aabb.getCenter();
-
-        if (mc.world.isAirBlock(new BlockPos(posV.add(0, 0, .5)))) {
-
-            return new BlockPos(posV.add(0, 0, .5));
-
-        } else {
-
-            return new BlockPos(posV.add(.5, 0, 0));
-
-        }
-
-    }
-
-    private List<BlockPos> findHoles() {
+    private BlockPos findHoles() {
         NonNullList<BlockPos> holes = NonNullList.create();
 
         //from old HoleFill module, really good way to do this
@@ -243,19 +221,23 @@ public class FootConcrete extends Module {
 
         for (BlockPos pos : blockPosList) {
 
-            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2)
+            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
                 holes.add(pos);
+                break;
+            }
 
         }
 
-        return holes;
+        return holes.get(0);
     }
 
     void getPacket() {
 
+        BlockPos pos = findHoles();
+
         try {
-            MessageBus.sendClientPrefixMessage(findHoles().get(findHoles().size() - 1).getX() + " " + findHoles().get(findHoles().size() - 1).getY() + " " + findHoles().get(findHoles().size() - 1).getZ() + "");
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(findHoles().get(findHoles().size() - 1).getX())+.5, findHoles().get(findHoles().size() - 1).getY(), Math.floor(findHoles().get(findHoles().size() - 1).getZ())+.5, true));
+            MessageBus.sendClientPrefixMessage("Pos: " + Math.floor(pos.x)+0.5 + " " + Math.floor(pos.y)  + " " +  Math.floor(pos.z)+0.5 + " " + mc.world.isAirBlock(pos.down()));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x)+0.5, Math.floor(pos.y), Math.floor(pos.z)+0.5, mc.world.isAirBlock(pos.down())));
         } catch (Exception e) {
 
             MessageBus.sendClientPrefixMessage(e + "");
