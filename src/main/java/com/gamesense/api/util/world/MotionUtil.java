@@ -10,6 +10,12 @@ public class MotionUtil {
         return entity.moveForward != 0 || entity.moveStrafing != 0;
     }
 
+    public static double getMotion(double kmh) {
+
+        return ((kmh / 3.6) / 20);
+
+    }
+
     public static void setSpeed(final EntityLivingBase entity, final double speed) {
         double[] dir = forward(speed);
         entity.motionX = dir[0];

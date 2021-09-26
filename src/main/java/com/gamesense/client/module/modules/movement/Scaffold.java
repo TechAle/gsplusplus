@@ -35,11 +35,7 @@ public class Scaffold extends Module {
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "AirJump", "None"), "Motion");
-    IntegerSetting airJumpDelay = registerInteger("Air Jump Delay", 3, 0, 20, () -> towerMode.getValue().equals("AirJump"));
-    DoubleSetting jumpHeight = registerDouble("Air Jump Height", 0.42, 0, 1, () -> towerMode.getValue().equals("AirJump"));
-    DoubleSetting jumpMotion = registerDouble("Jump Speed", -5, 0, -10, () -> towerMode.getValue().equalsIgnoreCase("Jump"));
-    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     BooleanSetting keepRot = registerBoolean("Keep rotated", false, () -> rotate.getValue());
@@ -109,11 +105,7 @@ public class Scaffold extends Module {
 
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
-            scaffold = new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ).down();
-
-            double[] dir = MotionUtil.forward(distanceP.getValue());
-
-            scaffold.add(dir[0], 0, dir[1]);
+            scaffold = new BlockPos(mc.player.posX + (mc.player.motionX + distanceP.getValue()), mc.player.posY, mc.player.posZ + (mc.player.motionZ * distanceP.getValue())).down();
 
             if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
                 scaffold.y = ModuleManager.getModule(Speed.class).yl;
@@ -159,24 +151,7 @@ public class Scaffold extends Module {
 
             switch (towerMode.getValue()) {
 
-                case "Motion": { // might be broken
-                    if (mc.player.onGround) {
-                        mc.player.isAirBorne = true;
-                        mc.player.motionY = 0.41583072100313484;
-                        oldTower = mc.player.posY;
-                    }
-
-                    if (mc.player.posY > oldTower + 0.42) {
-
-                        mc.player.setPosition(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ);
-                        mc.player.motionY = 0.42;
-                        oldTower = mc.player.posY;
-                    }
-
-                    break;
-
-                }
-                case "Jump": { // Should work in mean time
+                case "Jump": {
 
                     if (mc.player.onGround) {
 
@@ -187,7 +162,7 @@ public class Scaffold extends Module {
 
                     if (mc.player.posY > oldTower + 1.15) /* peak of jump is ~ 1.17ish so we will reach 1.1 */ {
 
-                        mc.player.motionY = jumpMotion.getValue(); // go down faster
+                        mc.player.motionY = -69; // go down faster
 
                     }
 
@@ -195,16 +170,16 @@ public class Scaffold extends Module {
 
                 }
 
-                case "AirJump": { // Best scaffold ever 100%
+                case "Motion": { // Best scaffold ever 100%
 
                     if (mc.player.onGround)
                         timer = 0;
                     else
                         timer++;
 
-                    if (timer == airJumpDelay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
+                    if (timer == 3 && mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                        mc.player.motionY = jumpHeight.getValue();
+                        mc.player.motionY = 0.42;
                         timer = 0;
 
                     }
