@@ -49,7 +49,7 @@ import java.util.Optional;
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
 
-    BooleanSetting hitDelay = registerBoolean("Hit Delay", false);
+    BooleanSetting hitDelay = registerBoolean("Hit Delay", true);
     IntegerSetting hitSpeed = registerInteger("Hit Speed", 8,1,20, () -> !hitDelay.getValue());
     BooleanSetting players = registerBoolean("Players", true);
     BooleanSetting hostileMobs = registerBoolean("Monsters", false);
@@ -66,12 +66,9 @@ public class KillAura extends Module {
     private boolean isAttacking = false;
 
     boolean calcDelay = true;
-    int i;
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
-
-        i++;
 
         final double rangeSq = range.getValue() * range.getValue();
         Optional<Entity> optionalTarget = mc.world.loadedEntityList.stream()
@@ -200,13 +197,12 @@ public class KillAura extends Module {
     }
 
     private void attack(Entity e) {
-        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || i == hitSpeed.getValue() && !hitDelay.getValue()) {
+        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || mc.player.ticksExisted % hitSpeed.getValue() == 0 && !hitDelay.getValue()) {
             isAttacking = true;
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
             calcDelay = true;
             isAttacking = false;
-            i = 0;
         }
     }
 

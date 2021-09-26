@@ -221,7 +221,7 @@ public class FootConcrete extends Module {
 
         for (BlockPos pos : blockPosList) {
 
-            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
+            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && !mc.world.isAirBlock(pos.down()) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
                 holes.add(pos);
                 break;
             }
@@ -236,7 +236,7 @@ public class FootConcrete extends Module {
         BlockPos pos = findHoles();
 
         try {
-            MessageBus.sendClientPrefixMessage("Pos: " + Math.floor(pos.x)+0.5 + " " + Math.floor(pos.y)  + " " +  Math.floor(pos.z)+0.5 + " " + mc.world.isAirBlock(pos.down()));
+            MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x)+0.5) + " " + Math.floor(pos.y)  + " " +  (Math.floor(pos.z)+0.5) + " " + mc.world.isAirBlock(pos.down()));
             mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x)+0.5, Math.floor(pos.y), Math.floor(pos.z)+0.5, mc.world.isAirBlock(pos.down())));
         } catch (Exception e) {
 

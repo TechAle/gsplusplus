@@ -160,7 +160,7 @@ public class Scaffold extends Module {
 
                     }
 
-                    if (mc.player.posY > oldTower + 1.15) /* peak of jump is ~ 1.17ish so we will reach 1.1 */ {
+                    if (Math.floor(mc.player.posY) == oldTower + 1) {
 
                         mc.player.motionY = -69; // go down faster
 

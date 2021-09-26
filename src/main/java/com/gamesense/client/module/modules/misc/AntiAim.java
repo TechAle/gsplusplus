@@ -1,6 +1,4 @@
-/*
 package com.gamesense.client.module.modules.misc;
-
 
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -11,8 +9,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.network.Packet;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 import scala.util.Random;
 
@@ -34,6 +30,7 @@ public class AntiAim extends Module {
 
     DoubleSetting customPitch = registerDouble("customPitch", 0, -90, 90);
     DoubleSetting yawYaw = registerDouble("customYaw", 0, -90, 90);
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
@@ -41,30 +38,28 @@ public class AntiAim extends Module {
         if (PlayerUtil.nullCheck()){
             mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
         }
-
-        Packet packet = event.getPacket();
         Random r = new Random();
 
-        if (packet instanceof CPacketPlayer) {
+        if (event.getPacket() instanceof CPacketPlayer) {
             if (pitchMode.getValue().equals("Random")) {
-                ((CPacketPlayer) packet).pitch = r.nextInt((90 - -90) + 1) + -90;
+                ((CPacketPlayer) event.getPacket()).pitch = r.nextInt((90 - -90) + 1) + -90;
             }
             if (yawMode.getValue().equals("Random")) {
-                ((CPacketPlayer) packet).yaw = r.nextInt((90 - -90) + 1) + -90;
+                ((CPacketPlayer) event.getPacket()).yaw = r.nextInt((90 - -90) + 1) + -90;
             }
 
             if (pitchMode.getValue().equals("Custom")) {
-                ((CPacketPlayer) packet).pitch = customPitch.getValue().floatValue();
+                ((CPacketPlayer) event.getPacket()).pitch = customPitch.getValue().floatValue();
             }
             if (yawMode.getValue().equals("Custom")) {
-                ((CPacketPlayer) packet).yaw = yawYaw.getValue().floatValue();
+                ((CPacketPlayer) event.getPacket()).yaw = yawYaw.getValue().floatValue();
             }
 
             if (pitchMode.getValue().equals("Speen")) {
-                ((CPacketPlayer) packet).pitch = nextVal;
+                ((CPacketPlayer) event.getPacket()).pitch = nextVal;
             }
             if (yawMode.getValue().equals("Speen")) {
-                ((CPacketPlayer) packet).yaw = nextVal;
+                ((CPacketPlayer) event.getPacket()).yaw = nextVal;
             }
 
         }
@@ -87,4 +82,4 @@ public class AntiAim extends Module {
         nextVal += speenSpeed.getValue();
 
     }
-}*/
+}

@@ -15,7 +15,6 @@ import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -28,11 +27,8 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
-import static java.lang.Math.PI;
-import static java.lang.Math.sin;
+import static java.lang.Math.*;
 
 /**
  * @author Hoosiers
@@ -42,25 +38,23 @@ import static java.lang.Math.sin;
 @Module.Declaration(name = "Surround", category = Category.Combat)
 public class Surround extends Module {
 
+    private final Timer delayTimer = new Timer();
     ModeSetting jumpMode = registerMode("Jump", Arrays.asList("Continue", "Pause", "Disable"), "Continue");
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum","Anti City"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum", "Anti City"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
-    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Snap", "Motion", "None"), "Snap");
+    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Snap", "Motion", "Min", "None"), "Snap");
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
-
-    private final Timer delayTimer = new Timer();
+    boolean hasPlaced;
     private Vec3d centeredBlock = Vec3d.ZERO;
-
     private int oldSlot = -1;
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
-    boolean hasPlaced;
 
     public void onEnable() {
         PlacementUtil.onEnable();
@@ -126,7 +120,7 @@ public class Surround extends Module {
             }
         }
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if ((outOfTargetBlock || targetBlockSlot == -1) && disableNoBlock.getValue()) {
             outOfTargetBlock = true;
@@ -139,16 +133,28 @@ public class Surround extends Module {
         if (HoleUtil.isHole((new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
 
             // if statement to check if we need to center. needs work
-            if (intersects(mc.player)) {
 
-                if (centreMode.getValue().equalsIgnoreCase("Motion")) {
-                    PlayerUtil.centerPlayer(centeredBlock);
-                } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+            if (centreMode.getValue().equalsIgnoreCase("Motion")) {
+                PlayerUtil.centerPlayer(centeredBlock);
+            } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
 
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
-                    mc.player.setPositionAndUpdate(calcX(), mc.player.posY, calcZ()); // Updating makes it look different lol
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
+                mc.player.setPositionAndUpdate(calcX(), mc.player.posY, calcZ()); // Updating makes it look different lol
 
-                }
+            } else if (mc.player.getCollisionBoundingBox() != null && centreMode.getValue().equalsIgnoreCase("Min")) {
+
+                BlockPos centre = new BlockPos(mc.player.getPositionVector());
+                double yawRad = RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), new Vec3d(centre)).x * PI / 180;
+                double dist = Math.sqrt(mc.player.getDistanceSq(centre));
+                double size = mc.player.getCollisionBoundingBox().maxX - mc.player.getCollisionBoundingBox().minX;
+                double speed = dist - size;
+
+                boolean needs = dist > size;
+
+                if (needs)
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(-sin(yawRad) * speed + centre.x, mc.player.posY, cos(yawRad) * speed + centre.z, mc.player.onGround));
+
+
             }
 
         }
@@ -212,16 +218,10 @@ public class Surround extends Module {
         }
     }
 
-    private boolean intersects(Entity pl) {
-
-        return true; // will be made to check collision
-
-    }
-
     private boolean placeBlock(BlockPos pos) {
         EnumHand handSwing = EnumHand.MAIN_HAND;
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if (targetBlockSlot == -1) {
             outOfTargetBlock = true;
@@ -252,40 +252,17 @@ public class Surround extends Module {
 
         Vec3d[] vec = Offsets.SURROUND_MIN;
 
-        ArrayList<Integer> list = new ArrayList<Integer>();
-        ArrayList<Vec3d> vl = new ArrayList<Vec3d>();
+        ArrayList<Vec3d> vl = new ArrayList<>(Arrays.asList(vec));
 
         for (Vec3d vec3d : vec) {
 
-            if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null)
-                list.add(0);
-            else
-                list.add(1);
+            if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null) {
 
-        }
-
-        for (int i = 0; i < list.size(); i++) {
-
-            if (list.get(i) != 0) {
-
-                if (list.get(i) == 1) {
-                    switch (i) {
-                        case 0:
-                            new Vec3d(-1, -1, 0);
-                        case 1:
-                            new Vec3d(1, -1, 0);
-                        case 2:
-                            new Vec3d(0, -1, -1);
-                        case 3:
-                            new Vec3d(0, -1, 1);
-                    }
-                }
+                vl.add(vec3d.add(0, -1, 0));
 
             }
 
         }
-
-        Collections.addAll(vl, vec);
 
         return vl.toArray();
 

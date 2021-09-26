@@ -7,6 +7,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import io.netty.util.internal.MathUtil;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -14,8 +15,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketInput;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent;
+
+import static java.lang.Math.PI;
 
 @Module.Declaration(name = "Freecam", category = Category.Render)
 public class Freecam extends Module {
@@ -89,7 +93,11 @@ public class Freecam extends Module {
             }
         } else {
 
-            mc.player.motionY = (this.speed.getValue() * (-degToRad(mc.player.rotationPitch))) * mc.player.movementInput.moveForward;
+            double pitchRad = mc.player.rotationPitch * PI / 180;
+            if (MotionUtil.isMoving(mc.player)){
+                mc.player.motionY = -Math.sin(pitchRad) * speed.getValue();
+            }
+
 
         }
 
@@ -129,7 +137,7 @@ public class Freecam extends Module {
     });
 
     public static double degToRad(double deg) {
-        return deg * (float) (Math.PI / 180.0f);
+        return deg * (float) (PI / 180.0f);
     }
 
 }

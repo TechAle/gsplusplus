@@ -84,7 +84,7 @@ public class HoleSnap extends Module {
             if (render.getValue())
                 RenderUtil.drawLine(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ, hole.x, Math.floor(hole.y), hole.z, colour.getColor(), width.getValue());
 
-            if (mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) < 0.5) {
+            if (mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) < 0) {
                 mc.player.setPositionAndUpdate(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
                 mc.player.setVelocity(0, 0, 0);
                 disable();

@@ -4,13 +4,17 @@ import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketExplosion;
+import net.minecraft.network.play.server.SPacketPlayerListItem;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
@@ -20,8 +24,9 @@ public class Flight extends Module {
 
     float flyspeed;
     boolean bounded;
+    int tpid = 0;
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage"), "Static");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage", "AirJump"), "Static");
 
     ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI", "PF"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
 
@@ -29,9 +34,13 @@ public class Flight extends Module {
     ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
 
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet")&& !mode.getValue().equalsIgnoreCase("AirJump"));
+    DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet")&& !mode.getValue().equalsIgnoreCase("AirJump"));
+    DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !mode.getValue().equalsIgnoreCase("AirJump"));
+
+    DoubleSetting min = registerDouble("Min Motion", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("AirJump"));
+    DoubleSetting jspeed = registerDouble("Speed", 0,0,5, () -> mode.getValue().equalsIgnoreCase("AirJump"));
+    DoubleSetting height = registerDouble("Jump Height", 0.42, 0, 1, () -> mode.getValue().equalsIgnoreCase("AirJump"));
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -72,14 +81,18 @@ public class Flight extends Module {
             if (mc.gameSettings.keyBindSneak.isKeyDown() && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
 
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, false));
+
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(++tpid));
 
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(++tpid));
 
                 bounded = true;
 
@@ -89,6 +102,8 @@ public class Flight extends Module {
                 double[] dir = MotionUtil.forward(0.0624 * packetFactor.getValue());
 
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), mc.player.onGround));
+
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(++tpid));
 
                 bounded = true;
 
@@ -129,6 +144,28 @@ public class Flight extends Module {
 
         }
 
+    });
+
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+
+        double[] dir = MotionUtil.forward(jspeed.getValue());
+
+        if (event.getPacket() instanceof SPacketExplosion) {
+            if ((((SPacketExplosion) event.getPacket()).motionX + ((SPacketExplosion) event.getPacket()).motionZ) / 2 >= min.getValue()) {
+                mc.player.motionY = height.getValue();
+
+                mc.player.motionX = dir[0];
+                mc.player.motionZ = dir[1];
+            }
+
+        }
+
+        if (event.getPacket() instanceof SPacketPlayerPosLook) {
+
+                tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
+
+        }
 
     });
 
@@ -163,6 +200,7 @@ public class Flight extends Module {
             mc.player.jump();
 
         }
+        tpid = 0;
     }
 
     @Override

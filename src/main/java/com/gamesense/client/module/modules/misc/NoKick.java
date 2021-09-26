@@ -10,6 +10,8 @@ import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.network.play.client.CPacketUpdateSign;
 import net.minecraft.network.play.server.SPacketSoundEffect;
+import org.lwjgl.LWJGLUtil;
+import org.lwjgl.input.Keyboard;
 
 /**
  * @see com.gamesense.mixin.mixins.MixinNetworkManager
@@ -21,7 +23,7 @@ public class NoKick extends Module {
     public BooleanSetting noPacketKick = registerBoolean("Packet", true);
     BooleanSetting noSlimeCrash = registerBoolean("Slime", false);
     BooleanSetting noOffhandCrash = registerBoolean("Offhand", false);
-    BooleanSetting noSignCrash = registerBoolean("Cancel Sign Edit", false);
+    BooleanSetting noSignCrash = registerBoolean("Cancel Sign Edit", false); // shift to actually write sign lol
 
     public void onUpdate() {
         if (mc.world != null && noSlimeCrash.getValue()) {
@@ -39,7 +41,7 @@ public class NoKick extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-        if (noOffhandCrash.getValue()) {
+        if (noOffhandCrash.getValue() && !Keyboard.isKeyDown(42)) {
             if (event.getPacket() instanceof SPacketSoundEffect) {
                 if (((SPacketSoundEffect) event.getPacket()).getSound() == SoundEvents.ITEM_ARMOR_EQUIP_GENERIC) {
                     event.cancel();

@@ -36,7 +36,9 @@ public class MessageBus {
         if (notifications.isEnabled() && notifications.disableChat.getValue()) {
             return;
         }
-        mc.player.sendMessage(string1);
+        if (mc.player != null && mc.world != null){
+            mc.player.sendMessage(string1);
+        }
     }
 
     /**

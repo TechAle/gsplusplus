@@ -48,36 +48,6 @@ public class Speed extends Module {
     int og;
     Double speedF;
 
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (mode.getValue().equalsIgnoreCase("OnGround") && event.getPacket() instanceof CPacketPlayer) {
-
-            if (mc.player.onGround) {
-                double[] dir = MotionUtil.forward(onGroundSpeed.getValue());
-                switch (og) {
-
-                    case 0: {
-                        ((CPacketPlayer) event.getPacket()).y = 0.42;
-                        ((CPacketPlayer) event.getPacket()).onGround = false;
-                        mc.player.motionX += dir[0];
-                        mc.player.motionZ += dir[1];
-                        og++;
-
-                    }
-                    case 1: {
-                        og++;
-
-                    }
-                    case 2: {
-
-                        og = 0;
-
-                    }
-                }
-            }
-        }
-    });
     private boolean slowDown;
     private double playerSpeed;
     @SuppressWarnings("unused")
@@ -129,6 +99,17 @@ public class Speed extends Module {
 
                 mc.player.motionY = customHeight.getValue();
 
+            }
+
+        } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
+
+            if (mc.player.onGround) {
+                mc.player.posY += 0.3993000090122223;
+                mc.player.motionY = 0.3993000090122223;
+                mc.player.distanceWalkedOnStepModified = 44.0f;
+                mc.player.motionX *= 1.590000033378601;
+                mc.player.motionZ *= 1.590000033378601;
+                mc.player.cameraPitch = 0.0f;
             }
 
         }
