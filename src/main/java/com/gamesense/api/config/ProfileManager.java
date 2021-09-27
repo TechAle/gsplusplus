@@ -43,7 +43,8 @@ public class ProfileManager {
 
     public static void init() {
         try {
-            if(!profileFolder)
+            //if(!profileFolder)
+            GameSense.LOGGER.info("loading current profile !");
             currentProfile = loadCurrentProfile();
             LoadConfig.setProfile(currentProfile);
             SaveConfig.setProfile(currentProfile);
@@ -115,6 +116,9 @@ public class ProfileManager {
     private static void saveCurrentProfile() throws IOException {
 
         registerFiles(miscName, "CurrentProfile");
+        GameSense.LOGGER.info("registered file!");
+
+
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         OutputStreamWriter fileOutputStreamWriter = new OutputStreamWriter(new FileOutputStream(fileName + miscName + "CurrentProfile" + ".json"), StandardCharsets.UTF_8);

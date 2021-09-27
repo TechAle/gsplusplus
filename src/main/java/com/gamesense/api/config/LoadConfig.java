@@ -41,6 +41,7 @@ public class LoadConfig {
     public static void init() {
         try {
             loadModules();
+            //GameSense.LOGGER.info("loading modules initialized!");
             loadEnabledModules();
             loadModuleKeybinds();
             loadDrawnModules();
@@ -67,7 +68,7 @@ public class LoadConfig {
     }
 
     //big shoutout to lukflug for helping/fixing this
-    private static void loadModules() throws IOException {
+    private static void loadModules()  {
         String moduleLocation = fileName + moduleName;
 
         for (Module module : ModuleManager.getModules()) {

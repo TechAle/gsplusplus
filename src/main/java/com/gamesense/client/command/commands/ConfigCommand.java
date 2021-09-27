@@ -15,7 +15,7 @@ import net.minecraft.util.text.event.HoverEvent;
 
 import java.io.IOException;
 
-@Command.Declaration(name = "Config", syntax = "config list/add/load/remove configName", alias = {"config", "profile", "save"})
+@Command.Declaration(name = "Config", syntax = "config list/add/load/remove configName", alias = {"config", "profile"})
 public class ConfigCommand extends Command {
 
     @Override
