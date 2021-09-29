@@ -37,6 +37,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockAnvil;
 import net.minecraft.block.BlockWeb;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -203,6 +204,8 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && slowBreak.getValue().equals("Tick"));
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
+    BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
+    BooleanSetting anvilPredict = registerBoolean("Anvil Predict", false, () -> breakSection.getValue());
     //endregion
 
     //region Misc
@@ -557,6 +560,7 @@ public class AutoCrystalRewrite extends Module {
     //region Binds
     StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
     StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
+    StringSetting anvilBind = registerString("Anvil Bind", "");
     //endregion
     //endregion
 
@@ -845,6 +849,12 @@ public class AutoCrystalRewrite extends Module {
             );
         }
 
+        boolean hasCrystal(BlockPos crystal) {
+            return endCrystalPlaced.stream().anyMatch(
+                    check -> sameBlockPos(check.posCrystal, crystal)
+            );
+        }
+
         // Update every crystals and delete the one that are ready
         void updateCrystals() {
             for(int i = 0; i < endCrystalPlaced.size(); i++) {
@@ -966,6 +976,7 @@ public class AutoCrystalRewrite extends Module {
 
     long timePlace = 0;
     long timeBreak = 0;
+    BlockPos anvilBreak = null;
 
     Vec3d lastHitVec;
 
@@ -1022,6 +1033,7 @@ public class AutoCrystalRewrite extends Module {
         forceBreak = null;
         forceBreakPlace = null;
         lastHitVec = null;
+        anvilBreak = null;
         // Idk shits happened
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
@@ -1086,6 +1098,21 @@ public class AutoCrystalRewrite extends Module {
         managerRenderBlocks.update(lifeTime.getValue());
     }
 
+    void cityAnvil() {
+        if (mc.player.getDistanceSq(anvilBreak) < 36 && BlockUtil.getBlock(anvilBreak) instanceof BlockAnvil) {
+            if (mc.player.inventory.getCurrentItem().getItem() != Items.DIAMOND_PICKAXE) {
+                int slot = InventoryUtil.findFirstItemSlot(Items.DIAMOND_PICKAXE.getClass(), 0, 8);
+                if (slot == -1) {
+                    anvilBreak = null;
+                    return;
+                }
+                mc.player.inventory.currentItem = slot;
+            }
+            mc.player.swingArm(EnumHand.MAIN_HAND);
+            mc.playerController.onPlayerDamageBlock(anvilBreak, EnumFacing.UP);
+        } else anvilBreak = null;
+    }
+
     // Simple onUpdate, boring
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isDead || stopAC) return;
@@ -1104,6 +1131,8 @@ public class AutoCrystalRewrite extends Module {
         if (stopGapple(true))
             return;
 
+        if (anvilBreak != null)
+            cityAnvil();
         // Start ca (And here we go! It's 02:30am, i want to sleep. Kinda feel alone ngl)
         /*
             These days have been really hard and ya, i missed coding.
@@ -2734,6 +2763,59 @@ public class AutoCrystalRewrite extends Module {
         if (showBreakCrystalsSecond.getValue())
             attempedCrystalBreak.addCrystalId(cr.getPosition(), cr.entityId, 500);
 
+        // Anvil predict
+        if (anvilPredict.getValue())
+            // If we have a bind
+            if (anvilBind.getText().length() > 0)
+                // If we are pressing a button
+                if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(anvilBind.getText().charAt(0))) && bestBreak.damage > 7) {
+
+                    boolean isCity = false;
+                    boolean missOneBlock = false;
+                    BlockPos city = BlockPos.ORIGIN;
+                    // Check if the target is getting city
+                    for(Vec3i surround : new Vec3i[]{
+                            new Vec3i(1, 0, 0),
+                            new Vec3i(-1, 0, 0),
+                            new Vec3i(0, 0, 1),
+                            new Vec3i(0, 0, -1)
+                    }) {
+                        if (BlockUtil.getBlock(bestBreak.target.entity.posX + surround.x, bestBreak.target.entity.posY, bestBreak.target.entity.posZ + surround.z) instanceof BlockAir)
+                            if (missOneBlock) {
+                                isCity = false;
+                            } else {
+                                missOneBlock = true;
+                                isCity = true;
+                                city = bestBreak.target.entity.getPosition().add(surround);
+                            }
+                    }
+
+                    if (isCity) {
+                        // Get anvil
+                        int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                        if (slot != -1) {
+                            int oldSlot = mc.player.inventory.currentItem;
+                            // Place anvil
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                            PlacementUtil.place(city, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                            // Return back
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                            anvilBreak = city;
+
+                            // ForcePlace is fine
+                            forcePlaceCrystal = forceBreak == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace;
+                            ;
+                            if (forceBreak == null) {
+                                forcePlaceDamage = bestBreak.damage;
+                                forcePlaceTarget = bestBreak.target;
+                            } else {
+                                forcePlaceDamage = 10;
+                                forcePlaceTarget = new PlayerInfo(mc.player, 0);
+                            }
+                        }
+                    }
+                }
+
         return true;
     }
 
@@ -3653,6 +3735,32 @@ public class AutoCrystalRewrite extends Module {
                     case "Time":
                         existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
                         break;
+                }
+
+                if (predictHit.getValue()) {
+                    boolean hit = false;
+                    switch(chooseCrystal.getValue()) {
+                        case "All":
+                            hit = true;
+                            break;
+                        case "Own":
+                            if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
+                                hit = true;
+                            break;
+                        case "Smart":
+                            if ( sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
+                                hit = true;
+                            break;
+                    }
+
+                    if (hit) {
+                        CPacketUseEntity attack = new CPacketUseEntity();
+                        ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
+                        ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                        mc.player.connection.sendPacket((Packet)attack);
+                        mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
+
+                    }
                 }
             }
         }
