@@ -149,6 +149,10 @@ public class Flight extends Module {
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
 
+        // Wtf, how the fuck this break the connection between you and the server
+        if (mc.world == null || mc.player == null)
+            return;
+
         double[] dir = MotionUtil.forward(jspeed.getValue());
 
         if (event.getPacket() instanceof SPacketExplosion) {
@@ -192,6 +196,11 @@ public class Flight extends Module {
 
     @Override
     protected void onEnable() {
+
+        // This does not fix but, avoid a spam in the console -TechAle
+        if (mc.world == null || mc.player == null)
+            return;
+
         flyspeed = mc.player.capabilities.getFlySpeed();
 
         if (mode.getValue().equalsIgnoreCase("Damage")) {
