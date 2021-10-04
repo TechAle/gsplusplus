@@ -10,6 +10,7 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
@@ -23,6 +24,7 @@ public class ShulkerViewer extends Module {
     public ColorSetting fillColor = registerColor("Fill", new GSColor(0, 0, 0, 255));
 
     public void renderShulkerPreview(ItemStack itemStack, int posX, int posY, int width, int height) {
+
         GSColor outline = new GSColor(outlineColor.getValue(), 255);
         GSColor fill = new GSColor(fillColor.getValue(), 200);
 
@@ -43,7 +45,8 @@ public class ShulkerViewer extends Module {
         for (int i = 0; i < contentItems.size(); i++) {
             int finalX = posX + 1 + i % 9 * 18;
             int finalY = posY + 31 + (i / 9 - 1) * 18;
-            GameSenseGUI.renderItem(contentItems.get(i), new Point(finalX, finalY));
+            GameSenseGUI.renderItemTest(contentItems.get(i), new Point(finalX, finalY));
         }
     }
+
 }

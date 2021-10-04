@@ -203,6 +203,7 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && slowBreak.getValue().equals("Tick"));
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
+    BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
     //endregion
 
     //region Misc
@@ -842,6 +843,12 @@ public class AutoCrystalRewrite extends Module {
             // Check blockpos
             return endCrystalPlaced.stream().anyMatch(
                     check -> sameBlockPos(check.posCrystal, now)
+            );
+        }
+
+        boolean hasCrystal(BlockPos crystal) {
+            return endCrystalPlaced.stream().anyMatch(
+                    check -> sameBlockPos(check.posCrystal, crystal)
             );
         }
 
@@ -3653,6 +3660,32 @@ public class AutoCrystalRewrite extends Module {
                     case "Time":
                         existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
                         break;
+                }
+
+                if (predictHit.getValue()) {
+                    boolean hit = false;
+                    switch(chooseCrystal.getValue()) {
+                        case "All":
+                            hit = true;
+                            break;
+                        case "Own":
+                            if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
+                                hit = true;
+                            break;
+                        case "Smart":
+                            if ( sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
+                                hit = true;
+                            break;
+                    }
+
+                    if (hit) {
+                        CPacketUseEntity attack = new CPacketUseEntity();
+                        ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
+                        ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                        mc.player.connection.sendPacket((Packet)attack);
+                        mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
+
+                    }
                 }
             }
         }
