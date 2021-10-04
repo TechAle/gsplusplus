@@ -38,15 +38,12 @@ public class Speed extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort", "Custom"), "Strafe");
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
-    DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 0.13, 0.01, 0.3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
+    DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 1.5, 0.01, 3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     DoubleSetting speedCustom = registerDouble("Speed Custom", 2, 0, 10, () -> mode.getValue().equalsIgnoreCase("Custom"));
     BooleanSetting customHop = registerBoolean("Custom Jump", false, () -> mode.getValue().equalsIgnoreCase("Custom"));
     DoubleSetting customHeight = registerDouble("Custom Height", 0.42, 0, 1, () -> mode.getValue().equalsIgnoreCase("Custom"));
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
     IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000);
-
-    int og;
-    Double speedF;
 
     private boolean slowDown;
     private double playerSpeed;
@@ -85,13 +82,6 @@ public class Speed extends Module {
             event.setZ(dir[1]);
         } else if (mode.getValue().equalsIgnoreCase("Custom")) {
 
-            /*
-            AIR_FRICTION = 0.98;
-            WATER_FRICTION = 0.89;
-            LAVA_FRICTION = 0.535;
-            BUNNY_DIV_FRICTION = 160.0 - MIN_DIF;
-            */
-
             double[] dir = MotionUtil.forward(speedCustom.getValue() * 10);
             event.setX(dir[0]);
             event.setZ(dir[1]);
@@ -104,12 +94,14 @@ public class Speed extends Module {
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
             if (mc.player.onGround) {
-                mc.player.posY += 0.3993000090122223;
-                mc.player.motionY = 0.3993000090122223;
-                mc.player.distanceWalkedOnStepModified = 44.0f;
-                mc.player.motionX *= 1.590000033378601;
-                mc.player.motionZ *= 1.590000033378601;
-                mc.player.cameraPitch = 0.0f;
+                mc.player.posY += 0.4;
+                mc.player.motionY = 0.4;
+                mc.player.motionX *= onGroundSpeed.getValue();
+                mc.player.motionZ *= onGroundSpeed.getValue();
+            } else {
+
+                mc.player.posY = Math.floor(mc.player.posY);
+
             }
 
         }
