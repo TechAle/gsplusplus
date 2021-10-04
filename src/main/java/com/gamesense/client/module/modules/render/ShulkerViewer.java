@@ -45,8 +45,7 @@ public class ShulkerViewer extends Module {
         for (int i = 0; i < contentItems.size(); i++) {
             int finalX = posX + 1 + i % 9 * 18;
             int finalY = posY + 31 + (i / 9 - 1) * 18;
-            mc.getRenderItem().renderItemAndEffectIntoGUI(contentItems.get(i), finalX, finalY);
-            mc.getRenderItem().renderItemOverlayIntoGUI(mc.fontRenderer, contentItems.get(i), finalX, finalY, null);
+            GameSenseGUI.renderItemTest(contentItems.get(i), new Point(finalX, finalY));
         }
     }
 
