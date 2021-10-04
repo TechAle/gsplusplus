@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
@@ -39,7 +40,7 @@ public class FootConcrete extends Module {
     BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake") && general.getValue());
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
-    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
+    DoubleSetting placeDelay = registerDouble("placeHeight", 1.14d, 1, 1.18d, () -> jumpMode.getValue().equals("real") && general.getValue());
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
 
@@ -62,6 +63,7 @@ public class FootConcrete extends Module {
     int targetBlockSlot;
     BlockPos burrowBlockPos;
     int oldslot;
+    double posy;
 
     public void onEnable() {
 
@@ -108,9 +110,9 @@ public class FootConcrete extends Module {
 
             if (mc.player.onGround) {
 
+                posy = mc.player.posY;
 
                 burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
-
 
 
                 if (mc.world.isOutsideBuildHeight(burrowBlockPos)) {
@@ -164,7 +166,7 @@ public class FootConcrete extends Module {
 
             // PLACE
 
-            if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
+            if (mc.player.posY >= posy + placeDelay.getValue()) {
 
                 if (useBlink.getValue()) {
 
@@ -181,34 +183,34 @@ public class FootConcrete extends Module {
 
                 doGlitch = true;
 
-            }
 
-            // RUBBERBAND
+                // RUBBERBAND
 
-            if (mode.getValue().equals("clip") && doGlitch) {
+                if (mode.getValue().equals("clip")) {
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
-                getPacket();
+                    getPacket();
 
-                doGlitch = false;
+                    doGlitch = false;
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
-                disable();
+                    disable();
 
-            } else if (mode.getValue().equals("jump") && doGlitch) {
+                } else if (mode.getValue().equals("jump")) {
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
 
-                mc.player.jump();
+                    mc.player.jump();
 
-                doGlitch = false;
+                    doGlitch = false;
 
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
-                disable();
+                    disable();
+                }
             }
         }
     }
@@ -217,7 +219,7 @@ public class FootConcrete extends Module {
         NonNullList<BlockPos> holes = NonNullList.create();
 
         //from old HoleFill module, really good way to do this
-        List<BlockPos> blockPosList = EntityUtil.getHollowSphere(PlayerUtil.getPlayerPos(), range.getValue(), range.getValue(), true, 1, 2,2);
+        List<BlockPos> blockPosList = EntityUtil.getHollowSphere(PlayerUtil.getPlayerPos(), range.getValue(), range.getValue(), true, 1, 2, 2);
 
         for (BlockPos pos : blockPosList) {
 
@@ -236,12 +238,12 @@ public class FootConcrete extends Module {
         BlockPos pos = findHoles();
 
         try {
-            MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x)+0.5) + " " + Math.floor(pos.y)  + " " +  (Math.floor(pos.z)+0.5) + " " + mc.world.isAirBlock(pos.down()));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x)+0.5, Math.floor(pos.y), Math.floor(pos.z)+0.5, mc.world.isAirBlock(pos.down())));
+            MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
         } catch (Exception e) {
 
             MessageBus.sendClientPrefixMessage(e + "");
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY+1,mc.player.posZ, false));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
 
         }
     }

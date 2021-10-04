@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -45,6 +46,9 @@ public class Flight extends Module {
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
+        if (!PlayerUtil.nullCheck())
+            return;
+
         if (mode.getValue().equalsIgnoreCase("Static")) {
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
@@ -77,6 +81,10 @@ public class Flight extends Module {
 
             mc.player.setVelocity(0, 0, 0);
             event.setY(0);
+
+            double x = mc.player.posX;
+            double y = mc.player.posY;
+            double z = mc.player.posZ;
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
