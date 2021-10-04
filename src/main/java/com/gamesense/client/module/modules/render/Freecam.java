@@ -96,7 +96,8 @@ public class Freecam extends Module {
             double pitchRad = mc.player.rotationPitch * PI / 180;
             if (MotionUtil.isMoving(mc.player)){
                 mc.player.motionY = -Math.sin(pitchRad) * speed.getValue();
-            }
+            } else
+                mc.player.motionY = 0;
 
 
         }

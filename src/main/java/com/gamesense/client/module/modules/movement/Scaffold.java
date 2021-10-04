@@ -162,7 +162,7 @@ public class Scaffold extends Module {
 
                     if (Math.floor(mc.player.posY) == oldTower + 1) {
 
-                        mc.player.motionY = -69; // go down faster
+                        mc.player.motionY = -(mc.player.posY - Math.floor(mc.player.posY)); // go down faster whist looking smoothest
 
                     }
 

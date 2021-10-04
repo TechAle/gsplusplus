@@ -36,16 +36,21 @@ public class Speed extends Module {
     private final Timer timer = new Timer();
     public int yl;
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort", "Custom"), "Strafe");
+
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
+
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
+
     DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 1.5, 0.01, 3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
-    BooleanSetting strictOG = registerBoolean("Head Block Only", false);
-    IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,0,5);
-    DoubleSetting speedCustom = registerDouble("Speed Custom", 2, 0, 10, () -> mode.getValue().equalsIgnoreCase("Custom"));
+    BooleanSetting strictOG = registerBoolean("Head Block Only", false, () -> mode.getValue().equalsIgnoreCase("OnGround"));
+    IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,1,5, () -> mode.getValue().equalsIgnoreCase("OnGround"));
+
+    DoubleSetting speedCustom = registerDouble("Speed Custom", 0.02, 0, 0.1, () -> mode.getValue().equalsIgnoreCase("Custom"));
     BooleanSetting customHop = registerBoolean("Custom Jump", false, () -> mode.getValue().equalsIgnoreCase("Custom"));
     DoubleSetting customHeight = registerDouble("Custom Height", 0.42, 0, 1, () -> mode.getValue().equalsIgnoreCase("Custom"));
-    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1);
-    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000);
+
+    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe"));
 
     private boolean slowDown;
     private double playerSpeed;
@@ -97,7 +102,7 @@ public class Speed extends Module {
 
             boolean above = !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, 1, 0.0)).isEmpty();
 
-            if (mc.player.ticksExisted % ogd.getValue() == 0){
+            if (mc.player.ticksExisted % ogd.getValue() == 0 && !mc.player.collidedHorizontally){
                 if (mc.player.onGround && (above || !strictOG.getValue())) {
                     mc.player.posY += 0.4;
                     mc.player.motionY = 0.4;

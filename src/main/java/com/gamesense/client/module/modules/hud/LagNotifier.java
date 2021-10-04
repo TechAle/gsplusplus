@@ -63,7 +63,7 @@ public class LagNotifier extends HUDModule {
         @Override
         public String getItem(int index) {
             if (lag) {
-                return "Rubberband Detected.";
+                return "Rubberband Detected [" + (delay.getValue() - tmr) + "]";
             } else {
                 return "";
             }

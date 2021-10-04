@@ -123,10 +123,53 @@ public class PlayerUtil {
     }
 
     public static void fakeJump() {
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.42, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.75, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.01, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.16, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .419999986887, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .7531999805212, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.0013359791121, mc.player.posZ, true));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.1661092609382, mc.player.posZ, true));
+    }
+
+    public static void fall(int distance) {
+
+        if (distance >= 1) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 255.67647087614426), mc.player.posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 255.16214142102697), mc.player.posZ, true));
+        }
+        if (distance >= 2) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 254.5796985436761), mc.player.posZ, true));
+        }
+        if (distance >= 3) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 253.93050451123716), mc.player.posZ, true));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 253.21589434553871), mc.player.posZ, true));
+        }
+        if (distance >= 4) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 252.43717636799826), mc.player.posZ, true));
+        }
+        if (distance >= 5) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 251.59563273362986), mc.player.posZ, true));
+        }
+        if (distance >= 6) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 250.6925199543718), mc.player.posZ, true));
+        }
+        if (distance >= 7) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 249.72906941194748), mc.player.posZ, true));
+        }
+        if (distance >= 8) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 248.70648786046942), mc.player.posZ, true));
+        }
+        if (distance >= 9) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 247.62595791899085), mc.player.posZ, true));
+        }
+        if (distance >= 10) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 246.4886385542065), mc.player.posZ, true));
+        }
+        if (distance >= 11) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - (256 - 245.2956655534993), mc.player.posZ, true));
+        }
+
+        mc.player.setPosition(mc.player.posX,mc.player.posY - distance, mc.player.posZ);
+
     }
 
     // TechAle: Return the health of the player
