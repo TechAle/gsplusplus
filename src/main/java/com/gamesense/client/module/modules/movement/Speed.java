@@ -39,6 +39,8 @@ public class Speed extends Module {
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
     DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 1.5, 0.01, 3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
+    BooleanSetting strictOG = registerBoolean("Head Block Only", false);
+    IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,0,5);
     DoubleSetting speedCustom = registerDouble("Speed Custom", 2, 0, 10, () -> mode.getValue().equalsIgnoreCase("Custom"));
     BooleanSetting customHop = registerBoolean("Custom Jump", false, () -> mode.getValue().equalsIgnoreCase("Custom"));
     DoubleSetting customHeight = registerDouble("Custom Height", 0.42, 0, 1, () -> mode.getValue().equalsIgnoreCase("Custom"));
@@ -93,15 +95,19 @@ public class Speed extends Module {
 
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
-            if (mc.player.onGround) {
-                mc.player.posY += 0.4;
-                mc.player.motionY = 0.4;
-                mc.player.motionX *= onGroundSpeed.getValue();
-                mc.player.motionZ *= onGroundSpeed.getValue();
-            } else {
+            boolean above = !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, 1, 0.0)).isEmpty();
 
-                mc.player.posY = Math.floor(mc.player.posY);
+            if (mc.player.ticksExisted % ogd.getValue() == 0){
+                if (mc.player.onGround && (above || !strictOG.getValue())) {
+                    mc.player.posY += 0.4;
+                    mc.player.motionY = 0.4;
+                    mc.player.motionX *= onGroundSpeed.getValue();
+                    mc.player.motionZ *= onGroundSpeed.getValue();
+                } else if ((above || !strictOG.getValue())) {
 
+                    mc.player.posY = Math.floor(mc.player.posY);
+
+                }
             }
 
         }
