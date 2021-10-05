@@ -7,6 +7,7 @@ import com.gamesense.client.module.modules.render.HandThing;
 import com.gamesense.client.module.modules.render.NoRender;
 import com.gamesense.client.module.modules.render.ViewModel;
 import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -51,6 +53,22 @@ public abstract class MixinItemRenderer {
     public void transformFirstPerson(EnumHandSide hand, float p_187453_2_, CallbackInfo callbackInfo) {
         TransformSideFirstPersonEvent event = new TransformSideFirstPersonEvent(hand);
         GameSense.EVENT_BUS.post(event);
+    }
+
+    @Redirect(method = "renderItemInFirstPerson(Lnet/minecraft/client/entity/AbstractClientPlayer;FFLnet/minecraft/util/EnumHand;FLnet/minecraft/item/ItemStack;F)V",
+                at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlStateManager;popMatrix()V"))
+    public void removePopRight() {
+        ViewModel viewModel = ModuleManager.getModule(ViewModel.class);
+        if (!viewModel.isEnabled())
+            GlStateManager.popMatrix();
+    }
+
+    @Redirect(method = "renderItemSide",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlStateManager;popMatrix()V"))
+    public void removePopLeft() {
+        ViewModel viewModel = ModuleManager.getModule(ViewModel.class);
+        if (!viewModel.isEnabled())
+            GlStateManager.popMatrix();
     }
 
     @Inject(method = "renderOverlays", at = @At("HEAD"), cancellable = true)

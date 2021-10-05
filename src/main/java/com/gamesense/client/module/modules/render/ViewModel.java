@@ -37,9 +37,12 @@ public class ViewModel extends Module {
     IntegerSetting xLeftRotate = registerInteger("Left X Rotate", 0, 0, 180);
     IntegerSetting yLeftRotate = registerInteger("Left Y Rotate", 0, 0, 180);
     IntegerSetting zLeftRotate = registerInteger("Left Z Rotate", 0, 0, 180);
-    DoubleSetting xRight = registerDouble("Right X", 0.0, -2.0, 2.0);
-    DoubleSetting yRight = registerDouble("Right Y", 0.2, -2.0, 2.0);
-    DoubleSetting zRight = registerDouble("Right Z", -1.2, -2.0, 2.0);
+    DoubleSetting xRight = registerDouble("Right X", 0.0, -5.0, 2.0);
+    DoubleSetting yRight = registerDouble("Right Y", 0.2, -2.0, 5.0);
+    DoubleSetting zRight = registerDouble("Right Z", -1.2, -5.0, 2.0);
+    DoubleSetting xRight1 = registerDouble("Right X1", 0.0, -5.0, 2.0);
+    DoubleSetting yRight2 = registerDouble("Right Y2", 0.2, -2.0, 5.0);
+    DoubleSetting zRight3 = registerDouble("Right Z3", -1.2, -5.0, 2.0);
     IntegerSetting xRightRotate = registerInteger("Right X Rotate", 0, 0, 360);
     IntegerSetting yRightRotate = registerInteger("Right Y Rotate", 0, 0, 360);
     IntegerSetting zRightRotate = registerInteger("Right Z Rotate", 0, 0, 360);
@@ -51,19 +54,20 @@ public class ViewModel extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
+        GlStateManager.popMatrix();
         if (type.getValue().equalsIgnoreCase("Value") || type.getValue().equalsIgnoreCase("Both")) {
             if (event.getEnumHandSide() == EnumHandSide.RIGHT) {
-                GlStateManager.scale(xScaleRight.getValue(), yScaleRight.getValue(), zScaleRight.getValue());
+                GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());
                 glRotatef(xRightRotate.getValue(), 1, 0, 0);
                 glRotatef(yRightRotate.getValue(), 0, 1, 0);
                 glRotatef(zRightRotate.getValue(), 0, 0, 1);
-                GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());
+                GlStateManager.scale(xScaleRight.getValue(), yScaleRight.getValue(), zScaleRight.getValue());
             } else if (event.getEnumHandSide() == EnumHandSide.LEFT) {
-                GlStateManager.scale(xScaleLeft.getValue(), yScaleLeft.getValue(), zScaleLeft.getValue());
                 GlStateManager.translate(xLeft.getValue(), yLeft.getValue(), zLeft.getValue());
                 GlStateManager.rotate(xLeftRotate.getValue(), 1, 0, 0);
                 GlStateManager.rotate(yLeftRotate.getValue(), 0, 1, 0);
                 GlStateManager.rotate(zLeftRotate.getValue(), 0, 0, 1);
+                GlStateManager.scale(xScaleLeft.getValue(), yScaleLeft.getValue(), zScaleLeft.getValue());
             }
         }
     });
