@@ -14,10 +14,10 @@ public abstract class MixinLayerArmorBase {
     private static void renderEnchantedGlint(float a2, float a3, float a4, float v1) {
         RainbowEnchant rainbowEnchant = ModuleManager.getModule(RainbowEnchant.class);
         if (rainbowEnchant.isEnabled()) {
-                a2 = rainbowEnchant.color.getColor().getRed() /255f;
-                a4 = rainbowEnchant.color.getColor().getGreen() / 255f;
-                a3 = rainbowEnchant.color.getColor().getBlue() / 255f;
-                v1 = rainbowEnchant.color.getColor().getAlpha() / 255f;
+                a2 = rainbowEnchant.color.getValue().getRed() /255f;
+                a4 = rainbowEnchant.color.getValue().getGreen() / 255f;
+                a3 = rainbowEnchant.color.getValue().getBlue() / 255f;
+                v1 = rainbowEnchant.color.getValue().getAlpha() / 255f;
             }
         GlStateManager.color(a2, a4, a3, v1);
     }

@@ -19,9 +19,9 @@ public class MixinRenderItem {
     private int renderEffect(int oldValue) {
         RainbowEnchant rainbowEnchant = ModuleManager.getModule(RainbowEnchant.class);
         if (rainbowEnchant.isEnabled()) {
-            a2 = rainbowEnchant.color.getColor().getRed();
-            a4 = rainbowEnchant.color.getColor().getGreen();
-            a3 = rainbowEnchant.color.getColor().getBlue();
+            a2 = rainbowEnchant.color.getValue().getRed();
+            a4 = rainbowEnchant.color.getValue().getGreen();
+            a3 = rainbowEnchant.color.getValue().getBlue();
             return new Color(a2, a4, a3).getRGB();
         } return oldValue;
     }
