@@ -52,9 +52,9 @@ public class ViewModel extends Module {
     @EventHandler
     private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
 
+        GlStateManager.popMatrix();
         if (type.getValue().equalsIgnoreCase("Value") || type.getValue().equalsIgnoreCase("Both")) {
             if (event.getEnumHandSide() == EnumHandSide.RIGHT) {
-                GlStateManager.popMatrix();
                 GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());
                 glRotatef(xRightRotate.getValue(), 1, 0, 0);
                 glRotatef(yRightRotate.getValue(), 0, 1, 0);
