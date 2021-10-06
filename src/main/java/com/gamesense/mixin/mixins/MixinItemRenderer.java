@@ -118,8 +118,9 @@ public abstract class MixinItemRenderer {
                             break;
                         case EAT:
                         case DRINK:
-                            if (!viewModel.cancelEating.getValue())
-                                this.transformEatFirstPerson(p_187457_2_, enumhandside, stack);
+                            if (viewModel.cancelEating.getValue()) {
+
+                            }
                             else {
                                 GlStateManager.popMatrix();
                                 GlStateManager.translate(viewModel.xEat.getValue(), viewModel.yEat.getValue(), viewModel.zEat.getValue());
@@ -127,6 +128,7 @@ public abstract class MixinItemRenderer {
                                 glRotatef(viewModel.yEatRotate.getValue(), 0, 1, 0);
                                 glRotatef(viewModel.zEatRotate.getValue(), 0, 0, 1);
                                 GlStateManager.scale(viewModel.xScaleEat.getValue(), viewModel.yScaleEat.getValue(), viewModel.zScaleEat.getValue());
+                                popAfter = false;
                             }
                             break;
                         case BLOCK:

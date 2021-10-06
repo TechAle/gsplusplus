@@ -65,25 +65,66 @@ public class ViewModel extends Module {
     DoubleSetting zScaleRight = registerDouble("Right Z Scale", 1, 0, 3, () -> rightSection.getValue());
     BooleanSetting fovEnabled = registerBoolean("Enable Fov", false);
     DoubleSetting fov = registerDouble("Item FOV", 130, 70, 200, () -> fovEnabled.getValue());
+    BooleanSetting animations = registerBoolean("Animations", false);
+    BooleanSetting xLeftAnimation = registerBoolean("X Left Animation", false, () -> animations.getValue());
+    BooleanSetting yLeftAnimation = registerBoolean("Y Left Animation", false, () -> animations.getValue());
+    BooleanSetting zLeftAnimation = registerBoolean("Z Left Animation", false, () -> animations.getValue());
+    BooleanSetting xRightAnimation = registerBoolean("X Right Animation", false, () -> animations.getValue());
+    BooleanSetting yRightAnimation = registerBoolean("Y Right Animation", false, () -> animations.getValue());
+    BooleanSetting zRightAnimation = registerBoolean("Z Right Animation", false, () -> animations.getValue());
+
+
+
+    int xLeftAnimationCount = 0,
+        yLeftAnimationCount = 0,
+        zLeftAnimationCount = 0,
+        xRightAnimationCount = 0,
+        yRightAnimationCount = 0,
+        zRightAnimationCount = 0;
 
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
-
         GlStateManager.popMatrix();
         if (event.getEnumHandSide() == EnumHandSide.RIGHT) {
             GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());
-            glRotatef(xRightRotate.getValue(), 1, 0, 0);
-            glRotatef(yRightRotate.getValue(), 0, 1, 0);
-            glRotatef(zRightRotate.getValue(), 0, 0, 1);
+            if (xRightAnimation.getValue())
+                glRotatef(++xRightAnimationCount, 1, 0, 0);
+            else
+                glRotatef(xRightRotate.getValue(), 1, 0, 0);
+            if (yRightAnimation.getValue())
+                glRotatef(++yRightAnimationCount, 0, 1, 0);
+            else
+                glRotatef(yRightRotate.getValue(), 0, 1, 0);
+            if (zRightAnimation.getValue())
+                glRotatef(++zRightAnimationCount, 0, 0, 1);
+            else
+                glRotatef(zRightRotate.getValue(), 0, 0, 1);
             GlStateManager.scale(xScaleRight.getValue(), yScaleRight.getValue(), zScaleRight.getValue());
         } else if (event.getEnumHandSide() == EnumHandSide.LEFT) {
             GlStateManager.translate(xLeft.getValue(), yLeft.getValue(), zLeft.getValue());
-            GlStateManager.rotate(xLeftRotate.getValue(), 1, 0, 0);
-            GlStateManager.rotate(yLeftRotate.getValue(), 0, 1, 0);
-            GlStateManager.rotate(zLeftRotate.getValue(), 0, 0, 1);
+            if (xLeftAnimation.getValue())
+                glRotatef(++xLeftAnimationCount, 1, 0, 0);
+            else
+                glRotatef(xLeftRotate.getValue(), 1, 0, 0);
+            if (yLeftAnimation.getValue())
+                glRotatef(++yLeftAnimationCount, 0, 1, 0);
+            else
+                glRotatef(yLeftRotate.getValue(), 0, 1, 0);
+            if (zLeftAnimation.getValue())
+                glRotatef(++zLeftAnimationCount, 0, 0, 1);
+            else
+                glRotatef(zLeftRotate.getValue(), 0, 0, 1);
             GlStateManager.scale(xScaleLeft.getValue(), yScaleLeft.getValue(), zScaleLeft.getValue());
         }
+
+        xLeftAnimationCount = xLeftAnimationCount % 360;
+        yLeftAnimationCount = yLeftAnimationCount % 360;
+        zLeftAnimationCount = zLeftAnimationCount % 360;
+        xRightAnimationCount = xRightAnimationCount % 360;
+        yRightAnimationCount = yRightAnimationCount % 360;
+        zRightAnimationCount = zRightAnimationCount % 360;
+
 
     });
 
