@@ -87,7 +87,7 @@ public class ViewModel extends Module {
     @EventHandler
     private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
         GlStateManager.popMatrix();
-        if (leftDipendentRight.getValue())
+        if (leftDipendentRight.getValue() || (event.getEnumHandSide() == EnumHandSide.LEFT && mc.player.getHeldItemMainhand().isEmpty()))
             GlStateManager.pushMatrix();
         if (event.getEnumHandSide() == EnumHandSide.RIGHT) {
             GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());

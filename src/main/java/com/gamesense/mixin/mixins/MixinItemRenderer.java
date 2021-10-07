@@ -131,6 +131,8 @@ public abstract class MixinItemRenderer {
                             }
                             else {
                                 GlStateManager.popMatrix();
+                                if (viewModel.leftDipendentRight.getValue() || (enumhandside == EnumHandSide.LEFT && mc.player.getHeldItemMainhand().isEmpty()))
+                                    GlStateManager.pushMatrix();
                                 GlStateManager.translate(viewModel.xEat.getValue(), viewModel.yEat.getValue(), viewModel.zEat.getValue());
                                 glRotatef(viewModel.xEatRotate.getValue(), 1, 0, 0);
                                 glRotatef(viewModel.yEatRotate.getValue(), 0, 1, 0);
@@ -167,6 +169,8 @@ public abstract class MixinItemRenderer {
                                 GlStateManager.translate(f6 * 0.0F, f6 * 0.0F, f6 * 0.04F);
                                 GlStateManager.scale(1.0F, 1.0F, 1.0F + f6 * 0.2F);
                                 GlStateManager.rotate((float) j * 45.0F, 0.0F, -1.0F, 0.0F);
+                                if (viewModel.leftDipendentRight.getValue() || (enumhandside == EnumHandSide.LEFT && mc.player.getHeldItemMainhand().isEmpty()))
+                                    GlStateManager.pushMatrix();
                             } else {
                                 TransformSideFirstPersonEvent event = new TransformSideFirstPersonEvent(enumhandside);
                                 GameSense.EVENT_BUS.post(event);
@@ -195,7 +199,7 @@ public abstract class MixinItemRenderer {
                 }
 
                 this.renderItemSide(player, stack, flag1 ? ItemCameraTransforms.TransformType.FIRST_PERSON_RIGHT_HAND : ItemCameraTransforms.TransformType.FIRST_PERSON_LEFT_HAND, !flag1);
-                if (viewModel.leftDipendentRight.getValue())
+                if (viewModel.leftDipendentRight.getValue() || (enumhandside == EnumHandSide.LEFT && mc.player.getHeldItemMainhand().isEmpty()))
                     GlStateManager.popMatrix();
             }
 
