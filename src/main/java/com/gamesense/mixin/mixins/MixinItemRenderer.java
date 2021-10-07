@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static org.lwjgl.opengl.GL11.glColor4f;
 import static org.lwjgl.opengl.GL11.glRotatef;
 
 /**
@@ -119,6 +120,13 @@ public abstract class MixinItemRenderer {
                         case EAT:
                         case DRINK:
                             if (viewModel.cancelEating.getValue()) {
+                                TransformSideFirstPersonEvent event = new TransformSideFirstPersonEvent(enumhandside);
+                                GameSense.EVENT_BUS.post(event);
+                                popAfter = false;
+                                if (enumhandside == EnumHandSide.LEFT)
+                                    this.transformSideFirstPerson(enumhandside, p_187457_7_);
+                                else
+                                    this.transformFirstPerson(enumhandside, p_187457_5_);
 
                             }
                             else {
@@ -171,19 +179,24 @@ public abstract class MixinItemRenderer {
                 else
                 {
 
-                    TransformSideFirstPersonEvent event = new TransformSideFirstPersonEvent(enumhandside);
-                    GameSense.EVENT_BUS.post(event);
-                    popAfter = false;
                     float f = -0.4F * MathHelper.sin(MathHelper.sqrt(p_187457_5_) * (float)Math.PI);
                     float f1 = 0.2F * MathHelper.sin(MathHelper.sqrt(p_187457_5_) * ((float)Math.PI * 2F));
                     float f2 = -0.2F * MathHelper.sin(p_187457_5_ * (float)Math.PI);
                     int i = flag1 ? 1 : -1;
                     GlStateManager.translate((float)i * f, f1, f2);
-                    this.transformSideFirstPerson(enumhandside, p_187457_7_);
-                    this.transformFirstPerson(enumhandside, p_187457_5_);
+                    // Probably it follow the swing because of one of these two
+                    TransformSideFirstPersonEvent event = new TransformSideFirstPersonEvent(enumhandside);
+                    GameSense.EVENT_BUS.post(event);
+                    popAfter = false;
+                    if (enumhandside == EnumHandSide.LEFT)
+                        this.transformSideFirstPerson(enumhandside, p_187457_7_);
+                    else
+                        this.transformFirstPerson(enumhandside, p_187457_5_);
                 }
 
                 this.renderItemSide(player, stack, flag1 ? ItemCameraTransforms.TransformType.FIRST_PERSON_RIGHT_HAND : ItemCameraTransforms.TransformType.FIRST_PERSON_LEFT_HAND, !flag1);
+                if (viewModel.leftDipendentRight.getValue())
+                    GlStateManager.popMatrix();
             }
 
             if (popAfter)

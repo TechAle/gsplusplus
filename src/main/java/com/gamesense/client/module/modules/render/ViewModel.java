@@ -72,6 +72,7 @@ public class ViewModel extends Module {
     BooleanSetting xRightAnimation = registerBoolean("X Right Animation", false, () -> animations.getValue());
     BooleanSetting yRightAnimation = registerBoolean("Y Right Animation", false, () -> animations.getValue());
     BooleanSetting zRightAnimation = registerBoolean("Z Right Animation", false, () -> animations.getValue());
+    public BooleanSetting leftDipendentRight = registerBoolean("Left Dipendent Right", false);
 
 
 
@@ -86,6 +87,8 @@ public class ViewModel extends Module {
     @EventHandler
     private final Listener<TransformSideFirstPersonEvent> eventListener = new Listener<>(event -> {
         GlStateManager.popMatrix();
+        if (leftDipendentRight.getValue())
+            GlStateManager.pushMatrix();
         if (event.getEnumHandSide() == EnumHandSide.RIGHT) {
             GlStateManager.translate(xRight.getValue(), yRight.getValue(), zRight.getValue());
             if (xRightAnimation.getValue())
