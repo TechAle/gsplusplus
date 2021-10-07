@@ -27,7 +27,6 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketSoundEffect;
-import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.MathHelper;
@@ -110,9 +109,6 @@ public class FakePlayer extends Module {
                 // Add it to the player
                 clonedPlayer.inventory.armorInventory.set(i, item);
             }
-        }
-        for(PotionEffect effect : mc.player.getActivePotionEffects()) {
-            clonedPlayer.addPotionEffect(effect);
         }
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
         if (!moving.getValue().equals("None"))
