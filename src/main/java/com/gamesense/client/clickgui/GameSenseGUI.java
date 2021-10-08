@@ -658,6 +658,29 @@ public class GameSenseGUI extends MinecraftHUDGUI {
         GameSense.INSTANCE.gameSenseGUI.getInterface().begin(false);
     }
 
+	public static void renderItemTest(ItemStack item, Point pos) {
+		//GameSense.INSTANCE.gameSenseGUI.getInterface().end(false);
+		GlStateManager.enableTexture2D();
+		GlStateManager.depthMask(true);
+		GL11.glPushAttrib(GL11.GL_SCISSOR_BIT);
+		GL11.glDisable(GL11.GL_SCISSOR_TEST);
+		GlStateManager.clear(GL11.GL_DEPTH_BUFFER_BIT);
+		GL11.glPopAttrib();
+		GlStateManager.enableDepth();
+		GlStateManager.disableAlpha();
+		GlStateManager.pushMatrix();
+		Minecraft.getMinecraft().getRenderItem().zLevel = -150.0f;
+		RenderHelper.enableGUIStandardItemLighting();
+		Minecraft.getMinecraft().getRenderItem().renderItemAndEffectIntoGUI(item, pos.x, pos.y);
+		Minecraft.getMinecraft().getRenderItem().renderItemOverlays(Minecraft.getMinecraft().fontRenderer, item, pos.x, pos.y);
+		RenderHelper.disableStandardItemLighting();
+		Minecraft.getMinecraft().getRenderItem().zLevel = 0.0F;
+		GlStateManager.popMatrix();
+		GlStateManager.disableDepth();
+		GlStateManager.depthMask(false);
+		//GameSense.INSTANCE.gameSenseGUI.getInterface().begin(false);
+	}
+
     public static void renderEntity(EntityLivingBase entity, Point pos, int scale) {
     	GameSense.INSTANCE.gameSenseGUI.getInterface().end(false);
         GlStateManager.enableTexture2D();
