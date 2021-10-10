@@ -64,7 +64,7 @@ public class PlayerTweaks extends Module {
             event.getMovementInput().moveStrafe *= 5;
             event.getMovementInput().moveForward *= 5;
 
-        } else
+        } else if (noSlowStrict.getValue())
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
     });
     BooleanSetting noPush = registerBoolean("No Push", false);
