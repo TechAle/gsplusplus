@@ -42,6 +42,7 @@ public class FootConcrete extends Module {
     IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
+    BooleanSetting debugpos = registerBoolean("Debug Position", false);
 
 
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
@@ -110,7 +111,6 @@ public class FootConcrete extends Module {
 
 
                 burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
-
 
 
                 if (mc.world.isOutsideBuildHeight(burrowBlockPos)) {
@@ -216,7 +216,7 @@ public class FootConcrete extends Module {
     private BlockPos findHoles() {
         NonNullList<BlockPos> holes = NonNullList.create();
 
-        List<BlockPos> blockPosList = EntityUtil.getSquare(new BlockPos(mc.player.posX, range.getValue()/2f - mc.player.posY, mc.player.posZ), new BlockPos(mc.player.posX, range.getValue()/2f + mc.player.posY, mc.player.posZ));
+        List<BlockPos> blockPosList = EntityUtil.getSquare(new BlockPos(mc.player.posX, range.getValue() / 2f - mc.player.posY, mc.player.posZ), new BlockPos(mc.player.posX, range.getValue() / 2f + mc.player.posY, mc.player.posZ));
         for (BlockPos pos : blockPosList) {
 
             if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
@@ -228,7 +228,7 @@ public class FootConcrete extends Module {
 
         if (holes.isEmpty()) {
 
-            blockPosList = EntityUtil.getHollowSphere(PlayerUtil.getPlayerPos(), range.getValue(), range.getValue(), true, 1, 2,2);
+            blockPosList = EntityUtil.getHollowSphere(PlayerUtil.getPlayerPos(), range.getValue(), range.getValue(), true, 1, 2, 2);
 
             for (BlockPos pos : blockPosList) {
 
@@ -250,12 +250,13 @@ public class FootConcrete extends Module {
         BlockPos pos = findHoles();
 
         try {
-            MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x)+0.5) + " " + Math.floor(pos.y)  + " " +  (Math.floor(pos.z)+0.5) + " " + mc.world.isAirBlock(pos.down()));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x)+0.5, Math.floor(pos.y), Math.floor(pos.z)+0.5, mc.world.isAirBlock(pos.down())));
+            if (debugpos.getValue())
+                MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
         } catch (Exception e) {
 
-            MessageBus.sendClientPrefixMessage(e + "");
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY+1,mc.player.posZ, false));
+            MessageBus.sendClientPrefixMessage(String.valueOf(e));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
 
         }
     }
