@@ -10,7 +10,6 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -19,7 +18,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -28,11 +26,14 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static java.lang.Math.*;
+import static java.lang.Math.floor;
+import static java.lang.Math.sin;
 
 /**
  * @author Hoosiers
+ * @author Doogie13
  * @since 03/29/2021
+ * @since 2021 08 14
  */
 
 @Module.Declaration(name = "Surround", category = Category.Combat)
@@ -44,7 +45,7 @@ public class Surround extends Module {
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
-    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Snap", "Motion", "Min", "None"), "Snap");
+    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Minimum", "Simple", "None"), "Snap");
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
@@ -134,27 +135,12 @@ public class Surround extends Module {
 
             // if statement to check if we need to center. needs work
 
-            if (centreMode.getValue().equalsIgnoreCase("Motion")) {
-                PlayerUtil.centerPlayer(centeredBlock);
-            } else if (centreMode.getValue().equalsIgnoreCase("Snap")) {
+            if (getCentre()) {
+                if (centreMode.getValue().equalsIgnoreCase("Simple"))
+                    PlayerUtil.centerPlayer(centeredBlock);
 
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(mc.player.posX) + 0.5, mc.player.posY, Math.floor(mc.player.posZ) + 0.5, true));
-                mc.player.setPositionAndUpdate(calcX(), mc.player.posY, calcZ()); // Updating makes it look different lol
-
-            } else if (mc.player.getCollisionBoundingBox() != null && centreMode.getValue().equalsIgnoreCase("Min")) {
-
-                BlockPos centre = new BlockPos(mc.player.getPositionVector());
-                double yawRad = RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), new Vec3d(centre)).x * PI / 180;
-                double dist = Math.sqrt(mc.player.getDistanceSq(centre));
-                double size = mc.player.getCollisionBoundingBox().maxX - mc.player.getCollisionBoundingBox().minX;
-                double speed = dist - size;
-
-                boolean needs = dist > size;
-
-                if (needs)
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(-sin(yawRad) * speed + centre.x, mc.player.posY, cos(yawRad) * speed + centre.z, mc.player.onGround));
-
-
+                else if (centreMode.getValue().equalsIgnoreCase("Minimum"))
+                    mc.player.setPosition(calcX() + mc.player.posX, mc.player.posY, calcZ() + mc.player.posZ);
             }
 
         }
@@ -270,22 +256,37 @@ public class Surround extends Module {
 
     double calcX() {
 
-        float yawRad = (float) (RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), mc.player.getPositionVector()).x * PI / 180);
+        double dist = centeredBlock.distanceTo(mc.player.getPositionVector());
 
-        if (Math.floor(mc.player.posX) + 0.5 > MotionUtil.getMotion(20.20))
-            return -sin(yawRad) * MotionUtil.getMotion(20.20) + mc.player.posX;
-        else
-            return (Math.floor(mc.player.posX) + .5);
+        float yawRad = (RotationUtil.getRotationTo(new Vec3d(floor(mc.player.getPositionVector().x) + 0.5,
+                floor(mc.player.getPositionVector().y),
+                floor(mc.player.getPositionVector().z) + 0.5))).x;
+
+        return mc.player.posX + (-sin(yawRad) * dist);
+
     }
 
     double calcZ() {
 
-        float yawRad = (float) (RotationUtil.getRotationTo(mc.player.getPositionVector().add(-0.5, 0, -0.5), mc.player.getPositionVector()).x * PI / 180);
+        double dist = centeredBlock.distanceTo(mc.player.getPositionVector());
 
-        if (Math.floor(mc.player.posZ) + 0.5 > MotionUtil.getMotion(20.20))
-            return -sin(yawRad) * MotionUtil.getMotion(20.20) + mc.player.posZ;
-        else
-            return (Math.floor(mc.player.posZ) + .5);
+        float yawRad = (RotationUtil.getRotationTo(new Vec3d(floor(mc.player.getPositionVector().x) + 0.5,
+                floor(mc.player.getPositionVector().y),
+                floor(mc.player.getPositionVector().z) + 0.5))).x;
+
+        return mc.player.posZ + (-sin(yawRad) * dist);
+    }
+
+    boolean getCentre() {
+
+        boolean should = true;
+        double bbSize = mc.player.boundingBox.maxX - mc.player.boundingBox.minX;
+
+        if (!(mc.player.getDistance(Math.floor(mc.player.posX) + 0.5,mc.player.posY,Math.floor(mc.player.posZ) + 0.5) >= bbSize))
+            should = false;
+
+        return should;
+
     }
 
 }

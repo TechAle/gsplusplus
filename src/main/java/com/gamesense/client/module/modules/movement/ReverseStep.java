@@ -3,25 +3,21 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
-
-import static java.lang.Float.POSITIVE_INFINITY;
 
 @Module.Declaration(name = "ReverseStep", category = Category.Movement)
 public class ReverseStep extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Normal", "Vanilla"),"Normal");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Normal", "Vanilla"), "Normal");
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 10);
 
     public void onUpdate() {
         if (mc.world == null || mc.player == null || mc.player.isInWater() || mc.player.isInLava() || mc.player.isOnLadder()
-            || mc.gameSettings.keyBindJump.isKeyDown()) {
+                || mc.gameSettings.keyBindJump.isKeyDown()) {
             return;
         }
 
@@ -31,7 +27,7 @@ public class ReverseStep extends Module {
 
             float dist = 69696969;
 
-            switch (mode.getValue()){
+            switch (mode.getValue()) {
                 case "Vanilla": {
                     for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
                         if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
@@ -42,16 +38,21 @@ public class ReverseStep extends Module {
                 }
                 case "Normal": {
 
-                    for (int i = 0; i < height.getValue(); i++){
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -i, 0.0)).isEmpty())
+
+                    for (double y = 0.0; y < this.height.getValue() + 1; y += 0.01) {
+                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty())
                             return;
                         else
-                            dist = i;
+                            dist = (float) y;
 
-                        if (!(dist >= height.getValue())) {
+                        boolean doIt =
+                                !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -dist + 0.1, 0.0)).isEmpty();
+
+                        if (dist < height.getValue() && doIt) {
                             PlayerUtil.fall((int) dist);
                         }
                     }
+
 
                 }
             }

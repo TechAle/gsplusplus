@@ -11,6 +11,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -18,6 +19,7 @@ import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -38,6 +40,8 @@ public class Speed extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort", "Custom"), "Strafe");
 
     DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
+    BooleanSetting useTimer = registerBoolean("Timer", false);
+    DoubleSetting timerVal = registerDouble("Timer Speed", 1.088, 0.8,1.2);
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -140,6 +144,10 @@ public class Speed extends Module {
         if (mode.getValue().equalsIgnoreCase("YPort")) {
             handleYPortSpeed();
         }
+
+        if (!ModuleManager.isModuleEnabled(com.gamesense.client.module.modules.movement.Timer.class) && useTimer.getValue())
+            mc.timer.tickLength = 50 / timerVal.getValue().floatValue();
+
     }
 
     private void handleYPortSpeed() {
