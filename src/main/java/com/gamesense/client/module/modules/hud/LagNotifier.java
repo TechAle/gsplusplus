@@ -84,12 +84,4 @@ public class LagNotifier extends HUDModule {
             return false;
         }
     }
-
-    @Override
-    public String getHudInfo() {
-        if (lag) {
-            return "[" + ChatFormatting.RED + tmr + ChatFormatting.WHITE + "]";
-        } else
-            return "";
-    }
 }

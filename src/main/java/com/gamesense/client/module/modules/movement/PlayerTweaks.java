@@ -64,7 +64,7 @@ public class PlayerTweaks extends Module {
             event.getMovementInput().moveStrafe *= 5;
             event.getMovementInput().moveForward *= 5;
 
-        } else
+        } else if (noSlowStrict.getValue())
             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
     });
     BooleanSetting noPush = registerBoolean("No Push", false);
@@ -160,6 +160,7 @@ public class PlayerTweaks extends Module {
                 CPacketPlayer packet = (CPacketPlayer) event.getPacket();
                 if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
                     packet.onGround = true;
+                    mc.player.fallDistance = 0;
 
                 } else if (noFallMode.getValue().equalsIgnoreCase("OldFag") && predict(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ))) {
 
@@ -270,10 +271,12 @@ public class PlayerTweaks extends Module {
             mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
         }
 
-        if (!ModuleManager.getModule(Timer.class).isEnabled() && mc.player.isInWeb && webT.getValue())
-            mc.timer.tickLength = 1;
-        else
-            mc.timer.tickLength = 50;
+        if (!ModuleManager.isModuleEnabled(Timer.class)){
+            if (mc.player.isInWeb && webT.getValue())
+                mc.timer.tickLength = 1;
+            else
+                mc.timer.tickLength = 50;
+        }
 
         if (guiMove.getValue() && mc.currentScreen != null) {
             if (!(mc.currentScreen instanceof GuiChat)) {

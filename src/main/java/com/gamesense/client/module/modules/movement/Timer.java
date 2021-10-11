@@ -16,7 +16,6 @@ public class Timer extends Module {
 
     DoubleSetting speed = registerDouble("speed", 1.08, 0.1, 50);
     BooleanSetting onMove = registerBoolean("onMove",false);
-    BooleanSetting onSpeedOnly = registerBoolean("onSpeedOnly", false);
 
     float speedDouble;
 
@@ -26,9 +25,8 @@ public class Timer extends Module {
 
     @Override
     public void onUpdate() {
-        if ((!onMove.getValue() && !onSpeedOnly.getValue()
-                || MotionUtil.isMoving(mc.player) && onMove.getValue() && !onSpeedOnly.getValue()
-                || onSpeedOnly.getValue() && ModuleManager.isModuleEnabled(Speed.class))) {
+        if ((!onMove.getValue()
+                || MotionUtil.isMoving(mc.player) && onMove.getValue())) {
             doTimer();
         } else {
             if (!(mc.player.onGround) && ModuleManager.getModule(PlayerTweaks.class).webT.getValue() && mc.player.isInWeb)

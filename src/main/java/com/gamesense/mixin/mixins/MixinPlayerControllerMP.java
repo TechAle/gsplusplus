@@ -1,12 +1,16 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.event.events.BlockResetEvent;
 import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.DestroyBlockEvent;
 import com.gamesense.api.event.events.ReachDistanceEvent;
 import com.gamesense.client.GameSense;
+import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.combat.OffHand;
 import com.gamesense.client.module.modules.exploits.PacketUse;
+import com.gamesense.client.module.modules.exploits.Packets;
+import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import com.gamesense.client.module.modules.render.noGlitchBlock;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,6 +30,15 @@ public abstract class MixinPlayerControllerMP {
 
     @Shadow
     public abstract void syncCurrentPlayItem();
+
+    @Inject(method = "resetBlockRemoving", at = @At("HEAD"), cancellable = true)
+    private void resetBlockWrapper(CallbackInfo callbackInfo) {
+        BlockResetEvent uwu = new BlockResetEvent();
+        GameSense.EVENT_BUS.post(uwu);
+        if (uwu.isCancelled()) {
+            callbackInfo.cancel();
+        }
+    }
 
     @Inject(method = "onPlayerDestroyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playEvent(ILnet/minecraft/util/math/BlockPos;I)V"), cancellable = true)
     private void onPlayerDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
