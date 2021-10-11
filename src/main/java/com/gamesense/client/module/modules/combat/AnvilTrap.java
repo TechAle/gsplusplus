@@ -48,6 +48,7 @@ public class AnvilTrap extends Module {
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
+    BooleanSetting safeAnvil = registerBoolean("Safe Anvil", true);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
@@ -178,7 +179,7 @@ public class AnvilTrap extends Module {
                 offsetSteps++;
             }
 
-            if (blocksPlaced <= blocksPerTick.getValue()) {
+            if ( (safeAnvil.getValue() && blocksPlaced <= blocksPerTick.getValue())|| blocksPlaced == 0) {
 
                 if (!(BlockUtil.getBlock(new BlockPos(targetVec3d)) instanceof BlockAnvil)) {
                     boolean found = false;
