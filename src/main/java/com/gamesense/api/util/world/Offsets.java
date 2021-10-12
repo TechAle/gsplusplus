@@ -141,6 +141,28 @@ public class Offsets {
             new Vec3d(1, 1, 0),
 
     };
+    public static final Vec3d[] TRAP_CRYSTAL_ANVIL = {
+
+            //layer below feet
+            new Vec3d(-1, -1, 0), //scaffold
+            new Vec3d(-1, 0, 0), //scaffold
+            //layer at feet level
+            new Vec3d(-1, 1, 0), //scaffold
+            //layer at head level
+            new Vec3d(-1, 2, 0),
+            new Vec3d(-1, 2, 1),
+            new Vec3d(-1, 2, -1),
+            //roof layer
+            new Vec3d(-1,3,0), // scaffold
+            new Vec3d(0, 3, 0),
+            new Vec3d(1, 3, 0),
+            //head layer again
+            new Vec3d(0, 2, 1),
+            new Vec3d(0, 2, -1),
+            //front head layer
+            new Vec3d(1, 2, 0),
+
+    };
 
     public static final Vec3d[] TRAP_CRYSTAL_MIN = {
 
