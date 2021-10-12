@@ -12,6 +12,8 @@ import java.util.Arrays;
 @Module.Declaration(name = "ReverseStep", category = Category.Movement)
 public class ReverseStep extends Module {
 
+    boolean doIt;
+
     ModeSetting mode = registerMode("Mode", Arrays.asList("Normal", "Vanilla"), "Normal");
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 10);
 
@@ -45,14 +47,14 @@ public class ReverseStep extends Module {
                         else
                             dist = (float) y;
 
-                        boolean doIt =
+                        doIt =
                                 !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -dist + 0.1, 0.0)).isEmpty();
 
-                        if (dist < height.getValue() && doIt) {
-                            PlayerUtil.fall((int) dist);
-                        }
                     }
 
+                    if (dist < height.getValue() && doIt) {
+                        PlayerUtil.fall((int) dist);
+                    }
 
                 }
             }

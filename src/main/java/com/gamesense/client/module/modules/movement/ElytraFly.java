@@ -11,6 +11,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 
@@ -98,11 +99,10 @@ public class ElytraFly extends Module {
                 } else if (upMode.getValue().equalsIgnoreCase("Aim")) {
 
                     if (mc.player.rotationPitch > 0 || (upTimer.getTimePassed() >= 1500)) {
-                        if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                            event.setY(ySpeed.getValue());
+                        upTimer.reset();
 
-                        } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
+                        if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
                             event.setY(-ySpeed.getValue());
 
@@ -154,7 +154,7 @@ public class ElytraFly extends Module {
             }
         } else {
 
-            if (mc.gameSettings.keyBindJump.isKeyDown()){
+            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA)){
                 switch (toMode.getValue()) {
 
                     case "PacketFly": {

@@ -89,30 +89,24 @@ public class Flight extends Module {
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
-
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, false));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                y -= 0.0624;
 
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                y += 0.0624;
 
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(0.0624 * packetFactor.getValue());
+                double[] dir = MotionUtil.forward(mc.player.collided ? 0.0624 : 0.0624 * packetFactor.getValue());
 
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), mc.player.onGround));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                x += dir[0];
+                z += dir[1];
 
                 bounded = true;
 
@@ -121,12 +115,12 @@ public class Flight extends Module {
 
             if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % 4 == 0) {
 
-                event.setY(-0.01);
+                y -= 0.01;
                 bounded = true;
 
             } else if (antiKick.getValue().equalsIgnoreCase("Bounce") && mc.player.ticksExisted % 4 == 2) {
 
-                event.setY(0.01);
+                y += 0.01;
                 bounded = true;
 
             } else if (antiKick.getValue().equalsIgnoreCase("None")) {
@@ -136,6 +130,9 @@ public class Flight extends Module {
 
             }
 
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(x,y,z,false));
+            tpid++;
+            mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
             doBounds();
 
         } else if (mode.getValue().equalsIgnoreCase("Damage")) {
@@ -205,15 +202,6 @@ public class Flight extends Module {
 
     });
 
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (event.getPacket() instanceof CPacketPlayer)
-            if (!(event.getPacket() instanceof CPacketPlayer.Rotation))
-                tpid++;
-
-    });
-
     private void doBounds() {
         if (bounded) {
             switch (bound.getValue()) {
@@ -229,9 +217,9 @@ public class Flight extends Module {
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
                     else
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-
             }
+            tpid++;
+            mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
         }
     }
 
