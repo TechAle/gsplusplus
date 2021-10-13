@@ -64,7 +64,13 @@ public class ESP extends Module {
         mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(this::rangeEntityCheck).forEach(entity -> {
 
             if (entity instanceof EntityPlayer)
-                render(playerESPMode.getValue(), entity, playerColor.getValue());
+                render(playerESPMode.getValue(), entity,
+
+                        SocialManager.isFriend(entity.getName())
+                        ? friendColor.getValue() :
+                        SocialManager.isEnemy(entity.getName())
+                        ? enemyColor.getValue()
+                        : playerColor.getValue());
             else if (entity instanceof EntityCreature )
                 render(mobEsp.getValue(), entity, mobColor.getValue());
             else if (entity instanceof EntityItem)
@@ -82,16 +88,16 @@ public class ESP extends Module {
         Entity e = event.getEntity();
         boolean cancel = false;
         GSColor color = null;
-        if (e instanceof EntityPlayer && playerESPMode.getValue().equals("Shader")) {
+        if (e instanceof EntityPlayer && playerESPMode.getValue().equals("Glowing")) {
             color = playerColor.getValue();
             cancel = true;
-        } else if (e instanceof EntityCreature && mobEsp.getValue().equals("Shader")) {
+        } else if (e instanceof EntityCreature && mobEsp.getValue().equals("Glowing")) {
             color = mobColor.getValue();
             cancel = true;
-        } else if (e instanceof EntityItem && itemEsp.getValue().equals("Shader")) {
+        } else if (e instanceof EntityItem && itemEsp.getValue().equals("glowing")) {
             color = itemColor.getValue();
             cancel = true;
-        } else if (e instanceof EntityEnderCrystal && crystalEsp.getValue().equals("Shader")) {
+        } else if (e instanceof EntityEnderCrystal && crystalEsp.getValue().equals("Glowing")) {
             color = crystalColor.getValue();
             cancel = true;
         }
