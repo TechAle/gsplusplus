@@ -64,7 +64,6 @@ public class ESP extends Module {
         mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(this::rangeEntityCheck).forEach(entity -> {
             if (entity instanceof EntityPlayer)
                 render(playerESPMode.getValue(), entity,
-
                         SocialManager.isFriend(entity.getName())
                         ? friendColor.getValue() :
                         SocialManager.isEnemy(entity.getName())
