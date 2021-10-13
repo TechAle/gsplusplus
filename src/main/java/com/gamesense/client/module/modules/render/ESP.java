@@ -1,6 +1,8 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.event.events.ShaderColorEvent;
+import com.gamesense.api.event.events.TransformSideFirstPersonEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -12,6 +14,13 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import com.gamesense.mixin.mixins.accessor.IRenderGlobal;
+import com.gamesense.mixin.mixins.accessor.IShaderGroup;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
+import net.minecraft.client.shader.Shader;
+import net.minecraft.client.shader.ShaderGroup;
+import net.minecraft.client.shader.ShaderUniform;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.item.*;
@@ -21,151 +30,105 @@ import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.passive.EntitySquid;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.*;
+import net.minecraft.util.math.AxisAlignedBB;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Hoosiers on 09/22/2020
  * @author Techale on 12/19/2020
+ * Thanks to cosmos for glowing color
  */
 
 @Module.Declaration(name = "ESP", category = Category.Render)
 public class ESP extends Module {
 
-    ColorSetting mainColor = registerColor("Color");
+    List<String> Modes = Arrays.asList("None", "Box", "Direction", "Glowing");
     IntegerSetting range = registerInteger("Range", 100, 10, 260);
     IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
-    ModeSetting playerESPMode = registerMode("Player", Arrays.asList("None", "Glowing", "Box", "Direction"), "Box");
-    ModeSetting mobESPMode = registerMode("Mob", Arrays.asList("None", "Glowing", "Box", "Direction"), "Box");
-    BooleanSetting entityRender = registerBoolean("Entity", false);
-    BooleanSetting itemRender = registerBoolean("Item", true);
-    BooleanSetting containerRender = registerBoolean("Container", false);
-    BooleanSetting glowCrystals = registerBoolean("Glow Crystal", false);
+    ModeSetting playerESPMode = registerMode("Player Esp", Modes, "Box");
+    ModeSetting itemEsp = registerMode("Item Esp", Modes, "None");
+    ModeSetting mobEsp = registerMode("Entity Esp", Modes, "None");
+    ModeSetting crystalEsp = registerMode("Crystal Esp", Modes, "None");
+    ColorSetting playerColor = registerColor("Player Color", new GSColor(255, 255, 0));
+    ColorSetting friendColor = registerColor("Friend Color", new GSColor(0, 255, 255));
+    ColorSetting enemyColor = registerColor("Enemy Color", new GSColor(255, 0, 0));
+    ColorSetting mobColor = registerColor("Mob Color", new GSColor(0, 255, 0));
+    ColorSetting itemColor = registerColor("Item Color", new GSColor(255, 255, 255));
+    ColorSetting crystalColor = registerColor("Crystal Color", new GSColor(255, 0, 255));
 
-    GSColor playerColor;
-    GSColor mobColor;
-    GSColor mainIntColor;
-    GSColor containerColor;
     int opacityGradient;
 
     public void onWorldRender(RenderEvent event) {
-        mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(entity -> rangeEntityCheck(entity)).forEach(entity -> {
-            defineEntityColors(entity);
+        mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(this::rangeEntityCheck).forEach(entity -> {
 
-            if ((!playerESPMode.getValue().equals("None")) && entity instanceof EntityPlayer) {
+            if (entity instanceof EntityPlayer)
+                render(playerESPMode.getValue(), entity, playerColor.getValue());
+            else if (entity instanceof EntityCreature )
+                render(mobEsp.getValue(), entity, mobColor.getValue());
+            else if (entity instanceof EntityItem)
+                render(itemEsp.getValue(), entity, itemColor.getValue());
+            else if (entity instanceof EntityEnderCrystal)
+                render(crystalEsp.getValue(), entity, crystalColor.getValue());
 
-                if (!playerESPMode.getValue().equals("None")) {
-
-                    if (playerESPMode.getValue().equals("Glowing")) {
-                        entity.setGlowing(true);
-
-                    } else if (entity.isGlowing()) {
-                        entity.setGlowing(false);
-                    } else {
-                        switch (playerESPMode.getValue()) {
-                            case "Direction":
-                                RenderUtil.drawBoxWithDirection(entity.getEntityBoundingBox(), playerColor, entity.rotationYaw, width.getValue(), 0);
-                                break;
-                            case "Box":
-                                RenderUtil.drawBoundingBox(entity.getEntityBoundingBox(), width.getValue(), playerColor);
-                                break;
-                        }
-                    }
-                }
-            }
-
-            if (!mobESPMode.getValue().equals("None")) {
-
-                if (entity instanceof EntityCreature || entity instanceof EntitySlime || entity instanceof EntitySquid) {
-
-                    if (mobESPMode.getValue().equals("Glowing")) {
-                        entity.setGlowing(true);
-
-                    } else if (entity.isGlowing()) {
-                        entity.setGlowing(false);
-                    } else if (mobESPMode.getValue().equals("Direction")) {
-                        RenderUtil.drawBoxWithDirection(entity.getEntityBoundingBox(), mobColor, entity.rotationYaw, width.getValue(), 0);
-                    } else {
-                        RenderUtil.drawBoundingBox(entity.getEntityBoundingBox(), width.getValue(), mobColor);
-                    }
-                }
-            }
-
-
-            if (itemRender.getValue() && entity instanceof EntityItem) {
-                RenderUtil.drawBoundingBox(entity.getEntityBoundingBox(), width.getValue(), mainIntColor);
-            }
-            if (entityRender.getValue()) {
-                if (entity instanceof EntityEnderPearl || entity instanceof EntityXPOrb || entity instanceof EntityExpBottle || entity instanceof EntityEnderCrystal) {
-                    RenderUtil.drawBoundingBox(entity.getEntityBoundingBox(), width.getValue(), mainIntColor);
-                }
-            }
-            if (glowCrystals.getValue() && entity instanceof EntityEnderCrystal) {
-                entity.setGlowing(true);
-            }
-
-            if (!glowCrystals.getValue() && entity instanceof EntityEnderCrystal && entity.isGlowing()) {
-                entity.setGlowing(false);
-            }
         });
 
+    }
 
-        if (containerRender.getValue()) {
-            mc.world.loadedTileEntityList.stream().filter(tileEntity -> rangeTileCheck(tileEntity)).forEach(tileEntity -> {
-                if (tileEntity instanceof TileEntityChest) {
-                    containerColor = new GSColor(255, 255, 0, opacityGradient);
-                    RenderUtil.drawBoundingBox(mc.world.getBlockState(tileEntity.getPos()).getSelectedBoundingBox(mc.world, tileEntity.getPos()), width.getValue(), containerColor);
-                }
-                if (tileEntity instanceof TileEntityEnderChest) {
-                    containerColor = new GSColor(180, 70, 200, opacityGradient);
-                    RenderUtil.drawBoundingBox(mc.world.getBlockState(tileEntity.getPos()).getSelectedBoundingBox(mc.world, tileEntity.getPos()), width.getValue(), containerColor);
-                }
-                if (tileEntity instanceof TileEntityShulkerBox) {
-                    containerColor = new GSColor(255, 0, 0, opacityGradient);
-                    RenderUtil.drawBoundingBox(mc.world.getBlockState(tileEntity.getPos()).getSelectedBoundingBox(mc.world, tileEntity.getPos()), width.getValue(), containerColor);
-                }
-                if (tileEntity instanceof TileEntityDispenser || tileEntity instanceof TileEntityFurnace || tileEntity instanceof TileEntityHopper || tileEntity instanceof TileEntityDropper) {
-                    containerColor = new GSColor(150, 150, 150, opacityGradient);
-                    RenderUtil.drawBoundingBox(mc.world.getBlockState(tileEntity.getPos()).getSelectedBoundingBox(mc.world, tileEntity.getPos()), width.getValue(), containerColor);
-                }
-            });
+
+    @EventHandler
+    private final Listener<ShaderColorEvent> eventListener = new Listener<>(event -> {
+        Entity e = event.getEntity();
+        boolean cancel = false;
+        GSColor color = null;
+        if (e instanceof EntityPlayer && playerESPMode.getValue().equals("Shader")) {
+            color = playerColor.getValue();
+            cancel = true;
+        } else if (e instanceof EntityCreature && mobEsp.getValue().equals("Shader")) {
+            color = mobColor.getValue();
+            cancel = true;
+        } else if (e instanceof EntityItem && itemEsp.getValue().equals("Shader")) {
+            color = itemColor.getValue();
+            cancel = true;
+        } else if (e instanceof EntityEnderCrystal && crystalEsp.getValue().equals("Shader")) {
+            color = crystalColor.getValue();
+            cancel = true;
+        }
+
+        if (cancel) {
+            event.setColor(color);
+            event.cancel();
+        }
+    });
+
+    void render(String type, Entity e, GSColor color) {
+        switch (type) {
+            case "Box":
+                e.setGlowing(false);
+                RenderUtil.drawBoundingBox(e.getEntityBoundingBox(), width.getValue(), color);
+                break;
+            case "Direction":
+                e.setGlowing(false);
+                RenderUtil.drawBoxWithDirection(e.getEntityBoundingBox(), color, e.rotationYaw, width.getValue(), 0);
+                break;
+            case "Glowing":
+                e.setGlowing(true);
+                ShaderGroup outlineShaderGroup = ((IRenderGlobal) mc.renderGlobal).getEntityOutlineShader();
+                List<Shader> shaders = ((IShaderGroup) outlineShaderGroup).getListShaders();
+
+                shaders.forEach(shader -> {
+                    ShaderUniform outlineRadius = shader.getShaderManager().getShaderUniform("Radius");
+
+                    if (outlineRadius != null)
+                        outlineRadius.set(width.getValue().floatValue());
+                });
+                break;
         }
     }
 
     public void onDisable() {
-        mc.world.loadedEntityList.stream().forEach(entity -> {
-            if ((entity instanceof EntityEnderCrystal || entity instanceof EntityPlayer || entity instanceof EntityCreature || entity instanceof EntitySlime || entity instanceof EntitySquid) && entity.isGlowing()) {
-                entity.setGlowing(false);
-            }
-        });
-    }
-
-    private void defineEntityColors(Entity entity) {
-        if (entity instanceof EntityPlayer) {
-            if (SocialManager.isFriend(entity.getName())) {
-                playerColor = ModuleManager.getModule(ColorMain.class).getFriendGSColor();
-            } else if (SocialManager.isEnemy(entity.getName())) {
-                playerColor = ModuleManager.getModule(ColorMain.class).getEnemyGSColor();
-            } else {
-                playerColor = new GSColor(mainColor.getValue(), opacityGradient);
-            }
-        }
-
-        if (entity instanceof EntityMob) {
-            mobColor = new GSColor(255, 0, 0, opacityGradient);
-        } else if (entity instanceof EntityAnimal || entity instanceof EntitySquid) {
-            mobColor = new GSColor(0, 255, 0, opacityGradient);
-        } else {
-            mobColor = new GSColor(255, 165, 0, opacityGradient);
-        }
-
-        if (entity instanceof EntitySlime) {
-            mobColor = new GSColor(255, 0, 0, opacityGradient);
-        }
-
-        if (entity != null) {
-            mainIntColor = new GSColor(mainColor.getValue(), opacityGradient);
-        }
+        mc.world.loadedEntityList.forEach(entity -> entity.setGlowing(false));
     }
 
     private boolean rangeEntityCheck(Entity entity) {
@@ -188,23 +151,4 @@ public class ESP extends Module {
         return true;
     }
 
-    private boolean rangeTileCheck(TileEntity tileEntity) {
-        if (tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) > range.getValue() * range.getValue()) {
-            return false;
-        }
-
-        if (tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) >= 32400) {
-            opacityGradient = 50;
-        } else if (tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) >= 16900 && tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) < 32400) {
-            opacityGradient = 100;
-        } else if (tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) >= 6400 && tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) < 16900) {
-            opacityGradient = 150;
-        } else if (tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) >= 900 && tileEntity.getDistanceSq(mc.player.posX, mc.player.posY, mc.player.posZ) < 6400) {
-            opacityGradient = 200;
-        } else {
-            opacityGradient = 255;
-        }
-
-        return true;
-    }
 }

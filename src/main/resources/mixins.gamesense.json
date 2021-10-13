@@ -24,6 +24,7 @@
     "MixinNetworkManager",
     "MixinPlayerControllerMP",
     "MixinPlayerOverlay",
+    "MixinRender",
     "MixinRenderGlobal",
     "MixinRenderItem",
     "MixinRenderLivingBase",
@@ -31,6 +32,8 @@
     "MixinRenderPlayer",
     "MixinWorld",
     "accessor.AccessorCPacketAttack",
-    "accessor.AccessorEntityPlayerSP"
+    "accessor.AccessorEntityPlayerSP",
+    "accessor.IRenderGlobal",
+    "accessor.IShaderGroup"
   ]
 }
