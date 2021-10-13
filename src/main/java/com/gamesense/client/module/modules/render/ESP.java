@@ -3,10 +3,7 @@ package com.gamesense.client.module.modules.render;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.event.events.ShaderColorEvent;
 import com.gamesense.api.event.events.TransformSideFirstPersonEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
@@ -44,9 +41,10 @@ import java.util.List;
 @Module.Declaration(name = "ESP", category = Category.Render)
 public class ESP extends Module {
 
-    List<String> Modes = Arrays.asList("None", "Box", "Direction", "Glowing");
+    List<String> Modes = Arrays.asList("None", "Box", "Direction", "Glowing", "Shader");
     IntegerSetting range = registerInteger("Range", 100, 10, 260);
     IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
+    DoubleSetting blurDir = registerDouble("Blur Dir", 1, 0, 1);
     ModeSetting playerESPMode = registerMode("Player Esp", Modes, "Box");
     ModeSetting itemEsp = registerMode("Item Esp", Modes, "None");
     ModeSetting mobEsp = registerMode("Entity Esp", Modes, "None");
@@ -59,6 +57,10 @@ public class ESP extends Module {
     ColorSetting crystalColor = registerColor("Crystal Color", new GSColor(255, 0, 255));
 
     int opacityGradient;
+
+    protected void onEnable() {
+
+    }
 
     public void onWorldRender(RenderEvent event) {
         mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(this::rangeEntityCheck).forEach(entity -> {
@@ -126,6 +128,10 @@ public class ESP extends Module {
 
                     if (outlineRadius != null)
                         outlineRadius.set(width.getValue().floatValue());
+
+                    ShaderUniform blurDir = shader.getShaderManager().getShaderUniform("BlurDir");
+                    if (blurDir != null)
+                        blurDir.set(this.blurDir.getValue().floatValue());
                 });
                 break;
         }
