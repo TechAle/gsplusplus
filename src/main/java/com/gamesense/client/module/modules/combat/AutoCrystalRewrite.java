@@ -95,6 +95,7 @@ public class AutoCrystalRewrite extends Module {
     public DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     public DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
+    DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
     //endregion
@@ -162,8 +163,6 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && chooseCrystal.getValue().equals("Smart"));
     BooleanSetting relativeDamageBreak = registerBoolean("Relative Damage Br", false, () -> breakSection.getValue());
     DoubleSetting relativeDamageValueBreak = registerDouble("Damage Relative Damage Br", .8, 0, 1, () -> breakSection.getValue() && relativeDamagePlace.getValue());
-    DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8,
-            () -> breakSection.getValue());
     ModeSetting swingModebr = registerMode("Swing Mode br", Arrays.asList("Client", "Server", "None"), "Server",
             () -> breakSection.getValue());
     BooleanSetting hideClientbr = registerBoolean("Hide Client br", false,
