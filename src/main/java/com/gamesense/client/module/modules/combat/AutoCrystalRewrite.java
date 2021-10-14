@@ -117,7 +117,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
     IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> place.getValue());
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
-    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
+    BooleanSetting antiSuicidepl = registerBoolean("AntiSuicide pl", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
     ModeSetting limitPacketPlace = registerMode("Limit Packet Place", Arrays.asList("None", "Tick", "Time"), "None",
             () -> place.getValue());
@@ -204,6 +204,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
+    BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> place.getValue());
     //endregion
 
     //region Misc
@@ -1459,7 +1460,7 @@ public class AutoCrystalRewrite extends Module {
                     // Get damage
                     float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self, ignoreTerrain);
                     // If we can take that damage
-                    if (damage < maxSelfDamage && (!antiSuicide.getValue() || damage < self.health)) {
+                    if (damage < maxSelfDamage && (!antiSuicidepl.getValue() || damage < self.health)) {
                         // Raytrace. We have to calculate the raytrace for both wall and raytrace option
                         RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
                                 new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d));
@@ -1828,7 +1829,7 @@ public class AutoCrystalRewrite extends Module {
         // Check for the damafge
         float damage;
         if ( (damage = DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player, ignoreTerrain.getValue()))
-                >= maxSelfDamagePlace.getValue() && (!antiSuicide.getValue() || damage < PlayerUtil.getHealth()))
+                >= maxSelfDamagePlace.getValue() && (!antiSuicidepl.getValue() || damage < PlayerUtil.getHealth()))
             return null;
 
         // Get rangeSQ
@@ -2150,6 +2151,7 @@ public class AutoCrystalRewrite extends Module {
         boolean relativeDamage = this.relativeDamageBreak.getValue();
         double valueRelativeDamage = this.relativeDamageValueBreak.getValue();
         boolean ignoreTerrainValue = false;
+        boolean antiSuicide = this.antiSuicidebr.getValue();
         if (ignoreTerrain.getValue())
             if (bindIgnoreTerrain.getValue()) {
                 if (letterIgnoreTerrain.getText().length() > 0)
@@ -2198,7 +2200,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get every possible crystals that you could break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ, antiSuicide, ignoreTerrainValue);
 
                 if (possibleCrystals == null)
                     break;
@@ -2247,7 +2249,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get possible crystals to break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ, antiSuicide, ignoreTerrainValue);
 
                 // If nothing found, rip
                 if (possibleCrystals == null)
@@ -2284,7 +2286,7 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
-    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ) {
+    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ, boolean antiSuicide, boolean ignoreTerrain) {
         // Our output
         List<PositionInfo> damagePos = new ArrayList<>();
         // 571 1 564
@@ -2306,9 +2308,9 @@ public class AutoCrystalRewrite extends Module {
                             boolean continueFor = true;
 
                             // If antiSuicide
-                            if (antiSuicide.getValue() ) {
+                            if (antiSuicide ) {
                                 // Get damage
-                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
+                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain);
                                 // If >, stop
                                 if (damage >= self.health) {
                                     continueFor = false;
@@ -2325,7 +2327,7 @@ public class AutoCrystalRewrite extends Module {
 
                                     // Calculate damage if before we havent calculated it
                                     if (damage == Float.MIN_VALUE)
-                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
+                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain);
 
                                     // For every types of break
                                     switch (chooseCrystal.getValue()) {
