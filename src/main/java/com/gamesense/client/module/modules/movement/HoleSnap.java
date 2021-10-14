@@ -32,9 +32,6 @@ public class HoleSnap extends Module {
 
     DoubleSetting speedA = registerDouble("Speed", 0 ,0, 2);
     DoubleSetting range = registerDouble("Range", 4, 0, 10);
-    BooleanSetting render = registerBoolean("Render", true);
-    IntegerSetting width = registerInteger("Width", 2, 0, 10, () -> render.getValue());
-    ColorSetting colour = registerColor("Colour", new GSColor(0, 255, 0), () -> render.getValue());
 
     BlockPos hole;
 
@@ -73,28 +70,13 @@ public class HoleSnap extends Module {
             double dist = mc.player.getPositionVector().distanceTo(new Vec3d(hole.getX(), hole.getY(), hole.getZ()));
 
             if (mc.player.onGround)
-                speed = Math.min((0.2805 * (speedA.getValue()/10)), Math.abs(dist));
+                speed = Math.min((0.2805 * (speedA.getValue()/10)), Math.abs(dist)/2); // divide by 2 because motion
             else
                 speed = (Math.abs(mc.player.motionX) * Math.abs(mc.player.motionZ)) / 2;
 
             mc.player.motionX = -sin(yawRad) * speed;
             mc.player.motionZ = cos(yawRad) * speed;
-
-            if (render.getValue())
-                RenderUtil.drawLine(mc.player.posX, Math.floor(mc.player.posY), mc.player.posZ, hole.x, Math.floor(hole.y), hole.z, colour.getColor(), width.getValue());
-
-            if (antiStuck()) {
-                mc.player.setPositionAndUpdate(Math.floor(hole.x) + 0.5, mc.player.posY, Math.floor(hole.z) + 0.5);
-                mc.player.setVelocity(0, mc.player.motionY, 0);
-                disable();
-            }
         }
-    }
-
-    boolean antiStuck() {
-
-        return mc.player.getDistance(hole.getX(), mc.player.posY, hole.getZ()) >= 0.5;
-
     }
 
     private BlockPos findHoles() {

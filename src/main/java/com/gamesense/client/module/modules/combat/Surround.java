@@ -18,6 +18,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -40,6 +41,8 @@ import static java.lang.Math.sin;
 public class Surround extends Module {
 
     private final Timer delayTimer = new Timer();
+    private final Timer enableTimer = new Timer();
+    BooleanSetting enableHole = registerBoolean("Enable in Hole", false);
     ModeSetting jumpMode = registerMode("Jump", Arrays.asList("Continue", "Pause", "Disable"), "Continue");
     ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum", "Anti City"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
@@ -62,11 +65,6 @@ public class Surround extends Module {
         if (mc.player == null || mc.world == null) {
             disable();
             return;
-        }
-
-        if (centreMode.getValue().equalsIgnoreCase("Motion")) {
-            mc.player.motionX = 0;
-            mc.player.motionZ = 0;
         }
 
         centeredBlock = BlockUtil.getCenterOfBlock(mc.player.posX, mc.player.posY, mc.player.posZ);
@@ -140,7 +138,7 @@ public class Surround extends Module {
                     PlayerUtil.centerPlayer(centeredBlock);
 
                 else if (centreMode.getValue().equalsIgnoreCase("Minimum"))
-                    mc.player.setPosition(calcX() + mc.player.posX, mc.player.posY, calcZ() + mc.player.posZ);
+                    mc.player.setPosition(calcX(), mc.player.posY, calcZ());
             }
 
         }
@@ -163,7 +161,8 @@ public class Surround extends Module {
                     offsetPattern = Offsets.SURROUND;
                     maxSteps = Offsets.SURROUND.length;
                 } else {
-                    offsetPattern = getSurroundMinVec();
+                    offsetPattern = Offsets.SURROUND_MIN;
+                    placeMinBlocks();
                     maxSteps = offsetPattern.length;
                 }
 
@@ -234,23 +233,19 @@ public class Surround extends Module {
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
 
-    Object[] getSurroundMinVec() {
+    void placeMinBlocks() {
 
         Vec3d[] vec = Offsets.SURROUND_MIN;
-
-        ArrayList<Vec3d> vl = new ArrayList<>(Arrays.asList(vec));
 
         for (Vec3d vec3d : vec) {
 
             if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null) {
 
-                vl.add(vec3d.add(0, -1, 0));
+                placeBlock(new BlockPos(vec3d.add(0d,1d,0d)));
 
             }
 
         }
-
-        return vl.toArray();
 
     }
 
@@ -289,4 +284,13 @@ public class Surround extends Module {
 
     }
 
+    @Override
+    public void onDisabledUpdate() {
+        if (!HoleUtil.isHole(new BlockPos (mc.player.getPositionVector()), true, false).getType().equals(HoleUtil.HoleType.NONE) && enableHole.getValue()) {
+            if (enableTimer.hasReached(150, true))
+                enable();
+
+        } else
+            enableTimer.reset();
+    }
 }

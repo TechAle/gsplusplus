@@ -53,7 +53,7 @@ public class NoKick extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof CPacketUpdateSign && noSignCrash.getValue()) {
+        if (event.getPacket() instanceof CPacketUpdateSign && noSignCrash.getValue() && !Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode())) {
 
             event.cancel();
 

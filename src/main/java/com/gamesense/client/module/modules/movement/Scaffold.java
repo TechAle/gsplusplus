@@ -38,7 +38,6 @@ public class Scaffold extends Module {
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
-    BooleanSetting keepRot = registerBoolean("Keep rotated", false, () -> rotate.getValue());
 
     int timer;
 
@@ -52,26 +51,6 @@ public class Scaffold extends Module {
     BlockPos scaffold;
     BlockPos towerPos;
     BlockPos downPos;
-    BlockPos rotPos;
-
-    Vec2f rot;
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        try {
-            if (rotate.getValue() && keepRot.getValue()) {
-
-                if (event.getPacket() instanceof CPacketPlayer) {
-
-                    ((CPacketPlayer) event.getPacket()).yaw = rot.x;
-                    ((CPacketPlayer) event.getPacket()).pitch = rot.y;
-
-                }
-
-            }
-        } catch (NullPointerException ignored) {
-        }
-    });
 
     @Override
     protected void onEnable() {
@@ -79,12 +58,6 @@ public class Scaffold extends Module {
     }
 
     public void onUpdate() {
-
-//      literally just get new packet that we cant even see for keepRotation to consistently have rotation packets to use
-        if (mc.player.ticksExisted % 2 == 0)
-            mc.player.rotationPitch += 0.00001;
-        else
-            mc.player.rotationPitch -= 0.00001;
 
         oldSlot = mc.player.inventory.currentItem;
 

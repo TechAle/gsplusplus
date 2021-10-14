@@ -37,11 +37,10 @@ public class Speed extends Module {
 
     private final Timer timer = new Timer();
     public int yl;
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort", "Custom"), "Strafe");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort"), "Strafe");
 
-    DoubleSetting speed = registerDouble("Speed", 2.15, 0, 10, () -> mode.getValue().equals("Strafe"));
-    BooleanSetting useTimer = registerBoolean("Timer", false);
-    DoubleSetting timerVal = registerDouble("Timer Speed", 1.088, 0.8,1.2);
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
+    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -49,15 +48,15 @@ public class Speed extends Module {
     BooleanSetting strictOG = registerBoolean("Head Block Only", false, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,1,5, () -> mode.getValue().equalsIgnoreCase("OnGround"));
 
-    DoubleSetting speedCustom = registerDouble("Speed Custom", 0.02, 0, 0.1, () -> mode.getValue().equalsIgnoreCase("Custom"));
-    BooleanSetting customHop = registerBoolean("Custom Jump", false, () -> mode.getValue().equalsIgnoreCase("Custom"));
-    DoubleSetting customHeight = registerDouble("Custom Height", 0.42, 0, 1, () -> mode.getValue().equalsIgnoreCase("Custom"));
+    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
 
-    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe"));
-    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    BooleanSetting useTimer = registerBoolean("Timer", false);
+    DoubleSetting timerVal = registerDouble("Timer Speed", 1.088, 0.8,1.2);
 
     private boolean slowDown;
     private double playerSpeed;
+    int i;
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -68,14 +67,16 @@ public class Speed extends Module {
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
             double speedY = jumpHeight.getValue();
 
-            if (mc.player.onGround) mc.player.jump();
+            if (mc.player.onGround && jump.getValue()) mc.player.jump();
 
             if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
                     speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
                 }
 
-                event.setY(mc.player.motionY = speedY);
+                if (jump.getValue())
+                    event.setY(mc.player.motionY = speedY);
+
                 playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
                 slowDown = true;
                 timer.reset();
@@ -91,16 +92,6 @@ public class Speed extends Module {
             double[] dir = MotionUtil.forward(playerSpeed);
             event.setX(dir[0]);
             event.setZ(dir[1]);
-        } else if (mode.getValue().equalsIgnoreCase("Custom")) {
-
-            double[] dir = MotionUtil.forward(speedCustom.getValue() * 10);
-            event.setX(dir[0]);
-            event.setZ(dir[1]);
-            if (customHop.getValue() && mc.player.onGround) {
-
-                mc.player.motionY = customHeight.getValue();
-
-            }
 
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
@@ -108,13 +99,12 @@ public class Speed extends Module {
 
             if (mc.player.ticksExisted % ogd.getValue() == 0 && !mc.player.collidedHorizontally){
                 if (mc.player.onGround && (above || !strictOG.getValue())) {
-                    mc.player.posY += 0.4;
-                    mc.player.motionY = 0.4;
                     mc.player.motionX *= onGroundSpeed.getValue();
                     mc.player.motionZ *= onGroundSpeed.getValue();
                 } else if ((above || !strictOG.getValue())) {
 
                     mc.player.posY = Math.floor(mc.player.posY);
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true));
 
                 }
             }
@@ -166,5 +156,21 @@ public class Speed extends Module {
     public String getHudInfo() {
         return "[" + ChatFormatting.WHITE + mode.getValue() + ChatFormatting.GRAY + "]";
     }
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        if (mode.getValue().equalsIgnoreCase("OnGround")) {
+            if (i % 2 == 0 && event.getPacket() instanceof CPacketPlayer) {
+
+                i++;
+                ((CPacketPlayer) event.getPacket()).y += 0.4;
+
+            } else if (event.getPacket() instanceof CPacketPlayer)
+                i++;
+        }
+
+
+    });
 
 }

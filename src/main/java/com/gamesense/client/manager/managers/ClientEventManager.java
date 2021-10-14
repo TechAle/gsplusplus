@@ -12,14 +12,11 @@ import com.gamesense.client.module.ModuleManager;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.Block;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.server.SPacketBlockChange;
 import net.minecraft.network.play.server.SPacketPlayerListItem;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.client.event.*;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -35,6 +32,47 @@ import org.lwjgl.input.Mouse;
 public enum ClientEventManager implements Manager {
 
     INSTANCE;
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+        if (event.getPacket() instanceof SPacketPlayerListItem) {
+            SPacketPlayerListItem packet = (SPacketPlayerListItem) event.getPacket();
+            if (packet.getAction() == SPacketPlayerListItem.Action.ADD_PLAYER) {
+                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
+                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
+                        new Thread(() -> {
+                            String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
+                            if (name != null) {
+                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
+                                    GameSense.EVENT_BUS.post(new PlayerJoinEvent(name));
+                                }
+                            }
+                        }).start();
+                    }
+                }
+            }
+            if (packet.getAction() == SPacketPlayerListItem.Action.REMOVE_PLAYER) {
+                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
+                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
+                        new Thread(() -> {
+                            final String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
+                            if (name != null) {
+                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
+                                    GameSense.EVENT_BUS.post(new PlayerLeaveEvent(name));
+                                }
+                            }
+                        }).start();
+                    }
+                }
+            }
+        } else if (event.getPacket() instanceof SPacketBlockChange) {
+            SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
+            GameSense.EVENT_BUS.post(new BlockChangeEvent(
+                    packet.getBlockPosition(),
+                    packet.getBlockState().getBlock()));
+        }
+    });
 
     @SubscribeEvent
     public void onRenderScreen(RenderGameOverlayEvent.Text event) {
@@ -106,56 +144,18 @@ public enum ClientEventManager implements Manager {
         GameSense.EVENT_BUS.post(event);
     }
 
-
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-        if (event.getPacket() instanceof SPacketPlayerListItem) {
-            SPacketPlayerListItem packet = (SPacketPlayerListItem) event.getPacket();
-            if (packet.getAction() == SPacketPlayerListItem.Action.ADD_PLAYER) {
-                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
-                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
-                        new Thread(() -> {
-                            String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
-                            if (name != null) {
-                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
-                                    GameSense.EVENT_BUS.post(new PlayerJoinEvent(name));
-                                }
-                            }
-                        }).start();
-                    }
-                }
-            }
-            if (packet.getAction() == SPacketPlayerListItem.Action.REMOVE_PLAYER) {
-                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
-                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
-                        new Thread(() -> {
-                            final String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
-                            if (name != null) {
-                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
-                                    GameSense.EVENT_BUS.post(new PlayerLeaveEvent(name));
-                                }
-                            }
-                        }).start();
-                    }
-                }
-            }
-        } else if(event.getPacket() instanceof SPacketBlockChange) {
-            SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
-            GameSense.EVENT_BUS.post(new BlockChangeEvent(
-                    packet.getBlockPosition(),
-                    packet.getBlockState().getBlock()));
-        }
-    });
-
     @SubscribeEvent
     public void onUpdate(LivingEvent.LivingUpdateEvent event) {
         if (getMinecraft().player == null || getMinecraft().world == null) return;
 
         if (event.getEntity().getEntityWorld().isRemote && event.getEntityLiving() == getPlayer()) {
             for (Module module : ModuleManager.getModules()) {
-                if (!module.isEnabled()) continue;
-                module.onUpdate();
+
+                if (module.isEnabled())
+                    module.onUpdate();
+                else
+                    module.onDisabledUpdate();
+
             }
 
             GameSense.EVENT_BUS.post(event);

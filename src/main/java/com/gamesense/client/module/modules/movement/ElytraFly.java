@@ -143,12 +143,6 @@ public class ElytraFly extends Module {
 
                         setAng = false;
 
-                        if (!MotionUtil.isMoving(mc.player)) {
-
-                            event.setY(0);
-
-                        }
-
                     }
                 }
             }
@@ -209,4 +203,9 @@ public class ElytraFly extends Module {
         }
 
     });
+
+    @Override
+    protected void onDisable() {
+        mc.timer.tickLength = 50;
+    }
 }

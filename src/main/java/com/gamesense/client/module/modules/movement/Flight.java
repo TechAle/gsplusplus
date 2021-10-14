@@ -32,9 +32,10 @@ public class Flight extends Module {
     ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI", "PF"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
 
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug ID", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting confirm = registerBoolean("Confirm", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug ID", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
     DoubleSetting minStr = registerDouble("Min Blast Strength", 0,0,1);
     DoubleSetting jspeed = registerDouble("Speed", 0, 0, 5, () -> mode.getValue().equalsIgnoreCase("AirJump"));
@@ -132,7 +133,8 @@ public class Flight extends Module {
 
             mc.player.connection.sendPacket(new CPacketPlayer.Position(x,y,z,false));
             tpid++;
-            mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+            if (confirm.getValue())
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
             doBounds();
 
         } else if (mode.getValue().equalsIgnoreCase("Damage")) {
@@ -212,6 +214,13 @@ public class Flight extends Module {
                     mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
                 case "Zero":
                     mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
+                case "Min":
+                    if (mc.player.ticksExisted % 2 == 0)
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                    else
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
                 default:
                     if (mc.player.ticksExisted % 2 == 0)
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
@@ -219,7 +228,9 @@ public class Flight extends Module {
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
             }
             tpid++;
-            mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+
+            if (confirm.getValue())
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
         }
     }
 
