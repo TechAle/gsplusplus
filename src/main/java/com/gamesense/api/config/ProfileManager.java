@@ -14,6 +14,7 @@ import com.gamesense.client.module.modules.misc.AutoGG;
 import com.gamesense.client.module.modules.misc.AutoReply;
 import com.gamesense.client.module.modules.misc.AutoRespawn;
 import com.google.gson.*;
+import net.minecraft.client.Minecraft;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,7 @@ public class ProfileManager {
     public static Boolean profileFolder = false;
 
     private static String currentProfile = "";
+
 
     public static void init() {
         try {
@@ -135,6 +137,7 @@ public class ProfileManager {
         String fileLocation = fileName + miscName;
 
         if (!Files.exists(Paths.get(fileLocation + "CurrentProfile" + ".json"))) {
+            GameSense.LOGGER.warn("currentprofile.json not found");
             saveCurrentProfile();
             return "";
         }
@@ -153,18 +156,29 @@ public class ProfileManager {
         }
 
         inputStream.close();
+        GameSense.LOGGER.warn("error with loading profile ");
         return "";
     }
 
     public static void setCurrentProfile(String newProfile) {
+
         GameSense.LOGGER.info("Setting current profile " + newProfile);
+
+
+        SaveConfig.init();
+
         currentProfile = newProfile;
+
         LoadConfig.setProfile(currentProfile);
         SaveConfig.setProfile(currentProfile);
+
+
         LoadConfig.init();
+
+
     }
 
     public static String getCurrentProfile() {
-        return currentProfile;
+        return currentProfile.equals("") ? "default" : currentProfile;
     }
 }

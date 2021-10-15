@@ -18,6 +18,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.client.Minecraft;
 
 import java.awt.*;
 import java.io.IOException;
@@ -38,11 +39,15 @@ public class LoadConfig {
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
 
+    private static final Minecraft mc = Minecraft.getMinecraft();
+
     public static void init() {
+        GameSense.LOGGER.warn("Starting loadconfig init, current profile name is "+fileName+"!");
         try {
             loadModules();
-            //GameSense.LOGGER.info("loading modules initialized!");
+            GameSense.LOGGER.warn("FOV is "+mc.gameSettings.fovSetting);
             loadEnabledModules();
+            GameSense.LOGGER.warn("FOV is "+mc.gameSettings.fovSetting);
             loadModuleKeybinds();
             loadDrawnModules();
             loadToggleMessageModules();
@@ -64,7 +69,7 @@ public class LoadConfig {
     public static void setProfile(String profile){
         GameSense.LOGGER.info("LoadConfig profile was set to " + profile);
 
-        fileName = profile.equals("") ? "gs++/": "gs++/profiles/" + profile+"/";
+        fileName = (profile.equals("default") || profile.equals("")) ? "gs++/": "gs++/profiles/" + profile+"/";
     }
 
     //big shoutout to lukflug for helping/fixing this
@@ -146,6 +151,12 @@ public class LoadConfig {
                     try {
                         module.enable();
                     } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        module.disable();
+                    } catch(NullPointerException e){
                         e.printStackTrace();
                     }
                 }
