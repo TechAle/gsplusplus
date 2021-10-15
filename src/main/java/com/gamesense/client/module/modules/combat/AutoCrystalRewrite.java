@@ -2846,6 +2846,8 @@ public class AutoCrystalRewrite extends Module {
 
     // Say if two blockPos are the same
     boolean sameBlockPos(BlockPos first, BlockPos second) {
+        if (first == null || second == null)
+            return false;
         return first.getX() == second.getX() && first.getY() == second.getY() && first.getZ() == second.getZ();
     }
 
@@ -3526,7 +3528,7 @@ public class AutoCrystalRewrite extends Module {
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
         // If we dont have to rotate
-        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null || mc.world == null || mc.player == null) return;
 
         // If we reached the last point (Delay)
         if (tick++ > tickAfterRotation.getValue()) {
@@ -3592,6 +3594,8 @@ public class AutoCrystalRewrite extends Module {
 
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
+        if (mc.world == null || mc.player == null)
+            return;
         if  ( entityPredict.getValue() && event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
             CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
             if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
@@ -3621,7 +3625,8 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-
+        if (mc.world == null || mc.player == null)
+            return;
         // Spawn object
         if (event.getPacket() instanceof SPacketSpawnObject) {
             // Get it
