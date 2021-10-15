@@ -95,6 +95,7 @@ public class AutoCrystalRewrite extends Module {
     public DoubleSetting placeRange = registerDouble("Place Range", 6, 0, 8, () -> ranges.getValue());
     public DoubleSetting breakRange = registerDouble("Break Range", 6, 0, 8, () -> ranges.getValue());
     DoubleSetting crystalWallPlace = registerDouble("Wall Range Place", 3.5, 0, 8, () -> ranges.getValue());
+    DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8, () -> ranges.getValue());
     IntegerSetting maxYTarget = registerInteger("Max Y", 3, 0, 5, () -> ranges.getValue());
     IntegerSetting minYTarget = registerInteger("Min Y", 3, 0, 5, () -> ranges.getValue());
     //endregion
@@ -117,7 +118,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting armourFacePlace = registerInteger("Armour Health%", 20, 0, 100, () -> place.getValue());
     IntegerSetting facePlaceValue = registerInteger("FacePlace HP", 8, 0, 36, () -> place.getValue());
     DoubleSetting minFacePlaceDmg = registerDouble("FacePlace Dmg", 2, 0, 10, () -> place.getValue());
-    BooleanSetting antiSuicide = registerBoolean("AntiSuicide", true, () -> place.getValue());
+    BooleanSetting antiSuicidepl = registerBoolean("AntiSuicide pl", true, () -> place.getValue());
     BooleanSetting includeCrystalMapping = registerBoolean("Include Crystal Mapping", true, () -> place.getValue());
     ModeSetting limitPacketPlace = registerMode("Limit Packet Place", Arrays.asList("None", "Tick", "Time"), "None",
             () -> place.getValue());
@@ -162,8 +163,6 @@ public class AutoCrystalRewrite extends Module {
             () -> breakSection.getValue() && chooseCrystal.getValue().equals("Smart"));
     BooleanSetting relativeDamageBreak = registerBoolean("Relative Damage Br", false, () -> breakSection.getValue());
     DoubleSetting relativeDamageValueBreak = registerDouble("Damage Relative Damage Br", .8, 0, 1, () -> breakSection.getValue() && relativeDamagePlace.getValue());
-    DoubleSetting wallrangeBreak = registerDouble("Wall Range Break", 3.5, 0, 8,
-            () -> breakSection.getValue());
     ModeSetting swingModebr = registerMode("Swing Mode br", Arrays.asList("Client", "Server", "None"), "Server",
             () -> breakSection.getValue());
     BooleanSetting hideClientbr = registerBoolean("Hide Client br", false,
@@ -204,6 +203,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
+    BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> place.getValue());
     //endregion
 
     //region Misc
@@ -1459,7 +1459,7 @@ public class AutoCrystalRewrite extends Module {
                     // Get damage
                     float damage = DamageUtil.calculateDamageThreaded(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, self, ignoreTerrain);
                     // If we can take that damage
-                    if (damage < maxSelfDamage && (!antiSuicide.getValue() || damage < self.health)) {
+                    if (damage < maxSelfDamage && (!antiSuicidepl.getValue() || damage < self.health)) {
                         // Raytrace. We have to calculate the raytrace for both wall and raytrace option
                         RayTraceResult result = mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + mc.player.getEyeHeight(), mc.player.posZ),
                                 new Vec3d(crystal.getX() + .5d, crystal.getY() + 1D, crystal.getZ() + .5d));
@@ -1828,7 +1828,7 @@ public class AutoCrystalRewrite extends Module {
         // Check for the damafge
         float damage;
         if ( (damage = DamageUtil.calculateDamage(crystal.getX() + .5D, crystal.getY() + 1D, crystal.getZ() + .5D, mc.player, ignoreTerrain.getValue()))
-                >= maxSelfDamagePlace.getValue() && (!antiSuicide.getValue() || damage < PlayerUtil.getHealth()))
+                >= maxSelfDamagePlace.getValue() && (!antiSuicidepl.getValue() || damage < PlayerUtil.getHealth()))
             return null;
 
         // Get rangeSQ
@@ -2150,6 +2150,7 @@ public class AutoCrystalRewrite extends Module {
         boolean relativeDamage = this.relativeDamageBreak.getValue();
         double valueRelativeDamage = this.relativeDamageValueBreak.getValue();
         boolean ignoreTerrainValue = false;
+        boolean antiSuicide = this.antiSuicidebr.getValue();
         if (ignoreTerrain.getValue())
             if (bindIgnoreTerrain.getValue()) {
                 if (letterIgnoreTerrain.getText().length() > 0)
@@ -2198,7 +2199,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get every possible crystals that you could break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ, antiSuicide, ignoreTerrainValue);
 
                 if (possibleCrystals == null)
                     break;
@@ -2247,7 +2248,7 @@ public class AutoCrystalRewrite extends Module {
                     toDisplay.add(new display(player.entity.getEntityBoundingBox(), colorSelfBreaking.getColor(), widthPredict.getValue()));
 
                 // Get possible crystals to break
-                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ);
+                possibleCrystals = getPossibleCrystalsBreaking(player, maxSelfDamage, rayTrace, wallRangeSQ, rangeSQ, antiSuicide, ignoreTerrainValue);
 
                 // If nothing found, rip
                 if (possibleCrystals == null)
@@ -2284,7 +2285,7 @@ public class AutoCrystalRewrite extends Module {
 
     }
 
-    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ) {
+    List<List<PositionInfo>> getPossibleCrystalsBreaking(PlayerInfo self, double maxSelfDamage, boolean raytrace, double wallRangeSQ, double rangeSQ, boolean antiSuicide, boolean ignoreTerrain) {
         // Our output
         List<PositionInfo> damagePos = new ArrayList<>();
         // 571 1 564
@@ -2306,9 +2307,9 @@ public class AutoCrystalRewrite extends Module {
                             boolean continueFor = true;
 
                             // If antiSuicide
-                            if (antiSuicide.getValue() ) {
+                            if (antiSuicide ) {
                                 // Get damage
-                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
+                                damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain);
                                 // If >, stop
                                 if (damage >= self.health) {
                                     continueFor = false;
@@ -2325,7 +2326,7 @@ public class AutoCrystalRewrite extends Module {
 
                                     // Calculate damage if before we havent calculated it
                                     if (damage == Float.MIN_VALUE)
-                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain.getValue());
+                                        damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, ignoreTerrain);
 
                                     // For every types of break
                                     switch (chooseCrystal.getValue()) {
@@ -2845,6 +2846,8 @@ public class AutoCrystalRewrite extends Module {
 
     // Say if two blockPos are the same
     boolean sameBlockPos(BlockPos first, BlockPos second) {
+        if (first == null || second == null)
+            return false;
         return first.getX() == second.getX() && first.getY() == second.getY() && first.getZ() == second.getZ();
     }
 
@@ -3525,7 +3528,7 @@ public class AutoCrystalRewrite extends Module {
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
         // If we dont have to rotate
-        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null) return;
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null || mc.world == null || mc.player == null) return;
 
         // If we reached the last point (Delay)
         if (tick++ > tickAfterRotation.getValue()) {
@@ -3591,6 +3594,8 @@ public class AutoCrystalRewrite extends Module {
 
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
+        if (mc.world == null || mc.player == null)
+            return;
         if  ( entityPredict.getValue() && event.getPacket() instanceof CPacketPlayerTryUseItemOnBlock) {
             CPacketPlayerTryUseItemOnBlock packet = (CPacketPlayerTryUseItemOnBlock)event.getPacket();
             if ( bestPlace.crystal != null && sameBlockPos(packet.getPos(), bestPlace.crystal)) {
@@ -3620,7 +3625,8 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-
+        if (mc.world == null || mc.player == null)
+            return;
         // Spawn object
         if (event.getPacket() instanceof SPacketSpawnObject) {
             // Get it
