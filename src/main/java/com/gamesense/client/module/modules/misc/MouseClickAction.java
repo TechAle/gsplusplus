@@ -19,6 +19,7 @@ import net.minecraft.inventory.ClickType;
 import net.minecraft.item.ItemEnderPearl;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItem;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
@@ -71,7 +72,7 @@ public class MouseClickAction extends Module {
         }
 
         if ((Mouse.isButtonDown(MCPButtonCode) && onGroundCheck.getValue() && mc.player.onGround && pearl.getValue()) || Mouse.isButtonDown(MCPButtonCode) && !onGroundCheck.getValue() && pearl.getValue()) { //We check for button press and don't check for miss :rage:
-            int oldSlot = mc.player.inventory.currentItem;
+            /*int oldSlot = mc.player.inventory.currentItem;
 
             int pearlSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0, 8);
 
@@ -143,8 +144,11 @@ public class MouseClickAction extends Module {
                         pearlInvSlot = -1;
 
                     }
-                }
+                }*/
             }
+
+        mcp();
+
         }
 
     @EventHandler
@@ -173,6 +177,29 @@ public class MouseClickAction extends Module {
         mc.playerController.windowClick(0, slot1, 0, ClickType.PICKUP, mc.player);
 
         mc.playerController.updateController();
+
+    }
+
+    void mcp() {
+
+        int slot = -1;
+        int oldslot = mc.player.inventory.currentItem;
+
+        for (int i = 9; i < 45; i++) {
+
+            if (mc.player.inventory.getStackInSlot(i).item.equals(Items.ENDER_PEARL)) {
+
+                slot = i;
+
+            }
+
+        }
+
+        swap(slot, oldslot);
+
+        mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+
+        swap(oldslot,slot);
 
     }
 
