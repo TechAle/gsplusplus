@@ -78,7 +78,8 @@ public class DamageUtil {
             finalDamage = getBlastReductionThreaded(playerInfo, getDamageMultiplied(damage));
         } catch (NullPointerException ignored) {
         }
-
+        // 20 8 20 true
+        // 0 0 200 false
         return finalDamage;
     }
 

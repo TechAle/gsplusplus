@@ -27,6 +27,8 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketSoundEffect;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.MathHelper;
@@ -65,6 +67,7 @@ public class FakePlayer extends Module {
     DoubleSetting speed = registerDouble("Speed", .36, 0, 4, () -> !(moving.getValue().equals("None") && moving.getValue().equals("Random")));
     DoubleSetting range = registerDouble("Range", 3, 0, 14, () -> moving.getValue().equals("Circle"));
     BooleanSetting followPlayer = registerBoolean("Follow Player", true, () -> moving.getValue().equals("Line"));
+    BooleanSetting resistance = registerBoolean("Resistance", true);
 
     int incr;
     public void onEnable() {
@@ -104,12 +107,16 @@ public class FakePlayer extends Module {
                 ItemStack item = armors[i];
                 // Add enchants
                 item.addEnchantment(
-                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                        i == 3 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
                         4);
                 // Add it to the player
                 clonedPlayer.inventory.armorInventory.set(i, item);
+
             }
         }
+        if (resistance.getValue())
+            clonedPlayer.addPotionEffect(new PotionEffect(Potion.getPotionById(11), 123456789, 0));
+        clonedPlayer.onEntityUpdate();
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
         if (!moving.getValue().equals("None"))
             manager.addPlayer(clonedPlayer.entityId, moving.getValue(), speed.getValue(),
