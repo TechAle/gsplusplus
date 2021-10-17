@@ -4,6 +4,7 @@ import com.gamesense.api.setting.Setting;
 import com.gamesense.api.setting.SettingsManager;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.font.CFontRenderer;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -42,12 +43,15 @@ public class LoadConfig {
     private static final Minecraft mc = Minecraft.getMinecraft();
 
     public static void init() {
-        GameSense.LOGGER.warn("Starting loadconfig init, current profile name is "+fileName+"!");
+        GameSense.LOGGER.info("Starting loadconfig init, current profile name is "+fileName+"!");
+        if(!Files.exists(Paths.get(fileName))){
+            GameSense.LOGGER.warn("Profile "+fileName+" not found, loading default");
+            if(mc.world != null) MessageBus.sendClientPrefixMessage("Profile "+fileName+" not found. If you think this is an error, yell at Mwa");
+            ProfileManager.setCurrentProfile("");
+        }
         try {
             loadModules();
-            GameSense.LOGGER.warn("FOV is "+mc.gameSettings.fovSetting);
             loadEnabledModules();
-            GameSense.LOGGER.warn("FOV is "+mc.gameSettings.fovSetting);
             loadModuleKeybinds();
             loadDrawnModules();
             loadToggleMessageModules();
@@ -155,6 +159,8 @@ public class LoadConfig {
                     }
                 } else {
                     try {
+                        //cause it was setting the fov to 0, this sets the oldFov variable first
+                        if(module.getName().equals("RenderTweaks")) module.enable();
                         module.disable();
                     } catch(NullPointerException e){
                         e.printStackTrace();

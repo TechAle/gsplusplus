@@ -38,20 +38,18 @@ public class ProfileManager {
     private static final String miscName = "Misc/";
     private static final String profilesPath = "profiles/";
 
-    public static Boolean profileFolder = false;
 
     private static String currentProfile = "";
 
 
     public static void init() {
         try {
-            //if(!profileFolder)
             GameSense.LOGGER.info("loading current profile !");
             currentProfile = loadCurrentProfile();
             LoadConfig.setProfile(currentProfile);
             SaveConfig.setProfile(currentProfile);
             LoadConfig.init();
-        }catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -66,9 +64,8 @@ public class ProfileManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        GameSense.LOGGER.info("Created new config "+currentProfile);
+        GameSense.LOGGER.info("Created new config " + currentProfile);
     }
-
 
 
     public static Collection<String> getProfiles() {
@@ -81,14 +78,15 @@ public class ProfileManager {
             File dir = new File(fileName + profilesPath);
 
             Arrays.asList(dir.listFiles()).forEach(file -> {
-                if(file.isDirectory()) profiles.add(file.getName());
+                if (file.isDirectory()) profiles.add(file.getName());
             });
 
-        }catch(NullPointerException e){
+        } catch (NullPointerException e) {
+            //this will happen if the profiles folder does not exist
             e.printStackTrace();
             try {
                 Files.createDirectories(Paths.get(fileName + profilesPath));
-            }catch(IOException ioException){
+            } catch (IOException ioException) {
                 e.printStackTrace();
             }
         }
@@ -121,7 +119,6 @@ public class ProfileManager {
         GameSense.LOGGER.info("registered file!");
 
 
-
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         OutputStreamWriter fileOutputStreamWriter = new OutputStreamWriter(new FileOutputStream(fileName + miscName + "CurrentProfile" + ".json"), StandardCharsets.UTF_8);
         JsonObject mainObject = new JsonObject();
@@ -137,7 +134,7 @@ public class ProfileManager {
         String fileLocation = fileName + miscName;
 
         if (!Files.exists(Paths.get(fileLocation + "CurrentProfile" + ".json"))) {
-            GameSense.LOGGER.warn("currentprofile.json not found");
+            GameSense.LOGGER.warn("currentprofile.json not found, creating it");
             saveCurrentProfile();
             return "";
         }
@@ -156,16 +153,27 @@ public class ProfileManager {
         }
 
         inputStream.close();
-        GameSense.LOGGER.warn("error with loading profile ");
+        GameSense.LOGGER.warn("error with loading current profile, loading default");
         return "";
+    }
+
+    public static void removeProfile(String profileName) {
+
+        if(Files.exists(Paths.get("gs++/profiles/"+profileName))){
+            setCurrentProfile("default");
+            File file = new File("gs++/profiles/"+profileName);
+            file.delete();
+        }
+
     }
 
     public static void setCurrentProfile(String newProfile) {
 
         GameSense.LOGGER.info("Setting current profile " + newProfile);
 
-
-        SaveConfig.init();
+        if(getProfiles().contains(currentProfile)){
+            SaveConfig.init();
+        }
 
         currentProfile = newProfile;
 

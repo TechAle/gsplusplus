@@ -38,6 +38,8 @@ public class SaveConfig {
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
 
+    private static String previousProfile = "";
+
     public static void init() {
         try {
             saveConfig();
@@ -63,25 +65,21 @@ public class SaveConfig {
 
     public static void setProfile(String profile){
         GameSense.LOGGER.info("SaveConfig profile was set to " + profile);
+        previousProfile = fileName;
         fileName = (profile.equals("default") || profile.equals("")) ? "gs++/": "gs++/profiles/" + profile+"/";
     }
 
     private static void saveConfig() throws IOException {
-        GameSense.LOGGER.warn("saveconfig file path: "+fileName);
         if (!Files.exists(Paths.get(fileName))) {
-            GameSense.LOGGER.warn("created dir: "+fileName);
             Files.createDirectories(Paths.get(fileName));
         }
         if (!Files.exists(Paths.get(fileName + moduleName))) {
-            GameSense.LOGGER.warn("created dir: "+fileName+moduleName);
             Files.createDirectories(Paths.get(fileName + moduleName));
         }
         if (!Files.exists(Paths.get(fileName + mainName))) {
-            GameSense.LOGGER.warn("created dir: "+fileName+mainName);
             Files.createDirectories(Paths.get(fileName + mainName));
         }
         if (!Files.exists(Paths.get(fileName + miscName))) {
-            GameSense.LOGGER.warn("created dir: "+fileName+miscName);
             Files.createDirectories(Paths.get(fileName + miscName));
         }
     }
@@ -114,6 +112,8 @@ public class SaveConfig {
         JsonObject moduleObject = new JsonObject();
         JsonObject settingObject = new JsonObject();
         moduleObject.add("Module", new JsonPrimitive(module.getName()));
+
+
 
         for (Setting setting : SettingsManager.getSettingsForModule(module)) {
             if (setting instanceof BooleanSetting) {

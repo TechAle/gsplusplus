@@ -134,7 +134,11 @@ public class ChatModifier extends Module {
     // Reset chat to the default one
     @Override
     protected void onDisable() {
-        ObfuscationReflectionHelper.setPrivateValue(GuiIngame.class, Minecraft.getMinecraft().ingameGUI, new GuiNewChat(Minecraft.getMinecraft()), "field_73840_e");
+        try {
+            ObfuscationReflectionHelper.setPrivateValue(GuiIngame.class, Minecraft.getMinecraft().ingameGUI, new GuiNewChat(Minecraft.getMinecraft()), "field_73840_e");
+        } catch(NullPointerException e) {
+            //ignored catch - this should just mean there is no chat atm
+        }
     }
 
     // When recived a message

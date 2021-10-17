@@ -15,7 +15,7 @@ import net.minecraft.util.text.event.HoverEvent;
 
 import java.io.IOException;
 
-@Command.Declaration(name = "Config", syntax = "config list/add/load/remove configName", alias = {"config", "profile"})
+@Command.Declaration(name = "Config", syntax = "config add/list/load/remove configName", alias = {"config", "profile"})
 public class ConfigCommand extends Command {
 
     @Override
@@ -29,10 +29,11 @@ public class ConfigCommand extends Command {
                 int size = ProfileManager.getProfiles().size();
                 int index = 0;
                 for (String profile : ProfileManager.getProfiles()){
-                    msg.appendSibling(new TextComponentString((ProfileManager.getCurrentProfile().equals(profile) ? ChatFormatting.GREEN : ChatFormatting.RED) + profile + "\2477" + ((index == size - 1) ? "" : ", ")))
-                            .setStyle(new Style()
-                                    .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Load "+profile)))
-                                    .setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CommandManager.getCommandPrefix() + "config load" + " " + profile)));
+                    if(profile.equals("")) profile = "default";
+                    msg.appendSibling(new TextComponentString((ProfileManager.getCurrentProfile().equals(profile) ? ChatFormatting.GREEN : ChatFormatting.RED) + profile + "\2477" + ((index == size - 1) ? "" : ", ")));
+                            //.setStyle(new Style()
+                            //        .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Load "+profile)))
+                            //        .setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CommandManager.getCommandPrefix() + "config load" + " " + profile)));
 
                     index++;
                 }
@@ -58,8 +59,6 @@ public class ConfigCommand extends Command {
 
                break;
 
-                //TODO fix loading
-
            case "load":
                 GameSense.LOGGER.info("attempting to load config " + message[1]);
 
@@ -69,7 +68,6 @@ public class ConfigCommand extends Command {
                    MessageBus.sendCommandMessage("Loaded profile "+message[1], true);
                }
 
-
                 break;
 
            case "save":
@@ -78,7 +76,17 @@ public class ConfigCommand extends Command {
                break;
 
            case "remove":
-                //a
+           case "delete":
+            case "del":
+                if(message[1].equals("default")){
+                    MessageBus.sendClientPrefixMessage("You cannot delete the default profile! dumbass");
+                }
+                else {
+                    if(ProfileManager.getProfiles().contains(message[1])) {
+                        ProfileManager.removeProfile(message[1]);
+                        MessageBus.sendClientPrefixMessage("Removed profile " + message[1]);
+                    }
+                }
                break;
         }
 
