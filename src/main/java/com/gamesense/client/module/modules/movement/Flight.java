@@ -25,7 +25,7 @@ public class Flight extends Module {
 
     float flyspeed;
     boolean bounded;
-    int tpid = 0;
+    public int tpid = 0;
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage", "AirJump"), "Static");
 
@@ -45,6 +45,7 @@ public class Flight extends Module {
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !mode.getValue().equalsIgnoreCase("AirJump"));
 
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !mode.getValue().equalsIgnoreCase("AirJump"));
+
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -81,8 +82,11 @@ public class Flight extends Module {
 
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
-            mc.player.setVelocity(0, 0, 0);
+            /* PACKET */
+
+            event.setX(0);
             event.setY(0);
+            event.setZ(0);
 
             double x = mc.player.posX;
             double y = mc.player.posY;
@@ -136,6 +140,8 @@ public class Flight extends Module {
             if (confirm.getValue())
                 mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
             doBounds();
+
+            /* END OF PACKET */
 
         } else if (mode.getValue().equalsIgnoreCase("Damage")) {
 
