@@ -263,8 +263,8 @@ public class PistonCrystal extends Module {
         // Stop CA
         stoppedCa = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedCa = true;
         }
         // Debug mode
@@ -319,7 +319,7 @@ public class PistonCrystal extends Module {
             setDisabledMessage("Materials missing:" + materialsNeeded);
 
         if (stoppedCa) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
             stoppedCa = false;
         }
 
@@ -335,7 +335,7 @@ public class PistonCrystal extends Module {
         }
 
         noMaterials = false;
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
         // Debug mode
         if (debugMode.getValue() || speedMeter.getValue())
             printDebug("Ended pistonCrystal n^" + round, false);
@@ -754,8 +754,7 @@ public class PistonCrystal extends Module {
         else
             hitTryTick = 0;
         // If weaknes
-        if (antiWeakness.getValue() && mc.player.isPotionActive(MobEffects.WEAKNESS)
-            && mc.player.getActivePotionEffects().stream().noneMatch(e -> e.getEffectName().contains("damageBoost") && e.getAmplifier() > 0))
+        if (antiWeakness.getValue())
             mc.player.inventory.currentItem = slot_mat[4];
         // If rotate
         if (rotate.getValue()) {

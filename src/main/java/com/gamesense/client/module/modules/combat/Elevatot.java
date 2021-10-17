@@ -255,7 +255,7 @@ public class Elevatot extends Module {
 
 
         if (stopCa.getValue())
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
 
     }
 
@@ -638,7 +638,7 @@ public class Elevatot extends Module {
         delayTimeTicks = tickOut = 0;
 
         if (stopCa.getValue())
-            AutoCrystal.stopAC = true;
+            AutoCrystalRewrite.stopAC = true;
 
     }
 

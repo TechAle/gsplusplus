@@ -7,6 +7,7 @@
     "MixinAbstractClientPlayer",
     "MixinBlockLiquid",
     "MixinBlockSoulSand",
+    "MixinChorus",
     "MixinEntity",
     "MixinEntityPlayer",
     "MixinEntityPlayerSP",
@@ -16,6 +17,7 @@
     "MixinGuiPlayerTabOverlay",
     "MixinGuiScreen",
     "MixinItemRenderer",
+    "MixinLayerArmorBase",
     "MixinLayerBipedArmor",
     "MixinMinecraft",
     "MixinMovementInputFromOptions",
@@ -23,10 +25,12 @@
     "MixinPlayerControllerMP",
     "MixinPlayerOverlay",
     "MixinRenderGlobal",
+    "MixinRenderItem",
     "MixinRenderLivingBase",
     "MixinRenderManager",
     "MixinRenderPlayer",
     "MixinWorld",
+    "accessor.AccessorCPacketAttack",
     "accessor.AccessorEntityPlayerSP"
   ]
 }

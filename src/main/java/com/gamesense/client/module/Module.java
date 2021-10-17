@@ -58,6 +58,10 @@ public abstract class Module implements Listenable {
 
     }
 
+    public void onDisabledUpdate() {
+
+    }
+
     protected void onDisable() {
 
     }

@@ -185,7 +185,7 @@ public class BedAura extends Module {
                     continue;
                 }
 
-                if (DamageUtil.calculateDamage(targetPos1.getX(), targetPos1.getY(), targetPos1.getZ(), entityPlayer) < minDamage.getValue()) {
+                if (DamageUtil.calculateDamage(targetPos1.getX(), targetPos1.getY(), targetPos1.getZ(), entityPlayer, false) < minDamage.getValue()) {
                     continue;
                 }
 
@@ -255,7 +255,7 @@ public class BedAura extends Module {
         targetPlacePos.addAll(EntityUtil.getSphere(mc.player.getPosition(), attackRange.getValue().floatValue(), attackRange.getValue().intValue(), false, true, 0)
             .stream()
             .filter(this::canPlaceBed)
-            .sorted(Comparator.comparing(blockPos -> 1 - (DamageUtil.calculateDamage(blockPos.up().getX(), blockPos.up().getY(), blockPos.up().getZ(), entityPlayer))))
+            .sorted(Comparator.comparing(blockPos -> 1 - (DamageUtil.calculateDamage(blockPos.up().getX(), blockPos.up().getY(), blockPos.up().getZ(), entityPlayer, false))))
             .collect(Collectors.toList()));
 
         return targetPlacePos;

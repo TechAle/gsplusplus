@@ -12,12 +12,13 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.world.combat.CrystalUtil;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.HUDModule;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.combat.AutoCrystal;
+import com.gamesense.client.module.modules.combat.AutoCrystalRewrite;
 import com.gamesense.client.module.modules.combat.OffHand;
 import com.lukflug.panelstudio.hud.HUDList;
 import com.lukflug.panelstudio.hud.ListComponent;
@@ -50,7 +51,7 @@ public class CombatInfo extends HUDModule {
     }
 
     public void onRender() {
-        AutoCrystal autoCrystal = ModuleManager.getModule(AutoCrystal.class);
+        AutoCrystalRewrite autoCrystal = ModuleManager.getModule(AutoCrystalRewrite.class);
         list.totems = mc.player.inventory.mainInventory.stream().filter(itemStack -> itemStack.getItem() == Items.TOTEM_OF_UNDYING).mapToInt(ItemStack::getCount).sum() + ((mc.player.getHeldItemOffhand().getItem() == Items.TOTEM_OF_UNDYING) ? 1 : 0);
         list.players = mc.world.loadedEntityList.stream()
             .filter(entity -> entity instanceof EntityOtherPlayerMP)
@@ -67,16 +68,16 @@ public class CombatInfo extends HUDModule {
                 ++i;
                 BlockPos o = new BlockPos(e.getPositionVector().x, e.getPositionVector().y, e.getPositionVector().z).add(add.getX(), add.getY(), add.getZ());
                 if (mc.world.getBlockState(o).getBlock() == Blocks.OBSIDIAN) {
-                    if (i == 1 && CrystalUtil.canPlaceCrystal(o.north(1).down(), autoCrystal.endCrystalMode.getValue())) {
+                    if (i == 1 && CrystalUtil.canPlaceCrystal(o.north(1).down(), autoCrystal.newPlace.getValue())) {
                         list.lby = true;
                         list.renderLby = true;
-                    } else if (i == 2 && CrystalUtil.canPlaceCrystal(o.east(1).down(), autoCrystal.endCrystalMode.getValue())) {
+                    } else if (i == 2 && CrystalUtil.canPlaceCrystal(o.east(1).down(), autoCrystal.newPlace.getValue())) {
                         list.lby = true;
                         list.renderLby = true;
-                    } else if (i == 3 && CrystalUtil.canPlaceCrystal(o.south(1).down(), autoCrystal.endCrystalMode.getValue())) {
+                    } else if (i == 3 && CrystalUtil.canPlaceCrystal(o.south(1).down(), autoCrystal.newPlace.getValue())) {
                         list.lby = true;
                         list.renderLby = true;
-                    } else if (i == 4 && CrystalUtil.canPlaceCrystal(o.west(1).down(), autoCrystal.endCrystalMode.getValue())) {
+                    } else if (i == 4 && CrystalUtil.canPlaceCrystal(o.west(1).down(), autoCrystal.newPlace.getValue())) {
                         list.lby = true;
                         list.renderLby = true;
                     }
@@ -123,7 +124,7 @@ public class CombatInfo extends HUDModule {
                 if (ModuleManager.isModuleEnabled(hoosiersModules[index])) return hoosiersNames[index] + ": ON";
                 else return hoosiersNames[index] + ": OFF";
             } else if (infoType.getValue().equals("Cyber")) {
-                if (index == 0) return "gamesense.cc";
+                if (index == 0) return GameSense.MODNAME + " " + GameSense.MODVER;
                 else if (index == 1) return "HTR";
                 else if (index == 2) return "PLR";
                 else if (index == 3) return "" + totems;
@@ -136,7 +137,7 @@ public class CombatInfo extends HUDModule {
 
         @Override
         public Color getItemColor(int index) {
-            AutoCrystal autoCrystal = ModuleManager.getModule(AutoCrystal.class);
+            AutoCrystalRewrite autoCrystal = ModuleManager.getModule(AutoCrystalRewrite.class);
 
             if (infoType.getValue().equals("Hoosiers")) {
                 if (ModuleManager.isModuleEnabled(hoosiersModules[index])) return color1.getValue();

@@ -6,6 +6,8 @@ import com.gamesense.client.module.Module;
 @Module.Declaration(name = "SafeWalk", category = Category.Movement)
 public class SafeWalk extends Module {
 
-    //look at MixinEntity.java for skidding
+    /**
+     * @see MixinEntity.java
+     * */
 
 }

@@ -49,7 +49,7 @@ public class ESP extends Module {
     int opacityGradient;
 
     public void onWorldRender(RenderEvent event) {
-        mc.world.loadedEntityList.stream().filter(entity -> entity != mc.player).filter(entity -> rangeEntityCheck(entity)).forEach(entity -> {
+        mc.world.loadedEntityList.stream().filter(entity -> rangeEntityCheck(entity)).forEach(entity -> {
             defineEntityColors(entity);
 
             if ((!playerESPMode.getValue().equals("None")) && entity instanceof EntityPlayer) {

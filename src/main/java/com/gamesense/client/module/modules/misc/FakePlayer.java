@@ -27,6 +27,8 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketSoundEffect;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.MathHelper;
@@ -65,6 +67,7 @@ public class FakePlayer extends Module {
     DoubleSetting speed = registerDouble("Speed", .36, 0, 4, () -> !(moving.getValue().equals("None") && moving.getValue().equals("Random")));
     DoubleSetting range = registerDouble("Range", 3, 0, 14, () -> moving.getValue().equals("Circle"));
     BooleanSetting followPlayer = registerBoolean("Follow Player", true, () -> moving.getValue().equals("Line"));
+    BooleanSetting resistance = registerBoolean("Resistance", true);
 
     int incr;
     public void onEnable() {
@@ -104,12 +107,16 @@ public class FakePlayer extends Module {
                 ItemStack item = armors[i];
                 // Add enchants
                 item.addEnchantment(
-                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                        i == 3 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
                         4);
                 // Add it to the player
                 clonedPlayer.inventory.armorInventory.set(i, item);
+
             }
         }
+        if (resistance.getValue())
+            clonedPlayer.addPotionEffect(new PotionEffect(Potion.getPotionById(11), 123456789, 0));
+        clonedPlayer.onEntityUpdate();
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
         if (!moving.getValue().equals("None"))
             manager.addPlayer(clonedPlayer.entityId, moving.getValue(), speed.getValue(),
@@ -139,9 +146,11 @@ public class FakePlayer extends Module {
             }
         }
 
+        // This manage moving fakePlayers
         manager.update();
     }
 
+    // Idk from who i skidded this, it was in a forum
     int getDirection() {
         int yaw = (int) RotationUtil.normalizeAngle(mc.player.getPitchYaw().y);
 
@@ -162,17 +171,19 @@ public class FakePlayer extends Module {
        return yaw/45;  //  360degrees divided by 45 == 8 zones
     }
 
+    // Simple list of players for the pop
     ArrayList<playerInfo> listPlayers = new ArrayList<>();
     class playerInfo {
         final String name;
         int tickPop = -1;
         int tickRegen = 0;
 
-
+        // We just set the new name
         public playerInfo(String name) {
             this.name = name;
         }
 
+        // If update, we have to regen and decrease vulnerability tick
         boolean update() {
             if (tickPop != -1) {
                 if (++tickPop >= vulnerabilityTick.getValue())
@@ -263,7 +274,7 @@ public class FakePlayer extends Module {
                             }
                         }
 
-                        player.setPosition(
+                        player.setPositionAndUpdate(
                                 posX,
                                 posY,
                                 posZ
@@ -287,7 +298,7 @@ public class FakePlayer extends Module {
                             }
                         }
 
-                        player.setPosition(
+                        player.setPositionAndUpdate(
                                 posXCir,
                                 posYCir,
                                 posZCir
@@ -303,12 +314,15 @@ public class FakePlayer extends Module {
     }
 
     static class movingManager {
+        // List of players
         private final ArrayList<movingPlayer> players = new ArrayList<>();
 
+        // Just add a new player
         void addPlayer(int id, String type, double speed, int direction, double range, boolean follow) {
             players.add(new movingPlayer(id, type, speed, direction, range, follow));
         }
 
+        // Update every fakePlayer' position
         void update() {
             this.players.forEach(movingPlayer::move);
         }
@@ -318,6 +332,7 @@ public class FakePlayer extends Module {
         }
     }
 
+    // This just manage the entire fakePlayer moving
     movingManager manager = new movingManager();
 
     public void onDisable() {
@@ -354,7 +369,7 @@ public class FakePlayer extends Module {
                                             continue;
 
                                         // Calculate damage
-                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer);
+                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer, false);
                                         if (damage > entityPlayer.getHealth()) {
                                             // If higher, new health and pop
                                             entityPlayer.setHealth(resetHealth.getValue());

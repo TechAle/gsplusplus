@@ -18,8 +18,11 @@ public class VClipCommand extends Command {
             String main = message[0];
 
             try {
-                amount = Integer.parseInt(main);
-                MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + main + " blocks up", true);
+                amount = Double.parseDouble(main);
+                if (amount >= 0)
+                    MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + amount + " blocks up", true);
+                else
+                    MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Clipped the player " + -amount + " blocks down", true);
 
             } catch (NumberFormatException e) {
                 MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You moron, you absolute buffoon, how do you mess up entering a number into a command, you philistine!", true);

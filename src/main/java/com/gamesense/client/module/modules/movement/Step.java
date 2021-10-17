@@ -46,6 +46,7 @@ public class Step extends Module {
                     this.ticks--;
                 }
             }
+            /* temp comment out for testing reversestep
             if (mc.player != null && mc.player.onGround && !mc.player.isInWater() && !mc.player.isOnLadder() && this.reverse.getValue() && !ModuleManager.isModuleEnabled("AutoSkull")) {
                 for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
                     if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
@@ -53,7 +54,7 @@ public class Step extends Module {
                         break;
                     }
                 }
-            }
+            }*/
             double[] dir = MotionUtil.forward(0.1);
             boolean twofive = false;
             boolean two = false;

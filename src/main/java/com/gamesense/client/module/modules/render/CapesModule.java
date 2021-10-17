@@ -9,7 +9,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "Capes", category = Category.Render, drawn = false)
 public class CapesModule extends Module {
 
-    public ModeSetting capeMode = registerMode("Type", Arrays.asList("Old", "New"), "New");
+    public ModeSetting capeMode = registerMode("Type", Arrays.asList("Old", "New", "Amber"), "New");
 
     public static String getUsName() {
         return mc.player.getName();

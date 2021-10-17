@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.movement.HighJump;
 import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import com.gamesense.client.module.modules.movement.Sprint;
 import net.minecraft.client.Minecraft;
@@ -185,6 +186,16 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         double pitchDiff = rotation.y - this.lastReportedPitch;
 
         return yawDiff != 0.0D || pitchDiff != 0.0D;
+    }
+
+    public float getJumpUpwardsMotion() {
+        final HighJump HighJump = ModuleManager.getModule(HighJump.class);
+
+        if (HighJump.isEnabled()) {
+            return HighJump.height.getValue().floatValue();
+        }
+
+        return 0.42F;
     }
 
     @Inject(method="pushOutOfBlocks", at=@At(value="HEAD"), cancellable=true)

@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -27,9 +28,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraft.network.play.client.CPacketPlayerDigging;
+import net.minecraft.network.play.client.CPacketPlayerTryUseItem;
+import net.minecraft.util.EnumFacing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +63,7 @@ public class OffHand extends Module {
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
     BooleanSetting miscSection = registerBoolean("Misc Section", true);
-    public BooleanSetting strict = registerBoolean("Strict", true,() -> switchSection.getValue());
+    public BooleanSetting strict = registerBoolean("Strict", true, () -> switchSection.getValue());
     BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
     BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
     BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> miscSection.getValue());
@@ -75,16 +76,16 @@ public class OffHand extends Module {
     BooleanSetting onlyHotBar = registerBoolean("Only HotBar", false, () -> miscSection.getValue());
     BooleanSetting antiWeakness = registerBoolean("AntiWeakness", false, () -> miscSection.getValue());
     BooleanSetting hotBarTotem = registerBoolean("HotBar Totem", false, () -> miscSection.getValue());
-    IntegerSetting startingBiasDamage= registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
+    IntegerSetting startingBiasDamage = registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
     DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> (switchSection.getValue() && crystalCheck.getValue()));
     BooleanSetting noHotBar = registerBoolean("No HotBar", false, () -> miscSection.getValue());
 
     int prevSlot,
-        tickWaited,
-        totems;
+            tickWaited,
+            totems;
     boolean returnBack,
-        stepChanging,
-        firstChange;
+            stepChanging,
+            firstChange;
 
     public boolean dontMove;
 
@@ -180,18 +181,6 @@ public class OffHand extends Module {
 
                     dontMove = true;
 
-                    if (mc.player.isHandActive()) {
-
-                        int slot = mc.player.inventory.currentItem;
-                        if (slot != 1)
-                            mc.player.inventory.currentItem = 1;
-                        else
-                            mc.player.inventory.currentItem = 2;
-
-                        mc.player.inventory.currentItem = slot;
-
-                    }
-
                 }
                 tickWaited = 0;
                 stepChanging = false;
@@ -282,7 +271,7 @@ public class OffHand extends Module {
             or crystalCheck
          */
         if ((fallDistanceBol.getValue() && mc.player.fallDistance >= fallDistance.getValue() && mc.player.prevPosY != mc.player.posY && !mc.player.isElytraFlying())
-            || (crystalCheck.getValue() && crystalDamage())) {
+                || (crystalCheck.getValue() && crystalDamage())) {
             normalOffHand = false;
             itemCheck = "Totem";
         }
@@ -294,9 +283,9 @@ public class OffHand extends Module {
         // If crystal obby
         Item mainHandItem = mc.player.getHeldItemMainhand().getItem();
         if ((normalOffHand && (
-            (crystObby.getValue() && mc.gameSettings.keyBindSneak.isKeyDown()
-                && mainHandItem == Items.END_CRYSTAL)
-                || (pickObby.getValue() && mainHandItem == Items.DIAMOND_PICKAXE && (!pickObbyShift.getValue() || mc.gameSettings.keyBindSneak.isKeyDown()))))) {
+                (crystObby.getValue() && mc.gameSettings.keyBindSneak.isKeyDown()
+                        && mainHandItem == Items.END_CRYSTAL)
+                        || (pickObby.getValue() && mainHandItem == Items.DIAMOND_PICKAXE && (!pickObbyShift.getValue() || mc.gameSettings.keyBindSneak.isKeyDown()))))) {
             itemCheck = "Obby";
             normalOffHand = false;
         }
@@ -377,7 +366,7 @@ public class OffHand extends Module {
             for (Entity t : mc.world.loadedEntityList) {
                 // If it's a crystal
                 if (t instanceof EntityEnderCrystal && mc.player.getDistance(t) <= 12) {
-                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
+                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player, false) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
                         return true;
                     }
                 }
@@ -417,13 +406,25 @@ public class OffHand extends Module {
 
 
         return (PlayerUtil.getHealth() > healthSwitch.getValue())
-            ? (str.equals("")
-            ? nonDefaultItem.getValue()
-            : str
+                ? (str.equals("")
+                ? nonDefaultItem.getValue()
+                : str
         )
-            : defaultItem.getValue();
+                : defaultItem.getValue();
 
     }
+
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetSend = new Listener<>(event -> {
+
+        if (strict.getValue() && stepChanging && event.getPacket() instanceof CPacketPlayerTryUseItem) {
+
+            mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, mc.player.getPosition(), EnumFacing.UP));
+            event.cancel();
+
+        }
+
+    });
 
     private int getInventorySlot(String itemName) {
         // Get if it's a block or an item
