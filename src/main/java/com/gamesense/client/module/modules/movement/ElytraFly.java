@@ -22,6 +22,7 @@ public class ElytraFly extends Module {
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
     BooleanSetting packet = registerBoolean("Packet", false);
+    public BooleanSetting sound = registerBoolean("Sounds", true);
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
