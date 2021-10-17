@@ -1,7 +1,6 @@
 package com.gamesense.client;
 
 import com.gamesense.api.config.LoadConfig;
-import com.gamesense.api.config.ProfileManager;
 import com.gamesense.api.util.font.CFontRenderer;
 import com.gamesense.api.util.render.CapeUtil;
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -70,10 +69,7 @@ public class GameSense {
         CapeUtil.init();
         LOGGER.info("Capes initialized!");
 
-        ProfileManager.init();
-        LOGGER.info("Config manager initialized");
-
-        //LoadConfig.init();
-        //LOGGER.info("Config initialized!");
+        LoadConfig.init();
+        LOGGER.info("Config initialized!");
     }
 }

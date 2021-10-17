@@ -33,12 +33,10 @@ import java.nio.file.Paths;
 
 public class SaveConfig {
 
-    public static String fileName = "gs++/";
+    public static final String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
-
-    private static String previousProfile = "";
 
     public static void init() {
         try {
@@ -61,12 +59,6 @@ public class SaveConfig {
             e.printStackTrace();
         }
         GameSense.LOGGER.info("Saved Config!");
-    }
-
-    public static void setProfile(String profile){
-        GameSense.LOGGER.info("SaveConfig profile was set to " + profile);
-        previousProfile = fileName;
-        fileName = (profile.equals("default") || profile.equals("")) ? "gs++/": "gs++/profiles/" + profile+"/";
     }
 
     private static void saveConfig() throws IOException {
@@ -112,8 +104,6 @@ public class SaveConfig {
         JsonObject moduleObject = new JsonObject();
         JsonObject settingObject = new JsonObject();
         moduleObject.add("Module", new JsonPrimitive(module.getName()));
-
-
 
         for (Setting setting : SettingsManager.getSettingsForModule(module)) {
             if (setting instanceof BooleanSetting) {
