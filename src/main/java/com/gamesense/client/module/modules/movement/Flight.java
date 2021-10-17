@@ -108,7 +108,7 @@ public class Flight extends Module {
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(mc.player.collided ? 0.0624 : 0.0624 * packetFactor.getValue());
+                double[] dir = MotionUtil.forward(clipped() ? 0.0624 : 0.0624 * packetFactor.getValue());
 
                 x += dir[0];
                 z += dir[1];
@@ -290,6 +290,12 @@ public class Flight extends Module {
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
 
         }
+
+    }
+
+    boolean clipped() {
+
+    return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty() && mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, 1, 0.0)).isEmpty());
 
     }
 
