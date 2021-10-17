@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -72,7 +73,7 @@ public class MouseClickAction extends Module {
         }
 
         if ((Mouse.isButtonDown(MCPButtonCode) && onGroundCheck.getValue() && mc.player.onGround && pearl.getValue()) || Mouse.isButtonDown(MCPButtonCode) && !onGroundCheck.getValue() && pearl.getValue()) { //We check for button press and don't check for miss :rage:
-            /*int oldSlot = mc.player.inventory.currentItem;
+            int oldSlot = mc.player.inventory.currentItem;
 
             int pearlSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0, 8);
 
@@ -144,11 +145,8 @@ public class MouseClickAction extends Module {
                         pearlInvSlot = -1;
 
                     }
-                }*/
+                }
             }
-
-        mcp();
-
         }
 
     @EventHandler
@@ -182,24 +180,26 @@ public class MouseClickAction extends Module {
 
     void mcp() {
 
-        int slot = -1;
-        int oldslot = mc.player.inventory.currentItem;
+        if (PlayerUtil.nullCheck()) {
+            int slot = -1;
+            int oldslot = mc.player.inventory.currentItem;
 
-        for (int i = 9; i < 45; i++) {
+            for (int i = 9; i < 45; i++) {
 
-            if (mc.player.inventory.getStackInSlot(i).item.equals(Items.ENDER_PEARL)) {
+                if (mc.player.inventory.getStackInSlot(i).item.equals(Items.ENDER_PEARL)) {
 
-                slot = i;
+                    slot = i;
+
+                }
 
             }
 
+            swap(slot, oldslot);
+
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+
+            swap(oldslot, slot);
         }
-
-        swap(slot, oldslot);
-
-        mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
-
-        swap(oldslot,slot);
 
     }
 
