@@ -121,7 +121,7 @@ public class Step extends Module {
 
             float dist = 69696969;
 
-            switch (mode.getValue()) {
+            switch (reverse.getValue()) {
                 case "Vanilla": {
                     for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
                         if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
@@ -145,7 +145,7 @@ public class Step extends Module {
                     }
 
                     if (dist < height.getValue() && doIt) {
-                        PlayerUtil.fall((int) dist);
+                        PlayerUtil.fall((int) (dist + 0.1));
                     }
 
                 }
