@@ -111,7 +111,7 @@ public class ESP extends Module {
 
 
         if (containerRender.getValue()) {
-            mc.world.loadedTileEntityList.stream().filter(tileEntity -> rangeTileCheck(tileEntity)).forEach(tileEntity -> {
+            mc.world.loadedTileEntityList.stream().filter(this::rangeTileCheck).forEach(tileEntity -> {
                 if (tileEntity instanceof TileEntityChest) {
                     containerColor = new GSColor(255, 255, 0, opacityGradient);
                     RenderUtil.drawBoundingBox(mc.world.getBlockState(tileEntity.getPos()).getSelectedBoundingBox(mc.world, tileEntity.getPos()), width.getValue(), containerColor);

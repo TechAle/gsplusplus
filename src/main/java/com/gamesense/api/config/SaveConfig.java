@@ -3,10 +3,7 @@ package com.gamesense.api.config;
 import com.gamesense.api.setting.Setting;
 import com.gamesense.api.setting.SettingsManager;
 import com.gamesense.api.setting.values.*;
-import com.gamesense.api.util.player.social.Enemy;
-import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
-import com.gamesense.api.util.player.social.SpecialNames;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.clickgui.GuiConfig;
@@ -16,6 +13,7 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.AutoGG;
 import com.gamesense.client.module.modules.misc.AutoReply;
 import com.gamesense.client.module.modules.misc.AutoRespawn;
+import com.gamesense.client.module.modules.render.Search;
 import com.google.gson.*;
 
 import java.io.File;
@@ -55,6 +53,7 @@ public class SaveConfig {
             saveAutoGG();
             saveAutoReply();
             saveAutoRespawn();
+            saveSearchBlocks();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -74,6 +73,16 @@ public class SaveConfig {
         if (!Files.exists(Paths.get(fileName + miscName))) {
             Files.createDirectories(Paths.get(fileName + miscName));
         }
+    }
+
+    private static void saveSearchBlocks() throws IOException {
+        if (!Files.exists(Paths.get(fileName + miscName + "SearchBlocks.json")))
+            Files.createFile(Paths.get(fileName + miscName + "SearchBlocks.json"));
+
+        JsonArray blockArray = new JsonArray();
+
+        Search.getBlocks().forEach(blockArray::add);
+
     }
 
     private static void registerFiles(String location, String name) throws IOException {

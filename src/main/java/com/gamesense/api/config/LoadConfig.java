@@ -54,6 +54,7 @@ public class LoadConfig {
             loadAutoGG();
             loadAutoReply();
             loadAutoRespawn();
+            loadSearchBlocks();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -378,6 +379,26 @@ public class LoadConfig {
         }
 
         InputStream inputStream = Files.newInputStream(Paths.get(fileLocation + "AutoGG" + ".json"));
+        JsonObject mainObject = new JsonParser().parse(new InputStreamReader(inputStream)).getAsJsonObject();
+
+        if (mainObject.get("Messages") == null) {
+            return;
+        }
+
+        JsonArray messageObject = mainObject.get("Messages").getAsJsonArray();
+
+        messageObject.forEach(object -> AutoGG.addAutoGgMessage(object.getAsString()));
+        inputStream.close();
+    }
+
+    private static void loadSearchBlocks() throws IOException {
+        String fileLocation = fileName + miscName;
+
+        if (!Files.exists(Paths.get(fileLocation + "SearchBlocks" + ".json"))) {
+            return;
+        }
+
+        InputStream inputStream = Files.newInputStream(Paths.get(fileLocation + "SearchBlocks" + ".json"));
         JsonObject mainObject = new JsonParser().parse(new InputStreamReader(inputStream)).getAsJsonObject();
 
         if (mainObject.get("Messages") == null) {
