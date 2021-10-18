@@ -27,8 +27,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static java.lang.Math.floor;
-import static java.lang.Math.sin;
+import static java.lang.Math.*;
 
 /**
  * @author Hoosiers
@@ -59,8 +58,12 @@ public class Surround extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
+    int y;
 
     public void onEnable() {
+
+        y = (int)Math.floor(mc.player.posY);
+
         PlacementUtil.onEnable();
         if (mc.player == null || mc.world == null) {
             disable();
@@ -104,7 +107,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (!(mc.player.onGround) && !(mc.player.isInWeb)) {
+        if (!(y == Math.floor(mc.player.posY)) && !(mc.player.isInWeb)) {
             switch (jumpMode.getValue()) {
                 case "Pause": {
                     return;
@@ -118,6 +121,8 @@ public class Surround extends Module {
                 }
             }
         }
+
+        y = (int)Math.floor(mc.player.posY);
 
         int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
