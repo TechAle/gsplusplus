@@ -22,7 +22,7 @@ public class GameSense {
 
     public static final String MODNAME = "gs++";
     public static final String MODID = "gs++";
-    public static final String MODVER = "d2.3.3";
+    public static final String MODVER = "v2.3.4";
     /**
      * Official release starts with a "v", dev versions start with a "d" to bypass version check
      */

@@ -54,6 +54,15 @@ public class Scaffold extends Module {
     BlockPos scaffold;
     BlockPos towerPos;
     BlockPos downPos;
+
+    @Override
+    public void onUpdate() {
+        if (mc.player.ticksExisted % 2 == 0) // force rotation packets always
+            mc.player.rotationYaw += 0.0001;
+        else
+            mc.player.rotationYaw -= 0.0001;
+    }
+
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
         if (event.getPacket() instanceof CPacketPlayer) {

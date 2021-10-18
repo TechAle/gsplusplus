@@ -20,10 +20,10 @@ import java.util.Arrays;
 @Module.Declaration(name = "ElytraFly", category = Category.Movement)
 public class ElytraFly extends Module {
 
+    public BooleanSetting sound = registerBoolean("Sounds", true);
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
     BooleanSetting packet = registerBoolean("Packet", false);
-    public BooleanSetting sound = registerBoolean("Sounds", true);
-    ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
+    ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "Freeze", "Fast", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
@@ -31,9 +31,17 @@ public class ElytraFly extends Module {
     BooleanSetting yawLock = registerBoolean("Yaw Lock", false, () -> mode.getValue().equalsIgnoreCase("Control"));
 
     boolean setAng;
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
+        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
+
+            ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
+
+        }
+
+    });
     Timer upTimer = new Timer();
-
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -65,7 +73,7 @@ public class ElytraFly extends Module {
 
                     } else {
 
-                        event.setY(-0.000001 -glideSpeed.getValue());
+                        event.setY(-0.000001 - glideSpeed.getValue());
 
                     }
 
@@ -73,7 +81,7 @@ public class ElytraFly extends Module {
 
                         double[] dir;
 
-                        if (!yawLock.getValue()){
+                        if (!yawLock.getValue()) {
 
                             dir = MotionUtil.forward(speed.getValue());
 
@@ -81,7 +89,7 @@ public class ElytraFly extends Module {
 
                             final int angle = 360 / 8;
                             float yaw = mc.player.rotationYaw;
-                            yaw = (float)(Math.round(yaw / angle) * angle);
+                            yaw = (float) (Math.round(yaw / angle) * angle);
 
                             dir = MotionUtil.forward(speed.getValue(), yaw);
 
@@ -117,7 +125,7 @@ public class ElytraFly extends Module {
 
                             double[] dir;
 
-                            if (!yawLock.getValue()){
+                            if (!yawLock.getValue()) {
 
                                 dir = MotionUtil.forward(speed.getValue());
 
@@ -125,7 +133,7 @@ public class ElytraFly extends Module {
 
                                 final int angle = 360 / 8;
                                 float yaw = mc.player.rotationYaw;
-                                yaw = (float)(Math.round(yaw / angle) * angle);
+                                yaw = (float) (Math.round(yaw / angle) * angle);
 
                                 dir = MotionUtil.forward(speed.getValue(), yaw);
 
@@ -149,7 +157,7 @@ public class ElytraFly extends Module {
             }
         } else {
 
-            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA)){
+            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA)) {
                 switch (toMode.getValue()) {
 
                     case "PacketFly": {
@@ -166,6 +174,8 @@ public class ElytraFly extends Module {
 
                         }
 
+                        break;
+
                     }
                     case "Timer": {
 
@@ -176,30 +186,37 @@ public class ElytraFly extends Module {
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
                         }
 
-                    }
-                    default: {
+                        break;
 
-                        if (!mc.player.onGround && mc.player.motionY < 0) {
+                    }
+                    case "Fast": {
+
+                        if (mc.player.onGround) {
+                            mc.player.jump();
+                        } else if (mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                         }
 
-                    }
+                        break;
 
+                    }
+                    case "Freeze": {
+
+                        if (mc.player.onGround) {
+                            mc.player.jump();
+                        } else if (mc.player.motionY < 0) {
+                            event.setY(-0.00001);
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+                        }
+
+                        break;
+
+                    }
                 }
             }
 
-
-        }
-
-    });
-    @EventHandler
-    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
-
-        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
-
-            ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
 
         }
 
