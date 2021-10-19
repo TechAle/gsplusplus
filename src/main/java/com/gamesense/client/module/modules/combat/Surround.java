@@ -1,5 +1,7 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
@@ -14,6 +16,8 @@ import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -58,11 +62,14 @@ public class Surround extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
-    int y;
+    float y;
+
+    @EventHandler
+    private final Listener<PlayerJumpEvent> listener = new Listener<>(event -> disable());
 
     public void onEnable() {
 
-        y = (int)Math.floor(mc.player.posY);
+        y = (float) mc.player.posY;
 
         PlacementUtil.onEnable();
         if (mc.player == null || mc.world == null) {
@@ -122,7 +129,7 @@ public class Surround extends Module {
             }
         }
 
-        y = (int)Math.floor(mc.player.posY);
+        y = (float) mc.player.posY;
 
         int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
