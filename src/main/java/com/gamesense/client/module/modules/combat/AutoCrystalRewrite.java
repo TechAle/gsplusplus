@@ -426,7 +426,6 @@ public class AutoCrystalRewrite extends Module {
                     && NVerticesFillTopbr.getValue().equals("4"), true);
     //endregion
 
-    // Ricorda di implementarlo
     BooleanSetting showTextpl = registerBoolean("Show text Place", true, () -> renders.getValue());
     ColorSetting colorPlaceText = registerColor("Color Place Text", new GSColor(0, 255, 255),
             () -> renders.getValue() && showTextpl.getValue(), true);
@@ -439,14 +438,10 @@ public class AutoCrystalRewrite extends Module {
 
 
     BooleanSetting fadeCa = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
-    // Rimuovi questo, deve essere = alpha
-    IntegerSetting startFadePlace = registerInteger("Start Fade Place pl", 255, 0, 255, () -> renders.getValue() && fadeCa.getValue());
     IntegerSetting endFadePlace = registerInteger("End Fade Place pl", 0, 0, 255, () -> renders.getValue() && fadeCa.getValue());
-    // Rimuovi questo, deve essere = alpha
     BooleanSetting fadeCabr = registerBoolean("Fade Ca br", true, () -> renders.getValue());
-    IntegerSetting startFadeBreak = registerInteger("Start Fade Break pl", 255, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
     IntegerSetting endFadeBreak = registerInteger("End Fade Break pl", 0, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
-    IntegerSetting lifeTime = registerInteger("Life Time pl", 3000, 0, 5000, () -> renders.getValue() && (fadeCa.getValue() || fadeCabr.getValue()));
+    IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCa.getValue() || fadeCabr.getValue()));
     BooleanSetting placeDominant = registerBoolean("Place Dominant", renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
     //endregion
 
@@ -912,10 +907,10 @@ public class AutoCrystalRewrite extends Module {
             // What if i just start speaking italian? Nobody read comments lol
             // Since we use the same function for both place and break, we have to find a way to different them
             if (place) {
-                startFade = startFadePlace.getValue();
+                startFade = firstVerticeFillBot.getValue().getAlpha();
                 endFade = endFadePlace.getValue();
             } else {
-                startFade = startFadeBreak.getValue();
+                startFade = firstVerticeFillBotbr.getValue().getAlpha();
                 endFade = endFadeBreak.getValue();
             }
 
@@ -1704,8 +1699,8 @@ public class AutoCrystalRewrite extends Module {
 
         // Display crystal
         if (bestPlace.crystal != null) {
-            //toDisplay.add(new display(bestPlace.crystal, new GSColor(colorPlace.getValue(), colorPlace.getValue().getAlpha())));
-            toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue(), textYPlace.getValue()));
+            if (showTextpl.getValue())
+                toDisplay.add(new display(String.valueOf((int) bestPlace.damage), bestPlace.crystal, colorPlaceText.getValue(), textYPlace.getValue()));
             if (predictPlaceEnemy.getValue())
                 toDisplay.add(new display(bestPlace.getTarget().getEntityBoundingBox(), showColorPredictEnemyPlace.getColor(), outlineWidthpl.getValue()));
 
@@ -2557,7 +2552,8 @@ public class AutoCrystalRewrite extends Module {
             return breakCrystal(forceBreak);
         // Display crystal
         else if (bestBreak.crystal != null) {
-            toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue(), textYBreak.getValue()));
+            if (showTextbr.getValue())
+                toDisplay.add(new display(String.valueOf((int) bestBreak.damage), bestBreak.crystal.getPosition().add(0, -1, 0), colorBreakText.getValue(), textYBreak.getValue()));
             if (predictBreakingEnemy.getValue())
                 toDisplay.add(new display(bestBreak.target.entity.getEntityBoundingBox(), showColorPredictEnemyBreaking.getColor(), outlineWidthpl.getValue()));
             // Break crystal
