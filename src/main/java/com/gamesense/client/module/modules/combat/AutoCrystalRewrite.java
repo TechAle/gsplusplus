@@ -323,7 +323,7 @@ public class AutoCrystalRewrite extends Module {
                     && NVerticesFillTop.getValue().equals("4"), true);
     //endregion
 
-    ModeSetting typeBreak = registerMode("Render Break", Arrays.asList("Outline", "Fill", "Both"), "Both", () -> renders.getValue());
+    ModeSetting typeBreak = registerMode("Render Break", Arrays.asList("None", "Outline", "Fill", "Both"), "Both", () -> renders.getValue());
     ModeSetting breakDimension = registerMode("Break Dimension", Arrays.asList("Box", "Flat", "Slab", "Circle"), "Box", () -> renders.getValue() & !typeBreak.getValue().equals("None"));
     DoubleSetting rangeCircleBr = registerDouble("Range Circle Br", .5, .1, 1.5, () -> renders.getValue() && breakDimension.getValue().equals("Circle"));
     DoubleSetting slabHeightBreak = registerDouble("Slab height Break", .2, 0, 1, () -> renders.getValue() && breakDimension.getValue().equals("Slab"));
@@ -437,11 +437,11 @@ public class AutoCrystalRewrite extends Module {
             () -> renders.getValue() && showTextbr.getValue());
 
 
-    BooleanSetting fadeCa = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
-    IntegerSetting endFadePlace = registerInteger("End Fade Place pl", 0, 0, 255, () -> renders.getValue() && fadeCa.getValue());
+    BooleanSetting fadeCapl = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
+    IntegerSetting endFadePlace = registerInteger("End Fade Place pl", 0, 0, 255, () -> renders.getValue() && fadeCapl.getValue());
     BooleanSetting fadeCabr = registerBoolean("Fade Ca br", true, () -> renders.getValue());
     IntegerSetting endFadeBreak = registerInteger("End Fade Break pl", 0, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
-    IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCa.getValue() || fadeCabr.getValue()));
+    IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCapl.getValue() || fadeCabr.getValue()));
     BooleanSetting placeDominant = registerBoolean("Place Dominant", renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
     //endregion
 
@@ -2882,7 +2882,7 @@ public class AutoCrystalRewrite extends Module {
         if (bestPlace != null && bestPlace.crystal != null) {
             drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
             // If fadeCa, add it to render
-            if (fadeCa.getValue())
+            if (fadeCapl.getValue())
                 managerRenderBlocks.addRender(true , bestPlace.crystal);
         }
 
@@ -2892,7 +2892,7 @@ public class AutoCrystalRewrite extends Module {
                 (placeDominant.getValue() && bestPlace != null && bestPlace.crystal != null && !sameBlockPos(bestPlace.crystal, bestBreak.crystal.getPosition().add(0, -1, 0)))) {
             drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
             // If fadeCa, add it to render
-            if (fadeCa.getValue())
+            if (fadeCabr.getValue())
                 managerRenderBlocks.addRender(false , bestBreak.crystal.getPosition().add(0, -1, 0));
         }
 
