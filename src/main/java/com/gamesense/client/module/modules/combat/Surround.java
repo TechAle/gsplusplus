@@ -1,5 +1,7 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
@@ -14,6 +16,8 @@ import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -27,8 +31,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static java.lang.Math.floor;
-import static java.lang.Math.sin;
+import static java.lang.Math.*;
 
 /**
  * @author Hoosiers
@@ -59,8 +62,15 @@ public class Surround extends Module {
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
+    float y;
+
+    @EventHandler
+    private final Listener<PlayerJumpEvent> listener = new Listener<>(event -> disable());
 
     public void onEnable() {
+
+        y = (float) mc.player.posY;
+
         PlacementUtil.onEnable();
         if (mc.player == null || mc.world == null) {
             disable();
@@ -104,7 +114,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (!(mc.player.onGround) && !(mc.player.isInWeb)) {
+        if (!(y == Math.floor(mc.player.posY)) && !(mc.player.isInWeb)) {
             switch (jumpMode.getValue()) {
                 case "Pause": {
                     return;
@@ -118,6 +128,8 @@ public class Surround extends Module {
                 }
             }
         }
+
+        y = (float) mc.player.posY;
 
         int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 

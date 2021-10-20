@@ -1,6 +1,5 @@
 package com.gamesense.mixin.mixins;
 
-import com.gamesense.api.config.ProfileManager;
 import com.gamesense.api.config.SaveConfig;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.MultiTask;
@@ -60,13 +59,11 @@ public class MixinMinecraft {
 
     @Inject(method = "crashed", at = @At("HEAD"))
     public void crashed(CrashReport crash, CallbackInfo callbackInfo) {
-        SaveConfig.setProfile(ProfileManager.getCurrentProfile());
         SaveConfig.init();
     }
 
     @Inject(method = "shutdown", at = @At("HEAD"))
     public void shutdown(CallbackInfo callbackInfo) {
-        SaveConfig.setProfile(ProfileManager.getCurrentProfile());
         SaveConfig.init();
     }
 }
