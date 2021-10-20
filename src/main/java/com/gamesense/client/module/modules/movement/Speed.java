@@ -25,8 +25,11 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
+ * @author Crystallinqq
+ * @author Auto
  * @author Hoosiers
  * @author Doogie13
+ * @Source https://github.com/Crystallinqq/Mercury-Client/blob/master/src/main/java/fail/mercury/client/client/modules/movement/Speed.java (for yport and strafe)
  */
 
 @Module.Declaration(name = "Speed", category = Category.Movement)

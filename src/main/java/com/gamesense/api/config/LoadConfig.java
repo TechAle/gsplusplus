@@ -4,6 +4,7 @@ import com.gamesense.api.setting.Setting;
 import com.gamesense.api.setting.SettingsManager;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.font.CFontRenderer;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -18,6 +19,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.client.Minecraft;
 
 import java.awt.*;
 import java.io.IOException;
@@ -33,12 +35,20 @@ import java.nio.file.Paths;
 
 public class LoadConfig {
 
-    private static final String fileName = "gs++/";
+    private static String fileName = "gs++/";
     private static final String moduleName = "Modules/";
     private static final String mainName = "Main/";
     private static final String miscName = "Misc/";
 
+    private static final Minecraft mc = Minecraft.getMinecraft();
+
     public static void init() {
+        GameSense.LOGGER.info("Starting loadconfig init, current profile name is "+fileName+"!");
+        if(!Files.exists(Paths.get(fileName))){
+            GameSense.LOGGER.warn("Profile "+fileName+" not found, loading default");
+            if(mc.world != null) MessageBus.sendClientPrefixMessage("Profile "+fileName+" not found. If you think this is an error, yell at Mwa");
+            ProfileManager.setCurrentProfile("");
+        }
         try {
             loadModules();
             loadEnabledModules();
@@ -54,13 +64,20 @@ public class LoadConfig {
             loadAutoGG();
             loadAutoReply();
             loadAutoRespawn();
+            GameSense.LOGGER.info("Loadconfig initialized!");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public static void setProfile(String profile){
+        GameSense.LOGGER.info("LoadConfig profile was set to " + profile);
+
+        fileName = (profile.equals("default") || profile.equals("")) ? "gs++/": "gs++/profiles/" + profile+"/";
+    }
+
     //big shoutout to lukflug for helping/fixing this
-    private static void loadModules() throws IOException {
+    private static void loadModules()  {
         String moduleLocation = fileName + moduleName;
 
         for (Module module : ModuleManager.getModules()) {
@@ -138,6 +155,14 @@ public class LoadConfig {
                     try {
                         module.enable();
                     } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    try {
+                        //cause it was setting the fov to 0, this sets the oldFov variable first
+                        if(module.getName().equals("RenderTweaks")) module.enable();
+                        module.disable();
+                    } catch(NullPointerException e){
                         e.printStackTrace();
                     }
                 }

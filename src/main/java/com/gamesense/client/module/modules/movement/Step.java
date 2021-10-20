@@ -3,7 +3,6 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -20,13 +19,12 @@ public class Step extends Module {
 
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
     BooleanSetting timer = registerBoolean("Timer", false);
+    BooleanSetting reverse = registerBoolean("Reverse", false);
     BooleanSetting stopOnSpeed = registerBoolean("Stop On Speed", true);
     BooleanSetting onGround = registerBoolean("On Ground", false);
-    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
-    ModeSetting reverse = registerMode("Reverse Mode", Arrays.asList("NCP", "Vanilla"), "Vanilla");
+    ModeSetting mode = registerMode("Modes", Arrays.asList("Normal", "Vanilla"), "Normal");
 
-    int ticks = 0;
-    boolean doIt;
+    private int ticks = 0;
 
     public void onUpdate() {
         if (mc.world == null || mc.player == null) {
@@ -40,7 +38,7 @@ public class Step extends Module {
         if ( stopOnSpeed.getValue() && ModuleManager.isModuleEnabled(Speed.class))
             return;
 
-        if (mode.getValue().equalsIgnoreCase("NCP")) {
+        if (mode.getValue().equalsIgnoreCase("Normal")) {
             if (timer.getValue()) {
                 if (this.ticks == 0) {
                     EntityUtil.resetTimer();
@@ -48,6 +46,15 @@ public class Step extends Module {
                     this.ticks--;
                 }
             }
+            /* temp comment out for testing reversestep
+            if (mc.player != null && mc.player.onGround && !mc.player.isInWater() && !mc.player.isOnLadder() && this.reverse.getValue() && !ModuleManager.isModuleEnabled("AutoSkull")) {
+                for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
+                    if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
+                        mc.player.motionY = -10.0;
+                        break;
+                    }
+                }
+            }*/
             double[] dir = MotionUtil.forward(0.1);
             boolean twofive = false;
             boolean two = false;
@@ -116,42 +123,6 @@ public class Step extends Module {
             DecimalFormat df = new DecimalFormat("#");
             mc.player.stepHeight = Float.parseFloat(df.format(height.getValue()));
         }
-
-        if (mc.player != null && mc.player.onGround && !mc.player.isInWater() && !mc.player.isOnLadder()) {
-
-            float dist = 69696969;
-
-            switch (reverse.getValue()) {
-                case "Vanilla": {
-                    for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
-                            mc.player.motionY = -10.0;
-                            break;
-                        }
-                    }
-                }
-                case "NCP": {
-
-
-                    for (double y = 0.0; y < this.height.getValue() + 1; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty())
-                            return;
-                        else
-                            dist = (float) y;
-
-                        doIt =
-                                !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -dist + 0.1, 0.0)).isEmpty();
-
-                    }
-
-                    if (dist < height.getValue() && doIt) {
-                        PlayerUtil.fall((int) (dist + 0.1));
-                    }
-
-                }
-            }
-        }
-
     }
 
     public void onDisable() {
@@ -160,8 +131,8 @@ public class Step extends Module {
 
     public String getHudInfo() {
         String t = "";
-        if (mode.getValue().equalsIgnoreCase("NCP")) {
-            t = "[" + ChatFormatting.WHITE + "NCP" + ChatFormatting.GRAY + "]";
+        if (mode.getValue().equalsIgnoreCase("Normal")) {
+            t = "[" + ChatFormatting.WHITE + "Normal" + ChatFormatting.GRAY + "]";
         }
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
             t = "[" + ChatFormatting.WHITE + "Vanilla" + ChatFormatting.GRAY + "]";

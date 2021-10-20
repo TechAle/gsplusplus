@@ -1,6 +1,7 @@
 package com.gamesense.client;
 
 import com.gamesense.api.config.LoadConfig;
+import com.gamesense.api.config.ProfileManager;
 import com.gamesense.api.util.font.CFontRenderer;
 import com.gamesense.api.util.render.CapeUtil;
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -22,7 +23,7 @@ public class GameSense {
 
     public static final String MODNAME = "gs++";
     public static final String MODID = "gs++";
-    public static final String MODVER = "v2.3.4";
+    public static final String MODVER = "d2.3.3";
     /**
      * Official release starts with a "v", dev versions start with a "d" to bypass version check
      */
@@ -69,7 +70,10 @@ public class GameSense {
         CapeUtil.init();
         LOGGER.info("Capes initialized!");
 
-        LoadConfig.init();
-        LOGGER.info("Config initialized!");
+        ProfileManager.init();
+        LOGGER.info("Config manager initialized");
+
+        //LoadConfig.init();
+        //LOGGER.info("Config initialized!");
     }
 }
