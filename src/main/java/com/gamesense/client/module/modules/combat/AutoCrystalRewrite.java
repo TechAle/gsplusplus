@@ -448,7 +448,7 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting fadeCabr = registerBoolean("Fade Ca br", true, () -> renders.getValue());
     IntegerSetting endFadeBreak = registerInteger("End Fade Break pl", 0, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
     IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCapl.getValue() || fadeCabr.getValue()));
-    BooleanSetting placeDominant = registerBoolean("Place Dominant", renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
+    BooleanSetting placeDominant = registerBoolean("Place Dominant", false, () -> renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
     //endregion
 
     //region Predict
@@ -530,13 +530,13 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeWaitFocusPlace = registerInteger("Time Wait Focus Pl", 100, 0, 2000,
             () -> strict.getValue() && focusPlaceType.getValue().equals("Time"));
     BooleanSetting yawCheck = registerBoolean("Yaw Check", false,
-            () -> strict.getValue() && !preRotate.getValue());
+            () -> strict.getValue());
     IntegerSetting yawStep = registerInteger("Yaw Step", 40, 0, 180,
-            () -> strict.getValue() && yawCheck.getValue() && !preRotate.getValue());
+            () -> strict.getValue() && yawCheck.getValue());
     BooleanSetting pitchCheck = registerBoolean("Pitch Check", false,
-            () -> strict.getValue() && !preRotate.getValue());
+            () -> strict.getValue() );
     IntegerSetting pitchStep = registerInteger("Pitch Step", 40, 0, 180,
-            () -> strict.getValue() && pitchCheck.getValue() && !preRotate.getValue());
+            () -> strict.getValue() && pitchCheck.getValue());
     BooleanSetting placeStrictDirection = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
@@ -1801,7 +1801,7 @@ public class AutoCrystalRewrite extends Module {
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
 
         // If preRotate
-        if (preRotateWeb.getValue()) {
+        if (preRotate.getValue()) {
             BlockUtil.faceVectorPacketInstant(hitVec, true);
         }
 
@@ -1932,9 +1932,6 @@ public class AutoCrystalRewrite extends Module {
             // New tick
             tick = 0;
             // If preRotate
-            if (preRotate.getValue()) {
-                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
-            } else
             // If we have to check or yaw or pitch (-28  14)
             if (yawCheck.getValue() || pitchCheck.getValue()) {
                 // Get the rotation we want
@@ -2038,6 +2035,11 @@ public class AutoCrystalRewrite extends Module {
                 enumFacing = result.sideHit;
             }
 
+            if ( rotate.getValue() && preRotate.getValue()) {
+                Vec2f rot = RotationUtil.getRotationTo(lastHitVec);
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(rot.x, rot.y, mc.player.onGround));
+            }
+
             // Place
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, enumFacing, handSwing, 0, 0, 0));
         } else if (placeStrictDirection.getValue()) {
@@ -2056,9 +2058,19 @@ public class AutoCrystalRewrite extends Module {
                             ? (xDiff > 0 ? EnumFacing.WEST : EnumFacing.EAST)
                             : (zDiff > 0 ? EnumFacing.NORTH : EnumFacing.SOUTH);
             }
+
+            if ( rotate.getValue() && preRotate.getValue()) {
+                Vec2f rot = RotationUtil.getRotationTo(lastHitVec);
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(rot.x, rot.y, mc.player.onGround));
+            }
+
             mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(pos, result, handSwing, 0, 0, 0));
 
         } else {
+            if ( rotate.getValue() && preRotate.getValue()) {
+                Vec2f rot = RotationUtil.getRotationTo(lastHitVec);
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(rot.x, rot.y, mc.player.onGround));
+            }
             // Normal placing
             if (pos.getY() == 255) {
                 // For Hoosiers. This is how we do build height. If the target block (q) is at Y 255. Then we send a placement packet to the bottom part of the block. Thus the EnumFacing.DOWN.
@@ -2596,65 +2608,61 @@ public class AutoCrystalRewrite extends Module {
             lastHitVec = new Vec3d(pos).add(0.5, 0, 0.5);
             // New tick
             tick = 0;
-            // If preRotate
-            if (preRotate.getValue()) {
-                BlockUtil.faceVectorPacketInstant(lastHitVec, true);
-            } else
-                // If we have to check or yaw or pitch
-                if (yawCheck.getValue() || pitchCheck.getValue()) {
-                    // Get the rotation we want
-                    Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
-                    // If we are not rotating, set new values
-                    if ( !blockRotation.getValue() || !isRotating) {
-                        // I wrote the explaination in place, go and read it lol
-                        yPlayerRotation = pitchCheck.getValue()
-                                ? (
-                                yPlayerRotation == Double.MAX_VALUE ?
-                                        mc.player.getPitchYaw().x
-                                        : yPlayerRotation
-                        )
-                                : Double.MIN_VALUE;
-                        xPlayerRotation = yawCheck.getValue()
-                                ? (
-                                xPlayerRotation == Double.MAX_VALUE ?
-                                        RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
-                                        : xPlayerRotation
-                        )
-                                : Double.MIN_VALUE;
-                        isRotating = true;
+            // If we have to check or yaw or pitch
+            if (yawCheck.getValue() || pitchCheck.getValue()) {
+                // Get the rotation we want
+                Vec2f rotationWanted = RotationUtil.getRotationTo(lastHitVec);
+                // If we are not rotating, set new values
+                if ( !blockRotation.getValue() || !isRotating) {
+                    // I wrote the explaination in place, go and read it lol
+                    yPlayerRotation = pitchCheck.getValue()
+                            ? (
+                            yPlayerRotation == Double.MAX_VALUE ?
+                                    mc.player.getPitchYaw().x
+                                    : yPlayerRotation
+                    )
+                            : Double.MIN_VALUE;
+                    xPlayerRotation = yawCheck.getValue()
+                            ? (
+                            xPlayerRotation == Double.MAX_VALUE ?
+                                    RotationUtil.normalizeAngle(mc.player.getPitchYaw().y)
+                                    : xPlayerRotation
+                    )
+                            : Double.MIN_VALUE;
+                    isRotating = true;
+                }
+
+
+                // If we allow to predict the place (so place when we are near that block)
+                if (placeStrictDirection.getValue()) {
+
+                    // Check yaw
+                    if (yawCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.x - xPlayerRotation;
+                        if (Math.abs(distanceDo) > 180) {
+                            distanceDo = RotationUtil.normalizeAngle(distanceDo);
+                        }
+                        // Check if distance is > of what we want
+                        if (Math.abs(distanceDo) > yawStep.getValue()) {
+                            return true;
+                        }
                     }
 
+                    // Check pitch
+                    if (pitchCheck.getValue()) {
+                        // Get first if + or -
+                        double distanceDo = rotationWanted.y - yPlayerRotation;
+                        // Check if distance is > of what we want
 
-                    // If we allow to predict the place (so place when we are near that block)
-                    if (placeStrictDirection.getValue()) {
-
-                        // Check yaw
-                        if (yawCheck.getValue()) {
-                            // Get first if + or -
-                            double distanceDo = rotationWanted.x - xPlayerRotation;
-                            if (Math.abs(distanceDo) > 180) {
-                                distanceDo = RotationUtil.normalizeAngle(distanceDo);
-                            }
-                            // Check if distance is > of what we want
-                            if (Math.abs(distanceDo) > yawStep.getValue()) {
-                                return true;
-                            }
+                        if (Math.abs(distanceDo) > pitchStep.getValue()) {
+                            return true;
                         }
+                    }
 
-                        // Check pitch
-                        if (pitchCheck.getValue()) {
-                            // Get first if + or -
-                            double distanceDo = rotationWanted.y - yPlayerRotation;
-                            // Check if distance is > of what we want
-
-                            if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                                return true;
-                            }
-                        }
-
-                    } else if (!(xPlayerRotation == rotationWanted.x && yPlayerRotation == rotationWanted.y))
-                        return true;
-                }
+                } else if (!(xPlayerRotation == rotationWanted.x && yPlayerRotation == rotationWanted.y))
+                    return true;
+            }
         }
 
         int switchBack = -1;
@@ -2671,6 +2679,11 @@ public class AutoCrystalRewrite extends Module {
                 // Apparently you have to wait 1 tick or else the sword would not count
                 return false;
             }
+        }
+
+        if ( rotate.getValue() && preRotate.getValue()) {
+            Vec2f rot = RotationUtil.getRotationTo(lastHitVec);
+            mc.player.connection.sendPacket(new CPacketPlayer.Rotation(rot.x, rot.y, mc.player.onGround));
         }
 
         // Swing
