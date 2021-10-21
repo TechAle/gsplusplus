@@ -539,6 +539,7 @@ public class AutoCrystalRewrite extends Module {
             () -> strict.getValue() && pitchCheck.getValue());
     BooleanSetting placeStrictDirection = registerBoolean("Place Strict Predict", false,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
+    BooleanSetting predictBreakRotation = registerBoolean("Predict Break Rotation", false, () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     BooleanSetting blockRotation = registerBoolean("Block Rotation", true,
             () -> strict.getValue() && (pitchCheck.getValue() || yawCheck.getValue()));
     //endregion
@@ -2635,7 +2636,7 @@ public class AutoCrystalRewrite extends Module {
 
                 // If we allow to predict the place (so place when we are near that block)
                 if (placeStrictDirection.getValue()) {
-
+                    boolean back = false;
                     // Check yaw
                     if (yawCheck.getValue()) {
                         // Get first if + or -
@@ -2645,7 +2646,7 @@ public class AutoCrystalRewrite extends Module {
                         }
                         // Check if distance is > of what we want
                         if (Math.abs(distanceDo) > yawStep.getValue()) {
-                            return true;
+                            back = true;
                         }
                     }
 
@@ -2656,12 +2657,19 @@ public class AutoCrystalRewrite extends Module {
                         // Check if distance is > of what we want
 
                         if (Math.abs(distanceDo) > pitchStep.getValue()) {
-                            return true;
+                            back = true;
                         }
                     }
 
+                    if (back) {
+                        if (predictBreakRotation.getValue()) {
+                            if (lookingCrystal(cr))
+                                return false;
+                        } else return false;
+                    }
+
                 } else if (!(xPlayerRotation == rotationWanted.x && yPlayerRotation == rotationWanted.y))
-                    return true;
+                    return false;
             }
         }
 
@@ -2873,6 +2881,35 @@ public class AutoCrystalRewrite extends Module {
                 .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
                 .filter(entity -> !EntityUtil.basicChecksEntity(entity))
                 .filter(entity -> entity.getHealth() > 0.0f);
+    }
+
+    boolean lookingCrystal(EntityEnderCrystal cr) {
+        Vec3d positionEyes = mc.player.getPositionEyes(mc.getRenderPartialTicks());
+        Vec3d rotationEyes = new Vec3d(Math.cos(xPlayerRotation)*Math.cos(yPlayerRotation),
+                                             Math.sin(xPlayerRotation)*Math.cos(yPlayerRotation),
+                                        Math.sin(yPlayerRotation));
+        // Precision
+        int precision = 2;
+        // Iterate for every blocks
+        for (int i = 0; i < breakRange.getValue().intValue() + 1; i++) {
+            // Iterate for the precision
+            for (int j = precision; j > 0; j--) {
+                // Iterate for all players
+                // Get box of the player
+                AxisAlignedBB playerBox = cr.getEntityBoundingBox();
+                // Get coordinate of the vec3d
+                double xArray = positionEyes.x + (rotationEyes.x * i) + rotationEyes.x / j;
+                double yArray = positionEyes.y + (rotationEyes.y * i) + rotationEyes.y / j;
+                double zArray = positionEyes.z + (rotationEyes.z * i) + rotationEyes.z / j;
+                // If it's inside
+                if (playerBox.maxY >= yArray && playerBox.minY <= yArray
+                        && playerBox.maxX >= xArray && playerBox.minX <= xArray
+                        && playerBox.maxZ >= zArray && playerBox.minZ <= zArray) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Say if two blockPos are the same
