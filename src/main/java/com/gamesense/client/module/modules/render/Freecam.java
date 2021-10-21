@@ -80,7 +80,6 @@ public class Freecam extends Module {
 
     public void onUpdate() {
 
-        // Static Flight Code
         if (!source.getValue()){
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
@@ -90,7 +89,10 @@ public class Freecam extends Module {
 
                 mc.player.motionY = (-speed.getValue());
 
-            }
+            } else
+
+                mc.player.motionY = 0;
+
         } else {
 
             double pitchRad = mc.player.rotationPitch * PI / 180;

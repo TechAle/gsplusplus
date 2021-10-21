@@ -25,16 +25,17 @@ public class Flight extends Module {
 
     float flyspeed;
     boolean bounded;
-    int tpid = 0;
+    public int tpid = 0;
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet", "Damage", "AirJump"), "Static");
 
     ModeSetting damage = registerMode("Damage Mode", Arrays.asList("LB", "WI", "PF"), "WI", () -> mode.getValue().equalsIgnoreCase("Damage"));
 
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug ID", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting confirm = registerBoolean("Confirm", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug ID", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
     DoubleSetting minStr = registerDouble("Min Blast Strength", 0,0,1);
     DoubleSetting jspeed = registerDouble("Speed", 0, 0, 5, () -> mode.getValue().equalsIgnoreCase("AirJump"));
@@ -44,6 +45,7 @@ public class Flight extends Module {
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !mode.getValue().equalsIgnoreCase("AirJump"));
 
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !mode.getValue().equalsIgnoreCase("AirJump"));
+
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -80,8 +82,11 @@ public class Flight extends Module {
 
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
-            mc.player.setVelocity(0, 0, 0);
+            /* PACKET */
+
+            event.setX(0);
             event.setY(0);
+            event.setZ(0);
 
             double x = mc.player.posX;
             double y = mc.player.posY;
@@ -89,30 +94,24 @@ public class Flight extends Module {
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && !mc.gameSettings.keyBindJump.isKeyDown()) {
 
-
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, false));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                y -= 0.0624;
 
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 0.0624, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                y += 0.0624;
 
                 bounded = true;
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(0.0624 * packetFactor.getValue());
+                double[] dir = MotionUtil.forward(clipped() ? 0.0624 : 0.0624 * packetFactor.getValue());
 
-                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + (dir[0]), mc.player.posY, mc.player.posZ + (dir[1]), mc.player.onGround));
-
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid+1));
+                x += dir[0];
+                z += dir[1];
 
                 bounded = true;
 
@@ -121,12 +120,12 @@ public class Flight extends Module {
 
             if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % 4 == 0) {
 
-                event.setY(-0.01);
+                y -= 0.01;
                 bounded = true;
 
             } else if (antiKick.getValue().equalsIgnoreCase("Bounce") && mc.player.ticksExisted % 4 == 2) {
 
-                event.setY(0.01);
+                y += 0.01;
                 bounded = true;
 
             } else if (antiKick.getValue().equalsIgnoreCase("None")) {
@@ -136,7 +135,13 @@ public class Flight extends Module {
 
             }
 
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(x,y,z,false));
+            tpid++;
+            if (confirm.getValue())
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
             doBounds();
+
+            /* END OF PACKET */
 
         } else if (mode.getValue().equalsIgnoreCase("Damage")) {
 
@@ -205,15 +210,6 @@ public class Flight extends Module {
 
     });
 
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (event.getPacket() instanceof CPacketPlayer)
-            if (!(event.getPacket() instanceof CPacketPlayer.Rotation))
-                tpid++;
-
-    });
-
     private void doBounds() {
         if (bounded) {
             switch (bound.getValue()) {
@@ -224,14 +220,23 @@ public class Flight extends Module {
                     mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
                 case "Zero":
                     mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
+                case "Min":
+                    if (mc.player.ticksExisted % 2 == 0)
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                    else
+                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
                 default:
                     if (mc.player.ticksExisted % 2 == 0)
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
                     else
                         mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-
             }
+            tpid++;
+
+            if (confirm.getValue())
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
         }
     }
 
@@ -285,6 +290,12 @@ public class Flight extends Module {
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
 
         }
+
+    }
+
+    boolean clipped() {
+
+    return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty() && mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, 1, 0.0)).isEmpty());
 
     }
 

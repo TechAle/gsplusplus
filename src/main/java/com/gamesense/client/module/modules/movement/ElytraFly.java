@@ -11,6 +11,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 
@@ -19,9 +20,10 @@ import java.util.Arrays;
 @Module.Declaration(name = "ElytraFly", category = Category.Movement)
 public class ElytraFly extends Module {
 
+    public BooleanSetting sound = registerBoolean("Sounds", true);
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
     BooleanSetting packet = registerBoolean("Packet", false);
-    ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "None"), "PacketFly");
+    ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "Freeze", "Fast", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
@@ -29,9 +31,17 @@ public class ElytraFly extends Module {
     BooleanSetting yawLock = registerBoolean("Yaw Lock", false, () -> mode.getValue().equalsIgnoreCase("Control"));
 
     boolean setAng;
+    @EventHandler
+    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
+        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
+
+            ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
+
+        }
+
+    });
     Timer upTimer = new Timer();
-
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -63,7 +73,7 @@ public class ElytraFly extends Module {
 
                     } else {
 
-                        event.setY(-0.000001 -glideSpeed.getValue());
+                        event.setY(-0.000001 - glideSpeed.getValue());
 
                     }
 
@@ -71,7 +81,7 @@ public class ElytraFly extends Module {
 
                         double[] dir;
 
-                        if (!yawLock.getValue()){
+                        if (!yawLock.getValue()) {
 
                             dir = MotionUtil.forward(speed.getValue());
 
@@ -79,7 +89,7 @@ public class ElytraFly extends Module {
 
                             final int angle = 360 / 8;
                             float yaw = mc.player.rotationYaw;
-                            yaw = (float)(Math.round(yaw / angle) * angle);
+                            yaw = (float) (Math.round(yaw / angle) * angle);
 
                             dir = MotionUtil.forward(speed.getValue(), yaw);
 
@@ -98,11 +108,10 @@ public class ElytraFly extends Module {
                 } else if (upMode.getValue().equalsIgnoreCase("Aim")) {
 
                     if (mc.player.rotationPitch > 0 || (upTimer.getTimePassed() >= 1500)) {
-                        if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                            event.setY(ySpeed.getValue());
+                        upTimer.reset();
 
-                        } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
+                        if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
                             event.setY(-ySpeed.getValue());
 
@@ -116,7 +125,7 @@ public class ElytraFly extends Module {
 
                             double[] dir;
 
-                            if (!yawLock.getValue()){
+                            if (!yawLock.getValue()) {
 
                                 dir = MotionUtil.forward(speed.getValue());
 
@@ -124,7 +133,7 @@ public class ElytraFly extends Module {
 
                                 final int angle = 360 / 8;
                                 float yaw = mc.player.rotationYaw;
-                                yaw = (float)(Math.round(yaw / angle) * angle);
+                                yaw = (float) (Math.round(yaw / angle) * angle);
 
                                 dir = MotionUtil.forward(speed.getValue(), yaw);
 
@@ -143,18 +152,12 @@ public class ElytraFly extends Module {
 
                         setAng = false;
 
-                        if (!MotionUtil.isMoving(mc.player)) {
-
-                            event.setY(0);
-
-                        }
-
                     }
                 }
             }
         } else {
 
-            if (mc.gameSettings.keyBindJump.isKeyDown()){
+            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA)) {
                 switch (toMode.getValue()) {
 
                     case "PacketFly": {
@@ -171,6 +174,8 @@ public class ElytraFly extends Module {
 
                         }
 
+                        break;
+
                     }
                     case "Timer": {
 
@@ -181,17 +186,34 @@ public class ElytraFly extends Module {
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
                         }
 
-                    }
-                    default: {
+                        break;
 
-                        if (!mc.player.onGround && mc.player.motionY < 0) {
+                    }
+                    case "Fast": {
+
+                        if (mc.player.onGround) {
+                            mc.player.jump();
+                        } else if (mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                         }
 
-                    }
+                        break;
 
+                    }
+                    case "Freeze": {
+
+                        if (mc.player.onGround) {
+                            mc.player.jump();
+                        } else if (mc.player.motionY < 0) {
+                            event.setY(-0.00001);
+                            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+                        }
+
+                        break;
+
+                    }
                 }
             }
 
@@ -199,14 +221,9 @@ public class ElytraFly extends Module {
         }
 
     });
-    @EventHandler
-    private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
-
-            ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
-
-        }
-
-    });
+    @Override
+    protected void onDisable() {
+        mc.timer.tickLength = 50;
+    }
 }
