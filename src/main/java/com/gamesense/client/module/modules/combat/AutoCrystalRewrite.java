@@ -30,6 +30,7 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.mixin.mixins.accessor.AccessorCPacketAttack;
 import com.mojang.realmsclient.gui.ChatFormatting;
+import com.sun.javafx.geom.Vec3f;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
@@ -437,9 +438,9 @@ public class AutoCrystalRewrite extends Module {
             () -> renders.getValue() && showTextbr.getValue());
 
     BooleanSetting movingPlace = registerBoolean("Moving Place", false, () -> renders.getValue());
-    DoubleSetting movingPlaceSpeed = registerDouble("Moving Place Speed", 0.1, 0.1, 1, () -> renders.getValue() && movingPlace.getValue());
+    DoubleSetting movingPlaceSpeed = registerDouble("Moving Place Speed", 0.1, 0.01, 0.5, () -> renders.getValue() && movingPlace.getValue());
     BooleanSetting movingBreak = registerBoolean("Moving Break", false, () -> renders.getValue());
-    DoubleSetting movingBreakSpeed = registerDouble("Moving Break Speed", 0.1, 0.1, 1, () -> renders.getValue() && movingPlace.getValue());
+    DoubleSetting movingBreakSpeed = registerDouble("Moving Break Speed", 0.1, 0.01, 0.5, () -> renders.getValue() && movingPlace.getValue());
 
 
     BooleanSetting fadeCapl = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
@@ -1057,6 +1058,8 @@ public class AutoCrystalRewrite extends Module {
         // Idk shits happened and still happens
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+        movingPlaceNow.set(-1f, -1f, -1f);
+        movingBreakNow.set(-1f, -1f, -1f);
     }
 
     int tickEat = 0;
@@ -2847,9 +2850,10 @@ public class AutoCrystalRewrite extends Module {
 
     //region utils
 
-    double[] movingPlacePos = {-1, -1, -1};
-    double[] movingBreakPos = {-1, -1, -1};
-
+    Vec3f movingPlaceNow = new Vec3f(-1f, -1f, -1f);
+    Vec3f movingBreakNow = new Vec3f(-1f, -1f, -1f);
+    BlockPos lastBestPlace = null;
+    BlockPos lastBestBreak = null;
     // This function is used for getting a basic list of possible players
     Stream<EntityPlayer> getBasicPlayers(double rangeEnemySQ) {
         return mc.world.playerEntities.stream()
@@ -2876,13 +2880,26 @@ public class AutoCrystalRewrite extends Module {
         return new AxisAlignedBB(minX, centreBlock.getY(), minZ, maxX, centreBlock.getY() + 1, maxZ);
     }
 
+    // This is used for getting the box of a block
+    AxisAlignedBB getBox(double x, double y, double z) {
+        // Min + Max
+        double minX = x;
+        double maxX = x + 1;
+        double minZ = z;
+        double maxZ = z + 1;
+        // Return box
+        return new AxisAlignedBB(minX, y, minZ, maxX, y + 1, maxZ);
+    }
+
+
     // This function is for displaying things
     public void onWorldRender(RenderEvent event) {
         if (!this.isEnabled()) {
             bestPlace = null;
             bestBreak = null;
             managerRenderBlocks.blocks.clear();
-            movingBreakPos = movingBreakPos = new double[]{-1, -1, -1};
+            movingPlaceNow.set(0f, 0f, 0f);
+            movingBreakNow.set(0f, 0f, 0f);
         }
 
         managerRenderBlocks.render();
@@ -2891,16 +2908,31 @@ public class AutoCrystalRewrite extends Module {
         if (bestPlace != null && bestPlace.crystal != null) {
             if (!movingPlace.getValue())
                 drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
-            else {
-                if (movingPlacePos[1] == -1 && movingPlacePos[0] == -1 && movingPlacePos[2] == -1) {
-                    movingPlacePos = new double[] {(double) bestPlace.crystal.getX(),(double) bestPlace.crystal.getY(),(double) bestPlace.crystal.getZ()};
-                }
-
-                
-            }
+            else
+                lastBestPlace = bestPlace.crystal;
             // If fadeCa, add it to render
             if (fadeCapl.getValue())
                 managerRenderBlocks.addRender(true , bestPlace.crystal);
+        }
+
+        if (movingPlace.getValue() && lastBestPlace != null) {
+            if (movingPlaceNow.y == -1 && movingBreakNow.x == -1 && movingPlaceNow.z == -1) {
+                movingPlaceNow.set((float) lastBestPlace.getX(), (float) lastBestPlace.getY(), (float) lastBestPlace.getZ());
+            }
+
+            movingPlaceNow.set(
+                    movingPlaceNow.x + (lastBestPlace.getX() - movingPlaceNow.x) * movingPlaceSpeed.getValue().floatValue(),
+                    movingPlaceNow.y + (lastBestPlace.getY() - movingPlaceNow.y) * movingPlaceSpeed.getValue().floatValue(),
+                    movingPlaceNow.z + (lastBestPlace.getZ() - movingPlaceNow.z) * movingPlaceSpeed.getValue().floatValue()
+            );
+
+            drawBoxMain(typePlace.getValue(), movingPlaceNow.x, movingPlaceNow.y, movingPlaceNow.z, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
+
+            if (Math.abs(movingPlaceNow.x - lastBestPlace.getX()) <= .125  && Math.abs(movingPlaceNow.y - lastBestPlace.getY()) <= .125 && Math.abs(movingPlaceNow.z - lastBestPlace.getZ()) <= .125) {
+                lastBestPlace = null;
+            }
+
+
         }
 
 
@@ -2909,12 +2941,32 @@ public class AutoCrystalRewrite extends Module {
                 (!placeDominant.getValue() || (bestPlace != null && bestPlace.crystal != null && !sameBlockPos(bestPlace.crystal, bestBreak.crystal.getPosition().add(0, -1, 0))))) {
             if (!movingBreak.getValue()) {
                 drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
-            } else {
+            } else if (movingBreak.getValue()) {
+
+                lastBestBreak = bestBreak.crystal.getPosition().add(0, -1, 0);
 
             }
             // If fadeCa, add it to render
             if (fadeCabr.getValue())
                 managerRenderBlocks.addRender(false , bestBreak.crystal.getPosition().add(0, -1, 0));
+        }
+        if (movingBreak.getValue() && lastBestBreak != null) {
+            if (movingBreakNow.y == -1 && movingBreakNow.x == -1 && movingBreakNow.z == -1) {
+                BlockPos pos = bestBreak.crystal.getPosition().add(0, -1, 0);
+                movingBreakNow.set((float) pos.getX(), (float) pos.getY(), (float) pos.getZ());
+            }
+
+            movingBreakNow.set(
+                    movingBreakNow.x + (lastBestBreak.getX() - movingBreakNow.x) * movingBreakSpeed.getValue().floatValue(),
+                    movingBreakNow.y + (lastBestBreak.getY() - movingBreakNow.y) * movingBreakSpeed.getValue().floatValue(),
+                    movingBreakNow.z + (lastBestBreak.getZ() - movingBreakNow.z) * movingBreakSpeed.getValue().floatValue()
+            );
+
+            drawBoxMain(typeBreak.getValue(), movingBreakNow.x, movingBreakNow.y, movingBreakNow.z, breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
+
+            if (Math.abs(movingBreakNow.x - lastBestBreak.getX()) <= .125  && Math.abs(movingBreakNow.y - lastBestBreak.getY()) <= .125 && Math.abs(movingBreakNow.z - lastBestBreak.getZ()) <= .125) {
+                lastBestBreak = null;
+            }
         }
 
         // Display everything else
@@ -2952,6 +3004,10 @@ public class AutoCrystalRewrite extends Module {
                     }
                 }
             });
+
+        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+
     }
 
     void drawBoxMain(String type, BlockPos position, String dimension, double heightSlab, boolean place, int alpha) {
@@ -2968,6 +3024,49 @@ public class AutoCrystalRewrite extends Module {
         } else {
             // Get box
             AxisAlignedBB box = getBox(position);
+            int mask = GeometryMasks.Quad.ALL;
+            // For custom dimensions
+            if (dimension.equals("Flat")) {
+                mask = GeometryMasks.Quad.UP;
+                box = new AxisAlignedBB(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
+            } else if (dimension.equals("Slab")) {
+                box = new AxisAlignedBB(box.minX, box.maxY - heightSlab, box.minZ, box.maxX, box.maxY, box.maxZ);
+            }
+
+            // Switch for types, isnt this really clean!?!? I mean, not the code above lol
+            switch (type) {
+                case "Outline": {
+                    displayOutline(box, place, alpha);
+                    break;
+                }
+                case "Fill": {
+                    displayFill(box, mask, place, alpha);
+                    break;
+                }
+                case "Both": {
+                    displayFill(box, mask, place, alpha);
+
+                    displayOutline(box, place, alpha);
+                    break;
+                }
+            }
+        }
+    }
+
+    void drawBoxMain(String type, double x, double y, double z, String dimension, double heightSlab, boolean place, int alpha) {
+        // If we are drawing a circle, we have to follow this
+        if (dimension.equals("Circle")) {
+
+            // Get the real alpha
+            int alphaValue = alpha == -1 ? firstVerticeOutlineBot.getColor().getAlpha() : alpha;
+
+            // Draw circle (thanks cosmos!)
+            RenderUtil.drawCircle((float) (x + .5), (float) (y + 1), (float) (z + .5F), place ? rangeCirclePl.getValue() : rangeCircleBr.getValue(),
+                    place ? new GSColor(firstVerticeOutlineBot.getColor(), alphaValue) :
+                            new GSColor(firstVerticeOutlineBotbr.getColor(), alphaValue));
+        } else {
+            // Get box
+            AxisAlignedBB box = getBox(x, y, z);
             int mask = GeometryMasks.Quad.ALL;
             // For custom dimensions
             if (dimension.equals("Flat")) {
