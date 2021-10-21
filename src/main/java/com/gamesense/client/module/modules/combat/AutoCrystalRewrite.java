@@ -30,7 +30,6 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.mixin.mixins.accessor.AccessorCPacketAttack;
 import com.mojang.realmsclient.gui.ChatFormatting;
-import com.sun.javafx.geom.Vec3f;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
@@ -1059,8 +1058,8 @@ public class AutoCrystalRewrite extends Module {
         // Idk shits happened and still happens
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
-        movingPlaceNow.set(-1f, -1f, -1f);
-        movingBreakNow.set(-1f, -1f, -1f);
+        movingPlaceNow = new Vec3d(-1f, -1f, -1f);
+        movingBreakNow = new Vec3d(-1f, -1f, -1f);
     }
 
     int tickEat = 0;
@@ -2875,8 +2874,8 @@ public class AutoCrystalRewrite extends Module {
 
     //region utils
 
-    Vec3f movingPlaceNow = new Vec3f(-1f, -1f, -1f);
-    Vec3f movingBreakNow = new Vec3f(-1f, -1f, -1f);
+    Vec3d movingPlaceNow = new Vec3d(-1f, -1f, -1f);
+    Vec3d movingBreakNow = new Vec3d(-1f, -1f, -1f);
     BlockPos lastBestPlace = null;
     BlockPos lastBestBreak = null;
     // This function is used for getting a basic list of possible players
@@ -2952,8 +2951,8 @@ public class AutoCrystalRewrite extends Module {
             bestPlace = null;
             bestBreak = null;
             managerRenderBlocks.blocks.clear();
-            movingPlaceNow.set(0f, 0f, 0f);
-            movingBreakNow.set(0f, 0f, 0f);
+            movingPlaceNow = new Vec3d(0f, 0f, 0f);
+            movingBreakNow = new Vec3d(0f, 0f, 0f);
         }
 
         managerRenderBlocks.render();
@@ -2971,10 +2970,10 @@ public class AutoCrystalRewrite extends Module {
 
         if (movingPlace.getValue() && lastBestPlace != null) {
             if (movingPlaceNow.y == -1 && movingBreakNow.x == -1 && movingPlaceNow.z == -1) {
-                movingPlaceNow.set((float) lastBestPlace.getX(), (float) lastBestPlace.getY(), (float) lastBestPlace.getZ());
+                movingPlaceNow = new Vec3d((float) lastBestPlace.getX(), (float) lastBestPlace.getY(), (float) lastBestPlace.getZ());
             }
 
-            movingPlaceNow.set(
+            movingPlaceNow = new Vec3d(
                     movingPlaceNow.x + (lastBestPlace.getX() - movingPlaceNow.x) * movingPlaceSpeed.getValue().floatValue(),
                     movingPlaceNow.y + (lastBestPlace.getY() - movingPlaceNow.y) * movingPlaceSpeed.getValue().floatValue(),
                     movingPlaceNow.z + (lastBestPlace.getZ() - movingPlaceNow.z) * movingPlaceSpeed.getValue().floatValue()
@@ -3007,10 +3006,10 @@ public class AutoCrystalRewrite extends Module {
         if (movingBreak.getValue() && lastBestBreak != null) {
             if (movingBreakNow.y == -1 && movingBreakNow.x == -1 && movingBreakNow.z == -1) {
                 BlockPos pos = bestBreak.crystal.getPosition().add(0, -1, 0);
-                movingBreakNow.set((float) pos.getX(), (float) pos.getY(), (float) pos.getZ());
+                movingBreakNow = new Vec3d((float) pos.getX(), (float) pos.getY(), (float) pos.getZ());
             }
 
-            movingBreakNow.set(
+            movingBreakNow = new Vec3d(
                     movingBreakNow.x + (lastBestBreak.getX() - movingBreakNow.x) * movingBreakSpeed.getValue().floatValue(),
                     movingBreakNow.y + (lastBestBreak.getY() - movingBreakNow.y) * movingBreakSpeed.getValue().floatValue(),
                     movingBreakNow.z + (lastBestBreak.getZ() - movingBreakNow.z) * movingBreakSpeed.getValue().floatValue()
