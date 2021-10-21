@@ -200,7 +200,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
-    BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> place.getValue());
+    BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> breakSection.getValue());
     //endregion
 
     //region Misc
@@ -435,6 +435,11 @@ public class AutoCrystalRewrite extends Module {
             () -> renders.getValue() && showTextbr.getValue(), true);
     DoubleSetting textYBreak = registerDouble("Text Y Break", .5, -1, 1,
             () -> renders.getValue() && showTextbr.getValue());
+
+    BooleanSetting movingPlace = registerBoolean("Moving Place", false, () -> renders.getValue());
+    DoubleSetting movingPlaceSpeed = registerDouble("Moving Place Speed", 0.1, 0.1, 1, () -> renders.getValue() && movingPlace.getValue());
+    BooleanSetting movingBreak = registerBoolean("Moving Break", false, () -> renders.getValue());
+    DoubleSetting movingBreakSpeed = registerDouble("Moving Break Speed", 0.1, 0.1, 1, () -> renders.getValue() && movingPlace.getValue());
 
 
     BooleanSetting fadeCapl = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
@@ -2842,6 +2847,9 @@ public class AutoCrystalRewrite extends Module {
 
     //region utils
 
+    double[] movingPlacePos = {-1, -1, -1};
+    double[] movingBreakPos = {-1, -1, -1};
+
     // This function is used for getting a basic list of possible players
     Stream<EntityPlayer> getBasicPlayers(double rangeEnemySQ) {
         return mc.world.playerEntities.stream()
@@ -2874,13 +2882,22 @@ public class AutoCrystalRewrite extends Module {
             bestPlace = null;
             bestBreak = null;
             managerRenderBlocks.blocks.clear();
+            movingBreakPos = movingBreakPos = new double[]{-1, -1, -1};
         }
 
         managerRenderBlocks.render();
 
         // If we have a bestPlace
         if (bestPlace != null && bestPlace.crystal != null) {
-            drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
+            if (!movingPlace.getValue())
+                drawBoxMain(typePlace.getValue(), bestPlace.crystal, placeDimension.getValue(), slabHeightPlace.getValue(), true, -1);
+            else {
+                if (movingPlacePos[1] == -1 && movingPlacePos[0] == -1 && movingPlacePos[2] == -1) {
+                    movingPlacePos = new double[] {(double) bestPlace.crystal.getX(),(double) bestPlace.crystal.getY(),(double) bestPlace.crystal.getZ()};
+                }
+
+                
+            }
             // If fadeCa, add it to render
             if (fadeCapl.getValue())
                 managerRenderBlocks.addRender(true , bestPlace.crystal);
@@ -2889,8 +2906,12 @@ public class AutoCrystalRewrite extends Module {
 
         // If we have a bestBreak
         if (bestBreak != null && bestBreak.crystal != null &&
-                (placeDominant.getValue() && bestPlace != null && bestPlace.crystal != null && !sameBlockPos(bestPlace.crystal, bestBreak.crystal.getPosition().add(0, -1, 0)))) {
-            drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
+                (!placeDominant.getValue() || (bestPlace != null && bestPlace.crystal != null && !sameBlockPos(bestPlace.crystal, bestBreak.crystal.getPosition().add(0, -1, 0))))) {
+            if (!movingBreak.getValue()) {
+                drawBoxMain(typeBreak.getValue(), bestBreak.crystal.getPosition().add(0, -1, 0), breakDimension.getValue(), slabHeightBreak.getValue(), false, -1);
+            } else {
+
+            }
             // If fadeCa, add it to render
             if (fadeCabr.getValue())
                 managerRenderBlocks.addRender(false , bestBreak.crystal.getPosition().add(0, -1, 0));
