@@ -237,7 +237,7 @@ public class AutoCrystalRewrite extends Module {
                     (OutLineSection.getValue() ) && NVerticesOutlineBot.getValue().equals("2") );
     ColorSetting firstVerticeOutlineBot = registerColor("1 Vert Out Bot pl", new GSColor(255, 16, 19, 50),
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
-                    (OutLineSection.getValue()  )
+                    (OutLineSection.getValue() && renders.getValue()  )
             , true);
     ColorSetting secondVerticeOutlineBot = registerColor("2 Vert Out Bot pl", new GSColor(0, 0, 255, 50),
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
@@ -254,7 +254,7 @@ public class AutoCrystalRewrite extends Module {
     // Top
     ModeSetting NVerticesOutlineTop = registerMode("N^ Vertices Outline Top pl", Arrays.asList("1", "2", "4"), "1",
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both"))  &&
-                    (OutLineSection.getValue() ));
+                    (OutLineSection.getValue() && renders.getValue() ));
     ModeSetting direction2OutLineTop = registerMode("Direction Outline Top pl", Arrays.asList("X", "Z"), "X",
             () ->   (typePlace.getValue().equals("Outline") || typePlace.getValue().equals("Both")) &&
                     (OutLineSection.getValue() && renders.getValue()) && NVerticesOutlineTop.getValue().equals("2"));
@@ -333,94 +333,94 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting OutLineSectionbr = registerBoolean("OutLine Section Custom br", false,
             () ->  (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && renders.getValue());
     // Bottom
-    ModeSetting NVerticesOutlineBotbr = registerMode("N^ Vertices Outline Bot pl", Arrays.asList("1", "2", "4"), "1",
+    ModeSetting NVerticesOutlineBotbr = registerMode("N^ Vertices Outline Bot br", Arrays.asList("1", "2", "4"), "1",
             () -> (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) && (OutLineSectionbr.getValue() && renders.getValue()));
-    ModeSetting direction2OutLineBotbr = registerMode("Direction Outline Bot pl", Arrays.asList("X", "Z"), "X",
+    ModeSetting direction2OutLineBotbr = registerMode("Direction Outline Bot br", Arrays.asList("X", "Z"), "X",
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue()) && NVerticesOutlineBotbr.getValue().equals("2"));
-    ColorSetting firstVerticeOutlineBotbr = registerColor("1 Vert Out Bot pl", new GSColor(16, 50, 100, 255),
+    ColorSetting firstVerticeOutlineBotbr = registerColor("1 Vert Out Bot br", new GSColor(16, 50, 100, 255),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
             , true);
-    ColorSetting secondVerticeOutlineBotbr = registerColor("2 Vert Out Bot pl", new GSColor(0, 0, 255, 50),
+    ColorSetting secondVerticeOutlineBotbr = registerColor("2 Vert Out Bot br", new GSColor(0, 0, 255, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && (NVerticesOutlineBotbr.getValue().equals("2") || NVerticesOutlineBotbr.getValue().equals("4")), true);
-    ColorSetting thirdVerticeOutlineBotbr = registerColor("3 Vert Out Bot pl", new GSColor(0, 255, 128, 50),
+    ColorSetting thirdVerticeOutlineBotbr = registerColor("3 Vert Out Bot br", new GSColor(0, 255, 128, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && NVerticesOutlineBotbr.getValue().equals("4"), true);
-    ColorSetting fourVerticeOutlineBotbr = registerColor("4 Vert Out Bot pl", new GSColor(255, 255, 2, 50),
+    ColorSetting fourVerticeOutlineBotbr = registerColor("4 Vert Out Bot br", new GSColor(255, 255, 2, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && NVerticesOutlineBotbr.getValue().equals("4"), true);
     // Top
-    ModeSetting NVerticesOutlineTopbr = registerMode("N^ Vertices Outline Top pl", Arrays.asList("1", "2", "4"), "1",
+    ModeSetting NVerticesOutlineTopbr = registerMode("N^ Vertices Outline Top br", Arrays.asList("1", "2", "4"), "1",
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue()));
-    ModeSetting direction2OutLineTopbr = registerMode("Direction Outline Top pl", Arrays.asList("X", "Z"), "X",
+    ModeSetting direction2OutLineTopbr = registerMode("Direction Outline Top br", Arrays.asList("X", "Z"), "X",
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue()) && NVerticesOutlineTopbr.getValue().equals("2"));
-    ColorSetting firstVerticeOutlineTopbr = registerColor("1 Vert Out Top pl", new GSColor(255, 16, 19, 255),
+    ColorSetting firstVerticeOutlineTopbr = registerColor("1 Vert Out Top br", new GSColor(255, 16, 19, 255),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue()), true);
-    ColorSetting secondVerticeOutlineTopbr = registerColor("2 Vert Out Top pl", new GSColor(0, 0, 255, 50),
+    ColorSetting secondVerticeOutlineTopbr = registerColor("2 Vert Out Top br", new GSColor(0, 0, 255, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && (NVerticesOutlineTopbr.getValue().equals("2") || NVerticesOutlineTopbr.getValue().equals("4")), true);
-    ColorSetting thirdVerticeOutlineTopbr = registerColor("3 Vert Out Top pl", new GSColor(0, 255, 128, 50),
+    ColorSetting thirdVerticeOutlineTopbr = registerColor("3 Vert Out Top br", new GSColor(0, 255, 128, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && NVerticesOutlineTopbr.getValue().equals("4"), true);
-    ColorSetting fourVerticeOutlineTopbr = registerColor("4 Vert Out Top pl", new GSColor(255, 255, 2, 50),
+    ColorSetting fourVerticeOutlineTopbr = registerColor("4 Vert Out Top br", new GSColor(255, 255, 2, 50),
             () ->   (typeBreak.getValue().equals("Outline") || typeBreak.getValue().equals("Both")) &&
                     (OutLineSectionbr.getValue() && renders.getValue())
                     && NVerticesOutlineTopbr.getValue().equals("4"), true);
     //endregion
     // region fill custom Break
-    BooleanSetting FillSectionbr = registerBoolean("Fill Section Custom pl", false,
+    BooleanSetting FillSectionbr = registerBoolean("Fill Section Custom br", false,
             () ->  (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) && renders.getValue());
     // Bottom
-    ModeSetting NVerticesFillBotbr = registerMode("N^ Vertices Fill Bot pl", Arrays.asList("1", "2", "4"), "1",
+    ModeSetting NVerticesFillBotbr = registerMode("N^ Vertices Fill Bot br", Arrays.asList("1", "2", "4"), "1",
             () -> (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) && FillSectionbr.getValue());
-    ModeSetting direction2FillBotbr = registerMode("Direction Fill Bot pl", Arrays.asList("X", "Z"), "X",
+    ModeSetting direction2FillBotbr = registerMode("Direction Fill Bot br", Arrays.asList("X", "Z"), "X",
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && NVerticesFillBotbr.getValue().equals("2"));
-    ColorSetting firstVerticeFillBotbr = registerColor("1 Vert Fill Bot pl", new GSColor(17, 89, 100, 50),
+    ColorSetting firstVerticeFillBotbr = registerColor("1 Vert Fill Bot br", new GSColor(17, 89, 100, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
             , true);
-    ColorSetting secondVerticeFillBotbr = registerColor("2 Vert Fill Bot pl", new GSColor(0, 0, 255, 50),
+    ColorSetting secondVerticeFillBotbr = registerColor("2 Vert Fill Bot br", new GSColor(0, 0, 255, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && (NVerticesFillBotbr.getValue().equals("2") || NVerticesFillBotbr.getValue().equals("4")), true);
-    ColorSetting thirdVerticeFillBotbr = registerColor("3 Vert Fill Bot pl", new GSColor(0, 255, 128, 50),
+    ColorSetting thirdVerticeFillBotbr = registerColor("3 Vert Fill Bot br", new GSColor(0, 255, 128, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && NVerticesFillBotbr.getValue().equals("4"), true);
-    ColorSetting fourVerticeFillBotbr = registerColor("4 Vert Fill Bot pl", new GSColor(255, 255, 2, 50),
+    ColorSetting fourVerticeFillBotbr = registerColor("4 Vert Fill Bot br", new GSColor(255, 255, 2, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && NVerticesFillBot.getValue().equals("4"), true);
     // Top
-    ModeSetting NVerticesFillTopbr = registerMode("N^ Vertices Fill Top pl", Arrays.asList("1", "2", "4"), "1",
+    ModeSetting NVerticesFillTopbr = registerMode("N^ Vertices Fill Top br", Arrays.asList("1", "2", "4"), "1",
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue());
-    ModeSetting direction2FillTopbr = registerMode("Direction Fill Top pl", Arrays.asList("X", "Z"), "X",
+    ModeSetting direction2FillTopbr = registerMode("Direction Fill Top br", Arrays.asList("X", "Z"), "X",
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && NVerticesFillTopbr.getValue().equals("2") && renders.getValue());
-    ColorSetting firstVerticeFillTopbr = registerColor("1 Vert Fill Top pl", new GSColor(255, 16, 19, 50),
+    ColorSetting firstVerticeFillTopbr = registerColor("1 Vert Fill Top br", new GSColor(255, 16, 19, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue(), true);
-    ColorSetting secondVerticeFillTopbr = registerColor("2 Vert Fill Top pl", new GSColor(0, 0, 255, 50),
+    ColorSetting secondVerticeFillTopbr = registerColor("2 Vert Fill Top br", new GSColor(0, 0, 255, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && (NVerticesFillTopbr.getValue().equals("2") || NVerticesFillTopbr.getValue().equals("4")), true);
-    ColorSetting thirdVerticeFillTopbr = registerColor("3 Vert Fill Top pl", new GSColor(0, 255, 128, 50),
+    ColorSetting thirdVerticeFillTopbr = registerColor("3 Vert Fill Top br", new GSColor(0, 255, 128, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && NVerticesFillTopbr.getValue().equals("4"), true);
-    ColorSetting fourVerticeFillTopbr = registerColor("4 Vert Fill Top pl", new GSColor(255, 255, 2, 50),
+    ColorSetting fourVerticeFillTopbr = registerColor("4 Vert Fill Top br", new GSColor(255, 255, 2, 50),
             () ->   (typeBreak.getValue().equals("Fill") || typeBreak.getValue().equals("Both")) &&
                     FillSectionbr.getValue() && renders.getValue()
                     && NVerticesFillTopbr.getValue().equals("4"), true);
