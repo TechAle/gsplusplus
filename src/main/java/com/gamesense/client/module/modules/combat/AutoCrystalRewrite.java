@@ -2736,12 +2736,16 @@ public class AutoCrystalRewrite extends Module {
                 BlockPos crystal = null;
                 if (checkinstaPlace.getValue())
                     crystal = getTargetPlacing(targetPlacing.getValue()).crystal;
-                // Ok, lets make instaPlace actual useful
-                if (!checkinstaPlace.getValue() || (crystal != null && sameBlockPos(position, crystal))) {
-                    EnumHand hand = getHandCrystal();
-                    if (hand != null)
-                        placeCrystal(position, hand, true);
+
+                if (checkinstaPlace.getValue() && crystal != null) {
+                    if (!sameBlockPos(position, crystal))
+                        crystal = position;
                 }
+                // Ok, lets make instaPlace actual useful
+                EnumHand hand = getHandCrystal();
+                if (hand != null)
+                    placeCrystal(position, hand, true);
+
             } else {
                 // ForcePlace is fine
                 forcePlaceCrystal = position;
