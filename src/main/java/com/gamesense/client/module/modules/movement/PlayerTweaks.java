@@ -2,6 +2,7 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.event.events.WaterPushEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
@@ -53,19 +54,18 @@ public class PlayerTweaks extends Module {
     BooleanSetting noSlowStrict = registerBoolean("Strict No Slow", false, () -> noSlow.getValue());
     @SuppressWarnings("unused")
     @EventHandler
-    private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
+    private final Listener<PlayerMoveEvent> eventListener = new Listener<>(event -> {
         if (mc.player.isHandActive() && !mc.player.isRiding()) {
 
-            if (noSlowStrict.getValue()) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
-                mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.ABORT_DESTROY_BLOCK, new BlockPos(mc.player.getPositionVector()).down(), EnumFacing.DOWN));
-            }
+            if (noSlowStrict.getValue() && mc.player.isHandActive()) {
+                mc.player.setSneaking(true);
+            } else if (noSlowStrict.getValue())
+                mc.player.setSneaking(false);
 
-            event.getMovementInput().moveStrafe *= 5;
-            event.getMovementInput().moveForward *= 5;
+            mc.player.movementInput.moveStrafe *= 5;
+            mc.player.movementInput.moveForward *= 5;
 
-        } else if (noSlowStrict.getValue())
-            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+        }
     });
     BooleanSetting noPush = registerBoolean("No Push", false);
     @SuppressWarnings("unused")
