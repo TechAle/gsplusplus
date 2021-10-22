@@ -39,7 +39,6 @@ public class FootConcrete extends Module {
     BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake") && general.getValue());
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
-    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
     BooleanSetting debugpos = registerBoolean("Debug Position", false);
@@ -63,6 +62,7 @@ public class FootConcrete extends Module {
     int targetBlockSlot;
     BlockPos burrowBlockPos;
     int oldslot;
+    BlockPos pos;
 
     public void onEnable() {
 
@@ -120,6 +120,7 @@ public class FootConcrete extends Module {
 
                 if (jumpMode.getValue().equals("real")) {
                     mc.player.jump();
+                    pos = new BlockPos(mc.player.getPositionVector());
                 } else {
 
                     // CIRUU BURROW (not ashamed to admit it)
@@ -135,7 +136,7 @@ public class FootConcrete extends Module {
 
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                    PlayerUtil.fakeJump();
+                    PlayerUtil.fakeJump(false);
 
                     PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
@@ -160,57 +161,28 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
-        if (!invalidHotbar) {
+        if (mode.getValue().equalsIgnoreCase("Real")) {
 
-            // PLACE
+            if (mc.player.posY > Math.floor(pos.y) + 1) {
 
-            if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
+                targetBlockSlot = getBlocks();
 
-                if (useBlink.getValue()) {
+                oldSlot = mc.player.inventory.currentItem;
 
-                    ModuleManager.getModule(Blink.class).disable();
-                }
+                if (targetBlockSlot == -1)
+                    disable();
 
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                oldPitch = mc.player.rotationPitch;
-
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotation);
-
-                oldslot = mc.player.inventory.currentItem;
-
-                doGlitch = true;
-
-            }
-
-            // RUBBERBAND
-
-            if (mode.getValue().equals("clip") && doGlitch) {
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
                 getPacket();
 
-                doGlitch = false;
-
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                disable();
-
-            } else if (mode.getValue().equals("jump") && doGlitch) {
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-
-                mc.player.jump();
-
-                doGlitch = false;
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                disable();
             }
+
         }
+
     }
 
     private BlockPos findHoles() {
