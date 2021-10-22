@@ -36,7 +36,6 @@ to only few people that have a little bit of brain.
 #### gs Contributors
 * TechAle (Main developer, head developer, mainteiner)
 * Doogie13 (Misc modules)
-* Sable__(hacker)
 * Mwa (Profile system and misc)
 #### gs++ Credits
 I think it's the duty of a developer saying if he took inspiration / took some piece of code from another client.
