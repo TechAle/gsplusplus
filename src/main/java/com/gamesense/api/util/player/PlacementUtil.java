@@ -9,6 +9,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.item.Item;
+import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
@@ -70,18 +71,21 @@ public class PlacementUtil {
     }
 
     public static boolean place(BlockPos blockPos, EnumHand hand, boolean rotate) {
-        return placeBlock(blockPos, hand, rotate, true, null);
+        return placeBlock(blockPos, hand, rotate, true, null, true);
     }
 
     public static boolean place(BlockPos blockPos, EnumHand hand, boolean rotate, ArrayList<EnumFacing> forceSide) {
-        return placeBlock(blockPos, hand, rotate, true, forceSide);
+        return placeBlock(blockPos, hand, rotate, true, forceSide, true);
     }
 
     public static boolean place(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction) {
-        return placeBlock(blockPos, hand, rotate, checkAction, null);
+        return placeBlock(blockPos, hand, rotate, checkAction, null, true);
+    }
+    public static boolean place(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction, boolean swingArm) {
+        return placeBlock(blockPos, hand, rotate, checkAction, null, true);
     }
 
-    public static boolean placeBlock(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction, ArrayList<EnumFacing> forceSide) {
+    public static boolean placeBlock(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction, ArrayList<EnumFacing> forceSide, boolean swingArm) {
         EntityPlayerSP player = mc.player;
         WorldClient world = mc.world;
         PlayerControllerMP playerController = mc.playerController;
@@ -126,7 +130,10 @@ public class PlacementUtil {
 
         EnumActionResult action = playerController.processRightClickBlock(player, world, neighbour, opposite, hitVec, hand);
         if (!checkAction || action == EnumActionResult.SUCCESS) {
-            player.swingArm(hand);
+            if (swingArm)
+                player.swingArm(hand);
+            else
+                player.connection.sendPacket(new CPacketAnimation(hand));
             mc.rightClickDelayTimer = 4;
         }
 
