@@ -11,6 +11,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
@@ -206,6 +207,11 @@ public class LongJump extends Module {
 
         }
     }
+
+    public String getHudInfo() {
+        return "[" + ChatFormatting.WHITE + mode.getValue() + ChatFormatting.GRAY + "]";
+    }
+
 }
 
 
