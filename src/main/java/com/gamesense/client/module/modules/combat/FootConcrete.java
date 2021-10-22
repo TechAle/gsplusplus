@@ -36,7 +36,6 @@ public class FootConcrete extends Module {
 
     BooleanSetting general = registerBoolean("General Settings", false);
 
-    BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake") && general.getValue());
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
@@ -65,9 +64,6 @@ public class FootConcrete extends Module {
     BlockPos pos;
 
     public void onEnable() {
-
-        if (smooth.getValue()) // so the server sends us to EXACTLY the same spot we clipped from (will test on footwalker)
-            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
 
         if (rotate.getValue()) {
 
