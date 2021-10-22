@@ -29,10 +29,15 @@ import net.minecraft.util.math.Vec2f;
 
 import java.util.Arrays;
 
+/**
+ * @author Doogie13
+ * */
+
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
 
     ModeSetting logic = registerMode("Place Logic", Arrays.asList("Predict", "Player"), "Predict");
+
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
