@@ -5,10 +5,13 @@
   "refmap": "mixins.gamesense.refmap.json",
   "mixins": [
     "MixinAbstractClientPlayer",
+    "MixinAbstractHorse",
     "MixinBlockLiquid",
     "MixinBlockSoulSand",
     "MixinChorus",
     "MixinEntity",
+    "MixinEntityLlama",
+    "MixinEntityPig",
     "MixinEntityPlayer",
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
@@ -32,5 +35,8 @@
     "MixinWorld",
     "accessor.AccessorCPacketAttack",
     "accessor.AccessorEntityPlayerSP"
+  ],
+  "client": [
+    "MixinElytraSound"
   ]
 }
