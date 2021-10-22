@@ -7,11 +7,11 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.network.play.client.CPacketPlayer;
 
 @Command.Declaration(name = "Damage", syntax = "damage", alias = {"damage", "dmg", "hurt", "legbreak"})
-public class DamageCommand extends Command{
+public class DamageCommand extends Command {
 
     @Override
     public void onCommand(String command, String[] message) {
-        if (mc.player != null){
+        if (mc.player != null) {
             String dmg = message[0];
             int damage = 0;
 
@@ -19,18 +19,21 @@ public class DamageCommand extends Command{
                 damage = Integer.parseInt(dmg);
                 MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Attempted to deal " + dmg + " damage to the player", true);
 
-            } catch (NumberFormatException e) {
-                MessageBus.sendCommandMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You moron, you absolute buffoon, how do you mess up entering a number into a command, you philistine!", true);
-                return;
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + damage + 2.1, mc.player.posZ, false)); // send the player up
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - damage - 2.1, mc.player.posZ, false)); // send back down to damage self
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
+
+            } catch (NumberFormatException ignored) {
+                for (int i = 0; i < 64; i++) {
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
+                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
+                }
             }
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + damage + 2.1, mc.player.posZ, false)); // send the player up
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY - damage - 2.1, mc.player.posZ, false)); // send back down to damage self
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.05, mc.player.posZ, false));
-
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true)); // set onGround to true to trigger damage
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true)); // set onGround to true to trigger damage
 
             // MINECRAFTS FALL DAMAGE CODE
          /* if (!this.world.isRemote && this.fallDistance > 3.0F && onGroundIn) {
