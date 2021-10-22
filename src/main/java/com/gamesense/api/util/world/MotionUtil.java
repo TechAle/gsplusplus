@@ -1,7 +1,9 @@
 package com.gamesense.api.util.world;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.potion.Potion;
 
 public class MotionUtil {
@@ -10,9 +12,9 @@ public class MotionUtil {
         return entity.moveForward != 0 || entity.moveStrafing != 0;
     }
 
-    public static double getMotion(double kmh) {
+    public static double getMotion(EntityPlayer entity) {
 
-        return ((kmh / 3.6) / 20);
+        return Math.abs(entity.motionX) + Math.abs(entity.motionZ);
 
     }
 

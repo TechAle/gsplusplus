@@ -150,7 +150,7 @@ public class Flight extends Module {
             tpid++;
             if (confirm.getValue())
                 mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-            doBounds();
+            doBounds(bound.getValue());
 
             /* END OF PACKET */
 
@@ -158,9 +158,9 @@ public class Flight extends Module {
 
     });
 
-    private void doBounds() {
+    public void doBounds(String mode) {
         if (bounded) {
-            switch (bound.getValue()) {
+            switch (mode) {
 
                 case "Up":
                     mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
