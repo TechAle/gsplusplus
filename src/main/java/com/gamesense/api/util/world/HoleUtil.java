@@ -2,6 +2,7 @@ package com.gamesense.api.util.world;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -11,6 +12,12 @@ import java.util.HashMap;
 public class HoleUtil {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
+
+    public static boolean isInHole(Entity e, boolean onlyOneWide, boolean ignoreDown) {
+
+        return !isHole(new BlockPos(e.getPositionVector()), onlyOneWide, ignoreDown).getType().equals(HoleType.NONE);
+
+    }
 
     public static BlockSafety isBlockSafe(Block block) {
         if (block == Blocks.BEDROCK) {
