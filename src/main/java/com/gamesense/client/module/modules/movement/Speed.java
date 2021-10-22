@@ -16,13 +16,10 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * @author Hoosiers
