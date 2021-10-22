@@ -1,27 +1,23 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
-    public int tpid = 0;
     float flyspeed;
     boolean bounded;
 
@@ -31,35 +27,13 @@ public class Flight extends Module {
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting confirm = registerBoolean("Confirm", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug ID", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    IntegerSetting packets = registerInteger("Packets", 1,1,25, () -> mode.getValue().equalsIgnoreCase("Packet"));
 
     // Other settings
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting noclip = registerBoolean("NoClip", false);
 
-    @EventHandler
-    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-
-        // Wtf, how the fuck this break the connection between you and the server
-        if (mc.world == null || mc.player == null)
-            return;
-
-        mc.player.noClip = noclip.getValue();
-
-        if (event.getPacket() instanceof SPacketPlayerPosLook) {
-
-            if (debug.getValue() && mode.getValue().equalsIgnoreCase("Packet"))
-                if (!(((SPacketPlayerPosLook) event.getPacket()).getTeleportId() == tpid)) // if our TPID is not the same as the server TPID
-                    MessageBus.sendClientPrefixMessage(String.valueOf(((SPacketPlayerPosLook) event.getPacket()).teleportId - (tpid))); // Print the difference
-
-            tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
-
-        }
-
-    });
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -146,11 +120,10 @@ public class Flight extends Module {
 
             }
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, false));
-            tpid++;
-            if (confirm.getValue())
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-            doBounds(bound.getValue());
+            for (int i = 0; i < packets.getValue(); i++) {
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, false));
+                PhaseUtil.doBounds(bound.getValue());
+            }
 
             /* END OF PACKET */
 
@@ -158,39 +131,6 @@ public class Flight extends Module {
 
     });
 
-    public void doBounds(String mode) {
-        if (bounded) {
-            switch (mode) {
-
-                case "Up":
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                case "Down":
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                case "Zero":
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-                case "Min":
-                    if (mc.player.ticksExisted % 2 == 0)
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                    else
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 101, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-                case "Alternate":
-                    if (mc.player.ticksExisted % 2 == 0)
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                    else
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                case "Forward":
-                    double[] dir = MotionUtil.forward(67);
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + 33.4, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false));
-                    break;
-            }
-            tpid++;
-
-            if (confirm.getValue())
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-        }
-    }
 
     @Override
     protected void onEnable() {
@@ -201,7 +141,6 @@ public class Flight extends Module {
 
         flyspeed = mc.player.capabilities.getFlySpeed();
 
-        tpid = 0;
     }
 
     @Override

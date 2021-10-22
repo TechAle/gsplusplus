@@ -46,43 +46,13 @@ import java.util.Arrays;
 @Module.Declaration(name = "PlayerTweaks", category = Category.Movement)
 public class PlayerTweaks extends Module {
 
+    boolean snk;
+
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
-    BooleanSetting boatFix = registerBoolean("Boat Yaw Fix", false);
-    BooleanSetting noSlowStrict = registerBoolean("Strict No Slow", false, () -> noSlow.getValue());
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PlayerMoveEvent> eventListener = new Listener<>(event -> {
-        if (mc.player.isHandActive() && !mc.player.isRiding()) {
-
-            if (noSlowStrict.getValue() && mc.player.isHandActive()) {
-                mc.player.setSneaking(true);
-            } else if (noSlowStrict.getValue())
-                mc.player.setSneaking(false);
-
-            mc.player.movementInput.moveStrafe *= 5;
-            mc.player.movementInput.moveForward *= 5;
-
-        }
-    });
-    BooleanSetting noPush = registerBoolean("No Push", false);
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<EntityCollisionEvent> entityCollisionEventListener = new Listener<>(event -> {
-        if (noPush.getValue()) {
-            event.cancel();
-        }
-    });
     BooleanSetting noPushWater = registerBoolean("No Push Liquid", false);
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<WaterPushEvent> waterPushEventListener = new Listener<>(event -> {
-        if (noPushWater.getValue()) {
-            event.cancel();
-        }
-    });
     BooleanSetting noFall = registerBoolean("No Fall", false);
     ModeSetting noFallMode = registerMode("No Fall Mode", Arrays.asList("Packet", "OldFag", "Catch"), "Packet", () -> noFall.getValue());
     ModeSetting catchM = registerMode("Catch Material", Arrays.asList("Web", "Water"), "Water", () -> noFallMode.getValue().equalsIgnoreCase("Catch"));
@@ -91,6 +61,35 @@ public class PlayerTweaks extends Module {
     BooleanSetting akbM = registerBoolean("Non 0 value", false);
     DoubleSetting veloXZ = registerDouble("XZ Multiplier", 0, -5, 5, () -> antiKnockBack.getValue() && akbM.getValue());
     DoubleSetting veloY = registerDouble("Y Multiplier", 0, -5, 5, () -> antiKnockBack.getValue() && akbM.getValue());
+    BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
+    IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40, () -> pistonPush.getValue());
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
+        if(mc.player.isHandActive() && !mc.player.isRiding())
+        {
+            mc.player.movementInput.moveForward /= 0.2f;
+            mc.player.movementInput.moveStrafe /= 0.2f;
+
+        }
+    });
+
+    BooleanSetting noPush = registerBoolean("No Push", false);
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<EntityCollisionEvent> entityCollisionEventListener = new Listener<>(event -> {
+        if (noPush.getValue()) {
+            event.cancel();
+        }
+    });
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<WaterPushEvent> waterPushEventListener = new Listener<>(event -> {
+        if (noPushWater.getValue()) {
+            event.cancel();
+        }
+    });
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
@@ -124,9 +123,6 @@ public class PlayerTweaks extends Module {
             }
         }
     });
-    BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
-    IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40,
-            () -> pistonPush.getValue());
     int ticksBef;
     @EventHandler
     private final Listener<PacketEvent.Send> packetReceiveListener = new Listener<>(event -> {
@@ -267,13 +263,12 @@ public class PlayerTweaks extends Module {
 
     public void onUpdate() {
 
-        if (mc.player.ridingEntity != null && boatFix.getValue()) {
-            mc.player.ridingEntity.rotationYaw = mc.player.rotationYaw;
-        }
-
         if (!ModuleManager.isModuleEnabled(Timer.class)){
-            if (mc.player.isInWeb && webT.getValue())
+            if (mc.player.isInWeb && !mc.player.onGround && webT.getValue()) {
                 mc.timer.tickLength = 1;
+                mc.player.moveForward = 0f;
+                mc.player.moveStrafing = 0f;
+            }
             else
                 mc.timer.tickLength = 50;
         }

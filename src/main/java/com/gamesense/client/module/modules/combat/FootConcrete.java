@@ -38,6 +38,7 @@ public class FootConcrete extends Module {
 
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
+    BooleanSetting conserve = registerBoolean("Conserve", false);
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
     BooleanSetting debugpos = registerBoolean("Debug Position", false);
@@ -56,7 +57,6 @@ public class FootConcrete extends Module {
     boolean doGlitch;
     boolean invalidHotbar;
     boolean rotation;
-    float oldPitch;
     int oldSlot;
     int targetBlockSlot;
     BlockPos burrowBlockPos;
@@ -132,7 +132,7 @@ public class FootConcrete extends Module {
 
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                    PlayerUtil.fakeJump(false);
+                    PlayerUtil.fakeJump(!conserve.getValue());
 
                     PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 

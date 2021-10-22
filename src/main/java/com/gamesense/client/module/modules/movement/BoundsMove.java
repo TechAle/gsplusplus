@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -17,7 +18,7 @@ public class BoundsMove extends Module {
         if ((mc.player.moveForward != 0 || mc.player.moveStrafing != 0)
                 && !(ModuleManager.getModule(Flight.class).isEnabled()
                 && ModuleManager.getModule(Flight.class).mode.getValue().equalsIgnoreCase("Packet"))) {
-            ModuleManager.getModule(Flight.class).doBounds(bound.getValue());
+            PhaseUtil.doBounds(bound.getValue());
         }
     }
 }
