@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.render.GSColor;
@@ -12,15 +13,12 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Module.Declaration(name = "Search", category = Category.Render)
 public class Search extends Module {
-
-    ModeSetting renderType = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
-    IntegerSetting fill = registerInteger("Fill Alpha", 128,0,255);
-    IntegerSetting outline = registerInteger("Outline Alpha", 255,0,255, () -> !renderType.getValue().equalsIgnoreCase("Fill"));
-    IntegerSetting width = registerInteger("Width", 1, 1, 10, () -> !renderType.getValue().equalsIgnoreCase("Fill"));
 
     public static Search INSTANCE;
     public static Block[] shulkCollection = new Block[]{
@@ -42,7 +40,23 @@ public class Search extends Module {
             Block.getBlockById(234)
 
     };
+    public static Block[] storage = new Block[]{
+
+            Blocks.CHEST,
+            Blocks.ENDER_CHEST,
+            Blocks.TRAPPED_CHEST,
+            Blocks.DISPENSER,
+            Blocks.HOPPER,
+            Blocks.FURNACE,
+            Blocks.LIT_FURNACE
+
+    };
     private static List<Integer> blocks = new ArrayList<>();
+    ModeSetting renderType = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
+    BooleanSetting storages = registerBoolean("Storages", false);
+    IntegerSetting fill = registerInteger("Fill Alpha", 128, 0, 255);
+    IntegerSetting outline = registerInteger("Outline Alpha", 255, 0, 255, () -> !renderType.getValue().equalsIgnoreCase("Fill"));
+    IntegerSetting width = registerInteger("Width", 1, 1, 10, () -> !renderType.getValue().equalsIgnoreCase("Fill"));
 
     public Search() {
         INSTANCE = this;
@@ -62,8 +76,7 @@ public class Search extends Module {
                 addBlock(block);
 
             return true;
-        }
-        catch (NullPointerException ignored) {
+        } catch (NullPointerException ignored) {
             return false;
         }
     }
@@ -76,8 +89,7 @@ public class Search extends Module {
                 removeBlock(block);
 
             return true;
-        }
-        catch (NullPointerException ignored) {
+        } catch (NullPointerException ignored) {
             return false;
         }
     }
@@ -125,34 +137,6 @@ public class Search extends Module {
 
     }
 
-    @Override
-    public void onWorldRender(RenderEvent event) {
-        mc.world.loadedTileEntityList.forEach(tileEntity -> {
-            if (getBlocks().contains(Block.getIdFromBlock(tileEntity.getBlockType()))) {
-
-                BlockPos blockPos = tileEntity.getPos();
-
-                switch (renderType.getValue()) {
-                    case "Outline": {
-                        RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
-                        break;
-                    }
-                    case "Fill": {
-                        RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(), false), GeometryMasks.Quad.ALL);
-                        break;
-                    }
-                    default: {
-                        RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(),false), GeometryMasks.Quad.ALL);
-                        RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
-                        break;
-                    }
-                }
-            }
-
-        });
-
-    }
-
     public static Block[] getCollection(String name) {
 
         switch (name) { // this will be more useful when more collections are added, rn its just shulkers for testing
@@ -197,6 +181,54 @@ public class Search extends Module {
         }
 
         return list.toString();
+
+    }
+
+    @Override
+    public void onWorldRender(RenderEvent event) {
+        mc.world.loadedTileEntityList.forEach(tileEntity -> {
+
+            BlockPos blockPos = tileEntity.getPos();
+
+            if (storages.getValue())
+                for (Block sus : storage)
+                    if (tileEntity.getBlockType().equals(sus))
+                        switch (renderType.getValue()) {
+                            case "Outline": {
+                                RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
+                                break;
+                            }
+                            case "Fill": {
+                                RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(), false), GeometryMasks.Quad.ALL);
+                                break;
+                            }
+                            default: {
+                                RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(), false), GeometryMasks.Quad.ALL);
+                                RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
+                                break;
+                            }
+                        }
+
+            if (getBlocks().contains(Block.getIdFromBlock(tileEntity.getBlockType()))) {
+
+                switch (renderType.getValue()) {
+                    case "Outline": {
+                        RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
+                        break;
+                    }
+                    case "Fill": {
+                        RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(), false), GeometryMasks.Quad.ALL);
+                        break;
+                    }
+                    default: {
+                        RenderUtil.drawBox(blockPos, 1, getColour(tileEntity.getBlockType(), false), GeometryMasks.Quad.ALL);
+                        RenderUtil.drawBoundingBox(blockPos, 1, width.getValue(), getColour(tileEntity.getBlockType(), true));
+                        break;
+                    }
+                }
+            }
+
+        });
 
     }
 
