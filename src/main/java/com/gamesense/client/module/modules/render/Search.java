@@ -30,7 +30,18 @@ public class Search extends Module {
             Block.getBlockById(222),
             Block.getBlockById(223),
             Block.getBlockById(224),
-            Block.getBlockById(225)};
+            Block.getBlockById(225),
+            Block.getBlockById(226),
+            Block.getBlockById(227),
+            Block.getBlockById(228),
+            Block.getBlockById(229),
+            Block.getBlockById(230),
+            Block.getBlockById(231),
+            Block.getBlockById(232),
+            Block.getBlockById(233),
+            Block.getBlockById(234)
+
+    };
     private static List<Integer> blocks = new ArrayList<>();
 
     public Search() {
