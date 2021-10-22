@@ -31,10 +31,12 @@ public class Speed extends Module {
 
     private final Timer timer = new Timer();
     public int yl;
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort"), "Strafe");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "GroundStrafe", "OnGround", "Fake", "YPort"), "Strafe");
 
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
+
+    DoubleSetting gspeed = registerDouble("Ground Speed", 2, 0, 10, () -> mode.getValue().equals("GroundStrafe"));
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -70,6 +72,29 @@ public class Speed extends Module {
 
                 if (jump.getValue())
                     event.setY(mc.player.motionY = speedY);
+
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
+                slowDown = true;
+                timer.reset();
+            } else {
+                if (slowDown || mc.player.collidedHorizontally) {
+                    playerSpeed -= (EntityUtil.isColliding(0, -0.8, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid()) ? 0.4 : 0.7 * (playerSpeed = MotionUtil.getBaseMoveSpeed());
+                    slowDown = false;
+                } else {
+                    playerSpeed -= playerSpeed / 159.0;
+                }
+            }
+            playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
+            double[] dir = MotionUtil.forward(playerSpeed);
+            event.setX(dir[0]);
+            event.setZ(dir[1]);
+
+        }
+        if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
+
+            if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
+
+                if (jump.getValue())
 
                 playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
                 slowDown = true;
@@ -150,21 +175,5 @@ public class Speed extends Module {
     public String getHudInfo() {
         return "[" + ChatFormatting.WHITE + mode.getValue() + ChatFormatting.GRAY + "]";
     }
-
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (mode.getValue().equalsIgnoreCase("OnGround")) {
-            if (i % 2 == 0 && event.getPacket() instanceof CPacketPlayer) {
-
-                i++;
-                ((CPacketPlayer) event.getPacket()).y += 0.4;
-
-            } else if (event.getPacket() instanceof CPacketPlayer)
-                i++;
-        }
-
-
-    });
 
 }
