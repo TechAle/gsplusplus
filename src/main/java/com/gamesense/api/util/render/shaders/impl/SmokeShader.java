@@ -25,4 +25,8 @@ public class SmokeShader extends FramebufferShader {
     static {
         INSTANCE = new SmokeShader();
     }
+
+    public void update(double speed) {
+        this.time += speed;
+    }
 }

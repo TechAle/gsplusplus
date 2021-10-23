@@ -25,4 +25,8 @@ public class RedShader extends FramebufferShader {
     static {
         INSTANCE = new RedShader();
     }
+
+    public void update(double speed) {
+        this.time += speed;
+    }
 }

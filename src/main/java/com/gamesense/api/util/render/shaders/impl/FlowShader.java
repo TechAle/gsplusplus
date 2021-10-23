@@ -25,4 +25,8 @@ public class FlowShader extends FramebufferShader {
     static {
         INSTANCE = new FlowShader();
     }
+
+    public void update(double speed) {
+        this.time += speed;
+    }
 }

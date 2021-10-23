@@ -10,7 +10,7 @@ import org.lwjgl.opengl.GL20;
 
 import java.awt.*;
 
-public abstract class FramebufferShader extends Shader {
+public class FramebufferShader extends Shader {
     private Framebuffer framebuffer;
     protected float red;
     protected float green;

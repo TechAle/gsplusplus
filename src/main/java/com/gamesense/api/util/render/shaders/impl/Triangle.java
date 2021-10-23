@@ -25,4 +25,8 @@ public class Triangle extends FramebufferShader {
     static {
         INSTANCE = new Triangle();
     }
+
+    public void update(double speed) {
+        this.time += speed;
+    }
 }

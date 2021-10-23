@@ -23,6 +23,7 @@ public class Shaders extends Module {
     DoubleSetting radius = registerDouble("Radius", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality", 1, 0, 5);
     ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "None"), "Astral");
+    DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
 
     public boolean renderTags = true;
     public void onWorldRender(RenderEvent event) {
@@ -43,37 +44,42 @@ public class Shaders extends Module {
         switch (fillShader.getValue()) {
             case "Astral":
                 FlowShader.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                renderTags = true;
+                renderPlayers(event.getPartialTicks());
                 FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
+                FlowShader.INSTANCE.update(speed.getValue());
                 break;
             case "Aqua":
                 AquaShader.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                renderTags = true;
+                renderPlayers(event.getPartialTicks());
                 AquaShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
+                AquaShader.INSTANCE.update(speed.getValue());
                 break;
             case "Red":
                 RedShader.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                renderTags = true;
+                renderPlayers(event.getPartialTicks());
                 RedShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
+                RedShader.INSTANCE.update(speed.getValue());
                 break;
             case "Smoke":
                 SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                renderTags = true;
+                renderPlayers(event.getPartialTicks());
                 SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
+                SmokeShader.INSTANCE.update(speed.getValue());
                 break;
             case "Triangle":
                 Triangle.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                renderTags = true;
+                renderPlayers(event.getPartialTicks());
                 Triangle.INSTANCE.stopDraw(color.getValue(), 1f, 1f);
+                Triangle.INSTANCE.update(speed.getValue());
                 break;
         }
 
         GlStateManager.popMatrix();
+    }
+
+    void renderPlayers(float tick) {
+        mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
+        renderTags = true;
     }
 
 

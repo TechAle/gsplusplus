@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class Shader {
+public class Shader {
     private int program;
     private Map<String, Integer> uniformsMap;
 
@@ -56,9 +56,13 @@ public abstract class Shader {
         GL11.glPopMatrix();
     }
 
-    public abstract void setupUniforms();
+    public void setupUniforms() {
 
-    public abstract void updateUniforms();
+    }
+
+    public void updateUniforms() {
+
+    }
 
     private int createShader(final String shaderSource, final int shaderType) {
         int shader = 0;
