@@ -4,12 +4,12 @@ import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL20;
 
-public class RainbowCube extends FramebufferShader {
+public class RainbowCubeShader extends FramebufferShader {
 
-    public static final RainbowCube INSTANCE;
+    public static final RainbowCubeShader INSTANCE;
     public float time;
 
-    public RainbowCube( ) {
+    public RainbowCubeShader( ) {
         super( "rainbowCube.frag" );
     }
 
@@ -23,7 +23,7 @@ public class RainbowCube extends FramebufferShader {
         GL20.glUniform1f( getUniform( "time" ), time );
     }
     static {
-        INSTANCE = new RainbowCube();
+        INSTANCE = new RainbowCubeShader();
     }
 
     public void update(double speed) {

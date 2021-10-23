@@ -22,7 +22,7 @@ public class Shaders extends Module {
     ColorSetting color = registerColor("Color", new GSColor(255, 255, 255));
     DoubleSetting radius = registerDouble("Radius", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality", 1, 0, 5);
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "RainbowCube", "None"), "Astral");
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "RainbowCube", "Gradient", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
 
@@ -70,16 +70,22 @@ public class Shaders extends Module {
                 SmokeShader.INSTANCE.update(speed.getValue());
                 break;
             case "Triangle":
-                Triangle.INSTANCE.startDraw(event.getPartialTicks());
+                TriangleShader.INSTANCE.startDraw(event.getPartialTicks());
                 renderPlayers(event.getPartialTicks());
-                Triangle.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                Triangle.INSTANCE.update(speed.getValue());
+                TriangleShader.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                TriangleShader.INSTANCE.update(speed.getValue());
                 break;
             case "RainbowCube":
-                RainbowCube.INSTANCE.startDraw(event.getPartialTicks());
+                RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
                 renderPlayers(event.getPartialTicks());
-                RainbowCube.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                RainbowCube.INSTANCE.update(speed.getValue());
+                RainbowCubeShader.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                RainbowCubeShader.INSTANCE.update(speed.getValue());
+                break;
+            case "Gradient":
+                GradientShader.INSTANCE.startDraw(event.getPartialTicks());
+                renderPlayers(event.getPartialTicks());
+                GradientShader.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                GradientShader.INSTANCE.update(speed.getValue());
                 break;
         }
 
