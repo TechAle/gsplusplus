@@ -19,7 +19,7 @@ public class MixinBlockSoulSand {
     public void onEntityCollidedWithBlock(World worldIn, BlockPos pos, IBlockState state, Entity entityIn, CallbackInfo callbackInfo) {
         PlayerTweaks playerTweaks = ModuleManager.getModule(PlayerTweaks.class);
 
-        if (playerTweaks.isEnabled() && playerTweaks.noSlow.getValue() && !playerTweaks.strict.getValue()) {
+        if (playerTweaks.isEnabled() && playerTweaks.noSlow.getValue()) {
             callbackInfo.cancel();
         }
     }

@@ -1,9 +1,12 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
@@ -11,7 +14,9 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
@@ -20,6 +25,7 @@ public class Flight extends Module {
 
     float flyspeed;
     boolean bounded;
+    public int tpid;
 
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
 
@@ -28,6 +34,11 @@ public class Flight extends Module {
     ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting packets = registerInteger("Packets", 1,1,25, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting allCPPP = registerBoolean("CPacketPlayer.Position",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting allCPPR = registerBoolean("CPacketPlayer.Rotation",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting allCPPPR = registerBoolean("CPacketPlayer.PositionRotation",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
     // Other settings
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
@@ -122,15 +133,40 @@ public class Flight extends Module {
 
             for (int i = 0; i < packets.getValue(); i++) {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, false));
+                tpid++;
+                if (confirm.getValue())
+                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
                 PhaseUtil.doBounds(bound.getValue());
+                tpid++;
             }
 
-            /* END OF PACKET */
+
 
         }
 
     });
 
+    @SuppressWarnings("Unused")
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+
+        if (event.getPacket() instanceof SPacketPlayerPosLook) {
+            if (confirm.getValue() && debug.getValue())
+            MessageBus.sendClientPrefixMessage(Math.abs(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId) + "");
+            tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
+        }
+
+    });
+
+    @SuppressWarnings("Unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        /* TPID HANDLING */
+
+    });
+
+    /* END OF PACKET */
 
     @Override
     protected void onEnable() {
