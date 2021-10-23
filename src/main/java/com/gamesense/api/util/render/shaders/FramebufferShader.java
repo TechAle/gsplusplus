@@ -90,5 +90,4 @@ public abstract class FramebufferShader extends Shader {
         GL20.glUseProgram( 0 );
     }
 
-    public Framebuffer getFramebuffer( ) {return framebuffer;}
 }

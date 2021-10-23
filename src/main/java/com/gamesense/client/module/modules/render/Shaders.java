@@ -44,31 +44,35 @@ public class Shaders extends Module {
             case "Astral":
                 FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                 mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
+                renderTags = true;
                 FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
                 break;
             case "Aqua":
                 AquaShader.INSTANCE.startDraw(event.getPartialTicks());
                 mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
+                renderTags = true;
                 AquaShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
                 break;
             case "Red":
                 RedShader.INSTANCE.startDraw(event.getPartialTicks());
                 mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
+                renderTags = true;
                 RedShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
                 break;
             case "Smoke":
                 SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
                 mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
+                renderTags = true;
                 SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f);
                 break;
             case "Test":
                 TestShader.INSTANCE.startDraw(event.getPartialTicks());
                 mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
+                renderTags = true;
                 TestShader.INSTANCE.stopDraw(color.getValue(), 1f, 1f);
                 break;
         }
 
-        renderTags = true;
         GlStateManager.popMatrix();
     }
 

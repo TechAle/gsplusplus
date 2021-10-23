@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.RenderEntityEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.render.NoRender;
+import com.gamesense.client.module.modules.render.Shaders;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.Render;
@@ -17,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * @author linustouchtips
@@ -81,6 +83,12 @@ public abstract class MixinRenderLivingBase<T extends EntityLivingBase> extends 
                 callbackInfo.cancel();
             }
         }
+    }
+
+    @Inject(method = "setBrightness", at = @At("HEAD"), cancellable = true)
+    public void renderHurt(T entitylivingbaseIn, float partialTicks, boolean combineTextures, CallbackInfoReturnable<Boolean> cir) {
+        if (ModuleManager.isModuleEnabled(Shaders.class))
+            cir.cancel();
     }
 
     //:troll:

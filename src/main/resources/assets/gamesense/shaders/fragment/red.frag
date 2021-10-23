@@ -62,7 +62,8 @@ void main( void ) {
     vec2 position = ( gl_FragCoord.xy / resolution.xy ) ;
     position.y+=0.2;
 
-    vec2 coord= 3.*surfacePosition;
+
+    vec2 coord= 3.*vec2(0, 0);
 
     coord+=time*0.12;
 
