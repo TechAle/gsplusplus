@@ -19,6 +19,7 @@
     "MixinItemRenderer",
     "MixinLayerArmorBase",
     "MixinLayerBipedArmor",
+    "MixinLayerHeldItem",
     "MixinMinecraft",
     "MixinMovementInputFromOptions",
     "MixinNetworkManager",

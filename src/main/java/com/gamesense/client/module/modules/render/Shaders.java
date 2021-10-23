@@ -22,11 +22,12 @@ public class Shaders extends Module {
     ColorSetting color = registerColor("Color", new GSColor(255, 255, 255));
     DoubleSetting radius = registerDouble("Radius", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality", 1, 0, 5);
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "None"), "Astral");
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "RainbowCube", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
 
-    public boolean renderTags = true;
+    public boolean renderTags = true,
+                   renderCape = true;
     public void onWorldRender(RenderEvent event) {
 
         if (mc.world == null)
@@ -35,6 +36,7 @@ public class Shaders extends Module {
 
         GlStateManager.pushMatrix();
         renderTags = false;
+        renderCape = false;
 
         if (glowESP.getValue()) {
             GlowShader.INSTANCE.startDraw(event.getPartialTicks());
@@ -73,14 +75,22 @@ public class Shaders extends Module {
                 Triangle.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
                 Triangle.INSTANCE.update(speed.getValue());
                 break;
+            case "RainbowCube":
+                RainbowCube.INSTANCE.startDraw(event.getPartialTicks());
+                renderPlayers(event.getPartialTicks());
+                RainbowCube.INSTANCE.stopDraw(color.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                RainbowCube.INSTANCE.update(speed.getValue());
+                break;
         }
+
+        renderTags = true;
+        renderCape = true;
 
         GlStateManager.popMatrix();
     }
 
     void renderPlayers(float tick) {
         mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
-        renderTags = true;
     }
 
 
