@@ -187,6 +187,11 @@ public enum ClientEventManager implements Manager {
     }
 
     @SubscribeEvent
+    public void onRender(RenderGameOverlayEvent.Pre event) {
+        GameSense.EVENT_BUS.post(event);
+    }
+
+    @SubscribeEvent
     public void onRender(RenderGameOverlayEvent.Post event) {
         if (getMinecraft().player == null || getMinecraft().world == null) return;
 
