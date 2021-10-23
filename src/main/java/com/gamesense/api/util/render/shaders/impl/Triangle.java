@@ -4,13 +4,13 @@ import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL20;
 
-public class TestShader extends FramebufferShader {
+public class Triangle extends FramebufferShader {
 
-    public static final TestShader INSTANCE;
+    public static final Triangle INSTANCE;
     public float time;
 
-    public TestShader( ) {
-        super( "test.frag" );
+    public Triangle( ) {
+        super( "triangle.frag" );
     }
 
     @Override public void setupUniforms ( ) {
@@ -23,6 +23,6 @@ public class TestShader extends FramebufferShader {
         GL20.glUniform1f( getUniform( "time" ), 1f );
     }
     static {
-        INSTANCE = new TestShader();
+        INSTANCE = new Triangle();
     }
 }

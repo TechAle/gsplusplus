@@ -4,7 +4,6 @@ precision mediump float;
 
 uniform float time;
 uniform vec2 resolution;
-varying vec2 surfacePosition;
 uniform sampler2D texture;
 
 mat2 m = mat2( 0.90,  0.110, -0.70,  1.00 );
