@@ -41,14 +41,14 @@ public class Shader {
         ARBShaderObjects.glValidateProgramARB(this.program);
     }
 
-    public void startShader() {
+    public void startShader(float duplicate) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
             this.setupUniforms();
         }
-        this.updateUniforms();
+        this.updateUniforms(duplicate);
     }
 
     public void stopShader() {
@@ -60,7 +60,7 @@ public class Shader {
 
     }
 
-    public void updateUniforms() {
+    public void updateUniforms(float duplicate) {
 
     }
 

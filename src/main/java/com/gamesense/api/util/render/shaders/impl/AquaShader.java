@@ -18,8 +18,8 @@ public class AquaShader extends FramebufferShader {
         this.setupUniform( "time" );
     }
 
-    @Override public void updateUniforms ( ) {
-        GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( ), new ScaledResolution( mc ).getScaledHeight( ) );
+    @Override public void updateUniforms (float duplicate) {
+        GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( ) / duplicate, new ScaledResolution( mc ).getScaledHeight( ) / duplicate );
         GL20.glUniform1f( getUniform( "time" ), this.time );
     }
     static {

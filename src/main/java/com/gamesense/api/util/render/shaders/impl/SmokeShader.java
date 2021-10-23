@@ -18,9 +18,9 @@ public class SmokeShader extends FramebufferShader {
         this.setupUniform( "time" );
     }
 
-    @Override public void updateUniforms ( ) {
-        GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( ), new ScaledResolution( mc ).getScaledHeight( ) );
-        GL20.glUniform1f( getUniform( "time" ), 1f );
+    @Override public void updateUniforms ( float duplicate ) {
+        GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( )/duplicate, new ScaledResolution( mc ).getScaledHeight( )/duplicate );
+        GL20.glUniform1f( getUniform( "time" ), time );
     }
     static {
         INSTANCE = new SmokeShader();

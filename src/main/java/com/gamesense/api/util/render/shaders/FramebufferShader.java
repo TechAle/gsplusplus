@@ -40,7 +40,7 @@ public class FramebufferShader extends Shader {
         mc.entityRenderer.setupCameraTransform( partialTicks, 0 );
     }
 
-    public void stopDraw(final Color color, final float radius, final float quality ) {
+    public void stopDraw(final Color color, final float radius, final float quality, float duplicate ) {
         mc.gameSettings.entityShadows = entityShadows;
         framebuffer.unbindFramebuffer( );
         GL11.glEnable( 3042 );
@@ -54,7 +54,7 @@ public class FramebufferShader extends Shader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
-        startShader( );
+        startShader(duplicate);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
         stopShader( );
