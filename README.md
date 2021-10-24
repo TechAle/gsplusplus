@@ -50,7 +50,7 @@ I think it's the duty of a developer saying if he took inspiration / took some p
 * auburnhud2 (whitespace and continuous integration, issue tracker)
 * linustouchtips (TargetHUD, SkyColor, Misc Rendering)
 * Dngerr (Blink and HotbarRefill)
-* DarkiBoi (TotemPopCounter)
+* DarkiBoi (TotemPopCounter) 
 * GL_DONT_CARE (Viewmodel Transformations)
 * NekoPvP (First commit, Item FOV)
 * TechAle (AutoAnvil, PistonCrystal, Blocker)
