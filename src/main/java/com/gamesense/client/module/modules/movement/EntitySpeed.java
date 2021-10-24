@@ -9,19 +9,16 @@ import net.minecraft.entity.EntityLivingBase;
 @Module.Declaration(name = "EntitySpeed", category = Category.Movement)
 public class EntitySpeed extends Module {
 
-    DoubleSetting speed = registerDouble("Speed", 1,0,10);
+    DoubleSetting speed = registerDouble("Speed", 1,0,3.8);
 
     @Override
     public void onUpdate() {
         if (mc.player.ridingEntity != null) {
-            if (MotionUtil.isMoving((EntityLivingBase) mc.player.ridingEntity)) {
 
-                double[] dir = MotionUtil.forward(speed.getValue());
-
+            double[] dir = MotionUtil.forward(speed.getValue());
                 mc.player.ridingEntity.motionX = dir[0];
-                mc.player.ridingEntity.motionX = dir[1];
+                mc.player.ridingEntity.motionZ = dir[1];
 
-            }
         }
     }
 }

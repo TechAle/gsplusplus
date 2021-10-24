@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "PhaseWalk", category = Category.Movement)
 public class PhaseWalk extends Module {
 
-    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward"), "Min");
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min");
     BooleanSetting clipCheck = registerBoolean("Clipped Check", false);
     BooleanSetting update = registerBoolean("Update Pos", false);
 
@@ -44,7 +44,8 @@ public class PhaseWalk extends Module {
         mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, onGround));
         PhaseUtil.doBounds(bound.getValue());
 
-        ModuleManager.getModule(Flight.class).tpid += 2;
+        if (ModuleManager.getModule(Flight.class).onlyPF.getValue())
+            ModuleManager.getModule(Flight.class).tpid += 2;
 
         if (update.getValue())
             mc.player.setPosition(x, y, z);

@@ -4,7 +4,12 @@ import com.gamesense.api.util.world.MotionUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketPlayer;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class PhaseUtil {
+
+    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward");
 
     private static Minecraft mc = Minecraft.getMinecraft();
 

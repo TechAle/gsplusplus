@@ -29,21 +29,24 @@ public class Flight extends Module {
 
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
 
-    // Packet settings
-    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward"), "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    IntegerSetting packets = registerInteger("Packets", 1,1,25, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
-    BooleanSetting allCPPP = registerBoolean("CPacketPlayer.Position",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
-    BooleanSetting allCPPR = registerBoolean("CPacketPlayer.Rotation",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
-    BooleanSetting allCPPPR = registerBoolean("CPacketPlayer.PositionRotation",false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
-    // Other settings
+    // Normal settings
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+
+    // Packet settings
+    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting wait = registerBoolean("Freeze",false,() -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    public BooleanSetting onlyPF = registerBoolean("Only Packet Fly Packets", true, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting allCPPP = registerBoolean("CPacketPlayer.Position", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
+    BooleanSetting allCPPR = registerBoolean("CPacketPlayer.Rotation", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
+    BooleanSetting allCPPPR = registerBoolean("CPacketPlayer.PositionRotation", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -51,7 +54,12 @@ public class Flight extends Module {
         if (!PlayerUtil.nullCheck())
             return;
 
-        if (mode.getValue().equalsIgnoreCase("Static")) {
+        if (mode.getValue().equalsIgnoreCase("Vanilla")) {
+
+            mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
+            mc.player.capabilities.isFlying = true;
+
+        } else if (mode.getValue().equalsIgnoreCase("Static")) {
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
                 event.setY(ySpeed.getValue());
@@ -74,15 +82,14 @@ public class Flight extends Module {
                 event.setZ(0);
 
             }
-        } else if (mode.getValue().equalsIgnoreCase("Vanilla")) {
-
-            mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
-            mc.player.capabilities.isFlying = true;
-
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
-            /* PACKET */
             event.setY(0);
+
+            if (wait.getValue()) {
+                event.setX(0);
+                event.setZ(0);
+            }
 
             double x = mc.player.posX;
             double y = mc.player.posY;
@@ -133,14 +140,14 @@ public class Flight extends Module {
 
             for (int i = 0; i < packets.getValue(); i++) {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, false));
-                tpid++;
+                if (onlyPF.getValue())
+                    tpid++;
                 if (confirm.getValue())
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
                 PhaseUtil.doBounds(bound.getValue());
-                tpid++;
+                if (onlyPF.getValue() && false /*for testing*/)
+                    tpid++;
             }
-
-
 
         }
 
@@ -152,7 +159,7 @@ public class Flight extends Module {
 
         if (event.getPacket() instanceof SPacketPlayerPosLook) {
             if (confirm.getValue() && debug.getValue())
-            MessageBus.sendClientPrefixMessage(Math.abs(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId) + "");
+                MessageBus.sendClientPrefixMessage(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "");
             tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
         }
 
@@ -163,6 +170,12 @@ public class Flight extends Module {
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
 
         /* TPID HANDLING */
+        if (!onlyPF.getValue())
+            if (event.getPacket() instanceof CPacketPlayer)
+                if ((event.getPacket() instanceof CPacketPlayer.Position && allCPPP.getValue())
+                        || (event.getPacket() instanceof CPacketPlayer.Rotation && allCPPR.getValue())
+                        || (event.getPacket() instanceof CPacketPlayer.PositionRotation && allCPPPR.getValue()))
+                    tpid++;
 
     });
 
