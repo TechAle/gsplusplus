@@ -36,7 +36,7 @@ public class Speed extends Module {
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
 
-    DoubleSetting gspeed = registerDouble("Ground Speed", 2, 0, 10, () -> mode.getValue().equals("GroundStrafe"));
+    DoubleSetting gspeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -92,25 +92,15 @@ public class Speed extends Module {
         }
         if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
 
-            if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
+            playerSpeed = gspeed.getValue();
 
-                if (jump.getValue())
+            playerSpeed *= MotionUtil.getBaseMoveSpeed() / 0.2873; // get speed
 
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
-                slowDown = true;
-                timer.reset();
-            } else {
-                if (slowDown || mc.player.collidedHorizontally) {
-                    playerSpeed -= (EntityUtil.isColliding(0, -0.8, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid()) ? 0.4 : 0.7 * (playerSpeed = MotionUtil.getBaseMoveSpeed());
-                    slowDown = false;
-                } else {
-                    playerSpeed -= playerSpeed / 159.0;
-                }
+            if (mc.player.onGround) {
+                double[] dir = MotionUtil.forward(playerSpeed);
+                event.setX(dir[0]);
+                event.setZ(dir[1]);
             }
-            playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
-            double[] dir = MotionUtil.forward(playerSpeed);
-            event.setX(dir[0]);
-            event.setZ(dir[1]);
 
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
