@@ -81,8 +81,11 @@ public abstract class MixinRenderLivingBase<T extends EntityLivingBase> extends 
         if (isClustered) {
             if (!ModuleManager.getModule(NoRender.class).getNoClusterRender()) {
                 callbackInfo.cancel();
+                return;
             }
         }
+        if (ModuleManager.isModuleEnabled(Shaders.class) && ModuleManager.getModule(NoRender.class).armor.getValue())
+            callbackInfo.cancel();
     }
 
     @Inject(method = "setBrightness", at = @At("HEAD"), cancellable = true)
