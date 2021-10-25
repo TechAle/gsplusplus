@@ -16,6 +16,7 @@
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
     "MixinFontRenderer",
+    "MixinGetCollisionBB",
     "MixinGuiBossOverlay",
     "MixinGuiPlayerTabOverlay",
     "MixinGuiScreen",

@@ -38,7 +38,7 @@ public class MixinGetCollisionBB {
                     (!mc.world.isBlockLoaded(pos, false) || pos.getY() < 0) && Avoid.INSTANCE.theVoid.getValue()) {
                 cir.cancel();
                 cir.setReturnValue(Block.FULL_BLOCK_AABB);
-            } else if (Avoid.INSTANCE.fire.getValue() && Avoid.INSTANCE.bigFire.getValue() && Avoid.INSTANCE.isEnabled()) {
+            } else if (checkBlock.equals(Blocks.FIRE) && Avoid.INSTANCE.fire.getValue() && Avoid.INSTANCE.bigFire.getValue() && Avoid.INSTANCE.isEnabled()) {
 
                 cir.cancel();
                 cir.setReturnValue(Block.FULL_BLOCK_AABB.expand(0.1,0.1,0.1));
