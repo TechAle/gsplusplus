@@ -37,7 +37,7 @@ public class MessageBus {
             return;
         }
         if (mc.player != null && mc.world != null){
-            mc.player.sendMessage(string1);
+            mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string1, 69420);
         }
     }
 
@@ -48,7 +48,7 @@ public class MessageBus {
         String watermark1 = prefix ? watermark : "";
         TextComponentString string = new TextComponentString(watermark1 + messageFormatting + message);
 
-        mc.player.sendMessage(string);
+        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, 42069);
     }
 
     /**
