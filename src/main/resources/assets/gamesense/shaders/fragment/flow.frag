@@ -6,37 +6,34 @@ uniform sampler2D texture;
 
 uniform float time;
 uniform vec2 resolution;
+/*
+uniform float red;
+uniform float green;
+uniform float blue;
+uniform float alpha;
 
+uniform int iterations;
+uniform float formuparam2;
 
-#define iterations 4
-#define formuparam2 0.89
+uniform int volsteps;
+uniform float stepsize;
 
-#define volsteps 10
-#define stepsize 0.190
-
-#define zoom 3.900
-#define tile   0.450
+uniform float zoom;
+uniform float title;
 #define speed2  0.010
 
 #define brightness 0.2
 #define darkmatter 0.400
-#define distfading 0.560
-#define saturation 0.400
-
+uniform float distfading;
+uniform float saturation;
 
 #define transverseSpeed 1.1
-#define cloud 0.2
+uniform float cloud;
+uniform int fadeBol;*/
 
 
-float triangle(float x, float a)
-{
 
-
-    float output2 = 2.0*abs(  2.0*  ( (x/a) - floor( (x/a) + 0.5) ) ) - 1.0;
-    return output2;
-}
-
-
+/*
 float field(in vec3 p) {
 
     float strength = 7. + .03 * log(1.e-6 + fract(sin(time) * 4373.11));
@@ -54,14 +51,16 @@ float field(in vec3 p) {
         prev = mag;
     }
     return max(0., 5. * accum / tw - .7);
-}
+}*/
 
 
 
 void main()
 {
-    vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
 
+    vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
+    gl_FragColor = vec4(centerCol.rgb, 0);
+    /*
     if (centerCol.a == 0.0) {
         gl_FragColor = vec4(centerCol.rgb, 0);
     } else {
@@ -151,14 +150,14 @@ void main()
         vec3 v=vec3(0.);
         float t3 = 0.0;
 
-
-        vec3 backCol2 = vec3(0.);
+        // Cambia questo
+        vec3 backCol2 = vec3(red, green, blue);
         for (int r=0; r<volsteps; r++) {
             vec3 p2=from+(s+zoffset)*dir;// + vec3(0.,0.,zoffset);
             vec3 p3=(from+(s3+zoffset)*dir)* (1.9/zoom);// + vec3(0.,0.,zoffset);
 
-            p2 = abs(vec3(tile)-mod(p2, vec3(tile*2.)));// tiling fold
-            p3 = abs(vec3(tile)-mod(p3, vec3(tile*2.)));// tiling fold
+            p2 = abs(vec3(title)-mod(p2, vec3(title*2.)));// tiling fold
+            p3 = abs(vec3(title)-mod(p3, vec3(title*2.)));// tiling fold
 
             #ifdef cloud
 
@@ -191,7 +190,9 @@ void main()
         //t3 += fade;
 
         v+=fade;
-        //backCol2 -= fade;
+
+        if (fadeBol == 1)
+            backCol2 -= fade;
 
         // fade out samples as they approach the camera
         if (r == 0)
@@ -215,7 +216,7 @@ void main()
 
 
 
-    vec4 forCol2 = vec4(v*.01, centerCol.a);
+    vec4 forCol2 = vec4(v*.01, alpha);
 
 
 
@@ -227,7 +228,7 @@ void main()
 
     backCol2.r *= 0.05;
 
-    gl_FragColor = forCol2 + vec4(backCol2, centerCol.a);
-    }
+    gl_FragColor = forCol2 + vec4(backCol2, 0.0);
+    }*/
 
 }
