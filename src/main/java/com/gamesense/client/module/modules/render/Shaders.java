@@ -12,6 +12,9 @@ import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.item.EntityEnderCrystal;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -30,6 +33,10 @@ public class Shaders extends Module {
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
     ColorSetting colorImg = registerColor("Color", new GSColor(0, 0, 0));
+    BooleanSetting items = registerBoolean("Items", false);
+    BooleanSetting mobs = registerBoolean("Mobs", false);
+    BooleanSetting players = registerBoolean("Players", false);
+    BooleanSetting crystals = registerBoolean("Crystals", false);
 
     public boolean renderTags = true,
                    renderCape = true;
@@ -46,12 +53,6 @@ public class Shaders extends Module {
             GlStateManager.pushMatrix();
             renderTags = false;
             renderCape = false;
-
-            if (glowESP.getValue()) {
-                GlowShader.INSTANCE.startDraw(event.getPartialTicks());
-                mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, event.getPartialTicks(), true));
-                GlowShader.INSTANCE.stopDraw(color.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
-            }
 
             switch (fillShader.getValue()) {
                 case "Astral":
@@ -98,6 +99,13 @@ public class Shaders extends Module {
                     break;
             }
 
+
+            if (glowESP.getValue()) {
+                GlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                renderPlayers(event.getPartialTicks());
+                GlowShader.INSTANCE.stopDraw(color.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
+            }
+
             renderTags = true;
             renderCape = true;
 
@@ -107,8 +115,23 @@ public class Shaders extends Module {
 
 
     void renderPlayers(float tick) {
-        mc.world.loadedEntityList.stream().filter(e ->
-                e != mc.player
+        mc.world.loadedEntityList.stream().filter(e -> {
+            if (e instanceof EntityPlayer) {
+                if (players.getValue())
+                    if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
+                        return true;
+            } else if (e instanceof EntityItem) {
+                if (items.getValue())
+                    return true;
+            } else if (e instanceof EntityCreature) {
+                if (mobs.getValue())
+                    return true;
+            } else if (e instanceof EntityEnderCrystal) {
+                if (crystals.getValue())
+                    return true;
+            }
+            return false;
+                }
         ).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
     }
 
