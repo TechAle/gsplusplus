@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Shader {
-    private int program;
-    private Map<String, Integer> uniformsMap;
+    protected int program;
+    protected Map<String, Integer> uniformsMap;
 
     public Shader(final String fragmentShader) {
         int vertexShaderID;

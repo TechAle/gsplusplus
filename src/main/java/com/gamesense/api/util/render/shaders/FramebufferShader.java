@@ -11,14 +11,14 @@ import org.lwjgl.opengl.GL20;
 import java.awt.*;
 
 public class FramebufferShader extends Shader {
-    private Framebuffer framebuffer;
+    protected Framebuffer framebuffer;
     protected float red;
     protected float green;
     protected float blue;
     protected float alpha;
     protected float radius;
     protected float quality;
-    private boolean entityShadows;
+    protected boolean entityShadows;
     protected Minecraft mc = Minecraft.getMinecraft();
 
     public FramebufferShader( final String fragmentShader ) {

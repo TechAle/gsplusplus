@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LayerHeldItem.class)
 public abstract class MixinLayerHeldItem {
-
+    /*
     Shaders t = null;
     @Inject(method = "doRenderLayer", at = @At("HEAD"), cancellable = true)
     public void a(EntityLivingBase entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale, CallbackInfo ci) {
@@ -34,5 +34,5 @@ public abstract class MixinLayerHeldItem {
         }
         if (!t.renderCape)
             ci.cancel();
-    }
+    }*/
 }

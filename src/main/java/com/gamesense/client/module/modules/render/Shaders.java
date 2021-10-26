@@ -29,6 +29,7 @@ public class Shaders extends Module {
     ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "RainbowCube", "Gradient", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
+    ColorSetting colorImg = registerColor("Color", new GSColor(0, 0, 0));
 
     public boolean renderTags = true,
                    renderCape = true;
@@ -62,7 +63,7 @@ public class Shaders extends Module {
                 case "Aqua":
                     AquaShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    AquaShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue());
+                    AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue());
                     AquaShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Red":
@@ -104,13 +105,11 @@ public class Shaders extends Module {
         }
     });
 
-    public void onWorldRender(RenderEvent event) {
-
-
-    }
 
     void renderPlayers(float tick) {
-        mc.world.loadedEntityList.stream().filter(e -> e instanceof EntityPlayer && e != mc.player).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
+        mc.world.loadedEntityList.stream().filter(e ->
+                e != mc.player
+        ).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
     }
 
 

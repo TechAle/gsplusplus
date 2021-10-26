@@ -84,7 +84,7 @@ public abstract class MixinRenderLivingBase<T extends EntityLivingBase> extends 
                 return;
             }
         }
-        if (ModuleManager.isModuleEnabled(Shaders.class) && ModuleManager.getModule(NoRender.class).armor.getValue())
+        if (!ModuleManager.getModule(Shaders.class).renderCape && ModuleManager.getModule(NoRender.class).armor.getValue())
             callbackInfo.cancel();
     }
 
