@@ -50,6 +50,9 @@ float fbm ( in vec2 _st) {
 
 void main() {
     vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
+if(centerCol.a == 0.0) {
+    gl_FragColor = vec4(centerCol.rgb, 0);
+} else {
     vec2 st = gl_FragCoord.xy/resolution.xy*3.;
     // st += st * abs(sin(u_time*0.1)*3.0);
     vec3 color = vec3(0.0);
@@ -76,5 +79,5 @@ void main() {
     vec3(0.666667,1,1),
     clamp(length(r.x),0.0,1.0));
 
-    gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color,centerCol.a);
+    gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color,centerCol.a);}
 }

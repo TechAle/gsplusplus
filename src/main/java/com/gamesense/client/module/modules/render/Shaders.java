@@ -29,7 +29,7 @@ public class Shaders extends Module {
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
     ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua"), true);
-    IntegerSetting red = registerInteger("Red", 10, 10, 100, () -> fillShader.getValue().equals("Astral"));
+    IntegerSetting red = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting green = registerDouble("Green", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting blue = registerDouble("Blue", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting alpha = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral"));
@@ -47,6 +47,9 @@ public class Shaders extends Module {
     BooleanSetting players = registerBoolean("Players", false);
     BooleanSetting crystals = registerBoolean("Crystals", false);
     BooleanSetting xp = registerBoolean("XP", false);
+    BooleanSetting rangeCheck = registerBoolean("Range Check", true);
+    DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
+    DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
 
     public boolean renderTags = true,
                    renderCape = true;
@@ -128,6 +131,10 @@ public class Shaders extends Module {
 
 
     void renderPlayers(float tick) {
+        boolean rangeCheck = this.rangeCheck.getValue();
+        double minRange = this.minRange.getValue() * this.minRange.getValue();
+        double maxRange = this.maxRange.getValue() * this.maxRange.getValue();
+        double distance = 0;
         mc.world.loadedEntityList.stream().filter(e -> {
             if (e instanceof EntityPlayer) {
                 if (players.getValue())
@@ -148,7 +155,14 @@ public class Shaders extends Module {
             }
             return false;
                 }
-        ).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
+        ).filter(e -> {
+            if (!rangeCheck)
+                return true;
+            else {
+                double distancePl = mc.player.getDistanceSq(e);
+                return distancePl > minRange && distancePl < maxRange;
+            }
+        }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
     }
 
 

@@ -36,6 +36,9 @@ vec3 voronoi(vec2 uv){
 
 void main( void ) {
     vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
+if(centerCol.a == 0.0) {
+    gl_FragColor = vec4(centerCol.rgb, 0);
+} else {
     vec2 uv = ( gl_FragCoord.xy/ resolution.xy );
     uv.x*=resolution.x/resolution.y;
     vec3 col = vec3(1.0);
@@ -43,6 +46,6 @@ void main( void ) {
     //float c = voronoi(uv*25.);
     vec3 cc = voronoi(uv*18.);
     col = vec3(cc);
-    gl_FragColor = vec4(col, centerCol.a );
+    gl_FragColor = vec4(col, centerCol.a );}
 
 }

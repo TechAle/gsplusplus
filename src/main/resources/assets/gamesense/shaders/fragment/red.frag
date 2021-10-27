@@ -58,6 +58,9 @@ vec3 f2(vec3 c)
 
 void main( void ) {
     vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
+if(centerCol.a == 0.0) {
+    gl_FragColor = vec4(centerCol.rgb, 0);
+} else {
     vec2 position = ( gl_FragCoord.xy / resolution.xy ) ;
     position.y+=0.2;
 
@@ -77,6 +80,6 @@ void main( void ) {
 
 
     vec3 col = vec3(0.6,0.1,0) + vec3(q*vec3(0.3,0.2,0.3));
-    gl_FragColor = vec4( f2(col), centerCol.a );
+    gl_FragColor = vec4( f2(col), centerCol.a );}
 
 }

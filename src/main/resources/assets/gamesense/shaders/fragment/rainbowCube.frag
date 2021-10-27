@@ -22,10 +22,14 @@ float wave(vec2 c, vec2 pos)
 void main( void )
 {
     vec4 centerCol = texture2D(texture, gl_TexCoord[0].xy);
+if(centerCol.a == 0.0) {
+    gl_FragColor = vec4(centerCol.rgb, 0);
+} else {
     vec2 pos = gl_FragCoord.xy;
     gl_FragColor = vec4(
     wave(R_CENTER, pos),
     wave(G_CENTER, pos),
     wave(B_CENTER, pos),
     centerCol.a);
+}
 }
