@@ -12,21 +12,26 @@ uniform vec4 color;
 uniform int iterations;
 uniform float formuparam2;
 
-#define volsteps 10
-#define stepsize 0.190
 
-#define zoom 3.900
-#define tile   0.450
+uniform int volsteps;
+uniform float stepsize;
+
+uniform float zoom;
+uniform float tile;
+
+uniform float distfading;
+uniform float saturation;
+
+#define cloud 0.2
+//uniform float cloud;
+
+
+uniform int fadeBol;
 #define speed2  0.010
+#define transverseSpeed 1.1
 
 #define brightness 0.2
 #define darkmatter 0.400
-#define distfading 0.560
-#define saturation 0.400
-
-
-#define transverseSpeed 1.1
-#define cloud 0.2
 
 
 float triangle(float x, float a)
@@ -192,7 +197,8 @@ void main()
         //t3 += fade;
 
         v+=fade;
-        //backCol2 -= fade;
+        if (fadeBol == 1)
+            backCol2 -= fade;
 
         // fade out samples as they approach the camera
         if (r == 0)

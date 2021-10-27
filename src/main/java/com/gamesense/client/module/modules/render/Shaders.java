@@ -35,6 +35,13 @@ public class Shaders extends Module {
     DoubleSetting alpha = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral"));
     IntegerSetting iterations = registerInteger("Iteration", 4, 3, 20, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting formuparam2 = registerDouble("formuparam2", 0.89, 0, 1.5, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting zoom = registerDouble("Zoom", 3.9, 0, 20, () -> fillShader.getValue().equals("Astral"));
+    IntegerSetting volumSteps = registerInteger("Volum Steps", 10, 0, 10, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting stepSize = registerDouble("Step Size", 0.190, 0.0, 0.7, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting title = registerDouble("Tile", 0.45, 0, 1.3, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting distfading = registerDouble("distfading", 0.56, 0, 1, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting saturation = registerDouble("saturation", 0.4, 0, 3, () -> fillShader.getValue().equals("Astral"));
+    BooleanSetting fade = registerBoolean("Fade", false, () -> fillShader.getValue().equals("Astral"));
     BooleanSetting items = registerBoolean("Items", false);
     BooleanSetting mobs = registerBoolean("Mobs", false);
     BooleanSetting players = registerBoolean("Players", false);
@@ -63,7 +70,8 @@ public class Shaders extends Module {
                     renderPlayers(event.getPartialTicks());
                     FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
                             red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
-                            iterations.getValue(), formuparam2.getValue().floatValue());
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
                     FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Aqua":
