@@ -8,6 +8,7 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -32,28 +33,22 @@ import java.util.List;
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
 
+    final Timer concreteTimer = new Timer();
     ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
-
     BooleanSetting general = registerBoolean("General Settings", false);
-
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("cc", "clip"), "jump");
+    IntegerSetting strength = registerInteger("Strength", 1, 1, 25, () -> general.getValue());
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
-    BooleanSetting conserve = registerBoolean("Conserve", false);
+    BooleanSetting conserve = registerBoolean("Conserve", false, () -> general.getValue());
     IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
     BooleanSetting debugpos = registerBoolean("Debug Position", false);
-
-
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
-
     BooleanSetting obby = registerBoolean("Obsidian", true, () -> blocks.getValue());
     BooleanSetting echest = registerBoolean("Ender Chest", true, () -> blocks.getValue());
     BooleanSetting rod = registerBoolean("End Rod", false, () -> blocks.getValue());
     BooleanSetting anvil = registerBoolean("Anvil", false, () -> blocks.getValue());
     BooleanSetting any = registerBoolean("Any", false, () -> blocks.getValue());
-
-
-    final Timer concreteTimer = new Timer();
     boolean doGlitch;
     boolean invalidHotbar;
     boolean rotation;
@@ -159,7 +154,7 @@ public class FootConcrete extends Module {
 
         if (mode.getValue().equalsIgnoreCase("Real")) {
 
-            if (mc.player.posY > Math.floor(pos.y) + 1) {
+            if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
                 targetBlockSlot = getBlocks();
 
@@ -215,16 +210,24 @@ public class FootConcrete extends Module {
 
     void getPacket() {
 
-        BlockPos pos = findHoles();
+        if (mode.getValue().equalsIgnoreCase("Clip")) {
+            BlockPos pos = findHoles();
 
-        try {
-            if (debugpos.getValue())
-                MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
-        } catch (Exception e) {
+            try {
+                if (debugpos.getValue())
+                    MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
+            } catch (Exception e) {
 
-            MessageBus.sendClientPrefixMessage(String.valueOf(e));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
+                MessageBus.sendClientPrefixMessage(String.valueOf(e));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
+
+            }
+        } else {
+
+            for (int i = 0; i < strength.getValue(); i++)
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random()),
+                        RotationUtil.normalizeAngle((float) Math.random()), false)); // rotations to rubberband us lmao
 
         }
     }

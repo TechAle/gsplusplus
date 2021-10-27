@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
@@ -11,6 +12,7 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import java.util.List;
 
@@ -63,8 +65,11 @@ public class HoleSnap extends Module {
         else
             speed = (Math.abs(mc.player.motionX) + Math.abs(mc.player.motionZ));
 
+        speed *= speedA.getValue();
+
         mc.player.motionX = -sin(yawRad) * speed;
         mc.player.motionZ = cos(yawRad) * speed;
+
     }
 
 

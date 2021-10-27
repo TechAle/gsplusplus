@@ -18,12 +18,11 @@ import java.util.Arrays;
 @Module.Declaration(name = "Step", category = Category.Movement)
 public class Step extends Module {
 
+    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
     BooleanSetting timer = registerBoolean("Timer", false);
     BooleanSetting stopOnSpeed = registerBoolean("Stop On Speed", true);
     BooleanSetting onGround = registerBoolean("On Ground", false);
-    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
-    ModeSetting reverse = registerMode("Reverse Mode", Arrays.asList("NCP", "Vanilla"), "Vanilla");
 
     int ticks = 0;
     boolean doIt;
@@ -115,41 +114,6 @@ public class Step extends Module {
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
             DecimalFormat df = new DecimalFormat("#");
             mc.player.stepHeight = Float.parseFloat(df.format(height.getValue()));
-        }
-
-        if (mc.player != null && mc.player.onGround && !mc.player.isInWater() && !mc.player.isOnLadder()) {
-
-            float dist = 69696969;
-
-            switch (reverse.getValue()) {
-                case "Vanilla": {
-                    for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
-                            mc.player.motionY = -10.0;
-                            break;
-                        }
-                    }
-                }
-                case "NCP": {
-
-
-                    for (double y = 0.0; y < this.height.getValue() + 1; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty())
-                            return;
-                        else
-                            dist = (float) y;
-
-                        doIt =
-                                !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -dist + 0.1, 0.0)).isEmpty();
-
-                    }
-
-                    if (dist < height.getValue() && doIt) {
-                        PlayerUtil.fall((int) (dist + 0.1));
-                    }
-
-                }
-            }
         }
 
     }

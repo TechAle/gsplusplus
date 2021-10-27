@@ -59,7 +59,7 @@ public class HoleFill extends Module {
     private boolean activedOff;
     private int obbySlot;
     boolean hasPlaced;
-    int oldslot;
+    int oldslot = 1;
 
     /*
      * Stops us from spam placing same closest position while
@@ -91,7 +91,7 @@ public class HoleFill extends Module {
     public void onDisable() {
         PlacementUtil.onDisable();
 
-        if (autoSwitch.getValue() && mc.player != null) {
+        if (autoSwitch.getValue() && mc.player != null && oldHandEnable != -1) {
             mc.player.inventory.currentItem = oldHandEnable;
         }
         recentPlacements.clear();
