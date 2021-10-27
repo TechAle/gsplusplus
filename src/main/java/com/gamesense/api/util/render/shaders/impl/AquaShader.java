@@ -23,13 +23,13 @@ public class AquaShader extends FramebufferShader {
     @Override public void setupUniforms ( ) {
         this.setupUniform( "resolution" );
         this.setupUniform( "time" );
-        this.setupUniform("rgb");
+        this.setupUniform("rgba");
     }
 
     public void updateUniforms (float duplicate, Color color) {
         GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( ) / duplicate, new ScaledResolution( mc ).getScaledHeight( ) / duplicate );
         GL20.glUniform1f( getUniform( "time" ), this.time );
-        GL20.glUniform3f(getUniform("rgb"), color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f );
+        GL20.glUniform4f(getUniform("rgba"), color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f, color.getAlpha() / 255.0f );
     }
 
     public void stopDraw(final Color color, final float radius, final float quality, float duplicate ) {

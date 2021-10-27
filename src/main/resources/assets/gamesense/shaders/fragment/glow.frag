@@ -17,15 +17,21 @@ void main() {
      } else {
 
          float alpha = 0;
+         float red = color[0];
+         float green = color[1];
+         float blue = color[2];
 
          for (float x = -radius; x < radius; x++) {
              for (float y = -radius; y < radius; y++) {
+
                  vec4 currentColor = texture2D(texture, gl_TexCoord[0].xy + vec2(texelSize.x * x, texelSize.y * y));
 
-                 if (currentColor.a != 0)
-                 alpha += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
+                 if (currentColor.a != 0) {
+                     alpha += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
+                 }
              }
          }
-         gl_FragColor = vec4(color, alpha);
+
+         gl_FragColor = vec4(red, green, blue, alpha);
      }
 }

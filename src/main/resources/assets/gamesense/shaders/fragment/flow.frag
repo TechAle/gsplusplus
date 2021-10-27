@@ -7,9 +7,10 @@ uniform sampler2D texture;
 uniform float time;
 uniform vec2 resolution;
 
+uniform vec4 color;
 
-#define iterations 4
-#define formuparam2 0.89
+uniform int iterations;
+uniform float formuparam2;
 
 #define volsteps 10
 #define stepsize 0.190
@@ -152,7 +153,7 @@ void main()
         float t3 = 0.0;
 
 
-        vec3 backCol2 = vec3(0.);
+        vec3 backCol2 = vec3(color[0], color[1], color[2]);
         for (int r=0; r<volsteps; r++) {
             vec3 p2=from+(s+zoffset)*dir;// + vec3(0.,0.,zoffset);
             vec3 p3=(from+(s3+zoffset)*dir)* (1.9/zoom);// + vec3(0.,0.,zoffset);
@@ -215,7 +216,7 @@ void main()
 
 
 
-    vec4 forCol2 = vec4(v*.01, centerCol.a);
+    vec4 forCol2 = vec4(v*.01, color[3]);
 
 
 
@@ -227,7 +228,7 @@ void main()
 
     backCol2.r *= 0.05;
 
-    gl_FragColor = forCol2 + vec4(backCol2, centerCol.a);
+    gl_FragColor = forCol2 + vec4(backCol2, 0.0);
     }
 
 }
