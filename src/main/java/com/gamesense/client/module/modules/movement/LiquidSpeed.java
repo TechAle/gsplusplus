@@ -10,6 +10,7 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
@@ -79,7 +80,9 @@ public class LiquidSpeed extends Module {
             // If water
             if (mc.player.isInWater()) {
                 // Set timer
-                EntityUtil.setTimer(timerVal.getValue().floatValue());
+                if (!ModuleManager.isModuleEnabled(TickShift.class) && timerVal.getValue() != 1) {
+                    EntityUtil.setTimer(timerVal.getValue().floatValue());
+                }
                 // Add vel
                 velX *= XZWater.getValue();
                 // We split goUp and goDown
@@ -112,7 +115,9 @@ public class LiquidSpeed extends Module {
 
             // Same as water
             if (mc.player.isInLava()) {
-                EntityUtil.setTimer(timerVal.getValue().floatValue());
+                if (!ModuleManager.isModuleEnabled(TickShift.class) && timerVal.getValue() != 1) {
+                    EntityUtil.setTimer(timerVal.getValue().floatValue());
+                }
                 velX *= XZLava.getValue();
                 velY *= isMovingUp ? YPLava.getValue() : YMLava.getValue();
                 velZ *= XZLava.getValue();
