@@ -4,6 +4,7 @@ import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.hud.TargetHUD;
 import com.gamesense.client.module.modules.hud.TargetInfo;
 import com.gamesense.client.module.modules.render.Nametags;
+import com.gamesense.client.module.modules.render.Shaders;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +21,7 @@ public abstract class MixinRenderPlayer {
         if (entity.getName().length() == 0)
             callbackInfo.cancel();
 
+
         if (ModuleManager.isModuleEnabled(Nametags.class)) {
             callbackInfo.cancel();
         }
@@ -31,5 +33,8 @@ public abstract class MixinRenderPlayer {
         if (ModuleManager.isModuleEnabled(TargetInfo.class) && TargetInfo.isRenderingEntity(entity)) {
             callbackInfo.cancel();
         }
+
+        if (!ModuleManager.getModule(Shaders.class).renderTags)
+            callbackInfo.cancel();
     }
 }

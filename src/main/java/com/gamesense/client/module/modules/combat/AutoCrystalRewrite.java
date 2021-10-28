@@ -54,6 +54,8 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.*;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
 import java.util.*;
@@ -571,6 +573,7 @@ public class AutoCrystalRewrite extends Module {
     StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
     StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
     //endregion
+    //endregion
 
     //region Global variables
 
@@ -1045,6 +1048,7 @@ public class AutoCrystalRewrite extends Module {
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
         isRotating = false;
         stopAC = false;
+        highestId = 0;
         // Lmao
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
@@ -1130,25 +1134,44 @@ public class AutoCrystalRewrite extends Module {
             Coding and reading help me dealing with all the shits are happening,
             they help me distracting myself.
          */
-        switch (logic.getValue()) {
-            case "Place->Break":
-                if (!placeCrystals() || !oneStop.getValue())
-                    breakCrystals();
-                break;
-            case "Break->Place":
-                if (!breakCrystals() || !oneStop.getValue())
+        try {
+            switch (logic.getValue()) {
+                case "Place->Break":
+                    if (!placeCrystals() || !oneStop.getValue())
+                        breakCrystals();
+                    break;
+                case "Break->Place":
+                    if (!breakCrystals() || !oneStop.getValue())
+                        placeCrystals();
+                    break;
+                case "Place":
                     placeCrystals();
-                break;
-            case "Place":
-                placeCrystals();
-                if (bestBreak.crystal != null)
-                    bestBreak = new CrystalInfo.NewBreakInfo(0, null, null, 0);
-                break;
-            case "Break":
-                breakCrystals();
-                if (bestPlace.crystal != null)
-                    bestPlace = new CrystalInfo.PlaceInfo(0, null, null, 0);
-                break;
+                    if (bestBreak.crystal != null)
+                        bestBreak = new CrystalInfo.NewBreakInfo(0, null, null, 0);
+                    break;
+                case "Break":
+                    breakCrystals();
+                    if (bestPlace.crystal != null)
+                        bestPlace = new CrystalInfo.PlaceInfo(0, null, null, 0);
+                    break;
+            }
+        }catch (Exception e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
         }
 
         // Remember this slot. This is used for preventing the bug with normal switch (shit that only gs has patched lmao)
@@ -1780,7 +1803,7 @@ public class AutoCrystalRewrite extends Module {
             if (slot == -1)
                 return false;
             // If something found and silentSwitch, change slot
-            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else if (silentSwitchWeb.getValue()) {mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));mc.playerController.updateController();}
             // If we have to switch back at the end, normal switch + set oldSlotBack to oldSlot
             else if (switchBackEnd.getValue()) {
                 oldSlotBackWeb = oldSlot;
@@ -1832,7 +1855,7 @@ public class AutoCrystalRewrite extends Module {
             if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
             // Normal switchBack
             else mc.player.inventory.currentItem = oldSlot;
-
+        mc.playerController.updateController();
         return true;
     }
 
@@ -2012,13 +2035,16 @@ public class AutoCrystalRewrite extends Module {
                         }
                         mc.player.inventory.currentItem = slotChange;
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                        mc.playerController.updateController();
                     }
 
                 }
             } else {
                 // Change to crystal
-                if (oldSlot != mc.player.inventory.currentItem)
+                if (oldSlot != mc.player.inventory.currentItem) {
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                    mc.playerController.updateController();
+                }
             }
         }
 
@@ -2088,8 +2114,10 @@ public class AutoCrystalRewrite extends Module {
 
         // For silent switch
         if (slotChange != -1) {
-            if (silentSwitch.getValue())
+            if (silentSwitch.getValue()) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                mc.playerController.updateController();
+            }
         }
 
         // For limiting place packets
@@ -3671,13 +3699,32 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void attackID(BlockPos pos, int id) {
-        Entity entity = mc.world.getEntityByID(id);
-        if (entity == null || entity instanceof EntityEnderCrystal) {
-            CPacketUseEntity attack = new CPacketUseEntity();
-            ((AccessorCPacketAttack) attack).setId(id);
-            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
-            mc.player.connection.sendPacket((Packet)attack);
-            mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
+        try {
+            Entity entity = mc.world.getEntityByID(id);
+            if (entity == null || entity instanceof EntityEnderCrystal) {
+                CPacketUseEntity attack = new CPacketUseEntity();
+                ((AccessorCPacketAttack) attack).setId(id);
+                ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                mc.player.connection.sendPacket((Packet) attack);
+                mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+            }
+        }catch(Exception e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
         }
     }
 
@@ -3788,107 +3835,123 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-        if (mc.world == null || mc.player == null)
-            return;
-        // Spawn object
-        if (event.getPacket() instanceof SPacketSpawnObject) {
-            // Get it
-            SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
-            if (entityPredict.getValue())
-                checkID(SpawnObject.getEntityID());
-            // Idk why 51
-            if (SpawnObject.getType() == 51 ) {
-                double[] positions = {
-                        SpawnObject.getX() - .5D,
-                        SpawnObject.getY() - .5D,
-                        SpawnObject.getZ() - .5D
-                };
-                // If limitPacketPlace, remove the crystal
-                if (!limitPacketPlace.getValue().equals("None"))
-                    listCrystalsPlaced.removeCrystal(positions[0], positions[1], positions[2]);
-                // If crystalPlace is not null
-                if (crystalPlace != null)
-                    // Check if it's it
-                    if (sameBlockPos(new BlockPos(positions[0], positions[1], positions[2]), crystalPlace.posCrystal)) {
-                        // If yes, remove it
-                        crystalPlace = null;
-                    }
-
-                // If we have to check for crystal seconds
-                if (showPlaceCrystalsSecond.getValue())
-                    // Check if we tried to place something
-                    if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
-                        // If yes, add
-                        crystalSecondPlace.addCrystal(null, 1000);
-
-                // firstHit thing for the break
-                switch(firstHit.getValue()) {
-                    case "Tick":
-                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
-                        break;
-                    case "Time":
-                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
-                        break;
-                }
-
-                if (predictHit.getValue()) {
-                    boolean hit = false;
-                    switch(chooseCrystal.getValue()) {
-                        case "All":
-                            hit = true;
-                            break;
-                        case "Own":
-                            if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
-                                hit = true;
-                            break;
-                        case "Smart":
-                            if ( sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
-                                hit = true;
-                            break;
-                    }
-
-                    if (hit) {
-                        CPacketUseEntity attack = new CPacketUseEntity();
-                        ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
-                        ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
-                        mc.player.connection.sendPacket((Packet)attack);
-                        mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
-
-                    }
-                }
-            }
-        }
-        else
-        if (event.getPacket() instanceof SPacketSoundEffect) {
-            // Sound predict
-            final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
-            if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
-                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
-                    if (entity instanceof EntityEnderCrystal) {
-                        // SetDead, that's just visual lol
-                        if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
-                            entity.setDead();
+        try {
+            if (mc.world == null || mc.player == null)
+                return;
+            // Spawn object
+            if (event.getPacket() instanceof SPacketSpawnObject) {
+                // Get it
+                SPacketSpawnObject SpawnObject = (SPacketSpawnObject) event.getPacket();
+                if (entityPredict.getValue())
+                    checkID(SpawnObject.getEntityID());
+                // Idk why 51
+                if (SpawnObject.getType() == 51) {
+                    double[] positions = {
+                            SpawnObject.getX() - .5D,
+                            SpawnObject.getY() - .5D,
+                            SpawnObject.getZ() - .5D
+                    };
+                    // If limitPacketPlace, remove the crystal
+                    if (!limitPacketPlace.getValue().equals("None"))
+                        listCrystalsPlaced.removeCrystal(positions[0], positions[1], positions[2]);
+                    // If crystalPlace is not null
+                    if (crystalPlace != null)
+                        // Check if it's it
+                        if (sameBlockPos(new BlockPos(positions[0], positions[1], positions[2]), crystalPlace.posCrystal)) {
+                            // If yes, remove it
+                            crystalPlace = null;
                         }
 
-                        // For not spamming of packets lol
-                        if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
-                            crystalSecondBreak.addCrystal(null, 1000);
+                    // If we have to check for crystal seconds
+                    if (showPlaceCrystalsSecond.getValue())
+                        // Check if we tried to place something
+                        if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
+                            // If yes, add
+                            crystalSecondPlace.addCrystal(null, 1000);
+
+                    // firstHit thing for the break
+                    switch (firstHit.getValue()) {
+                        case "Tick":
+                            existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
+                            break;
+                        case "Time":
+                            existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
+                            break;
+                    }
+
+                    if (predictHit.getValue()) {
+                        boolean hit = false;
+                        switch (chooseCrystal.getValue()) {
+                            case "All":
+                                hit = true;
+                                break;
+                            case "Own":
+                                if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
+                                    hit = true;
+                                break;
+                            case "Smart":
+                                if (sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
+                                    hit = true;
+                                break;
+                        }
+
+                        if (hit) {
+                            CPacketUseEntity attack = new CPacketUseEntity();
+                            ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
+                            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                            mc.player.connection.sendPacket((Packet) attack);
+                            mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+
+                        }
                     }
                 }
-                breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
-            }
-        } else if (event.getPacket() instanceof SPacketSpawnExperienceOrb) {
-            this.checkID(((SPacketSpawnExperienceOrb)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnPlayer) {
-            this.checkID(((SPacketSpawnPlayer)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnGlobalEntity) {
-            this.checkID(((SPacketSpawnGlobalEntity)event.getPacket()).getEntityId());
-        } else if (event.getPacket() instanceof SPacketSpawnPainting) {
-            this.checkID(((SPacketSpawnPainting)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnMob) {
-            this.checkID(((SPacketSpawnMob)event.getPacket()).getEntityID());
-        }
+            } else if (event.getPacket() instanceof SPacketSoundEffect) {
+                // Sound predict
+                final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
+                if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
+                    for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                        if (entity instanceof EntityEnderCrystal) {
+                            // SetDead, that's just visual lol
+                            if (setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
+                                entity.setDead();
+                            }
 
+                            // For not spamming of packets lol
+                            if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
+                                crystalSecondBreak.addCrystal(null, 1000);
+                        }
+                    }
+                    breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
+                }
+            } else if (event.getPacket() instanceof SPacketSpawnExperienceOrb) {
+                this.checkID(((SPacketSpawnExperienceOrb) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnPlayer) {
+                this.checkID(((SPacketSpawnPlayer) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnGlobalEntity) {
+                this.checkID(((SPacketSpawnGlobalEntity) event.getPacket()).getEntityId());
+            } else if (event.getPacket() instanceof SPacketSpawnPainting) {
+                this.checkID(((SPacketSpawnPainting) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnMob) {
+                this.checkID(((SPacketSpawnMob) event.getPacket()).getEntityID());
+            }
+        }catch(ConcurrentModificationException e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
+        }
 
     });
 
