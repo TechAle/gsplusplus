@@ -1,12 +1,15 @@
-package com.gamesense.client.module.modules.exploits;
+package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.ClickType;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
@@ -19,14 +22,17 @@ import java.util.List;
  * @author Hoosiers
  * @author 0b00101010
  * @author Madmegsox1
+ * @author Doogie13
  * @since 12/14/2020
  * @since 24/01/2021
  * @since 17/03/2021
+ * @since 09/09/2021
  */
 
-@Module.Declaration(name = "PacketXP", category = Category.Exploits)
+@Module.Declaration(name = "PacketXP", category = Category.Combat)
 public class PacketXP extends Module {
 
+    BooleanSetting removeArmour = registerBoolean("Remove Armour", true);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", true);
     BooleanSetting noEntityCollision = registerBoolean("No Collision", true);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", true);
@@ -43,11 +49,15 @@ public class PacketXP extends Module {
      * simplifying the logic
      */
     char toMend = 0;
+    public boolean pause;
 
     public void onUpdate() {
         if (mc.player == null || mc.world == null || mc.player.ticksExisted < 10) {
             return;
         }
+
+
+
 
         int sumOfDamage = 0;
 
@@ -57,6 +67,7 @@ public class PacketXP extends Module {
             if (itemStack.isEmpty) {
                 continue;
             }
+
 
             //this works better than my calculation for some reason, thank you ArmorHUD.java
             float damageOnArmor = (float) (itemStack.getMaxDamage() - itemStack.getItemDamage());
@@ -75,6 +86,9 @@ public class PacketXP extends Module {
         }
 
         if (toMend > 0) {
+            pause = true;
+            if (removeArmour.getValue())
+                handleArmour(mc.player);
             if (predict.getValue()) {
                 // get all the xp orbs on top of us
                 int totalXp = mc.world.loadedEntityList.stream()
@@ -89,7 +103,8 @@ public class PacketXP extends Module {
             } else {
                 mendArmor(mc.player.inventory.currentItem);
             }
-        }
+        } else
+            pause = false;
     }
 
     private void mendArmor(int oldSlot) {
@@ -142,4 +157,32 @@ public class PacketXP extends Module {
 
         return slot;
     }
+
+    void handleArmour(EntityPlayer e) {
+
+        for (int i = 5; i <= 9; i++) {
+            if (percDmg(e.inventory.getStackInSlot(i)))
+                rem(i);
+        }
+    }
+
+    boolean percDmg(ItemStack it) {
+
+        try{
+            return (it.getItemDamage() / it.getMaxDamage()) * 100 >= maxHeal.getValue();
+        } catch (ArithmeticException ignored) {
+            return true;
+        }
+
+    }
+
+    void rem(int i) {
+
+        // click on armour slot
+        mc.playerController.windowClick(0, i, 0, ClickType.PICKUP, mc.player);
+        // pick up inventory slot
+        mc.playerController.windowClick(0, i - 4, 0, ClickType.PICKUP, mc.player);
+
+    }
+
 }

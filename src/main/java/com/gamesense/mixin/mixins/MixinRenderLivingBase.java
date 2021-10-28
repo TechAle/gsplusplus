@@ -4,16 +4,21 @@ import com.gamesense.api.event.events.RenderEntityEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.render.NoRender;
+import com.gamesense.client.module.modules.render.Shaders;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EnumPlayerModelParts;
+import net.minecraft.util.text.TextFormatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * @author linustouchtips
@@ -76,7 +81,26 @@ public abstract class MixinRenderLivingBase<T extends EntityLivingBase> extends 
         if (isClustered) {
             if (!ModuleManager.getModule(NoRender.class).getNoClusterRender()) {
                 callbackInfo.cancel();
+                return;
             }
+        }
+        if (!ModuleManager.getModule(Shaders.class).renderCape && ModuleManager.getModule(NoRender.class).armor.getValue())
+            callbackInfo.cancel();
+    }
+
+    @Inject(method = "setBrightness", at = @At("HEAD"), cancellable = true)
+    public void renderHurt(T entitylivingbaseIn, float partialTicks, boolean combineTextures, CallbackInfoReturnable<Boolean> cir) {
+        if (ModuleManager.isModuleEnabled(Shaders.class))
+            cir.cancel();
+    }
+
+    //:troll:
+    @Inject(method = "applyRotations", at = @At("TAIL"))
+    protected void applyRotations(T entityLiving, float ageInTicks, float rotationYaw, float partialTicks, CallbackInfo ci) {
+        String s = TextFormatting.getTextWithoutFormattingCodes(entityLiving.getName());
+        if (("ToxicAven".equals(s) && (!(entityLiving instanceof EntityPlayer) || ((EntityPlayer) entityLiving).isWearing(EnumPlayerModelParts.CAPE)))) {
+            GlStateManager.translate(0.0F, entityLiving.height + 0.1F, 0.0F);
+            GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
         }
     }
 

@@ -1,17 +1,23 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.BossbarEvent;
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.play.client.CPacketEnchantItem;
+import net.minecraft.network.play.server.SPacketEntity;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.client.event.RenderBlockOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+
+import java.util.Arrays;
 
 @Module.Declaration(name = "NoRender", category = Category.Render)
 public class NoRender extends Module {
@@ -25,6 +31,7 @@ public class NoRender extends Module {
     public BooleanSetting noOverlay = registerBoolean("No Overlay", false);
     BooleanSetting noBossBar = registerBoolean("No Boss Bar", false);
     public BooleanSetting noWeather = registerBoolean("No Weather", false);
+    public ModeSetting weather = registerMode("Allowed Weather", Arrays.asList("Clear", "Rain", "Thunder"), "Clear");
     public BooleanSetting noCluster = registerBoolean("No Cluster", false);
     IntegerSetting maxNoClusterRender = registerInteger("No Cluster Max", 5, 1, 25);
 

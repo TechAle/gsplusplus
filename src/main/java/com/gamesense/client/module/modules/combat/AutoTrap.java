@@ -96,7 +96,7 @@ public class AutoTrap extends Module {
             return;
         }
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if ((outOfTargetBlock || targetBlockSlot == -1) && disableNoBlock.getValue()) {
             outOfTargetBlock = true;
@@ -198,7 +198,7 @@ public class AutoTrap extends Module {
     private boolean placeBlock(BlockPos pos) {
         EnumHand handSwing = EnumHand.MAIN_HAND;
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if (targetBlockSlot == -1) {
             outOfTargetBlock = true;

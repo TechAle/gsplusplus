@@ -3,6 +3,7 @@ package com.gamesense.mixin.mixins;
 import com.gamesense.api.util.render.CapeUtil;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.render.CapesModule;
+import com.gamesense.client.module.modules.render.Shaders;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ResourceLocation;
@@ -27,6 +28,12 @@ public abstract class MixinAbstractClientPlayer {
 
     @Inject(method = "getLocationCape", at = @At("HEAD"), cancellable = true)
     public void getLocationCape(CallbackInfoReturnable<ResourceLocation> callbackInfoReturnable) {
+
+        if (!ModuleManager.getModule(Shaders.class).renderCape) {
+            callbackInfoReturnable.cancel();
+            return;
+        }
+
         UUID uuid = getPlayerInfo().getGameProfile().getId();
         CapesModule capesModule = ModuleManager.getModule(CapesModule.class);
 
@@ -41,8 +48,10 @@ public abstract class MixinAbstractClientPlayer {
 
             if (capesModule.capeMode.getValue().equalsIgnoreCase("Old")) {
                 callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capeblack.png"));
-            } else {
+            } else if (capesModule.capeMode.getValue().equalsIgnoreCase("New")) {
                 callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capewhite.png"));
+            } else {
+                callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capeamber.png"));
             }
         }
     }

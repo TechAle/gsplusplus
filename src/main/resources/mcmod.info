@@ -1,13 +1,13 @@
 [
 {
-	"modid": "gamesense",
-	"name": "GameSense",
-	"description": "1.12.2 Anarchy Client.",
+	"modid": "gs++",
+	"name": "GameSense++",
+	"description": "1.12.2 Anarchy Client, Continued by Techale",
 	"version": "${version}",
 	"mcversion": "1.12.2",
 	"url": "https://discord.gg/xfgPw63",
-	"authorList": ["Go_Hoosiers", "CyberTF2", "lukflug", "auburnhud2", "Techale", "0b00101010"],
-	"credits": "https://github.com/IUDevman/gamesense-client/graphs/contributors",
+	"authorList": ["Go_Hoosiers", "CyberTF2", "lukflug", "auburnhud2", "Techale", "0b00101010", "Doogie13", "Mwa", "ToxicAven"],
+	"credits": "https://github.com/TechAle/gsplusplus/graphs/contributors",
 	"logoFile": "assets/gamesense/gamesense.png",
 	"screenshots": [],
 	"dependencies": []

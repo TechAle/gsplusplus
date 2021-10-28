@@ -1,7 +1,6 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
@@ -9,20 +8,21 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import com.gamesense.client.module.modules.misc.Trigger;
-import net.minecraft.client.Minecraft;
+import com.gamesense.client.module.modules.movement.Blink;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
-import com.gamesense.client.module.modules.movement.Blink;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Doogie13
@@ -31,53 +31,47 @@ import java.util.Arrays;
 
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
+
     ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real"));
-    BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real"));
-    BooleanSetting useTimer = registerBoolean("useTimer", true, () -> jumpMode.getValue().equals("real"));
-    DoubleSetting timerSpeed = registerDouble("timerSpeed", 20, 1, 50, () -> useTimer.getValue() && jumpMode.getValue().equals("real"));
-    BooleanSetting absoluteClipHeight = registerBoolean("absoluteClipHeight", false);
-    IntegerSetting clipHeight = registerInteger("clipHeight", -5, -25, 25);
-    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real"));
-    BooleanSetting allowEchest = registerBoolean("allowEchest", true);
-    BooleanSetting onlyEchest = registerBoolean("onlyEchest", false, () -> allowEchest.getValue());
-    BooleanSetting allowEndRod = registerBoolean("allowEndRod", true);
-    BooleanSetting onlyEndRod = registerBoolean("onlyEndRod", false, () -> allowEndRod.getValue());
-    BooleanSetting allowAnvil = registerBoolean("allowAnvil", false);
-    BooleanSetting onlyAnvil = registerBoolean("onlyAnvil", false, () -> allowAnvil.getValue());
-    BooleanSetting silentSwitch = registerBoolean("silentSwitch", true, () -> jumpMode.getValue().equals("real"));
-    BooleanSetting phase = registerBoolean("clipDown", false);
-    BooleanSetting rotate = registerBoolean("rotate", true);
 
-    boolean doGlitch;
+    BooleanSetting general = registerBoolean("General Settings", false);
 
-    boolean invalidHotbar;
+    BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake") && general.getValue());
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
+    BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
+    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
+    IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
+    BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
+    BooleanSetting debugpos = registerBoolean("Debug Position", false);
 
-    boolean rotation;
 
-    float oldPitch;
+    BooleanSetting blocks = registerBoolean("Blocks Menu", false);
 
-    int oldSlot;
+    BooleanSetting obby = registerBoolean("Obsidian", true, () -> blocks.getValue());
+    BooleanSetting echest = registerBoolean("Ender Chest", true, () -> blocks.getValue());
+    BooleanSetting rod = registerBoolean("End Rod", false, () -> blocks.getValue());
+    BooleanSetting anvil = registerBoolean("Anvil", false, () -> blocks.getValue());
+    BooleanSetting any = registerBoolean("Any", false, () -> blocks.getValue());
 
-    int targetBlockSlot;
-
-    BlockPos burrowBlockPos;
-
-    float timerSpeedVal;
-
-    int oldslot;
 
     final Timer concreteTimer = new Timer();
+    boolean doGlitch;
+    boolean invalidHotbar;
+    boolean rotation;
+    float oldPitch;
+    int oldSlot;
+    int targetBlockSlot;
+    BlockPos burrowBlockPos;
+    int oldslot;
 
     public void onEnable() {
+
+        if (smooth.getValue()) // so the server sends us to EXACTLY the same spot we clipped from (will test on footwalker)
+            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
 
         if (rotate.getValue()) {
 
             rotation = true;
-
-        } else {
-
-            rotation = ModuleManager.getModule(Trigger.class).cc;
 
         }
 
@@ -89,25 +83,9 @@ public class FootConcrete extends Module {
             ModuleManager.getModule(Blink.class).enable();
         }
 
-        timerSpeedVal = timerSpeed.getValue().floatValue();
-
-        if (useTimer.getValue()) {
-            Minecraft.getMinecraft().timer.tickLength = 50.0f / timerSpeedVal;
-        }
-
         // FIND SLOT
 
-        targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
-
-        if (targetBlockSlot == -1 || onlyEchest.getValue()) {
-            if (allowEchest.getValue())
-                targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
-        }
-
-        if (targetBlockSlot == -1 || onlyEndRod.getValue()) {
-            if (allowEndRod.getValue())
-                targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.END_ROD.getClass(), 0, 8);
-        }
+        targetBlockSlot = getBlocks();
 
         if (targetBlockSlot == -1) {
 
@@ -119,10 +97,6 @@ public class FootConcrete extends Module {
 
             if (useBlink.getValue()) {
                 ModuleManager.getModule(Blink.class).disable();
-            }
-
-            if (useTimer.getValue()) {
-                Minecraft.getMinecraft().timer.tickLength = 50;
             }
 
             disable();
@@ -138,6 +112,7 @@ public class FootConcrete extends Module {
 
                 burrowBlockPos = new BlockPos(Math.ceil(mc.player.posX) - 1, Math.ceil(mc.player.posY - 1) + 1.5, Math.ceil(mc.player.posZ) - 1);
 
+
                 if (mc.world.isOutsideBuildHeight(burrowBlockPos)) {
                     disable();
                     MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "You are trying to burrow above build limit, disabling.");
@@ -149,17 +124,7 @@ public class FootConcrete extends Module {
 
                     // CIRUU BURROW (not ashamed to admit it)
 
-                    targetBlockSlot = InventoryUtil.findObsidianSlot(false, false);
-
-                    if (targetBlockSlot == -1 || onlyEchest.getValue()) {
-                        if (allowEchest.getValue())
-                            targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
-                    }
-
-                    if (targetBlockSlot == -1 || onlyAnvil.getValue()) {
-                        if (onlyAnvil.getValue())
-                            targetBlockSlot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
-                    }
+                    targetBlockSlot = getBlocks();
 
                     oldSlot = mc.player.inventory.currentItem;
 
@@ -174,20 +139,9 @@ public class FootConcrete extends Module {
 
                     PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
-                    if (!absoluteClipHeight.getValue()) {
-
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ, true));
-
-                    } else {
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, clipHeight.getValue(), mc.player.posZ, true));
-                    }
+                    getPacket();
 
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                    if (phase.getValue()) {
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0624, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                        mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 42069, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, true));
-                    }
 
                     disable();
 
@@ -217,15 +171,7 @@ public class FootConcrete extends Module {
                     ModuleManager.getModule(Blink.class).disable();
                 }
 
-                if (!silentSwitch.getValue()) { //Silent switch check
-
-                    mc.player.inventory.currentItem = targetBlockSlot;
-
-                } else {
-
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-
-                }
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
                 oldPitch = mc.player.rotationPitch;
 
@@ -235,25 +181,15 @@ public class FootConcrete extends Module {
 
                 doGlitch = true;
 
-                //DISABLE TIMER
-
-                if (useTimer.getValue()) {
-                    Minecraft.getMinecraft().timer.tickLength = 50;
-                }
-
             }
 
             // RUBBERBAND
 
             if (mode.getValue().equals("clip") && doGlitch) {
 
-                if (!silentSwitch.getValue()) {
-                    mc.player.inventory.currentItem = oldslot;
-                } else {
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-                }
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
-                mc.player.setPosition(mc.player.posX, mc.player.posY + clipHeight.getValue(), mc.player.posZ);
+                getPacket();
 
                 doGlitch = false;
 
@@ -263,11 +199,8 @@ public class FootConcrete extends Module {
 
             } else if (mode.getValue().equals("jump") && doGlitch) {
 
-                if (!silentSwitch.getValue()) {
-                    mc.player.inventory.currentItem = oldslot;
-                } else {
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-                }
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
 
                 mc.player.jump();
 
@@ -278,5 +211,72 @@ public class FootConcrete extends Module {
                 disable();
             }
         }
+    }
+
+    private BlockPos findHoles() {
+        NonNullList<BlockPos> holes = NonNullList.create();
+
+        List<BlockPos> blockPosList = EntityUtil.getSquare(new BlockPos(mc.player.posX, range.getValue() / 2f - mc.player.posY, mc.player.posZ), new BlockPos(mc.player.posX, range.getValue() / 2f + mc.player.posY, mc.player.posZ));
+        for (BlockPos pos : blockPosList) {
+
+            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
+                holes.add(pos);
+                break;
+            }
+
+        }
+
+        if (holes.isEmpty()) {
+
+            blockPosList = EntityUtil.getHollowSphere(PlayerUtil.getPlayerPos(), range.getValue(), range.getValue(), true, 1, 2, 2);
+
+            for (BlockPos pos : blockPosList) {
+
+                if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
+                    holes.add(pos);
+                    break;
+                }
+
+            }
+
+        }
+
+
+        return holes.get(0);
+    }
+
+    void getPacket() {
+
+        BlockPos pos = findHoles();
+
+        try {
+            if (debugpos.getValue())
+                MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
+        } catch (Exception e) {
+
+            MessageBus.sendClientPrefixMessage(String.valueOf(e));
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
+
+        }
+    }
+
+    int getBlocks() {
+
+        int current = -1;
+
+        if (any.getValue() && InventoryUtil.findAnyBlockSlot(0, 8) != -1)
+            current = InventoryUtil.findAnyBlockSlot(0, 8);
+        if (anvil.getValue() && InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8) != -1)
+            current = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+        if (rod.getValue() && InventoryUtil.findFirstBlockSlot(Blocks.END_ROD.getClass(), 0, 8) != -1)
+            current = InventoryUtil.findFirstBlockSlot(Blocks.END_ROD.getClass(), 0, 8);
+        if (echest.getValue() && InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8) != -1)
+            current = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+        if (obby.getValue() && InventoryUtil.findFirstBlockSlot(Blocks.OBSIDIAN.getClass(), 0, 8) != -1)
+            current = InventoryUtil.findFirstBlockSlot(Blocks.OBSIDIAN.getClass(), 0, 8);
+
+        return current;
+
     }
 }

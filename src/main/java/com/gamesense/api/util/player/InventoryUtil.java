@@ -49,6 +49,35 @@ public class InventoryUtil {
         return slot;
     }
 
+    public static int findCrystalBlockSlot(boolean offHandActived, boolean activeBefore) {
+
+        int slot = -1;
+        List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
+
+        if (offHandActived && ModuleManager.isModuleEnabled(OffHand.class)) {
+            if (!activeBefore) {
+                OffHand.requestItems(0);
+            }
+            return 9;
+        }
+
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mainInventory.get(i);
+
+            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                continue;
+            }
+
+            Block block = ((ItemBlock) stack.getItem()).getBlock();
+            if (block.getBlockState().getBlock().blockHardness > 6) {
+                slot = i;
+                break;
+            }
+        }
+        return slot;
+
+    }
+
     public static int findSkullSlot(boolean offHandActived, boolean activeBefore) {
         int slot = -1;
         List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
@@ -132,6 +161,21 @@ public class InventoryUtil {
                 slot = i;
                 break;
             }
+        }
+        return slot;
+    }
+
+    public static int findAnyBlockSlot(int lower, int upper) {
+        int slot = -1;
+        List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
+
+        for (int i = lower; i <= upper; i++) {
+            ItemStack stack = mainInventory.get(i);
+
+            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                continue;
+            }
+            slot = i;
         }
         return slot;
     }

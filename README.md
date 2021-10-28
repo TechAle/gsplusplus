@@ -1,4 +1,4 @@
-# GS++
+# GameSense++
 <!-- PROJECT SHIELDS -->
 [![license](https://img.shields.io/badge/License-GPL_v3.0-white.svg)](https://github.com/lukflug/gamesense-client/blob/master/LICENSE)
 ![minecraft](https://img.shields.io/badge/Minecraft-1.12.2-blue.svg)
@@ -6,12 +6,12 @@
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
-* [Information](#Information)
-    * [About](#About)
-    * [Questions](#Questions)
-* [gs++ Contributors](#gs Contributors)
-* [GameSense Contributors](#GameSense Contributors)
-* [GameSense Credits](#GameSense Credits)
+
+* [About](#about)
+* [Questions](#questions)
+* [gs++ Contributors](#gs-contributors)
+* [GameSense Contributors](#gamesense-contributors)
+* [GameSense Credits](#gamesense-credits)
 
 
 <!-- INFORMATION -->
@@ -36,7 +36,7 @@ to only few people that have a little bit of brain.
 #### gs Contributors
 * TechAle (Main developer, head developer, mainteiner)
 * Doogie13 (Misc modules)
-
+* Sable__(hacker)
 #### gs++ Credits
 I think it's the duty of a developer saying if he took inspiration / took some piece of code from another client.
 * How customchat is implemented for overriding  minecraft's chat (https://www.curseforge.com/minecraft/mc-mods/better-chat)

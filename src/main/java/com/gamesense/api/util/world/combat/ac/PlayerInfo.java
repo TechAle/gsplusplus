@@ -22,13 +22,18 @@ public class PlayerInfo {
     public final boolean lowArmour;
 
     public PlayerInfo(EntityPlayer entity, float armorPercent) {
+        int enchantModifier1;
         this.entity = entity;
 
         this.totalArmourValue = entity.getTotalArmorValue();
         this.armourToughness = (float) entity.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue();
         this.health = entity.getHealth() + entity.getAbsorptionAmount();
-        this.enchantModifier = EnchantmentHelper.getEnchantmentModifierDamage(entity.getArmorInventoryList(), EXPLOSION_SOURCE);
-
+        try {
+            enchantModifier1 = EnchantmentHelper.getEnchantmentModifierDamage(entity.getArmorInventoryList(), EXPLOSION_SOURCE);
+        }catch (NullPointerException e) {
+            enchantModifier1 = 0;
+        }
+        this.enchantModifier = enchantModifier1;
         this.hasResistance = entity.isPotionActive(RESISTANCE);
 
         boolean i = false;
@@ -61,27 +66,20 @@ public class PlayerInfo {
         this.lowArmour = i;
     }
 
-    public PlayerInfo(EntityPlayer entity, boolean lowArmour) {
-        this.entity = entity;
-
-        this.totalArmourValue = entity.getTotalArmorValue();
-        this.armourToughness = (float) entity.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue();
-        this.health = entity.getHealth() + entity.getAbsorptionAmount();
-        this.enchantModifier = EnchantmentHelper.getEnchantmentModifierDamage(entity.getArmorInventoryList(), EXPLOSION_SOURCE);
-
-        this.hasResistance = entity.isPotionActive(RESISTANCE);
-
-        this.lowArmour = lowArmour;
-    }
-
     public PlayerInfo(EntityPlayer entity, boolean lowArmour, float totalArmourValue, float armourToughness) {
+        int enchantModifier1;
         this.entity = entity;
 
         this.totalArmourValue = totalArmourValue;
         this.armourToughness = armourToughness;
         this.health = entity.getHealth() + entity.getAbsorptionAmount();
-        this.enchantModifier = EnchantmentHelper.getEnchantmentModifierDamage(entity.getArmorInventoryList(), EXPLOSION_SOURCE);
+        try {
+            enchantModifier1 = EnchantmentHelper.getEnchantmentModifierDamage(entity.getArmorInventoryList(), EXPLOSION_SOURCE);
+        }catch (NullPointerException e) {
+            enchantModifier1 = 0;
+        }
 
+        this.enchantModifier = enchantModifier1;
         this.hasResistance = entity.isPotionActive(RESISTANCE);
 
         this.lowArmour = lowArmour;

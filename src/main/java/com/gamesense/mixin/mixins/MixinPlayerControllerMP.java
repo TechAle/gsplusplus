@@ -1,5 +1,6 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.event.events.BlockResetEvent;
 import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.DestroyBlockEvent;
 import com.gamesense.api.event.events.ReachDistanceEvent;
@@ -26,6 +27,15 @@ public abstract class MixinPlayerControllerMP {
 
     @Shadow
     public abstract void syncCurrentPlayItem();
+
+    @Inject(method = "resetBlockRemoving", at = @At("HEAD"), cancellable = true)
+    private void resetBlockWrapper(CallbackInfo callbackInfo) {
+        BlockResetEvent uwu = new BlockResetEvent();
+        GameSense.EVENT_BUS.post(uwu);
+        if (uwu.isCancelled()) {
+            callbackInfo.cancel();
+        }
+    }
 
     @Inject(method = "onPlayerDestroyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playEvent(ILnet/minecraft/util/math/BlockPos;I)V"), cancellable = true)
     private void onPlayerDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {

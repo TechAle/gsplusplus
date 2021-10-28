@@ -39,14 +39,14 @@ public class MixinWorld {
     }
     @Inject(method = "getThunderStrength", at = @At("HEAD"), cancellable = true)
     private void getThunderStrengthHead(float delta, CallbackInfoReturnable<Float> cir) {
-        if (ModuleManager.getModule(NoRender.class).noWeather.getValue()) {
+        if (ModuleManager.getModule(NoRender.class).noWeather.getValue() && !ModuleManager.getModule(NoRender.class).weather.getValue().equals("Thunder")) {
             cir.setReturnValue(0.0f);
         }
     }
 
     @Inject(method = "getRainStrength", at = @At("HEAD"), cancellable = true)
     private void getRainStrengthHead(float delta, CallbackInfoReturnable<Float> cir) {
-        if (ModuleManager.getModule(NoRender.class).noWeather.getValue()) {
+        if (ModuleManager.getModule(NoRender.class).noWeather.getValue() && ModuleManager.getModule(NoRender.class).weather.getValue().equals("Clear")) {
             cir.setReturnValue(0.0f);
         }
     }
