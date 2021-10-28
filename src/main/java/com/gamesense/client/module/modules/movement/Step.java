@@ -3,8 +3,6 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -18,12 +16,10 @@ import java.util.Arrays;
 @Module.Declaration(name = "Step", category = Category.Movement)
 public class Step extends Module {
 
+    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
-    BooleanSetting timer = registerBoolean("Timer", false);
     BooleanSetting stopOnSpeed = registerBoolean("Stop On Speed", true);
     BooleanSetting onGround = registerBoolean("On Ground", false);
-    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
-    ModeSetting reverse = registerMode("Reverse Mode", Arrays.asList("NCP", "Vanilla"), "Vanilla");
 
     int ticks = 0;
     boolean doIt;
@@ -37,17 +33,10 @@ public class Step extends Module {
             return;
         }
 
-        if ( stopOnSpeed.getValue() && ModuleManager.isModuleEnabled(Speed.class))
+        if (stopOnSpeed.getValue() && ModuleManager.isModuleEnabled(Speed.class))
             return;
 
         if (mode.getValue().equalsIgnoreCase("NCP")) {
-            if (timer.getValue()) {
-                if (this.ticks == 0) {
-                    EntityUtil.resetTimer();
-                } else {
-                    this.ticks--;
-                }
-            }
             double[] dir = MotionUtil.forward(0.1);
             boolean twofive = false;
             boolean two = false;
@@ -65,15 +54,13 @@ public class Step extends Module {
             if (mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(dir[0], 1.0, dir[1])).isEmpty() && !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(dir[0], 0.6, dir[1])).isEmpty()) {
                 one = true;
             }
-            if (mc.player.collidedHorizontally && (mc.player.moveForward != 0.0f || mc.player.moveStrafing != 0.0f) && ( !onGround.getValue() || mc.player.onGround)) {
+            if (mc.player.collidedHorizontally && (mc.player.moveForward != 0.0f || mc.player.moveStrafing != 0.0f) && (!onGround.getValue() || mc.player.onGround)) {
                 if (one && this.height.getValue() >= 1.0) {
                     final double[] oneOffset = {0.42, 0.753};
                     for (int i = 0; i < oneOffset.length; i++) {
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + oneOffset[i], mc.player.posZ, mc.player.onGround));
                     }
-                    if (timer.getValue()) {
-                        EntityUtil.setTimer(0.6f);
-                    }
+
                     mc.player.setPosition(mc.player.posX, mc.player.posY + 1.0, mc.player.posZ);
                     this.ticks = 1;
                 }
@@ -82,9 +69,7 @@ public class Step extends Module {
                     for (int i = 0; i < oneFiveOffset.length; i++) {
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + oneFiveOffset[i], mc.player.posZ, mc.player.onGround));
                     }
-                    if (timer.getValue()) {
-                        EntityUtil.setTimer(0.35f);
-                    }
+
                     mc.player.setPosition(mc.player.posX, mc.player.posY + 1.5, mc.player.posZ);
                     this.ticks = 1;
                 }
@@ -93,9 +78,7 @@ public class Step extends Module {
                     for (int i = 0; i < twoOffset.length; i++) {
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + twoOffset[i], mc.player.posZ, mc.player.onGround));
                     }
-                    if (timer.getValue()) {
-                        EntityUtil.setTimer(0.25f);
-                    }
+
                     mc.player.setPosition(mc.player.posX, mc.player.posY + 2.0, mc.player.posZ);
                     this.ticks = 2;
                 }
@@ -104,52 +87,14 @@ public class Step extends Module {
                     for (int i = 0; i < twoFiveOffset.length; i++) {
                         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + twoFiveOffset[i], mc.player.posZ, mc.player.onGround));
                     }
-                    if (timer.getValue()) {
-                        EntityUtil.setTimer(0.15f);
-                    }
-                    mc.player.setPosition(mc.player.posX, mc.player.posY + 2.5, mc.player.posZ);
-                    this.ticks = 2;
                 }
+                mc.player.setPosition(mc.player.posX, mc.player.posY + 2.5, mc.player.posZ);
+                this.ticks = 2;
             }
         }
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
             DecimalFormat df = new DecimalFormat("#");
             mc.player.stepHeight = Float.parseFloat(df.format(height.getValue()));
-        }
-
-        if (mc.player != null && mc.player.onGround && !mc.player.isInWater() && !mc.player.isOnLadder()) {
-
-            float dist = 69696969;
-
-            switch (reverse.getValue()) {
-                case "Vanilla": {
-                    for (double y = 0.0; y < this.height.getValue() + 0.5; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty()) {
-                            mc.player.motionY = -10.0;
-                            break;
-                        }
-                    }
-                }
-                case "NCP": {
-
-
-                    for (double y = 0.0; y < this.height.getValue() + 1; y += 0.01) {
-                        if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -y, 0.0)).isEmpty())
-                            return;
-                        else
-                            dist = (float) y;
-
-                        doIt =
-                                !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, -dist + 0.1, 0.0)).isEmpty();
-
-                    }
-
-                    if (dist < height.getValue() && doIt) {
-                        PlayerUtil.fall((int) (dist + 0.1));
-                    }
-
-                }
-            }
         }
 
     }
