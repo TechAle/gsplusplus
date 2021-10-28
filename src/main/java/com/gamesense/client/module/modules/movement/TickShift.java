@@ -1,8 +1,11 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.setting.values.StringSetting;
+import com.gamesense.api.util.misc.KeyBoardClass;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -11,12 +14,14 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketPlayer;
+import org.lwjgl.input.Keyboard;
 
 @Module.Declaration(name = "TickShift", category = Category.Movement)
 public class TickShift extends Module {
 
     IntegerSetting limit = registerInteger("Limit", 16,1,50);
     DoubleSetting timer = registerDouble("Timer", 2,1,5);
+    StringSetting onClick = registerString("On Click", "");
 
     int ticks;
 
@@ -37,8 +42,17 @@ public class TickShift extends Module {
         if (isMoving()) { // garunteed movement packet
 
             if (ticks > 0) {
-                mc.timer.tickLength = 50 / timer.getValue().floatValue();
-                ticks--;
+
+                String bind = onClick.getText();
+
+                if (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0)))) {
+                    mc.timer.tickLength = 50 / timer.getValue().floatValue();
+                    ticks--;
+                } else {
+                    mc.timer.tickLength = 50;
+                    if (ticks < limit.getValue())
+                        ticks++;
+                }
             }
 
         } else {
