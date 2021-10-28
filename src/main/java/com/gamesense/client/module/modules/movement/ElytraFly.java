@@ -6,14 +6,18 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.entity.Entity;
 import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.math.Vec2f;
 
 import java.util.Arrays;
 
@@ -28,6 +32,8 @@ public class ElytraFly extends Module {
     DoubleSetting ySpeed = registerDouble("Y Speed", 0, 1, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, 0, 3, () -> mode.getValue().equalsIgnoreCase("Control"));
     BooleanSetting yawLock = registerBoolean("Yaw Lock", false, () -> mode.getValue().equalsIgnoreCase("Control"));
+    BooleanSetting pursue = registerBoolean("Pursue", false, () -> mode.getValue().equalsIgnoreCase("Control") && upMode.getValue().equalsIgnoreCase("Jump"));
+    BooleanSetting build = registerBoolean("Build Height", false, () -> pursue.getValue() && pursue.isVisible());
 
     boolean setAng,
             shouldEflyPacket;
@@ -100,8 +106,38 @@ public class ElytraFly extends Module {
 
                     } else {
 
-                        event.setX(0);
-                        event.setZ(0);
+                        if (!pursue.getValue()) {
+
+                            event.setX(0);
+                            event.setZ(0);
+
+                        } else {
+
+                            if (mc.player.posY > 256 || !build.getValue()) {
+                                Entity target = PlayerUtil.findClosestTarget(696969, null);
+
+                                if (target != null) {
+                                    Vec2f rot = RotationUtil.getRotationTo(target.getPositionVector());
+
+                                    double[] dir = MotionUtil.forward(Math.min(speed.getValue(), mc.player.getDistance(target)), rot.x);
+
+                                    mc.player.setVelocity(dir[0], mc.player.motionY, dir[1]);
+
+                                    if (mc.player.posY > target.posY)
+                                        event.setY(-ySpeed.getValue());
+                                    else if (mc.player.posY < target.posY)
+                                        event.setY(ySpeed.getValue());
+                                    else
+                                        event.setY(0);
+                                } else {
+
+                                    event.setX(0);
+                                    event.setZ(0);
+
+                                }
+                            }
+
+                        }
 
                     }
 

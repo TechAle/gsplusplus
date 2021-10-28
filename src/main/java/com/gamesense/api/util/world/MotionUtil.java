@@ -58,16 +58,8 @@ public class MotionUtil {
     }
 
     public static double[] forward(final double speed, float yaw) {
-        float forward = Minecraft.getMinecraft().player.movementInput.moveForward;
+        float forward = 1;
         float side = 0;
-        if (forward != 0.0f) {
-            side = 0.0f;
-            if (forward > 0.0f) {
-                forward = 1.0f;
-            } else if (forward < 0.0f) {
-                forward = -1.0f;
-            }
-        }
         final double sin = Math.sin(Math.toRadians(yaw + 90.0f));
         final double cos = Math.cos(Math.toRadians(yaw + 90.0f));
         final double posX = forward * speed * cos + side * speed * sin;

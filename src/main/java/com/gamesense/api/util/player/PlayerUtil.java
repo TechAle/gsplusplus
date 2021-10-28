@@ -51,6 +51,31 @@ public class PlayerUtil {
         return closestTarget;
     }
 
+    public static EntityPlayer findClosestTarget(double rangeMax, EntityPlayer aimTarget, boolean moving) {
+        rangeMax *= rangeMax;
+        List<EntityPlayer> playerList = mc.world.playerEntities;
+
+        EntityPlayer closestTarget = null;
+
+        for (EntityPlayer entityPlayer : playerList) {
+
+            if (EntityUtil.basicChecksEntity(entityPlayer))
+                continue;
+
+            if (entityPlayer.motionX + mc.player.motionZ == 0 && moving)
+                continue;
+
+            if (aimTarget == null && mc.player.getDistanceSq(entityPlayer) <= rangeMax) {
+                closestTarget = entityPlayer;
+                continue;
+            }
+            if (aimTarget != null && mc.player.getDistanceSq(entityPlayer) <= rangeMax && mc.player.getDistanceSq(entityPlayer) < mc.player.getDistanceSq(aimTarget)) {
+                closestTarget = entityPlayer;
+            }
+        }
+        return closestTarget;
+    }
+
     // 0b00101010: replaced getDistance with getDistanceSq as speeds up calculation
     public static EntityPlayer findClosestTarget() {
         List<EntityPlayer> playerList = mc.world.playerEntities;
