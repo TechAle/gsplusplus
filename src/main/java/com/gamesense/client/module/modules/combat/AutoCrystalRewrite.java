@@ -1803,7 +1803,7 @@ public class AutoCrystalRewrite extends Module {
             if (slot == -1)
                 return false;
             // If something found and silentSwitch, change slot
-            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else if (silentSwitchWeb.getValue()) {mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));mc.playerController.updateController();}
             // If we have to switch back at the end, normal switch + set oldSlotBack to oldSlot
             else if (switchBackEnd.getValue()) {
                 oldSlotBackWeb = oldSlot;
@@ -1855,7 +1855,7 @@ public class AutoCrystalRewrite extends Module {
             if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
             // Normal switchBack
             else mc.player.inventory.currentItem = oldSlot;
-
+        mc.playerController.updateController();
         return true;
     }
 
@@ -2035,13 +2035,16 @@ public class AutoCrystalRewrite extends Module {
                         }
                         mc.player.inventory.currentItem = slotChange;
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                        mc.playerController.updateController();
                     }
 
                 }
             } else {
                 // Change to crystal
-                if (oldSlot != mc.player.inventory.currentItem)
+                if (oldSlot != mc.player.inventory.currentItem) {
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                    mc.playerController.updateController();
+                }
             }
         }
 
@@ -2111,8 +2114,10 @@ public class AutoCrystalRewrite extends Module {
 
         // For silent switch
         if (slotChange != -1) {
-            if (silentSwitch.getValue())
+            if (silentSwitch.getValue()) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                mc.playerController.updateController();
+            }
         }
 
         // For limiting place packets
