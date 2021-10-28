@@ -66,7 +66,7 @@ public class TickShift extends Module {
 
     boolean isMoving() {
 
-        return MotionUtil.getMotion(mc.player) + Math.abs(mc.player.motionY) != 0;
+        return MotionUtil.getMotion(mc.player) + Math.abs(mc.player.posY - mc.player.prevPosY) != 0;
 
     }
 
