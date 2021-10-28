@@ -5,14 +5,18 @@
   "refmap": "mixins.gamesense.refmap.json",
   "mixins": [
     "MixinAbstractClientPlayer",
+    "MixinAbstractHorse",
     "MixinBlockLiquid",
     "MixinBlockSoulSand",
     "MixinChorus",
     "MixinEntity",
+    "MixinEntityLlama",
+    "MixinEntityPig",
     "MixinEntityPlayer",
     "MixinEntityPlayerSP",
     "MixinEntityRenderer",
     "MixinFontRenderer",
+    "MixinGetCollisionBB",
     "MixinGuiBossOverlay",
     "MixinGuiPlayerTabOverlay",
     "MixinGuiScreen",
@@ -25,7 +29,6 @@
     "MixinNetworkManager",
     "MixinPlayerControllerMP",
     "MixinPlayerOverlay",
-    "MixinRender",
     "MixinRenderGlobal",
     "MixinRenderItem",
     "MixinRenderLivingBase",
@@ -33,8 +36,10 @@
     "MixinRenderPlayer",
     "MixinWorld",
     "accessor.AccessorCPacketAttack",
-    "accessor.AccessorEntityPlayerSP",
-    "accessor.IRenderGlobal",
-    "accessor.IShaderGroup"
+    "accessor.AccessorEntityPlayerSP"
+  ],
+  "client": [
+    "MixinElytraSound",
+    "MixinRender"
   ]
 }

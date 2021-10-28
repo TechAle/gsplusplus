@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
@@ -11,6 +12,8 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.block.BlockObsidian;
@@ -39,18 +42,19 @@ public class AntiVoid extends Module {
 
     boolean chor;
 
-    @Override
-    public void onUpdate() {
-        if (!mc.player.noClip /*to account for packetfly*/ && mc.player.posY < height.getValue() && mode.getValue().equalsIgnoreCase("Freeze") && mc.world.getBlockState(new BlockPos(mc.player.posX, 0, mc.player.posZ)).getMaterial().isReplaceable()) {
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+        if (mc.player.posY < height.getValue() + 0.1 && mode.getValue().equalsIgnoreCase("Freeze") && mc.world.getBlockState(new BlockPos(mc.player.posX, 0, mc.player.posZ)).getMaterial().isReplaceable()) {
 
             switch (mode.getValue()) {
                 case "Freeze": {
                     int newSlot;
 
-                    mc.player.setVelocity(0.0D, 0.0D, 0.0D);
+                    mc.player.posY = height.getValue();
+                    event.setY(0);
 
                     if (mc.player.getRidingEntity() != null)
-                        mc.player.getRidingEntity().setVelocity(0.0D, 0.0D, 0.0D);
+                        mc.player.ridingEntity.setVelocity(0.0D, 0.0D, 0.0D);
 
                     if (chorus.getValue()) {
                         // Courtesy of KAMI, this item finding algo
@@ -85,7 +89,7 @@ public class AntiVoid extends Module {
 
                             if (mc.player.canEat(true)) {
 
-                                mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+                                mc.player.setActiveHand(EnumHand.MAIN_HAND);
 
                             }
 
@@ -155,6 +159,6 @@ public class AntiVoid extends Module {
                 }
             }
         }
-    }
+    });
 }
 

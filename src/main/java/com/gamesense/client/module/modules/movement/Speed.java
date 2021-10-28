@@ -16,13 +16,10 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * @author Hoosiers
@@ -34,10 +31,12 @@ public class Speed extends Module {
 
     private final Timer timer = new Timer();
     public int yl;
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "OnGround", "Fake", "YPort"), "Strafe");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "GroundStrafe", "OnGround", "Fake", "YPort"), "Strafe");
 
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
+
+    DoubleSetting gspeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -89,6 +88,19 @@ public class Speed extends Module {
             double[] dir = MotionUtil.forward(playerSpeed);
             event.setX(dir[0]);
             event.setZ(dir[1]);
+
+        }
+        if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
+
+            playerSpeed = gspeed.getValue();
+
+            playerSpeed *= MotionUtil.getBaseMoveSpeed() / 0.2873; // get speed
+
+            if (mc.player.onGround) {
+                double[] dir = MotionUtil.forward(playerSpeed);
+                event.setX(dir[0]);
+                event.setZ(dir[1]);
+            }
 
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
@@ -153,21 +165,5 @@ public class Speed extends Module {
     public String getHudInfo() {
         return "[" + ChatFormatting.WHITE + mode.getValue() + ChatFormatting.GRAY + "]";
     }
-
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (mode.getValue().equalsIgnoreCase("OnGround")) {
-            if (i % 2 == 0 && event.getPacket() instanceof CPacketPlayer) {
-
-                i++;
-                ((CPacketPlayer) event.getPacket()).y += 0.4;
-
-            } else if (event.getPacket() instanceof CPacketPlayer)
-                i++;
-        }
-
-
-    });
 
 }

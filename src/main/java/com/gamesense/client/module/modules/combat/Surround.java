@@ -114,7 +114,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (!(y == Math.floor(mc.player.posY)) && !(mc.player.isInWeb)) {
+        if (!(y == mc.player.posY && !(mc.player.isInWeb))) {
             switch (jumpMode.getValue()) {
                 case "Pause": {
                     return;

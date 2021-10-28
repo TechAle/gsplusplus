@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -15,6 +16,7 @@ public class Sprint extends Module {
 
         if (player != null) {
             player.setSprinting(shouldSprint(player));
+
         }
     }
 

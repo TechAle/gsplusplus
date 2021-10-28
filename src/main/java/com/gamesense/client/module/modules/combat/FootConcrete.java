@@ -8,6 +8,7 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -32,42 +33,32 @@ import java.util.List;
 @Module.Declaration(name = "FootConcrete", category = Category.Combat)
 public class FootConcrete extends Module {
 
+    final Timer concreteTimer = new Timer();
     ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
-
     BooleanSetting general = registerBoolean("General Settings", false);
-
-    BooleanSetting smooth = registerBoolean("Smoothen", false, () -> jumpMode.getValue().equals("fake") && general.getValue());
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("jump", "clip"), "jump", () -> jumpMode.getValue().equals("real") && general.getValue());
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("flat", "clip", "basic"), "jump");
+    IntegerSetting strength = registerInteger("Strength", 1, 0, 25, () -> general.getValue() && !mode.getValue().equalsIgnoreCase("clip"));
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
-    IntegerSetting placeDelay = registerInteger("placeDelay", 160, 0, 250, () -> jumpMode.getValue().equals("real") && general.getValue());
-    IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
+    BooleanSetting conserve = registerBoolean("Conserve", false, () -> general.getValue());
+    IntegerSetting range = registerInteger("clipRange", 50, 1, 99, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
     BooleanSetting debugpos = registerBoolean("Debug Position", false);
-
-
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
-
     BooleanSetting obby = registerBoolean("Obsidian", true, () -> blocks.getValue());
     BooleanSetting echest = registerBoolean("Ender Chest", true, () -> blocks.getValue());
     BooleanSetting rod = registerBoolean("End Rod", false, () -> blocks.getValue());
     BooleanSetting anvil = registerBoolean("Anvil", false, () -> blocks.getValue());
     BooleanSetting any = registerBoolean("Any", false, () -> blocks.getValue());
-
-
-    final Timer concreteTimer = new Timer();
     boolean doGlitch;
     boolean invalidHotbar;
     boolean rotation;
-    float oldPitch;
     int oldSlot;
     int targetBlockSlot;
     BlockPos burrowBlockPos;
     int oldslot;
+    BlockPos pos;
 
     public void onEnable() {
-
-        if (smooth.getValue()) // so the server sends us to EXACTLY the same spot we clipped from (will test on footwalker)
-            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, mc.player.onGround));
 
         if (rotate.getValue()) {
 
@@ -120,6 +111,7 @@ public class FootConcrete extends Module {
 
                 if (jumpMode.getValue().equals("real")) {
                     mc.player.jump();
+                    pos = new BlockPos(mc.player.getPositionVector());
                 } else {
 
                     // CIRUU BURROW (not ashamed to admit it)
@@ -135,7 +127,7 @@ public class FootConcrete extends Module {
 
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                    PlayerUtil.fakeJump();
+                    PlayerUtil.fakeJump(!conserve.getValue());
 
                     PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
@@ -160,57 +152,28 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
-        if (!invalidHotbar) {
+        if (mode.getValue().equalsIgnoreCase("Real")) {
 
-            // PLACE
+            if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
-            if (concreteTimer.getTimePassed() >= placeDelay.getValue()) {
+                targetBlockSlot = getBlocks();
 
-                if (useBlink.getValue()) {
+                oldSlot = mc.player.inventory.currentItem;
 
-                    ModuleManager.getModule(Blink.class).disable();
-                }
+                if (targetBlockSlot == -1)
+                    disable();
 
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                oldPitch = mc.player.rotationPitch;
-
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotation);
-
-                oldslot = mc.player.inventory.currentItem;
-
-                doGlitch = true;
-
-            }
-
-            // RUBBERBAND
-
-            if (mode.getValue().equals("clip") && doGlitch) {
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, (rotation));
 
                 getPacket();
 
-                doGlitch = false;
-
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                disable();
-
-            } else if (mode.getValue().equals("jump") && doGlitch) {
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-
-                mc.player.jump();
-
-                doGlitch = false;
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                disable();
             }
+
         }
+
     }
 
     private BlockPos findHoles() {
@@ -247,16 +210,28 @@ public class FootConcrete extends Module {
 
     void getPacket() {
 
-        BlockPos pos = findHoles();
+        if (mode.getValue().equalsIgnoreCase("Clip")) {
+            BlockPos pos = findHoles();
 
-        try {
-            if (debugpos.getValue())
-                MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
-        } catch (Exception e) {
+            try {
+                if (debugpos.getValue())
+                    MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
+            } catch (Exception e) {
 
-            MessageBus.sendClientPrefixMessage(String.valueOf(e));
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
+                MessageBus.sendClientPrefixMessage(String.valueOf(e));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
+
+            }
+        } else if (mode.getValue().equalsIgnoreCase("flat")) {
+
+            for (int i = 0; i < strength.getValue(); i++)
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random() * 1000),
+                        RotationUtil.normalizeAngle((float) Math.random() * 1000), false)); // rotations to rubberband us lmao
+
+        } else {
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + strength.getValue(), mc.player.posZ, false));
 
         }
     }

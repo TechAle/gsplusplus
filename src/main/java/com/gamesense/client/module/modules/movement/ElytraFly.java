@@ -21,8 +21,7 @@ import java.util.Arrays;
 public class ElytraFly extends Module {
 
     public BooleanSetting sound = registerBoolean("Sounds", true);
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Boost"), "Boost");
-    BooleanSetting packet = registerBoolean("Packet", false);
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Packet", "Boost"), "Boost");
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "Freeze", "Fast", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
@@ -30,7 +29,8 @@ public class ElytraFly extends Module {
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, 0, 3, () -> mode.getValue().equalsIgnoreCase("Control"));
     BooleanSetting yawLock = registerBoolean("Yaw Lock", false, () -> mode.getValue().equalsIgnoreCase("Control"));
 
-    boolean setAng;
+    boolean setAng,
+            shouldEflyPacket;
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
@@ -57,9 +57,6 @@ public class ElytraFly extends Module {
                 }
 
             } else if (mode.getValue().equals("Control")) {
-
-                if (packet.getValue())
-                    mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                 if (upMode.getValue().equalsIgnoreCase("Jump")) {
 
@@ -94,6 +91,9 @@ public class ElytraFly extends Module {
                             dir = MotionUtil.forward(speed.getValue(), yaw);
 
                         }
+
+                        mc.player.motionX = dir[0];
+                        mc.player.motionZ = dir[1];
 
                         event.setX(dir[0]);
                         event.setZ(dir[1]);
@@ -139,6 +139,9 @@ public class ElytraFly extends Module {
 
                             }
 
+                            mc.player.motionX = dir[0];
+                            mc.player.motionZ = dir[1];
+
                             event.setX(dir[0]);
                             event.setZ(dir[1]);
 
@@ -154,10 +157,49 @@ public class ElytraFly extends Module {
 
                     }
                 }
+            } else if (mode.getValue().equalsIgnoreCase("Packet")) {
+
+                shouldEflyPacket = !mc.player.onGround;
+
+                if (shouldEflyPacket) {
+
+                    event.setY(-0.000001 - glideSpeed.getValue());
+
+                    mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
+
+                    if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
+
+                        double[] dir;
+
+                        if (!yawLock.getValue()) {
+
+                            dir = MotionUtil.forward(speed.getValue());
+
+                        } else {
+
+                            final int angle = 360 / 8;
+                            float yaw = mc.player.rotationYaw;
+                            yaw = (float) (Math.round(yaw / angle) * angle);
+
+                            dir = MotionUtil.forward(speed.getValue(), yaw);
+
+                        }
+
+                        event.setX(dir[0]);
+                        event.setZ(dir[1]);
+
+                    } else {
+
+                        event.setX(0);
+                        event.setZ(0);
+
+                    }
+                }
+
             }
         } else {
 
-            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA)) {
+            if (mc.gameSettings.keyBindJump.isKeyDown() && mc.player.inventory.armorInventory.get(2).getItem().equals(Items.ELYTRA) && !shouldEflyPacket) {
                 switch (toMode.getValue()) {
 
                     case "PacketFly": {
@@ -169,7 +211,7 @@ public class ElytraFly extends Module {
                         } else if (mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0025, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + 55, mc.player.posY, mc.player.posZ + 55, mc.player.rotationYaw, mc.player.rotationPitch, false));
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                         }
