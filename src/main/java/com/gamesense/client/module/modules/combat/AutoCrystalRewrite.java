@@ -443,6 +443,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting movingBreak = registerBoolean("Moving Break", false, () -> renders.getValue());
     DoubleSetting movingBreakSpeed = registerDouble("Moving Break Speed", 0.1, 0.01, 0.5, () -> renders.getValue() && movingPlace.getValue());
 
+    IntegerSetting extendedPlace = registerInteger("Extended place", 5, 0, 20, () -> renders.getValue());
+    IntegerSetting extendedBreak = registerInteger("Extended break", 5, 0, 20, () -> renders.getValue());
 
     BooleanSetting fadeCapl = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
     IntegerSetting endFadePlace = registerInteger("End Fade Place pl", 0, 0, 255, () -> renders.getValue() && fadeCapl.getValue());
@@ -978,7 +980,8 @@ public class AutoCrystalRewrite extends Module {
 
     boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack, highestId = -100000;
+    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack, highestId = -100000,
+        placeRender, breakRender;
 
     double xPlayerRotation, yPlayerRotation;
 
@@ -1037,6 +1040,7 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tickBeforeBreak = tick = 0;
         timePlace = timeBreak = 0;
+        placeRender = breakRender = 0;
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
         yPlayerRotation = xPlayerRotation = Double.MAX_VALUE;
@@ -1417,6 +1421,9 @@ public class AutoCrystalRewrite extends Module {
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
 
+        if (bestPlace.target != null)
+            placeRender = 0;
+
         // Oh well, lmao everything here is likely well commented
 
         return bestPlace;
@@ -1693,6 +1700,7 @@ public class AutoCrystalRewrite extends Module {
         // Get target
         if (forcePlaceCrystal != null && forcePlace.getValue()) {
             bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
+            placeRender = 0;
             instaPlaceBol = true;
         }
         else {
@@ -1701,6 +1709,7 @@ public class AutoCrystalRewrite extends Module {
                 if (sameBlockPos(forcePlaceCrystal, bestPlace.crystal))
                     // This is basically useless lmao
                     instaPlaceBol = true;
+            placeRender = 0;
         }
 
 
@@ -1724,6 +1733,7 @@ public class AutoCrystalRewrite extends Module {
             // Idk instaplace useless thing
             bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
             instaPlaceBol = true;
+            placeRender = 0;
         }
 
         forcePlaceCrystal = null;
@@ -2333,6 +2343,9 @@ public class AutoCrystalRewrite extends Module {
         // Replace webs
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
+        if (bestBreak.target != null)
+            breakRender = 0;
 
         return bestBreak;
 
@@ -3086,8 +3099,10 @@ public class AutoCrystalRewrite extends Module {
                 }
             });
 
-        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
-        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+        if (placeRender++ > extendedPlace.getValue())
+            bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        if (breakRender++ > extendedBreak.getValue())
+            bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
 
     }
 
