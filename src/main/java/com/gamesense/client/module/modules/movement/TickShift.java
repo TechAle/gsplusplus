@@ -40,17 +40,14 @@ public class TickShift extends Module {
     public void onUpdate() {
 
         if (isMoving()) { // garunteed movement packet
-            String bind = onClick.getText();
-            int len = bind.length();
-            if (len > 0 || ticks > 0) {
+            
+            if (ticks > 0) {
 
-                if (ticks > 0 && (len == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
+                String bind = onClick.getText();
+
+                if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
                     mc.timer.tickLength = 50 / timer.getValue().floatValue();
                     ticks--;
-                } else {
-                    mc.timer.tickLength = 50;
-                    if (ticks < limit.getValue())
-                        ticks++;
                 }
             }
 
