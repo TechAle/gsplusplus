@@ -36,7 +36,9 @@
     "MixinRenderPlayer",
     "MixinWorld",
     "accessor.AccessorCPacketAttack",
-    "accessor.AccessorEntityPlayerSP"
+    "accessor.AccessorEntityPlayerSP",
+    "accessor.IRenderGlobal",
+    "accessor.IShaderGroup"
   ],
   "client": [
     "MixinElytraSound",
