@@ -6,6 +6,7 @@ import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.util.NonNullList;
@@ -53,6 +54,7 @@ public class HoleSnap extends Module {
     public void onUpdate() {
 
         if (mc.gameSettings.keyBindSneak.isKeyDown() || HoleUtil.isInHole(mc.player, true, false)) {
+            PlayerUtil.centerPlayer(mc.player.getPositionVector());
             disable();
             return;
         }

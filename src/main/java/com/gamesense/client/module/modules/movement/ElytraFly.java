@@ -92,6 +92,9 @@ public class ElytraFly extends Module {
 
                         }
 
+                        mc.player.motionX = dir[0];
+                        mc.player.motionZ = dir[1];
+
                         event.setX(dir[0]);
                         event.setZ(dir[1]);
 
@@ -135,6 +138,9 @@ public class ElytraFly extends Module {
                                 dir = MotionUtil.forward(speed.getValue(), yaw);
 
                             }
+
+                            mc.player.motionX = dir[0];
+                            mc.player.motionZ = dir[1];
 
                             event.setX(dir[0]);
                             event.setZ(dir[1]);
@@ -205,7 +211,7 @@ public class ElytraFly extends Module {
                         } else if (mc.player.motionY < 0) {
 
                             mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + mc.player.motionX, mc.player.posY - 0.0025, mc.player.posZ + mc.player.motionZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                            mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + 55, mc.player.posY, mc.player.posZ + 55, mc.player.rotationYaw, mc.player.rotationPitch, false));
                             mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_FALL_FLYING));
 
                         }

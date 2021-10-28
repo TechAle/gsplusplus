@@ -36,11 +36,11 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
     ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
     BooleanSetting general = registerBoolean("General Settings", false);
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("cc", "clip"), "jump");
-    IntegerSetting strength = registerInteger("Strength", 1, 1, 25, () -> general.getValue());
+    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("flat", "clip", "basic"), "jump");
+    IntegerSetting strength = registerInteger("Strength", 1, 0, 25, () -> general.getValue() && !mode.getValue().equalsIgnoreCase("clip"));
     BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting conserve = registerBoolean("Conserve", false, () -> general.getValue());
-    IntegerSetting range = registerInteger("clipRange", 50, 1, 32, () -> general.getValue());
+    IntegerSetting range = registerInteger("clipRange", 50, 1, 99, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
     BooleanSetting debugpos = registerBoolean("Debug Position", false);
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
@@ -223,11 +223,15 @@ public class FootConcrete extends Module {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1, mc.player.posZ, false));
 
             }
-        } else {
+        } else if (mode.getValue().equalsIgnoreCase("flat")) {
 
             for (int i = 0; i < strength.getValue(); i++)
-                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random()),
-                        RotationUtil.normalizeAngle((float) Math.random()), false)); // rotations to rubberband us lmao
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random() * 1000),
+                        RotationUtil.normalizeAngle((float) Math.random() * 1000), false)); // rotations to rubberband us lmao
+
+        } else {
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + strength.getValue(), mc.player.posZ, false));
 
         }
     }

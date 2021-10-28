@@ -41,6 +41,7 @@ public class Scaffold extends Module {
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    BooleanSetting hTower = registerBoolean("Allow Horizontal Towering", false, () -> !towerMode.getValue().equalsIgnoreCase("None"));
     BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
@@ -84,7 +85,9 @@ public class Scaffold extends Module {
 
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
-            scaffold = new BlockPos(mc.player.posX + (mc.player.motionX + distanceP.getValue()), mc.player.posY, mc.player.posZ + (mc.player.motionZ * distanceP.getValue())).down();
+            double[] dir = MotionUtil.forward(MotionUtil.getMotion(mc.player) * distanceP.getValue());
+
+            scaffold = new BlockPos(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1]).down();
 
             if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
                 scaffold.y = ModuleManager.getModule(Speed.class).yl;
@@ -126,7 +129,7 @@ public class Scaffold extends Module {
 
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown()) { // TOWER
+        if (mc.gameSettings.keyBindJump.isKeyDown() && (!MotionUtil.isMoving(mc.player) || !hTower.getValue())) { // TOWER
 
             switch (towerMode.getValue()) {
 
@@ -139,7 +142,7 @@ public class Scaffold extends Module {
 
                     }
 
-                    if (Math.floor(mc.player.posY) == oldTower + 1) {
+                    if (Math.floor(mc.player.posY) == oldTower + 1 && !mc.player.onGround) {
 
                         mc.player.motionY = -(mc.player.posY - Math.floor(mc.player.posY)); // go down faster whist looking smoothest
 
