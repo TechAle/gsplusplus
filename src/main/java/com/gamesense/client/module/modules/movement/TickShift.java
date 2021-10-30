@@ -21,6 +21,8 @@ public class TickShift extends Module {
 
     IntegerSetting limit = registerInteger("Limit", 16,1,50);
     DoubleSetting timer = registerDouble("Timer", 2,1,5);
+    BooleanSetting doDecay = registerBoolean("Decay", false);
+    DoubleSetting min = registerDouble("Lowest", 1.4,1,5, () -> doDecay.getValue());
     StringSetting onClick = registerString("On Click", "");
 
     int ticks;
@@ -43,10 +45,15 @@ public class TickShift extends Module {
             
             if (ticks > 0) {
 
+                double steps = (timer.getValue() - min.getValue()) / limit.getValue();
+
+                double ourTimer = !doDecay.getValue() ? timer.getValue() : // ticks * ((max - min) / limit)
+                        steps * ticks; // we step down (or up) to min
+
                 String bind = onClick.getText();
 
                 if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
-                    mc.timer.tickLength = 50 / timer.getValue().floatValue();
+                    mc.timer.tickLength = 50f / (float) ourTimer;
                     ticks--;
                 }
             }
@@ -71,7 +78,7 @@ public class TickShift extends Module {
             return ChatFormatting.WHITE + "["+ ChatFormatting.GREEN + ticks + ChatFormatting.WHITE + "]";
 
 
-        return ChatFormatting.WHITE + "["+ ChatFormatting.GRAY + ticks + ChatFormatting.WHITE + "]";
+        return ChatFormatting.WHITE + "["+ ChatFormatting.GOLD + ticks + ChatFormatting.WHITE + "]";
     }
 
     boolean isMoving() {
