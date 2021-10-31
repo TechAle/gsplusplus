@@ -80,7 +80,7 @@ public class Anchor extends Module {
                     mc.player.motionX = 0f;
                     mc.player.motionZ = 0f;
                     if (fastFall.getValue())
-                        mc.player.motionY = -100f;
+                        mc.player.motionY = -10f;
                     event.cancel();
                 }
             }
