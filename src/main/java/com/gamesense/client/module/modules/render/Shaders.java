@@ -17,6 +17,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Module.Declaration(name = "Shaders", category = Category.Render)
 public class Shaders extends Module {
@@ -50,6 +51,7 @@ public class Shaders extends Module {
     BooleanSetting rangeCheck = registerBoolean("Range Check", true);
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
+    IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
 
     public boolean renderTags = true,
                    renderCape = true;
@@ -134,8 +136,11 @@ public class Shaders extends Module {
         boolean rangeCheck = this.rangeCheck.getValue();
         double minRange = this.minRange.getValue() * this.minRange.getValue();
         double maxRange = this.maxRange.getValue() * this.maxRange.getValue();
-        double distance = 0;
+        AtomicInteger nEntities = new AtomicInteger();
+        int maxEntities = this.maxEntities.getValue();
         mc.world.loadedEntityList.stream().filter(e -> {
+            if (nEntities.getAndIncrement() > maxEntities)
+                return false;
             if (e instanceof EntityPlayer) {
                 if (players.getValue())
                     if (e != mc.player || mc.gameSettings.thirdPersonView != 0)

@@ -36,7 +36,7 @@ import java.util.List;
 @Module.Declaration(name = "ESP", category = Category.Render)
 public class ESP extends Module {
 
-    List<String> Modes = Arrays.asList("None", "Box", "Direction", "Glowing", "Shader");
+    List<String> Modes = Arrays.asList("None", "Box", "Direction", "Glowing", "Test");
     IntegerSetting range = registerInteger("Range", 100, 10, 260);
     IntegerSetting width = registerInteger("Line Width", 2, 1, 5);
     DoubleSetting blurDir = registerDouble("Blur Dir", 1, 0, 1);
