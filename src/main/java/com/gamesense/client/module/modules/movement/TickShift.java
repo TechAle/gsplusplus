@@ -1,28 +1,23 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.misc.KeyBoardClass;
-import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.mojang.realmsclient.gui.ChatFormatting;
-import me.zero.alpine.listener.EventHandler;
-import me.zero.alpine.listener.Listener;
-import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
 
 @Module.Declaration(name = "TickShift", category = Category.Movement)
 public class TickShift extends Module {
 
-    IntegerSetting limit = registerInteger("Limit", 16,1,50);
-    DoubleSetting timer = registerDouble("Timer", 2,1,5);
+    IntegerSetting limit = registerInteger("Limit", 16, 1, 50);
+    DoubleSetting timer = registerDouble("Timer", 2, 1, 5);
     BooleanSetting doDecay = registerBoolean("Decay", false);
-    DoubleSetting min = registerDouble("Lowest", 1.4,1,5, () -> doDecay.getValue());
+    DoubleSetting min = registerDouble("Lowest", 1.4, 1, 5, () -> doDecay.getValue());
     StringSetting onClick = registerString("On Click", "");
 
     int ticks;
@@ -42,7 +37,7 @@ public class TickShift extends Module {
     public void onUpdate() {
 
         if (isMoving()) { // garunteed movement packet
-            
+
             if (ticks > 0) {
 
                 double steps = (timer.getValue() - min.getValue()) / limit.getValue();
@@ -53,12 +48,17 @@ public class TickShift extends Module {
                 String bind = onClick.getText();
 
                 if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
-                    mc.timer.tickLength = 50f / (float) ourTimer;
+                    mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) (min.getValue() + ourTimer), 50f)) : 50 / timer.getValue().floatValue();
                     ticks--;
                 }
             }
 
         } else {
+
+            if (!MotionUtil.isMoving(mc.player)) {
+                mc.player.motionX = 0;
+                mc.player.motionZ = 0;
+            }
 
             mc.timer.tickLength = 50;
             if (ticks < limit.getValue())
@@ -69,16 +69,19 @@ public class TickShift extends Module {
 
     @Override
     public String getHudInfo() {
-        // we make it red when 0 and green when at limit, in between is grey
+        return TextFormatting.WHITE + "[" + getColour(ticks) + ticks + TextFormatting.WHITE + "]";
+    }
 
-        if (ticks == 0)
-            return ChatFormatting.WHITE + "["+ ChatFormatting.RED + ticks + ChatFormatting.WHITE + "]";
+    public TextFormatting getColour(int ticks) {
 
-        if (ticks == limit.getValue())
-            return ChatFormatting.WHITE + "["+ ChatFormatting.GREEN + ticks + ChatFormatting.WHITE + "]";
+        if (ticks == 0) {
+            return TextFormatting.RED;
+        } else if (ticks <= limit.getValue()) {
+            return TextFormatting.GREEN;
+        } else {
+            return TextFormatting.GOLD;
+        }
 
-
-        return ChatFormatting.WHITE + "["+ ChatFormatting.GOLD + ticks + ChatFormatting.WHITE + "]";
     }
 
     boolean isMoving() {
