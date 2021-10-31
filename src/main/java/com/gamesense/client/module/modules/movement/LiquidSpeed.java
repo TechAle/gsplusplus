@@ -72,7 +72,6 @@ public class LiquidSpeed extends Module {
         Double velX = event.getX();
         Double velY = event.getY(), memY = velY;
         Double velZ = event.getZ();
-        EntityUtil.resetTimer();
 
         // Some servers doesnt like speed while onGround lol
         if (groundIgnore.getValue() || !mc.player.onGround) {
