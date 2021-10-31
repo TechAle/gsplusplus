@@ -42,13 +42,13 @@ public class TickShift extends Module {
 
                 double steps = (timer.getValue() - min.getValue()) / limit.getValue();
 
-                double ourTimer = !doDecay.getValue() ? timer.getValue() : // ticks * ((max - min) / limit)
-                        steps * ticks; // we step down (or up) to min
+                double ourTimer = !doDecay.getValue() ? timer.getValue() :
+                        steps * ticks + min.getValue();
 
                 String bind = onClick.getText();
 
                 if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
-                    mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) (min.getValue() + ourTimer), 50f)) : 50 / timer.getValue().floatValue();
+                    mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) ourTimer, 50f)) : 50 / timer.getValue().floatValue();
                     ticks--;
                 }
             }
