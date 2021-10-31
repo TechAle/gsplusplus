@@ -10,6 +10,7 @@
     "MixinBlockSoulSand",
     "MixinChorus",
     "MixinEntity",
+    "MixinEntityBoat",
     "MixinEntityLlama",
     "MixinEntityPig",
     "MixinEntityPlayer",

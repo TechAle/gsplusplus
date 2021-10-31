@@ -11,7 +11,7 @@ public class FastFall extends Module {
 
     @Override
     public void onUpdate() {
-        if (!mc.player.onGround)
+        if (!mc.player.onGround && !mc.player.isInLava() && !mc.player.isInWater())
             mc.player.motionY += speed.getValue();
 
     }

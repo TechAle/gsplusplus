@@ -72,82 +72,22 @@ public class MouseClickAction extends Module {
             MCFButtonCode = 2; //User Error Protection
         }
 
-        if ((Mouse.isButtonDown(MCPButtonCode) && onGroundCheck.getValue() && mc.player.onGround && pearl.getValue()) || Mouse.isButtonDown(MCPButtonCode) && !onGroundCheck.getValue() && pearl.getValue()) { //We check for button press and don't check for miss :rage:
-            int oldSlot = mc.player.inventory.currentItem;
+        if (Mouse.isButtonDown(MCPButtonCode)) {
+            if (clipRotate.getValue() && mc.player.onGround)
+                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw, pearlPitch.getValue().floatValue(), mc.player.onGround));
 
-            int pearlSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0, 8);
+            if (clipRotate.getValue() && !mc.player.onGround)
+                return;
 
-                if (!silentSwitch.getValue()) {
-                    mc.player.inventory.currentItem = pearlSlot;
+            pearlInvSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0, 35);
+            int currentItem = mc.player.inventory.currentItem;
 
-                } else {
-
-                    if (silentInv.getValue() && pearlSlot == -1) {
-
-                        pearlInvSlot = InventoryUtil.findFirstItemSlot(Items.ENDER_PEARL.getClass(), 0, 69);
-
-                        if (pearlInvSlot != -1)
-                            swap(pearlInvSlot, mc.player.inventory.currentItem);
-                        else disable();
-                        swapBack = true;
-
-                    }
-
-                    if (pearlSlot != -1){
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(pearlSlot));
-                    } else if (!silentInv.getValue())
-                        disable();
-
-                }
-
-                if (clipRotate.getValue()) {
-
-                    //ROUNDING
-                    float yawRounded;
-
-                    float yaw = Math.abs(Math.round(mc.player.rotationYaw) % 360);
-                    float division = (int) Math.floor(yaw / 45);
-                    float remainder = (int) (yaw % 45);
-                    if (remainder < 45 / 2) {
-                        yawRounded = 45 * division;
-                    } else {
-                        yawRounded = 45 * (division + 1);
-                    }
-                    //END OF ROUNDING
-
-                    //new rotate
-
-                    //mc.player.setPositionAndRotationDirect(mc.player.posX,mc.player.posY,mc.player.posZ,yawRounded,pearlPitchFloat,1,true);
-
-                    mc.player.connection.sendPacket(new CPacketPlayer.Rotation(yawRounded, pearlPitchFloat, true)); // rotate for phasing
-                    mc.playerController.processRightClick(mc.player, mc.world, EnumHand.MAIN_HAND); // Throw the pearl (thanks TechAle :D)
-
-                    // mc.player.connection.sendPacket(new CPacketPlayer.Rotation(oldYaw, oldPitch, true)); // rotate back (disabled)
-                    mc.player.inventory.currentItem = oldSlot; // return to old slot
-
-                } else { // same as Hoosiers' code previous code
-
-                    mc.playerController.processRightClick(mc.player, mc.world, EnumHand.MAIN_HAND);
-
-                    if (!silentSwitch.getValue()) {
-
-                        mc.player.inventory.currentItem = oldSlot;
-
-                    } else { //Undo desync?
-
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-
-                        if (swapBack) {
-                            swap(pearlInvSlot, mc.player.inventory.currentItem);
-                            swapBack = false;
-                        }
-
-                        pearlInvSlot = -1;
-
-                    }
-                }
-            }
+            swap(pearlInvSlot, currentItem);
+            mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+            swap(pearlInvSlot, currentItem);
         }
+
+    }
 
     @EventHandler
         final Listener<InputEvent.MouseInputEvent> listener = new Listener<>(event -> {
@@ -162,44 +102,19 @@ public class MouseClickAction extends Module {
             }
         });
 
-    void swap(int slot1, int slot2) {
+    void swap(int InvSlot, int HotBar) {
 
         // pick up inventory slot
-        mc.playerController.windowClick(0, slot1, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
 
         // click on hotbar slot
         // 36 is the offset for start of hotbar in inventoryContainer
-        mc.playerController.windowClick(0, slot2 + 36, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, HotBar + 36, 0, ClickType.PICKUP, mc.player);
 
         // put back inventory slot
-        mc.playerController.windowClick(0, slot1, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
 
         mc.playerController.updateController();
-
-    }
-
-    void mcp() {
-
-        if (PlayerUtil.nullCheck()) {
-            int slot = -1;
-            int oldslot = mc.player.inventory.currentItem;
-
-            for (int i = 9; i < 45; i++) {
-
-                if (mc.player.inventory.getStackInSlot(i).item.equals(Items.ENDER_PEARL)) {
-
-                    slot = i;
-
-                }
-
-            }
-
-            swap(slot, oldslot);
-
-            mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
-
-            swap(oldslot, slot);
-        }
 
     }
 

@@ -44,9 +44,6 @@ public class PhaseWalk extends Module {
         mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, onGround));
         PhaseUtil.doBounds(bound.getValue());
 
-        if (ModuleManager.getModule(Flight.class).onlyPF.getValue())
-            ModuleManager.getModule(Flight.class).tpid += 2;
-
         if (update.getValue())
             mc.player.setPosition(x, y, z);
 
