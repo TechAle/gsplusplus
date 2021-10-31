@@ -1,11 +1,14 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 
@@ -18,13 +21,14 @@ import java.util.HashMap;
  * @since 25/01/21
  */
 
-@Module.Declaration(name = "Anchor", category = Category.Movement)
+@Module.Declaration(name = "Anchor", category = Category.Movement, priority = 1000)
 public class Anchor extends Module {
 
     BooleanSetting guarantee = registerBoolean("Guarantee Hole", true);
     IntegerSetting activateHeight = registerInteger("Activate Height", 2, 1, 5);
     IntegerSetting activationPitch = registerInteger("Activation Pitch", 75, 0, 90);
     BooleanSetting stopSpeed = registerBoolean("Stop Speed", true);
+    BooleanSetting fastFall = registerBoolean("Fast Fall", false);
 
     public static boolean active = false;
 
@@ -34,11 +38,11 @@ public class Anchor extends Module {
         active = false;
     }
 
-    public void onUpdate() {
-        if (mc.player == null) {
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+        if (mc.player == null || mc.world == null) {
             return;
         }
-
         active = false;
 
         if (mc.player.rotationPitch < activationPitch.getValue())
@@ -75,8 +79,13 @@ public class Anchor extends Module {
                         active = true;
                     mc.player.motionX = 0f;
                     mc.player.motionZ = 0f;
+                    if (fastFall.getValue())
+                        mc.player.motionY = -100f;
+                    event.cancel();
                 }
             }
         }
-    }
+    });
+
+
 }
