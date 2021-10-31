@@ -36,8 +36,8 @@ to only few people that have a little bit of brain.
 #### gs Contributors
 * TechAle (Main developer, head developer, mainteiner)
 * Doogie13 (Misc modules)
-* Sable__(hacker)
 * Mwa (Profile system and misc)
+* Sable__(best coder hacker man ever!!!)
 #### gs++ Credits
 I think it's the duty of a developer saying if he took inspiration / took some piece of code from another client.
 * How customchat is implemented for overriding  minecraft's chat (https://www.curseforge.com/minecraft/mc-mods/better-chat)
@@ -50,7 +50,7 @@ I think it's the duty of a developer saying if he took inspiration / took some p
 * auburnhud2 (whitespace and continuous integration, issue tracker)
 * linustouchtips (TargetHUD, SkyColor, Misc Rendering)
 * Dngerr (Blink and HotbarRefill)
-* DarkiBoi (TotemPopCounter)
+* DarkiBoi (TotemPopCounter) 
 * GL_DONT_CARE (Viewmodel Transformations)
 * NekoPvP (First commit, Item FOV)
 * TechAle (AutoAnvil, PistonCrystal, Blocker)
