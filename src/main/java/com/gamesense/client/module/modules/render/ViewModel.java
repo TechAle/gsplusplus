@@ -19,8 +19,7 @@ import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glTranslatef;
 
 /**
- * @author GL_DONT_CARE (Viewmodel Transformations)
- * @author NekoPvP (Item FOV)
+ * @author TechAle
  */
 
 @Module.Declaration(name = "ViewModel", category = Category.Render)
