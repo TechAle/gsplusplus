@@ -573,8 +573,10 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     //region Binds
-    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
-    StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
+    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain", "");
+    StringSetting forceFacePlace = registerString("Force FacePlace", "");
+    StringSetting anvilCity = registerString("Anvil City", "");
+    IntegerSetting placeAnvil = registerInteger("Place Anvil", 10, 0, 100);
     //endregion
     //endregion
 
@@ -2821,6 +2823,79 @@ public class AutoCrystalRewrite extends Module {
         // for showing break crystal per second, this is temporany waiting the crystal to spawn
         if (showBreakCrystalsSecond.getValue())
             attempedCrystalBreak.addCrystalId(cr.getPosition(), cr.entityId, 500);
+
+
+        // AnvilCity
+        if (this.anvilCity.getText().length() > 0)
+            // If we are pressing a button
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
+                // 618, 1, 366, 621 1 366
+                boolean isCity = false;
+                BlockPos city = BlockPos.ORIGIN;
+                BlockPos endCrystalPosition = new BlockPos((int) cr.posX, (int) cr.posY, (int) cr.posZ);
+                // Check if the target is getting city
+                for(Vec3i surround : new Vec3i[]{
+                        new Vec3i(1, 0, 0),
+                        new Vec3i(-1, 0, 0),
+                        new Vec3i(0, 0, 1),
+                        new Vec3i(0, 0, -1)
+                }) { // 622 2 357
+                    BlockPos surroundPosition = new BlockPos(surround.getX() + endCrystalPosition.getX(), endCrystalPosition.getY(), surround.getZ() + endCrystalPosition.getZ());
+                    for(EntityPlayer t : getBasicPlayers(40.0).collect(Collectors.toList())) {
+                        BlockPos position = new BlockPos((int) t.posX, (int) t.posY, (int) t.posZ);
+                        if (position.getY() == surroundPosition.getY()) {
+                            if (position.getX() == surroundPosition.getX()) {
+                                if (Math.abs(position.getZ() - surroundPosition.getZ()) == 1) {
+                                    isCity = true;
+                                    city = new BlockPos(position.getX() - surround.getX(), position.getY(), position.getZ() - surround.getZ());
+                                    break;
+                                }
+                            } else if (position.getZ() == surroundPosition.getZ()) {
+                                if (Math.abs(position.getX() - surroundPosition.getX()) == 1) {
+                                    isCity = true;
+                                    city = new BlockPos(position.getX() - surround.getX(), position.getY(), position.getZ() - surround.getZ());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } //622 2 357
+
+                if (isCity) {
+                    // Get anvil
+                    int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                    if (slot != -1) { // 622 2 357
+                        java.util.Timer t = new java.util.Timer();
+                        BlockPos finalCity = city;
+                        // ForcePlace is fine
+                        forcePlaceCrystal = cr.getPosition().add(0, -1, 0);
+                        if (forceBreak == null) {
+                            forcePlaceDamage = bestBreak.damage;
+                            forcePlaceTarget = bestBreak.target;
+                        } else {
+                            forcePlaceDamage = 10;
+                            forcePlaceTarget = new PlayerInfo(mc.player, 0);
+                        }
+                        t.schedule(
+                                new java.util.TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        int oldSlot = mc.player.inventory.currentItem;
+                                        // Place anvil
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                                        PlacementUtil.place(finalCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                                        // Return back
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                                        PistonCrystal.printDebug("Anvil", false);
+                                        t.cancel();
+                                    }
+                                },
+                                placeAnvil.getValue()
+                        );
+                    }
+                }
+            }
+            // 621 1 366
 
         return true;
     }
