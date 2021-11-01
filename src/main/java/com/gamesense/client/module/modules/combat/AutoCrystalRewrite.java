@@ -202,6 +202,7 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
+    IntegerSetting predictHitDelay = registerInteger("Predict Hit Delay", 0, 0, 500, () -> breakSection.getValue() && predictHit.getValue());
     BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> breakSection.getValue());
     //endregion
 
@@ -3911,11 +3912,21 @@ public class AutoCrystalRewrite extends Module {
                         }
 
                         if (hit) {
-                            CPacketUseEntity attack = new CPacketUseEntity();
-                            ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
-                            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
-                            mc.player.connection.sendPacket((Packet) attack);
-                            mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+                            java.util.Timer t = new java.util.Timer();
+                            t.schedule(
+                                    new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            CPacketUseEntity attack = new CPacketUseEntity();
+                                            ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
+                                            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                                            mc.player.connection.sendPacket((Packet) attack);
+                                            mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+                                            t.cancel();
+                                        }
+                                    },
+                                    predictHitDelay.getValue()
+                            );
 
                         }
                     }
@@ -3969,6 +3980,8 @@ public class AutoCrystalRewrite extends Module {
         }
 
     });
+
+
 
 
     //endregion
