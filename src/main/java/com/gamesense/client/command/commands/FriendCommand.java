@@ -22,23 +22,13 @@ public class FriendCommand extends Command {
 
         String value = message[1];
 
-        if (main.equalsIgnoreCase("add") && !isFriend(value)) {
+        if (main.equalsIgnoreCase("add") && !SocialManager.isFriendForce(value)) {
             SocialManager.addFriend(value);
             MessageBus.sendCommandMessage("Added friend: " + value.toUpperCase() + "!", true);
-        } else if (main.equalsIgnoreCase("del") && SocialManager.isFriend(value)) {
+        } else if (main.equalsIgnoreCase("del") && SocialManager.isFriendForce(value)) {
             SocialManager.delFriend(value);
             MessageBus.sendCommandMessage("Deleted friend: " + value.toUpperCase() + "!", true);
         }
-    }
-
-    boolean isFriend(String name) {
-
-        for (Friend friend : SocialManager.getFriends()) {
-            if (friend.getName().equalsIgnoreCase(name)) {
-                return true;
-            }
-        }
-        return false;
     }
 
 }

@@ -92,7 +92,7 @@ public class MouseClickAction extends Module {
     @EventHandler
         final Listener<InputEvent.MouseInputEvent> listener = new Listener<>(event -> {
             if (mc.objectMouseOver.typeOfHit.equals(RayTraceResult.Type.ENTITY) && mc.objectMouseOver.entityHit instanceof EntityPlayer && Mouse.isButtonDown(MCFButtonCode) && friend.getValue()) {
-                if (SocialManager.isFriend(mc.objectMouseOver.entityHit.getName())) {
+                if (SocialManager.isFriendForce(mc.objectMouseOver.entityHit.getName())) {
                     SocialManager.delFriend(mc.objectMouseOver.entityHit.getName());
                     MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Removed " + mc.objectMouseOver.entityHit.getName() + " from friends list");
                 } else {

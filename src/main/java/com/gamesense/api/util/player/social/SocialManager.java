@@ -49,6 +49,16 @@ public class SocialManager {
         return false;
     }
 
+    public static boolean isFriendForce(String name) {
+
+        for (Friend friend : SocialManager.getFriends()) {
+            if (friend.getName().equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean isEnemy(String name) {
 
         for (Enemy enemy : getEnemies()) {

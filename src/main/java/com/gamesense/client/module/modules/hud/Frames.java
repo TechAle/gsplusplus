@@ -1,3 +1,4 @@
+/*
 package com.gamesense.client.module.modules.hud;
 
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -18,7 +19,7 @@ public class Frames extends HUDModule {
         component = new ListComponent(new Labeled(getName(), null, () -> true), position, getName(), new FramesList(), GameSenseGUI.FONT_HEIGHT, HUDModule.LIST_BORDER);
 
     }
-    private class FramesList implements HUDList {
+    private static class FramesList implements HUDList {
 
         @Override
         public int getSize() {
@@ -46,3 +47,4 @@ public class Frames extends HUDModule {
         }
     }
 }
+*/
