@@ -19,6 +19,7 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
@@ -42,7 +43,7 @@ public class Scaffold extends Module {
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     BooleanSetting hTower = registerBoolean("Allow Horizontal Towering", false, () -> !towerMode.getValue().equalsIgnoreCase("None"));
-    BooleanSetting keepYOnSpeed = registerBoolean("Speed Keep Y", false);
+    BooleanSetting allowEchestOnHeld = registerBoolean("Allow Echest On Held", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int timer;
@@ -80,44 +81,42 @@ public class Scaffold extends Module {
 
             scaffold = (new BlockPos(predPlayer.posX, predPlayer.posY - 1, predPlayer.posZ));
 
-            if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
-                scaffold.y = ModuleManager.getModule(Speed.class).yl;
-
         } else if (logic.getValue().equalsIgnoreCase("Player")) {
 
             double[] dir = MotionUtil.forward(MotionUtil.getMotion(mc.player) * distanceP.getValue());
 
             scaffold = new BlockPos(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1]).down();
 
-            if (keepYOnSpeed.getValue() && ModuleManager.getModule(Speed.class).isEnabled())
-                scaffold.y = ModuleManager.getModule(Speed.class).yl;
-
-
         }
 
         // Courtesy of KAMI, this block finding algo
         newSlot = -1;
-        for (int i = 0; i < 9; i++) {
-            // filter out non-block items
-            ItemStack stack =
-                    mc.player.inventory.getStackInSlot(i);
+        if (!Block.getBlockFromItem(mc.player.getHeldItemMainhand().item).getDefaultState().isFullBlock()
+                || Block.getBlockFromItem(mc.player.getHeldItemMainhand().item).equals(Blocks.ENDER_CHEST) && allowEchestOnHeld.getValue()) {
+            for (int i = 0; i < 9; i++) {
+                // filter out non-block items
+                ItemStack stack =
+                        mc.player.inventory.getStackInSlot(i);
 
-            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
-                continue;
+                if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                    continue;
+                }
+
+                // filter out non-solid blocks
+                if (!Block.getBlockFromItem(stack.getItem()).getDefaultState()
+                        .isFullBlock())
+                    continue;
+
+                // don't use falling blocks if it'd fall
+                if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockFalling) {
+                    if (mc.world.getBlockState(scaffold).getMaterial().isReplaceable()) continue;
+                }
+
+                newSlot = i;
+                break;
             }
-
-            // filter out non-solid blocks
-            if (!Block.getBlockFromItem(stack.getItem()).getDefaultState()
-                    .isFullBlock())
-                continue;
-
-            // don't use falling blocks if it'd fall
-            if (((ItemBlock) stack.getItem()).getBlock() instanceof BlockFalling) {
-                if (mc.world.getBlockState(scaffold).getMaterial().isReplaceable()) continue;
-            }
-
-            newSlot = i;
-            break;
+        } else {
+            newSlot = mc.player.inventory.currentItem;
         }
 
         if (newSlot == -1) {
@@ -196,14 +195,20 @@ public class Scaffold extends Module {
 
         if (shouldplace) {
 
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
-            mc.player.inventory.currentItem = newSlot;
+            boolean swap = newSlot != mc.player.inventory.currentItem;
+
+            if (swap) {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
+                mc.player.inventory.currentItem = newSlot;
+            }
 
 
             boolean success = PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue(), false, false);
 
-            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-            mc.player.inventory.currentItem = oldSlot;
+            if (swap) {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                mc.player.inventory.currentItem = oldSlot;
+            }
 
             return success;
 

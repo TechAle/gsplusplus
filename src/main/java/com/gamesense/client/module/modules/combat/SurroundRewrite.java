@@ -2,28 +2,21 @@ package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
-import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
-import com.gamesense.api.util.player.*;
-import com.gamesense.api.util.world.BlockUtil;
-import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.Offsets;
+import com.gamesense.api.util.player.InventoryUtil;
+import com.gamesense.api.util.player.PlacementUtil;
+import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketUseEntity;
@@ -33,23 +26,17 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
-import static java.lang.Math.floor;
-import static java.lang.Math.sin;
 
 
 @Module.Declaration(name = "SurroundRewrite", category = Category.Combat)
 public class SurroundRewrite extends Module {
 
+    private final Timer delayTimer = new Timer();
     BooleanSetting predict = registerBoolean("Predict", false);
     BooleanSetting allowNon1x1 = registerBoolean("Allow non 1x1", true);
-    private final Timer delayTimer = new Timer();
-    Timer alertDelay = new Timer();
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 20);
     BooleanSetting onlyOnStop = registerBoolean("OnStop", false);
@@ -60,8 +47,6 @@ public class SurroundRewrite extends Module {
     BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false);
     BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false);
     BooleanSetting alertPlayerClip = registerBoolean("Alert Player Clip", true);
-    boolean hasPlaced;
-    int lookDown = -1;
 
     @EventHandler
     private final Listener<PacketEvent.Receive> listener2 = new Listener<>(event -> {
@@ -84,11 +69,13 @@ public class SurroundRewrite extends Module {
             }
         }
     });
-
+    Timer alertDelay = new Timer();
+    boolean hasPlaced;
+    int lookDown = -1;
     @EventHandler
     private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
-       if (mc.player == null || mc.world == null || lookDown == -1)
-           return;
+        if (mc.player == null || mc.world == null || lookDown == -1)
+            return;
 
         PlayerPacketManager.INSTANCE.addPacket(new PlayerPacket(this, new Vec2f(0, 90)));
         lookDown--;
@@ -96,9 +83,11 @@ public class SurroundRewrite extends Module {
     });
 
     int getSlot() {
-        int slot = InventoryUtil.findFirstBlockSlot(Blocks.OBSIDIAN.getClass(), 0, 8);;
+        int slot = InventoryUtil.findFirstBlockSlot(Blocks.OBSIDIAN.getClass(), 0, 8);
+        ;
         if (slot == -1) {
-            slot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);;
+            slot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);
+            ;
         }
         return slot;
     }
@@ -202,7 +191,6 @@ public class SurroundRewrite extends Module {
             }
 
 
-
             if (hasSilentSwitched) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
                 mc.playerController.updateController();
@@ -254,12 +242,14 @@ public class SurroundRewrite extends Module {
                 tempOffsets.add(this.addToPlayer(playerPos, -(1 + lengthXNeg), 0.0, -z));
             }
             for (BlockPos pos : tempOffsets) {
-                offsets.add(pos.add(0, -1, 0));
+                if (getDown(pos)) {
+                    offsets.add(pos.add(0, -1, 0));
+                }
                 offsets.add(pos);
             }
         } else {
             offsets.add(playerPos.add(0, -1, 0));
-            for(int[] surround : new int[][] {
+            for (int[] surround : new int[][]{
                     {1, 0},
                     {0, 1},
                     {-1, 0},
@@ -270,6 +260,16 @@ public class SurroundRewrite extends Module {
             }
         }
         return offsets;
+    }
+
+    boolean getDown(BlockPos pos) {
+
+        for (EnumFacing e : EnumFacing.values())
+            if (!mc.world.isAirBlock(pos.add(e.getDirectionVec())))
+                return true;
+
+        return false;
+
     }
 
     int calcOffset(double dec) {
