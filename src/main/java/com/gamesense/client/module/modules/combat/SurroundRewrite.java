@@ -266,9 +266,9 @@ public class SurroundRewrite extends Module {
 
         for (EnumFacing e : EnumFacing.values())
             if (!mc.world.isAirBlock(pos.add(e.getDirectionVec())))
-                return true;
+                return false;
 
-        return false;
+        return true;
 
     }
 
