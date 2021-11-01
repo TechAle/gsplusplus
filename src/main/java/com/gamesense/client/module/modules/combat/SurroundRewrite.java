@@ -8,6 +8,7 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerPacket;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -37,6 +38,7 @@ public class SurroundRewrite extends Module {
     private final Timer delayTimer = new Timer();
     BooleanSetting predict = registerBoolean("Predict", false);
     BooleanSetting allowNon1x1 = registerBoolean("Allow non 1x1", true);
+    BooleanSetting centre = registerBoolean("Centre", false, () -> !allowNon1x1.getValue());
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 20);
     BooleanSetting onlyOnStop = registerBoolean("OnStop", false);
@@ -129,6 +131,9 @@ public class SurroundRewrite extends Module {
                 return;
 
             int offsetSteps = 0;
+            if (centre.getValue() && !allowNon1x1.getValue()) {
+                PlayerUtil.centerPlayer(mc.player.getPositionVector());
+            }
             while (blocksPlaced <= blocksPerTick.getValue()) {
 
                 if (offsetSteps >= maxSteps) {
