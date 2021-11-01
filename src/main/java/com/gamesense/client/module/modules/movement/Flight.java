@@ -23,30 +23,31 @@ import java.util.Arrays;
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
+    public int tpid;
+    @SuppressWarnings("Unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        /* TPID HANDLING */
+        if ((event.getPacket() instanceof CPacketPlayer.Position) || (event.getPacket() instanceof CPacketPlayer.PositionRotation))
+            tpid++;
+
+    });
+    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     float flyspeed;
     boolean bounded;
-    public int tpid;
-
-    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
-
-
     // Normal settings
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-
     // Packet settings
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting wait = registerBoolean("Freeze",false,() -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
-    public BooleanSetting onlyPF = registerBoolean("Only Packet Fly Packets", true, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
-    BooleanSetting allCPPP = registerBoolean("CPacketPlayer.Position", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
-    BooleanSetting allCPPR = registerBoolean("CPacketPlayer.Rotation", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
-    BooleanSetting allCPPPR = registerBoolean("CPacketPlayer.PositionRotation", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue() && !onlyPF.getValue());
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -140,42 +141,24 @@ public class Flight extends Module {
 
             for (int i = 0; i < packets.getValue(); i++) {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, false));
-                if (onlyPF.getValue())
-                    tpid++;
                 if (confirm.getValue())
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
                 PhaseUtil.doBounds(bound.getValue());
-                if (onlyPF.getValue() && false /*for testing*/)
-                    tpid++;
+                tpid++;
             }
 
         }
 
     });
-
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
 
         if (event.getPacket() instanceof SPacketPlayerPosLook) {
             if (confirm.getValue() && debug.getValue())
-                MessageBus.sendClientPrefixMessage(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "");
+                MessageBus.sendClientPrefixMessageWithID(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "", 69420);
             tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
         }
-
-    });
-
-    @SuppressWarnings("Unused")
-    @EventHandler
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        /* TPID HANDLING */
-        if (!onlyPF.getValue())
-            if (event.getPacket() instanceof CPacketPlayer)
-                if ((event.getPacket() instanceof CPacketPlayer.Position && allCPPP.getValue())
-                        || (event.getPacket() instanceof CPacketPlayer.Rotation && allCPPR.getValue())
-                        || (event.getPacket() instanceof CPacketPlayer.PositionRotation && allCPPPR.getValue()))
-                    tpid++;
 
     });
 

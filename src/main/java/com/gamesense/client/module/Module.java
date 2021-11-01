@@ -5,9 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 import com.gamesense.api.setting.values.*;
+import io.netty.util.AsciiString;
 import me.zero.alpine.listener.Listenable;
 import org.lwjgl.input.Keyboard;
 
@@ -19,6 +21,7 @@ import com.gamesense.client.GameSense;
 import com.gamesense.client.module.modules.gui.ColorMain;
 
 import net.minecraft.client.Minecraft;
+import scala.Int;
 
 public abstract class Module implements Listenable {
 
@@ -97,7 +100,7 @@ public abstract class Module implements Listenable {
         GameSense.EVENT_BUS.subscribe(this);
         onEnable();
         if (toggleMsg && mc.player != null)
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + name + " turned ON!");
+            MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getEnabledColor() + name + " turned ON!", getIdFromString(name));
     }
 
     public void disable() {
@@ -105,8 +108,23 @@ public abstract class Module implements Listenable {
         GameSense.EVENT_BUS.unsubscribe(this);
         onDisable();
         if (toggleMsg && mc.player != null)
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + disabledMessage);
+            MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getDisabledColor() + disabledMessage, getIdFromString(name));
         setDisabledMessage(name + " turned OFF!");
+    }
+
+    public int getIdFromString(String name) {
+
+        StringBuilder s = new StringBuilder();
+
+        for (int i = 0; i < name.length(); i++)
+            s.append(Integer.parseInt(String.valueOf(name.charAt(i)), 36));
+
+        try {
+            s = new StringBuilder(s.substring(0, 8));
+        } catch (StringIndexOutOfBoundsException ignored) {}
+
+        return Integer.MAX_VALUE - Integer.parseInt(s.toString().toLowerCase());
+
     }
 
     public void toggle() {

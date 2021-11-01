@@ -24,6 +24,9 @@ public class MessageBus {
      * Sends a client-sided message WITH the client prefix
      **/
     public static void sendClientPrefixMessage(String message) {
+        sendClientPrefixMessageWithID(message, 69420);
+    }
+    public static void sendClientPrefixMessageWithID(String message, int id) {
         ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
         TextComponentString string1 = new TextComponentString(
                 (   chat.isEnabled() &&
@@ -37,7 +40,7 @@ public class MessageBus {
             return;
         }
         if (mc.player != null && mc.world != null){
-            mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string1, 69420);
+            mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string1, id);
         }
     }
 
