@@ -48,7 +48,8 @@ public class SurroundRewrite extends Module {
 
     BooleanSetting predict = registerBoolean("Predict", false);
     BooleanSetting allowNon1x1 = registerBoolean("Allow non 1x1", true);
-    private final Timer delayTimer = new Timer();;
+    private final Timer delayTimer = new Timer();
+    Timer alertDelay = new Timer();
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 20);
     BooleanSetting onlyOnStop = registerBoolean("OnStop", false);
@@ -58,6 +59,7 @@ public class SurroundRewrite extends Module {
     IntegerSetting afterRotate = registerInteger("After Rotate", 3, 0, 5, () -> rotate.getValue());
     BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false);
     BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false);
+    BooleanSetting alertPlayerClip = registerBoolean("Alert Player Clip", true);
     boolean hasPlaced;
     int lookDown = -1;
 
@@ -99,6 +101,11 @@ public class SurroundRewrite extends Module {
             slot = InventoryUtil.findFirstBlockSlot(Blocks.ENDER_CHEST.getClass(), 0, 8);;
         }
         return slot;
+    }
+
+    @Override
+    protected void onEnable() {
+        alertDelay.setTimer(0);
     }
 
     public void onUpdate() {
@@ -145,6 +152,12 @@ public class SurroundRewrite extends Module {
                 for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(targetPos))) {
                     if (entity instanceof EntityPlayer) {
                         foundSomeone = true;
+                        if (alertPlayerClip.getValue() && entity != mc.player) {
+                            if (alertDelay.hasReached(1000)) {
+                                PistonCrystal.printDebug("Player " + entity.getName() + " is clipping in your surround", false);
+                                alertDelay.reset();
+                            }
+                        }
                         break;
                     }
                     if (entity instanceof EntityEnderCrystal && destroyCrystal.getValue()) {
