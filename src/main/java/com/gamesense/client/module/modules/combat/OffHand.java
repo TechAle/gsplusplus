@@ -17,6 +17,7 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
@@ -55,6 +56,7 @@ public class OffHand extends Module {
             "Gapple", () -> itemSection.getValue());
     ModeSetting potionChoose = registerMode("Potion", Arrays.asList("first", "strength", "swiftness"),
             "first", () -> itemSection.getValue());
+
     BooleanSetting switchSection = registerBoolean("Switch Section", true);
     IntegerSetting healthSwitch = registerInteger("Health Switch", 14, 0, 36, () -> switchSection.getValue());
     IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20, () -> switchSection.getValue());
@@ -62,8 +64,9 @@ public class OffHand extends Module {
     IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30, () -> (switchSection.getValue() && fallDistanceBol.getValue()));
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
-    BooleanSetting miscSection = registerBoolean("Misc Section", true);
     public BooleanSetting strict = registerBoolean("Strict", true, () -> switchSection.getValue());
+
+    BooleanSetting miscSection = registerBoolean("Misc Section", true);
     BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
     BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
     BooleanSetting crystObby = registerBoolean("Cryst Shift Obby", false, () -> miscSection.getValue());
@@ -84,8 +87,8 @@ public class OffHand extends Module {
             tickWaited,
             totems;
     boolean returnBack,
-            stepChanging,
-            firstChange;
+    firstChange;
+    public boolean stepChanging;
 
     public boolean dontMove;
 
@@ -180,6 +183,7 @@ public class OffHand extends Module {
                 if (strict.getValue()) {
 
                     dontMove = true;
+                    mc.playerController.onStoppedUsingItem(mc.player);
 
                 }
                 tickWaited = 0;
@@ -413,18 +417,6 @@ public class OffHand extends Module {
                 : defaultItem.getValue();
 
     }
-
-    @EventHandler
-    private final Listener<PacketEvent.Send> packetSend = new Listener<>(event -> {
-
-        if (strict.getValue() && stepChanging && event.getPacket() instanceof CPacketPlayerTryUseItem) {
-
-            mc.player.connection.sendPacket(new CPacketPlayerDigging(CPacketPlayerDigging.Action.RELEASE_USE_ITEM, mc.player.getPosition(), EnumFacing.UP));
-            event.cancel();
-
-        }
-
-    });
 
     private int getInventorySlot(String itemName) {
         // Get if it's a block or an item

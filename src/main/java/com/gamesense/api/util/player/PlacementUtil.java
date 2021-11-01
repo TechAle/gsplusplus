@@ -89,7 +89,7 @@ public class PlacementUtil {
         return placeBlock(blockPos, hand, rotate, checkAction, null, true);
     }
     public static boolean place(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction, boolean swingArm) {
-        return placeBlock(blockPos, hand, rotate, checkAction, null, true);
+        return placeBlock(blockPos, hand, rotate, checkAction, null, swingArm);
     }
 
     public static boolean placeBlock(BlockPos blockPos, EnumHand hand, boolean rotate, boolean checkAction, ArrayList<EnumFacing> forceSide, boolean swingArm) {
@@ -137,11 +137,13 @@ public class PlacementUtil {
 
         EnumActionResult action = playerController.processRightClickBlock(player, world, neighbour, opposite, hitVec, hand);
         if (!checkAction || action == EnumActionResult.SUCCESS) {
-            if (swingArm)
+            if (swingArm) {
                 player.swingArm(hand);
-            else
+                mc.rightClickDelayTimer = 4;
+            }
+            else {
                 player.connection.sendPacket(new CPacketAnimation(hand));
-            mc.rightClickDelayTimer = 4;
+            }
         }
 
         if (stoppedAC) {
