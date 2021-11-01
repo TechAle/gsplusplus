@@ -30,6 +30,13 @@ public class PlacementUtil {
         placementConnections++;
     }
 
+    public static void stopSneaking() {
+        if (isSneaking) {
+            isSneaking = false;
+            mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+        }
+    }
+
     public static void onDisable() {
         placementConnections--;
         if (placementConnections == 0) {

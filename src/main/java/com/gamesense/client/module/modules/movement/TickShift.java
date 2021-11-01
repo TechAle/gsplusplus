@@ -18,7 +18,7 @@ public class TickShift extends Module {
     DoubleSetting timer = registerDouble("Timer", 2, 1, 5);
     BooleanSetting doDecay = registerBoolean("Decay", false);
     DoubleSetting min = registerDouble("Lowest", 1.4, 1, 5, () -> doDecay.getValue());
-    StringSetting onClick = registerString("On Click", "");
+    StringSetting onClick = registerString("onClick", "");
 
     int ticks;
 

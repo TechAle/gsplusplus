@@ -56,14 +56,10 @@ public class SurroundRewrite extends Module {
     BooleanSetting onlyOnSneak = registerBoolean("Only on Sneak", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
     IntegerSetting afterRotate = registerInteger("After Rotate", 3, 0, 5, () -> rotate.getValue());
-    BooleanSetting destroyCrystal = registerBoolean("Destroy Crystal", false);
+    BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false);
+    BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false);
     boolean hasPlaced;
     int lookDown = -1;
-    @EventHandler
-    private final Listener<PlayerJumpEvent> listener = new Listener<>(event -> {
-        if (disableOnJump.getValue())
-            disable();
-    });
 
     @EventHandler
     private final Listener<PacketEvent.Receive> listener2 = new Listener<>(event -> {
@@ -116,6 +112,11 @@ public class SurroundRewrite extends Module {
         if (onlyOnSneak.getValue() && !mc.gameSettings.keyBindSneak.isPressed())
             return;
 
+        if (disableOnJump.getValue() && !mc.player.onGround) {
+            disable();
+            return;
+        }
+
 
         if (delayTimer.getTimePassed() / 50L >= delayTicks.getValue()) {
             delayTimer.reset();
@@ -139,7 +140,7 @@ public class SurroundRewrite extends Module {
                 }
 
                 BlockPos targetPos = offsetPattern.get(offsetSteps++);
-
+                mc.world.getEntitiesInAABBexcluding(null, new AxisAlignedBB(targetPos), null);
                 boolean foundSomeone = false;
                 for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(targetPos))) {
                     if (entity instanceof EntityPlayer) {
@@ -151,6 +152,19 @@ public class SurroundRewrite extends Module {
                         mc.player.connection.sendPacket(new CPacketAnimation(EnumHand.MAIN_HAND));
                     }
                 }
+
+                if (destroyAboveCrystal.getValue()) {
+                    for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                        if (entity instanceof EntityEnderCrystal) {
+                            if (sameBlockPos(entity.getPosition(), targetPos)) {
+                                mc.player.connection.sendPacket(new CPacketUseEntity(entity));
+                                mc.player.connection.sendPacket(new CPacketAnimation(EnumHand.MAIN_HAND));
+                            }
+                        }
+                    }
+                }
+
+
                 if (foundSomeone)
                     continue;
 
@@ -182,6 +196,17 @@ public class SurroundRewrite extends Module {
             }
 
         }
+
+        PlacementUtil.stopSneaking();
+
+
+    }
+
+    // Say if two blockPos are the same
+    boolean sameBlockPos(BlockPos first, BlockPos second) {
+        if (first == null || second == null)
+            return false;
+        return first.getX() == second.getX() && first.getY() == second.getY() + 2 && first.getZ() == second.getZ();
     }
 
 

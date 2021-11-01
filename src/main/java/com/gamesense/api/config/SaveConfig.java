@@ -116,6 +116,8 @@ public class SaveConfig {
                 settingObject.add(setting.getConfigName(), new JsonPrimitive(((ColorSetting) setting).toLong()));
             } else if (setting instanceof ModeSetting) {
                 settingObject.add(setting.getConfigName(), new JsonPrimitive(((ModeSetting) setting).getValue()));
+            } else if (setting instanceof StringSetting) {
+                settingObject.add(setting.getConfigName(), new JsonPrimitive(((StringSetting) setting).getText()));
             }
         }
         moduleObject.add("Settings", settingObject);
