@@ -114,7 +114,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (!(y == mc.player.posY && !(mc.player.isInWeb))) {
+        if (!(Math.abs(y - mc.player.posY) >= 0.4 /*slab is 0.5*/ && !(mc.player.isInWeb))) {
             switch (jumpMode.getValue()) {
                 case "Pause": {
                     return;
