@@ -52,6 +52,7 @@ public class PlayerTweaks extends Module {
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
+    public BooleanSetting portalChat = registerBoolean("Portal Chat", false);
     BooleanSetting noPushWater = registerBoolean("No Push Liquid", false);
     BooleanSetting noFall = registerBoolean("No Fall", false);
     ModeSetting noFallMode = registerMode("No Fall Mode", Arrays.asList("Packet", "OldFag", "Catch"), "Packet", () -> noFall.getValue());
