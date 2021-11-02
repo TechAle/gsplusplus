@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 
@@ -11,10 +12,9 @@ public class PassiveSpeed extends Module {
 
     @Override
     public void onUpdate() {
-        if (!mc.player.onGround) {
+        if (!mc.player.onGround && MotionUtil.isMoving(mc.player)) {
 
-            mc.player.motionX *= speed.getValue();
-            mc.player.motionZ *= speed.getValue();
+            mc.player.jumpMovementFactor = 0.02f * speed.getValue().floatValue();
 
         }
     }

@@ -35,6 +35,7 @@ public class Speed extends Module {
 
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
+    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
 
     DoubleSetting gspeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
@@ -53,6 +54,7 @@ public class Speed extends Module {
     private boolean slowDown;
     private double playerSpeed;
     int i;
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {

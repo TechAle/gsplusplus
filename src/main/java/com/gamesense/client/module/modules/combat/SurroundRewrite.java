@@ -275,7 +275,7 @@ public class SurroundRewrite extends Module {
         return offsets;
     }
 
-    boolean getDown(BlockPos pos) {
+    public static boolean getDown(BlockPos pos) {
 
         for (EnumFacing e : EnumFacing.values())
             if (!mc.world.isAirBlock(pos.add(e.getDirectionVec())))

@@ -182,7 +182,8 @@ public class FootConcrete extends Module {
 
         for (BlockPos pos : holes) {
 
-            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2) {
+            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2
+                && Math.floor(pos.y) == Math.floor(mc.player.posY)) {
                 holes.add(pos);
                 break;
             }
