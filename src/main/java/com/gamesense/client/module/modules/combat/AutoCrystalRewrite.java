@@ -1296,6 +1296,22 @@ public class AutoCrystalRewrite extends Module {
                 }
             } else isAnvilling = false;
         else isAnvilling = false;
+
+        if (crystalAnvil != null && blockCity != null) {
+            if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
+                int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                if (slot != -1) { // 622 2 357
+                    int oldSlot = mc.player.inventory.currentItem;
+                    // Place anvil
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                    PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                    // Return back
+                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                    PistonCrystal.printDebug("Anvil", false);
+                }
+            }
+        }
+
         // All this mess for just a little improvement lmao
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
@@ -2886,7 +2902,7 @@ public class AutoCrystalRewrite extends Module {
                         isAnvilling = true;
                         java.util.Timer t = new java.util.Timer();
                         BlockPos finalCity = city;
-                        // ForcePlace is fine
+                        blockCity = city;
                         crystalAnvil = cr.getPosition().add(0, -1, 0);
                         t.schedule(
                                 new java.util.TimerTask() {
@@ -2912,6 +2928,7 @@ public class AutoCrystalRewrite extends Module {
 
         return true;
     }
+    BlockPos blockCity = null;
 
     // Function swing arm
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
@@ -4037,6 +4054,22 @@ public class AutoCrystalRewrite extends Module {
                             // For not spamming of packets lol
                             if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
                                 crystalSecondBreak.addCrystal(null, 1000);
+
+                            if (crystalAnvil != null && sameBlockPos(crystalAnvil, new BlockPos(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))) {
+                                int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                                if (slot != -1) {
+                                    if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
+                                        int oldSlot = mc.player.inventory.currentItem;
+                                        // Place anvil
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                                        PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                                        // Return back
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                                        PistonCrystal.printDebug("Anvil", false);
+                                    }
+                                }
+
+                            }
                         }
                     }
                     breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
