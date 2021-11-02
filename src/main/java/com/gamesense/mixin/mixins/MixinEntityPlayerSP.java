@@ -10,6 +10,7 @@ import com.gamesense.client.module.modules.movement.Sprint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.MoverType;
 import net.minecraft.network.play.client.CPacketEntityAction;
@@ -54,6 +55,8 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
     private boolean serverSprintState;
     @Shadow
     private boolean serverSneakState;
+
+    PlayerTweaks playerTweaks = ModuleManager.getModule(PlayerTweaks.class);
 
     public MixinEntityPlayerSP() {
         super(Minecraft.getMinecraft().world, Minecraft.getMinecraft().session.getProfile());
@@ -200,8 +203,17 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
 
     @Inject(method="pushOutOfBlocks", at=@At(value="HEAD"), cancellable=true)
     private void pushOutOfBlocksHook(double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
-        PlayerTweaks vel = ModuleManager.getModule(PlayerTweaks.class);
-        if (vel.isEnabled() && vel.noPushBlock.getValue())
+        if (playerTweaks.isEnabled() && playerTweaks.noPushBlock.getValue())
             cir.setReturnValue(false);
+    }
+
+    @Redirect(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityPlayerSP;closeScreen()V"))
+    public void closeScreen(EntityPlayerSP player) {
+        if (!playerTweaks.isEnabled() || !playerTweaks.portalChat.getValue()) player.closeScreen();
+    }
+
+    @Redirect(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;displayGuiScreen(Lnet/minecraft/client/gui/GuiScreen;)V"))
+    public void closeScreen(Minecraft minecraft, GuiScreen screen) {
+        if (!playerTweaks.isEnabled() || !playerTweaks.portalChat.getValue()) mc.displayGuiScreen(screen);
     }
 }
