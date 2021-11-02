@@ -9,6 +9,7 @@ import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -27,6 +28,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,6 +157,9 @@ public class SurroundRewrite extends Module {
                         break;
                     }
                     if (entity instanceof EntityEnderCrystal && destroyCrystal.getValue()) {
+                        if (rotate.getValue()) {
+                            BlockUtil.faceVectorPacketInstant(new Vec3d(entity.getPosition()).add(0.5, 0, 0.5), true);
+                        }
                         mc.player.connection.sendPacket(new CPacketUseEntity(entity));
                         mc.player.connection.sendPacket(new CPacketAnimation(EnumHand.MAIN_HAND));
                     }
@@ -164,6 +169,9 @@ public class SurroundRewrite extends Module {
                     for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
                         if (entity instanceof EntityEnderCrystal) {
                             if (sameBlockPos(entity.getPosition(), targetPos)) {
+                                if (rotate.getValue()) {
+                                    BlockUtil.faceVectorPacketInstant(new Vec3d(entity.getPosition()).add(0.5, 0, 0.5), true);
+                                }
                                 mc.player.connection.sendPacket(new CPacketUseEntity(entity));
                                 mc.player.connection.sendPacket(new CPacketAnimation(EnumHand.MAIN_HAND));
                             }

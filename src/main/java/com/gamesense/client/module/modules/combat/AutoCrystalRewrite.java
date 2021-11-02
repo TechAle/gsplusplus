@@ -1053,8 +1053,9 @@ public class AutoCrystalRewrite extends Module {
         // Idk shits happened
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
-        isRotating = false;
+        isRotating = isAnvilling = false;
         stopAC = false;
+        crystalAnvil = null;
         highestId = 0;
         // Lmao
         String rickroll = "Never gonna give you up\n" +
@@ -1182,6 +1183,7 @@ public class AutoCrystalRewrite extends Module {
         }
 
         // Remember this slot. This is used for preventing the bug with normal switch (shit that only gs has patched lmao)
+
         oldSlot = mc.player.inventory.currentItem;
 
     }
@@ -1276,8 +1278,24 @@ public class AutoCrystalRewrite extends Module {
 
     //region Calculate Place Crystal
 
+    boolean isAnvilling = false;
+    BlockPos crystalAnvil = null;
     // Main function for calculating the best crystal
     CrystalInfo.PlaceInfo getTargetPlacing(String mode) {
+
+        // AnvilCity
+        if (this.anvilCity.getText().length() > 0)
+            // If we are pressing a button
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
+                if (crystalAnvil != null) {
+                    if (mc.world.getLoadedEntityList().stream().filter(e -> e instanceof EntityEnderCrystal && e.getPosition() == crystalAnvil).findAny().isPresent()) {
+                        crystalAnvil = null;
+                    } else {
+                        return new CrystalInfo.PlaceInfo(8, null, crystalAnvil, 6d);
+                    }
+                }
+            } else isAnvilling = false;
+        else isAnvilling = false;
         // All this mess for just a little improvement lmao
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
@@ -2865,17 +2883,11 @@ public class AutoCrystalRewrite extends Module {
                     // Get anvil
                     int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
                     if (slot != -1) { // 622 2 357
+                        isAnvilling = true;
                         java.util.Timer t = new java.util.Timer();
                         BlockPos finalCity = city;
                         // ForcePlace is fine
-                        forcePlaceCrystal = cr.getPosition().add(0, -1, 0);
-                        if (forceBreak == null) {
-                            forcePlaceDamage = bestBreak.damage;
-                            forcePlaceTarget = bestBreak.target;
-                        } else {
-                            forcePlaceDamage = 10;
-                            forcePlaceTarget = new PlayerInfo(mc.player, 0);
-                        }
+                        crystalAnvil = cr.getPosition().add(0, -1, 0);
                         t.schedule(
                                 new java.util.TimerTask() {
                                     @Override
@@ -2894,8 +2906,9 @@ public class AutoCrystalRewrite extends Module {
                         );
                     }
                 }
-            }
+            } else isAnvilling = false;
             // 621 1 366
+        else isAnvilling = false;
 
         return true;
     }
@@ -2997,10 +3010,14 @@ public class AutoCrystalRewrite extends Module {
     BlockPos lastBestBreak = null;
     // This function is used for getting a basic list of possible players
     Stream<EntityPlayer> getBasicPlayers(double rangeEnemySQ) {
-        return mc.world.playerEntities.stream()
-                .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
-                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
-                .filter(entity -> entity.getHealth() > 0.0f);
+        try {
+            return mc.world.playerEntities.stream()
+                    .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
+                    .filter(entity -> !EntityUtil.basicChecksEntity(entity))
+                    .filter(entity -> entity.getHealth() > 0.0f);
+        }catch (Exception e) {
+            return new ArrayList<EntityPlayer>().stream();
+        }
     }
 
     boolean lookingCrystal(EntityEnderCrystal cr) {
