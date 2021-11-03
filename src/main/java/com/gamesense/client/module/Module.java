@@ -115,9 +115,13 @@ public abstract class Module implements Listenable {
     public static int getIdFromString(String name) {
 
         StringBuilder s = new StringBuilder();
-
-        for (int i = 0; i < name.length(); i++)
-            s.append(Integer.parseInt(String.valueOf(name.charAt(i)), 36));
+        char value;
+        for (int i = 0; i < name.length(); i++) {
+            value = name.charAt(i);
+            if (Character.isDigit(value))
+                s.append(Integer.parseInt(String.valueOf(name.charAt(i)), 36));
+            else return -1;
+        }
 
         try {
             s = new StringBuilder(s.substring(0, 8));
