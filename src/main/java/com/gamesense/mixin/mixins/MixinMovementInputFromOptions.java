@@ -25,7 +25,9 @@ public abstract class MixinMovementInputFromOptions extends MovementInput {
             if (playerTweaks.isEnabled() && playerTweaks.guiMove.getValue()
                 && Minecraft.getMinecraft().currentScreen != null
                 && !(Minecraft.getMinecraft().currentScreen instanceof GuiChat)) {
-                return Keyboard.isKeyDown(keyCode);
+                if (keyCode != Minecraft.getMinecraft().gameSettings.keyBindSneak.getKeyCode()) {
+                    return Keyboard.isKeyDown(keyCode);
+                }
             }
         }
 
