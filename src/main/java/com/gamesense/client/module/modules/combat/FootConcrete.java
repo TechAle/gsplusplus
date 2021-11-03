@@ -63,8 +63,15 @@ public class FootConcrete extends Module {
 
         //BLINK AND TIMER
 
-        if (useBlink.getValue()) {
+        if (useBlink.getValue() && !mode.getValue().equalsIgnoreCase("Fake")) {
             ModuleManager.getModule(Blink.class).enable();
+        }
+
+        if (PlayerUtil.isPlayerClipped(false)) {
+
+            MessageBus.sendClientPrefixMessage("You are already clipped, disabling!");
+            disable();
+
         }
 
         // FIND SLOT

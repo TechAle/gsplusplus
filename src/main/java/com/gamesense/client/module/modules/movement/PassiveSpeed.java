@@ -4,6 +4,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 
 @Module.Declaration(name = "PassiveSpeed", category = Category.Movement)
 public class PassiveSpeed extends Module {
@@ -12,7 +13,7 @@ public class PassiveSpeed extends Module {
 
     @Override
     public void onUpdate() {
-        if (!mc.player.onGround && MotionUtil.isMoving(mc.player)) {
+        if (!mc.player.onGround && MotionUtil.isMoving(mc.player) && !ModuleManager.isModuleEnabled(Flight.class)) {
 
             mc.player.jumpMovementFactor = 0.02f * speed.getValue().floatValue();
 

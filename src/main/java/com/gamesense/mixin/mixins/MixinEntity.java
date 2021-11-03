@@ -38,7 +38,9 @@ public class MixinEntity {
     @Shadow public float stepHeight;
     @Inject(method = "move", at = @At(value = "HEAD"))
     public void prova(MoverType type, double x, double y, double z, CallbackInfo ci) {
-        StepEvent bleach = new StepEvent(stepHeight);
-        GameSense.EVENT_BUS.post(bleach);
+        if (stepHeight != 0) {
+            StepEvent bleach = new StepEvent(y);
+            GameSense.EVENT_BUS.post(bleach);
+        }
     }
 }

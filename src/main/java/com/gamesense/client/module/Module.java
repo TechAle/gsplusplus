@@ -23,6 +23,8 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.client.Minecraft;
 import scala.Int;
 
+import javax.annotation.RegEx;
+
 public abstract class Module implements Listenable {
 
     protected static final Minecraft mc = Minecraft.getMinecraft();
@@ -115,13 +117,13 @@ public abstract class Module implements Listenable {
     public static int getIdFromString(String name) {
 
         StringBuilder s = new StringBuilder();
-        char value;
-        for (int i = 0; i < name.length(); i++) {
-            value = name.charAt(i);
-            if (Character.isDigit(value))
-                s.append(Integer.parseInt(String.valueOf(name.charAt(i)), 36));
-            else return -1;
-        }
+
+        name = name.replace("§", "e");
+
+        String blacklist = "[^a-z]";
+
+        for (int i = 0; i < name.length(); i++)
+            s.append(Integer.parseInt(String.valueOf(name.charAt(i)).replaceAll(blacklist,"e"), 36));
 
         try {
             s = new StringBuilder(s.substring(0, 8));

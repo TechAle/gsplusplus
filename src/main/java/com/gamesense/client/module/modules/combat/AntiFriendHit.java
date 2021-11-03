@@ -18,12 +18,14 @@ public class AntiFriendHit extends Module {
     @EventHandler
     private final Listener<PacketEvent.Send> listener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof CPacketUseEntity && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK) {
-            Entity e = Objects.requireNonNull(((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world));
+        try {
+            if (event.getPacket() instanceof CPacketUseEntity && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK) {
+                Entity e = Objects.requireNonNull(((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world));
 
-            if (SocialManager.isFriend(e.getName()) || e.getName().equals("Doogie13"))
-                event.cancel();
-        }
+                if (SocialManager.isFriend(e.getName()) || e.getName().equals("Doogie13"))
+                    event.cancel();
+            }
+        } catch (Exception ignored) {}
 
     });
 

@@ -91,7 +91,8 @@ public class MouseClickAction extends Module {
 
     @EventHandler
         final Listener<InputEvent.MouseInputEvent> listener = new Listener<>(event -> {
-            if (mc.objectMouseOver.typeOfHit.equals(RayTraceResult.Type.ENTITY) && mc.objectMouseOver.entityHit instanceof EntityPlayer && Mouse.isButtonDown(MCFButtonCode) && friend.getValue()) {
+        if (Mouse.isButtonDown(MCFButtonCode)) {
+            if (mc.objectMouseOver.typeOfHit.equals(RayTraceResult.Type.ENTITY) && mc.objectMouseOver.entityHit instanceof EntityPlayer && friend.getValue()) {
                 if (SocialManager.isFriendForce(mc.objectMouseOver.entityHit.getName())) {
                     SocialManager.delFriend(mc.objectMouseOver.entityHit.getName());
                     MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + "Removed " + mc.objectMouseOver.entityHit.getName() + " from friends list");
@@ -100,6 +101,7 @@ public class MouseClickAction extends Module {
                     MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + "Added " + mc.objectMouseOver.entityHit.getName() + " to friends list");
                 }
             }
+        }
         });
 
     void swap(int InvSlot, int HotBar) {
