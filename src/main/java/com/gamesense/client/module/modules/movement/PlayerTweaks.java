@@ -50,6 +50,7 @@ public class PlayerTweaks extends Module {
 
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
+    BooleanSetting strict = registerBoolean("NoSlowStrict", false, () -> noSlow.getValue());
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     public BooleanSetting portalChat = registerBoolean("Portal Chat", false);
@@ -68,10 +69,22 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
-        if(mc.player.isHandActive() && !mc.player.isRiding())
-        {
-            mc.player.movementInput.moveForward /= 0.2f;
-            mc.player.movementInput.moveStrafe /= 0.2f;
+        if(mc.player.isHandActive() && !mc.player.isRiding()) {
+
+            if (strict.getValue() && !snk) {
+                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
+                snk = true;
+            }
+            if (strict.getValue() && mc.player.onGround) {
+                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
+                snk = false;
+            }
+
+
+            if (noSlow.getValue() && !strict.getValue() || !mc.player.onGround && noSlow.getValue() && strict.getValue()) {
+                mc.player.movementInput.moveForward /= 0.2f;
+                mc.player.movementInput.moveStrafe /= 0.2f;
+            }
 
         }
     });

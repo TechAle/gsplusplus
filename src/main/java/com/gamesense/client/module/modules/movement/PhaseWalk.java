@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.PhaseUtil;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -28,7 +29,7 @@ public class PhaseWalk extends Module {
 
         double[] clip = MotionUtil.forward(0.0624);
 
-        if (ModuleManager.getModule(Flight.class).clipped() || !clipCheck.getValue()) {
+        if (PlayerUtil.isPlayerClipped(false) || !clipCheck.getValue()) {
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && mc.player.onGround)
                 tp(mc.player.posX + clip[0], mc.player.posY - 0.0624, mc.player.posZ + clip[1], false);

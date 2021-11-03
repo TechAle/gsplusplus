@@ -24,6 +24,24 @@ import java.util.Arrays;
 public class Flight extends Module {
 
     public int tpid;
+    float flyspeed;
+    boolean bounded;
+
+    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
+    // Normal settings
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    // Packet settings
+    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting move = registerBoolean("Update", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
@@ -33,21 +51,6 @@ public class Flight extends Module {
             tpid++;
 
     });
-    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
-    float flyspeed;
-    boolean bounded;
-    // Normal settings
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    // Packet settings
-    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
-    IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -112,7 +115,7 @@ public class Flight extends Module {
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(clipped() ? 0.0624 : packetFactor.getValue() == 0 ? 0.624 : 0.0624 * packetFactor.getValue());
+                double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped(false) ? 0.0624 : packetFactor.getValue() == 0 ? 0.624 : 0.0624 * packetFactor.getValue());
 
                 x += dir[0];
                 z += dir[1];
@@ -144,7 +147,8 @@ public class Flight extends Module {
                 if (confirm.getValue())
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
                 PhaseUtil.doBounds(bound.getValue());
-                tpid++;
+                if (move.getValue())
+                    mc.player.setPosition(x,y,z);
             }
 
         }
@@ -158,6 +162,10 @@ public class Flight extends Module {
             if (confirm.getValue() && debug.getValue())
                 MessageBus.sendClientPrefixMessageWithID(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "", 69420);
             tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
+
+            mc.player.setPosition(((SPacketPlayerPosLook) event.getPacket()).x,((SPacketPlayerPosLook) event.getPacket()).y,((SPacketPlayerPosLook) event.getPacket()).z);
+            event.cancel();
+
         }
 
     });
@@ -181,12 +189,6 @@ public class Flight extends Module {
         mc.player.capabilities.isFlying = false;
         mc.player.motionX = mc.player.motionY = mc.player.motionZ = 0;
         mc.player.noClip = false;
-    }
-
-    public boolean clipped() {
-
-        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty());
-
     }
 
 }
