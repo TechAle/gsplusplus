@@ -1186,6 +1186,8 @@ public class AutoCrystalRewrite extends Module {
 
         oldSlot = mc.player.inventory.currentItem;
 
+        PlacementUtil.stopSneaking();
+
     }
 
     // Display in the hud
@@ -1287,6 +1289,22 @@ public class AutoCrystalRewrite extends Module {
         if (this.anvilCity.getText().length() > 0)
             // If we are pressing a button
             if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
+
+                if (crystalAnvil != null && blockCity != null) {
+                    if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
+                        int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                        if (slot != -1) { // 622 2 357
+                            int oldSlot = mc.player.inventory.currentItem;
+                            // Place anvil
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                            PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                            // Return back
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                            PistonCrystal.printDebug("Anvil", false);
+                        }
+                    }
+                }
+
                 if (crystalAnvil != null) {
                     if (mc.world.getLoadedEntityList().stream().filter(e -> e instanceof EntityEnderCrystal && e.getPosition() == crystalAnvil).findAny().isPresent()) {
                         crystalAnvil = null;
@@ -1294,23 +1312,10 @@ public class AutoCrystalRewrite extends Module {
                         return new CrystalInfo.PlaceInfo(8, null, crystalAnvil, 6d);
                     }
                 }
-            } else isAnvilling = false;
-        else isAnvilling = false;
+            } else {isAnvilling = false; crystalAnvil = null;}
+        else {isAnvilling = false; crystalAnvil = null;}
 
-        if (crystalAnvil != null && blockCity != null) {
-            if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
-                int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
-                if (slot != -1) { // 622 2 357
-                    int oldSlot = mc.player.inventory.currentItem;
-                    // Place anvil
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                    PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
-                    // Return back
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-                    PistonCrystal.printDebug("Anvil", false);
-                }
-            }
-        }
+
 
         // All this mess for just a little improvement lmao
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
@@ -2873,21 +2878,21 @@ public class AutoCrystalRewrite extends Module {
                         new Vec3i(-1, 0, 0),
                         new Vec3i(0, 0, 1),
                         new Vec3i(0, 0, -1)
-                }) { // 622 2 357
+                }) { // 12 2 -11 - 12 2 -13
                     BlockPos surroundPosition = new BlockPos(surround.getX() + endCrystalPosition.getX(), endCrystalPosition.getY(), surround.getZ() + endCrystalPosition.getZ());
                     for(EntityPlayer t : getBasicPlayers(40.0).collect(Collectors.toList())) {
-                        BlockPos position = new BlockPos((int) t.posX, (int) t.posY, (int) t.posZ);
+                        BlockPos position = new BlockPos((int)t.posX, (int) t.posY, (int) t.posZ);
                         if (position.getY() == surroundPosition.getY()) {
                             if (position.getX() == surroundPosition.getX()) {
                                 if (Math.abs(position.getZ() - surroundPosition.getZ()) == 1) {
                                     isCity = true;
-                                    city = new BlockPos(position.getX() - surround.getX(), position.getY(), position.getZ() - surround.getZ());
+                                    city = surroundPosition;
                                     break;
                                 }
                             } else if (position.getZ() == surroundPosition.getZ()) {
                                 if (Math.abs(position.getX() - surroundPosition.getX()) == 1) {
                                     isCity = true;
-                                    city = new BlockPos(position.getX() - surround.getX(), position.getY(), position.getZ() - surround.getZ());
+                                    city = surroundPosition;
                                     break;
                                 }
                             }
@@ -2901,6 +2906,7 @@ public class AutoCrystalRewrite extends Module {
                     if (slot != -1) { // 622 2 357
                         isAnvilling = true;
                         java.util.Timer t = new java.util.Timer();
+                        city = new BlockPos(city.getX() + (city.getX() > 0 ? 0 : -1), city.getY(), city.getZ() + (city.getZ() > 0 ? 0 : -1));
                         BlockPos finalCity = city;
                         blockCity = city;
                         crystalAnvil = cr.getPosition().add(0, -1, 0);
