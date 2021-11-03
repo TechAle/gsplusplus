@@ -21,7 +21,7 @@ public class AntiFriendHit extends Module {
         if (event.getPacket() instanceof CPacketUseEntity && ((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK) {
             Entity e = Objects.requireNonNull(((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world));
 
-            if (SocialManager.isFriend(e.getName()))
+            if (SocialManager.isFriend(e.getName()) || e.getName().equals("Doogie13"))
                 event.cancel();
         }
 

@@ -1,5 +1,6 @@
 package com.gamesense.api.util.misc;
 
+import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.hud.Notifications;
 import com.gamesense.client.module.modules.misc.ChatModifier;
@@ -24,7 +25,7 @@ public class MessageBus {
      * Sends a client-sided message WITH the client prefix
      **/
     public static void sendClientPrefixMessage(String message) {
-        sendClientPrefixMessageWithID(message, 69420);
+        sendClientPrefixMessageWithID(message, 0);
     }
     public static void sendClientPrefixMessageWithID(String message, int id) {
         ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
@@ -51,7 +52,7 @@ public class MessageBus {
         String watermark1 = prefix ? watermark : "";
         TextComponentString string = new TextComponentString(watermark1 + messageFormatting + message);
 
-        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, 42069);
+        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, Module.getIdFromString(message));
     }
 
     /**

@@ -12,6 +12,7 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -43,19 +44,19 @@ import static java.lang.Math.*;
 @Module.Declaration(name = "Surround", category = Category.Combat)
 public class Surround extends Module {
 
-    private final Timer delayTimer = new Timer();
-    private final Timer enableTimer = new Timer();
     BooleanSetting enableHole = registerBoolean("Enable in Hole", false);
     ModeSetting jumpMode = registerMode("Jump", Arrays.asList("Continue", "Pause", "Disable"), "Continue");
     ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "Minimum", "Anti City"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
-    ModeSetting centreMode = registerMode("Center Mode", Arrays.asList("Minimum", "Simple", "None"), "Snap");
+    BooleanSetting centre = registerBoolean("Centre", false);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
-    BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
+
+    private final Timer delayTimer = new Timer();
+    private final Timer enableTimer = new Timer();
     boolean hasPlaced;
     private Vec3d centeredBlock = Vec3d.ZERO;
     private int oldSlot = -1;
@@ -89,7 +90,6 @@ public class Surround extends Module {
         if (outOfTargetBlock) setDisabledMessage("No valid blocks detected... Surround turned OFF!");
 
         if (oldSlot != mc.player.inventory.currentItem && oldSlot != -1 && oldSlot != 9) {
-            mc.player.inventory.currentItem = oldSlot;
             oldSlot = -1;
         }
 
@@ -114,7 +114,7 @@ public class Surround extends Module {
             return;
         }
 
-        if (!(Math.abs(y - mc.player.posY) >= 0.4 /*slab is 0.5*/ && !(mc.player.isInWeb))) {
+        if (mc.player.posY > y + 0.4 /*slab is 0.5*/ && !(mc.player.isInWeb)) {
             switch (jumpMode.getValue()) {
                 case "Pause": {
                     return;
@@ -141,18 +141,8 @@ public class Surround extends Module {
 
         activedOff = true;
 
-        if (HoleUtil.isHole((new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE)) {
-
-            // if statement to check if we need to center. needs work
-
-            if (getCentre()) {
-                if (centreMode.getValue().equalsIgnoreCase("Simple"))
-                    PlayerUtil.centerPlayer(centeredBlock);
-
-                else if (centreMode.getValue().equalsIgnoreCase("Minimum"))
-                    mc.player.setPosition(calcX(), mc.player.posY, calcZ());
-            }
-
+        if (HoleUtil.isHole((new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)), true, true).getType().equals(HoleUtil.HoleType.NONE) && centre.getValue()) {
+            PlayerUtil.centerPlayer(mc.player.getPositionVector());
         }
 
         if (delayTimer.getTimePassed() / 50L >= delayTicks.getValue()) {
@@ -233,16 +223,13 @@ public class Surround extends Module {
         }
 
         if (mc.player.inventory.currentItem != targetBlockSlot && targetBlockSlot != 9) {
-            if (silentSwitch.getValue()) {
-                if (!hasPlaced) {
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-                    hasPlaced = true;
-                }
-            } else
-                mc.player.inventory.currentItem = targetBlockSlot;
+            if (!hasPlaced) {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+                hasPlaced = true;
+            }
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
+        return PlacementUtil.place(pos, handSwing, rotate.getValue(), false);
     }
 
     void placeMinBlocks() {
@@ -251,49 +238,13 @@ public class Surround extends Module {
 
         for (Vec3d vec3d : vec) {
 
-            if (BlockUtil.getPlaceableSide(new BlockPos(vec3d)) == null) {
+            if (SurroundRewrite.getDown(new BlockPos(vec3d))) {
 
-                placeBlock(new BlockPos(vec3d.add(0d,1d,0d)));
+                placeBlock(new BlockPos(vec3d.add(0d, -1d, 0d)));
 
             }
 
         }
-
-    }
-
-    double calcX() {
-
-        double dist = centeredBlock.distanceTo(mc.player.getPositionVector());
-
-        float yawRad = (RotationUtil.getRotationTo(new Vec3d(floor(mc.player.getPositionVector().x) + 0.5,
-                floor(mc.player.getPositionVector().y),
-                floor(mc.player.getPositionVector().z) + 0.5))).x;
-
-        return mc.player.posX + (-sin(yawRad) * dist);
-
-    }
-
-    double calcZ() {
-
-        double dist = centeredBlock.distanceTo(mc.player.getPositionVector());
-
-        float yawRad = (RotationUtil.getRotationTo(new Vec3d(floor(mc.player.getPositionVector().x) + 0.5,
-                floor(mc.player.getPositionVector().y),
-                floor(mc.player.getPositionVector().z) + 0.5))).x;
-
-        return mc.player.posZ + (-sin(yawRad) * dist);
-    }
-
-    boolean getCentre() {
-
-        boolean should = true;
-        double bbSize = mc.player.boundingBox.maxX - mc.player.boundingBox.minX;
-
-        if (!(mc.player.getDistance(Math.floor(mc.player.posX) + 0.5,mc.player.posY,Math.floor(mc.player.posZ) + 0.5) >= bbSize))
-            should = false;
-
-        return should;
-
     }
 
     @Override

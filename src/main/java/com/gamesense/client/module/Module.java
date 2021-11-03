@@ -112,7 +112,7 @@ public abstract class Module implements Listenable {
         setDisabledMessage(name + " turned OFF!");
     }
 
-    public int getIdFromString(String name) {
+    public static int getIdFromString(String name) {
 
         StringBuilder s = new StringBuilder();
 
@@ -121,7 +121,9 @@ public abstract class Module implements Listenable {
 
         try {
             s = new StringBuilder(s.substring(0, 8));
-        } catch (StringIndexOutOfBoundsException ignored) {}
+        } catch (StringIndexOutOfBoundsException ignored) {
+            s = new StringBuilder(Integer.MAX_VALUE);
+        }
 
         return Integer.MAX_VALUE - Integer.parseInt(s.toString().toLowerCase());
 

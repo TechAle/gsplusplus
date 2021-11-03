@@ -16,8 +16,9 @@ import java.util.Arrays;
 public class StepRewrite extends Module {
 
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
-    BooleanSetting onGround = registerBoolean("On Ground", false);
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
+    BooleanSetting onGround = registerBoolean("On Ground", false);
+    BooleanSetting timer = registerBoolean("Timer", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
 
     @Override
     public void onUpdate() {
@@ -32,6 +33,8 @@ public class StepRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<StepEvent> playerMoveEventListener = new Listener<>(event -> {
+
+        if (timer.getValue()) mc.timer.tickLength = 300f;
 
         if (mc.player.onGround || !onGround.getValue()) {
             float h = event.getY();
@@ -62,6 +65,7 @@ public class StepRewrite extends Module {
 
             mc.player.posY += h;
         }
+        if (timer.getValue()) mc.timer.tickLength = 50f;
     });
 
 }
