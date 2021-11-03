@@ -27,17 +27,20 @@ public class Flight extends Module {
     float flyspeed;
     boolean bounded;
 
-    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     // Normal settings
+    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+
     // Packet settings
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting move = registerBoolean("Update", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting antiRotate = registerBoolean("AntiRotatePacket",false,() -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 1,0,8, () -> antiKick.getValue().equalsIgnoreCase("Down"));
     IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
@@ -49,6 +52,18 @@ public class Flight extends Module {
         /* TPID HANDLING */
         if ((event.getPacket() instanceof CPacketPlayer.Position) || (event.getPacket() instanceof CPacketPlayer.PositionRotation))
             tpid++;
+
+        if (event.getPacket() instanceof CPacketPlayer.Rotation || event.getPacket() instanceof CPacketPlayer.PositionRotation
+                && mode.getValue().equalsIgnoreCase("Packet") && antiRotate.getValue()) {
+
+            if (event.getPacket() instanceof CPacketPlayer.PositionRotation) {
+                CPacketPlayer e = (CPacketPlayer) event.getPacket();
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(e.x,e.y,e.z,e.onGround));
+            }
+
+            event.cancel();
+
+        }
 
     });
 
@@ -115,7 +130,7 @@ public class Flight extends Module {
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped(false) ? 0.0624 : packetFactor.getValue() == 0 ? 0.624 : 0.0624 * packetFactor.getValue());
+                double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped() ? 0.0624 : packetFactor.getValue() == 0 ? 0.624 : 0.0624 * packetFactor.getValue());
 
                 x += dir[0];
                 z += dir[1];
@@ -125,7 +140,7 @@ public class Flight extends Module {
             }
 
 
-            if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % 4 == 0) {
+            if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % (antiKick.getValue().equalsIgnoreCase("Down") ? antiKickFreq.getValue() : 4) == 0) {
 
                 y -= 0.01;
                 bounded = true;
@@ -162,9 +177,6 @@ public class Flight extends Module {
             if (confirm.getValue() && debug.getValue())
                 MessageBus.sendClientPrefixMessageWithID(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "", 69420);
             tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
-
-            mc.player.setPosition(((SPacketPlayerPosLook) event.getPacket()).x,((SPacketPlayerPosLook) event.getPacket()).y,((SPacketPlayerPosLook) event.getPacket()).z);
-            event.cancel();
 
         }
 

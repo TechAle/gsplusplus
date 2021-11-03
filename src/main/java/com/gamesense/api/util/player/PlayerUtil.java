@@ -106,7 +106,7 @@ public class PlayerUtil {
 
     public static boolean isPlayerClipped(boolean ignoreTop) {
 
-        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0, !ignoreTop ? 1 : 0, 0)).isEmpty());
+        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0, ignoreTop ? 1 : 0, 0)).isEmpty());
 
     }
 

@@ -10,6 +10,7 @@ import java.util.List;
 public class PhaseUtil {
 
     public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat");
+    public static String normal = "Forward";
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
