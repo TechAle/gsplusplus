@@ -52,11 +52,7 @@ public class MessageBus {
         String watermark1 = prefix ? watermark : "";
         TextComponentString string = new TextComponentString(watermark1 + messageFormatting + message);
 
-        int id = Module.getIdFromString(message);
-
-        if (id == -1) {
-            sendClientRawMessage(message);
-        } else mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, Module.getIdFromString(message));
+        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, Module.getIdFromString(message));
     }
 
     /**
