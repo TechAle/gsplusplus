@@ -1300,7 +1300,6 @@ public class AutoCrystalRewrite extends Module {
                             PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
                             // Return back
                             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-                            PistonCrystal.printDebug("Anvil", false);
                         }
                     }
                 }
@@ -2870,32 +2869,37 @@ public class AutoCrystalRewrite extends Module {
             if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
                 // 618, 1, 366, 621 1 366
                 boolean isCity = false;
-                BlockPos city = BlockPos.ORIGIN;
-                BlockPos endCrystalPosition = new BlockPos((int) cr.posX, (int) cr.posY, (int) cr.posZ);
+                BlockPos anvilPosition = BlockPos.ORIGIN;
+                final int[] endCrystalPositions = {(int) cr.posX, (int) cr.posY, (int) cr.posZ};
                 // Check if the target is getting city
                 for(Vec3i surround : new Vec3i[]{
                         new Vec3i(1, 0, 0),
                         new Vec3i(-1, 0, 0),
                         new Vec3i(0, 0, 1),
                         new Vec3i(0, 0, -1)
-                }) { // 12 2 -11 - 12 2 -13
-                    BlockPos surroundPosition = new BlockPos(surround.getX() + endCrystalPosition.getX(), endCrystalPosition.getY(), surround.getZ() + endCrystalPosition.getZ());
+                }) { // 11, 2, -9
+                    final int[] surroundPosition = new int[] {endCrystalPositions[0] + surround.x, endCrystalPositions[1], endCrystalPositions[2] + surround.z};
                     for(EntityPlayer t : getBasicPlayers(40.0).collect(Collectors.toList())) {
-                        BlockPos position = new BlockPos((int)t.posX, (int) t.posY, (int) t.posZ);
-                        if (position.getY() == surroundPosition.getY()) {
-                            if (position.getX() == surroundPosition.getX()) {
-                                if (Math.abs(position.getZ() - surroundPosition.getZ()) == 1) {
-                                    isCity = true;
-                                    city = surroundPosition;
-                                    break;
+                        int[] playerPosition = new int[]{(int) t.posX, (int) t.posY, (int) t.posZ};
+                        if (playerPosition[1] == surroundPosition[1]) {
+                            if (playerPosition[0] == surroundPosition[0]) {
+                                if (Math.abs(playerPosition[2] - surroundPosition[2]) == 1) {
+                                    if (BlockUtil.getBlock(cr.getPosition().add(surround)) instanceof BlockAir) {
+                                        isCity = true;
+                                        anvilPosition = cr.getPosition().add(surround);
+                                        break;
+                                    }
                                 }
-                            } else if (position.getZ() == surroundPosition.getZ()) {
-                                if (Math.abs(position.getX() - surroundPosition.getX()) == 1) {
-                                    isCity = true;
-                                    city = surroundPosition;
-                                    break;
+                            } else if (playerPosition[2] == surroundPosition[2]) {
+                                if (Math.abs(playerPosition[0] - surroundPosition[0]) == 1) {
+                                    if (BlockUtil.getBlock(cr.getPosition().add(surround)) instanceof BlockAir) {
+                                        isCity = true;
+                                        anvilPosition = cr.getPosition().add(surround);
+                                        break;
+                                    }
                                 }
                             }
+
                         }
                     }
                 } //622 2 357
@@ -2906,9 +2910,8 @@ public class AutoCrystalRewrite extends Module {
                     if (slot != -1) { // 622 2 357
                         isAnvilling = true;
                         java.util.Timer t = new java.util.Timer();
-                        city = new BlockPos(city.getX() + (city.getX() > 0 ? 0 : -1), city.getY(), city.getZ() + (city.getZ() > 0 ? 0 : -1));
-                        BlockPos finalCity = city;
-                        blockCity = city;
+                        BlockPos finalCity = anvilPosition;
+                        blockCity = anvilPosition;
                         crystalAnvil = cr.getPosition().add(0, -1, 0);
                         t.schedule(
                                 new java.util.TimerTask() {
@@ -2920,7 +2923,6 @@ public class AutoCrystalRewrite extends Module {
                                         PlacementUtil.place(finalCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
                                         // Return back
                                         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-                                        PistonCrystal.printDebug("Anvil", false);
                                         t.cancel();
                                     }
                                 },
@@ -4071,7 +4073,6 @@ public class AutoCrystalRewrite extends Module {
                                         PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
                                         // Return back
                                         mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-                                        PistonCrystal.printDebug("Anvil", false);
                                     }
                                 }
 
