@@ -25,7 +25,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "Foot Walker", category = Category.Combat)
+@Module.Declaration(name = "Foot Walker", category = Category.Combat, priority = 101)
 public class FootWalker extends Module {
 
     boolean finishOnGround,

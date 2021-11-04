@@ -28,7 +28,7 @@ import java.util.Arrays;
  * @since 15/07/2021
  */
 
-@Module.Declaration(name = "FootConcrete", category = Category.Combat)
+@Module.Declaration(name = "FootConcrete", category = Category.Combat, priority = 101)
 public class FootConcrete extends Module {
 
     final Timer concreteTimer = new Timer();
