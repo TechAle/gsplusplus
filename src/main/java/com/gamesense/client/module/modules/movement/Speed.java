@@ -59,6 +59,8 @@ public class Speed extends Module {
     private double playerSpeed;
     private double velocity;
 
+    Timer tmrer = new Timer();
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
@@ -67,6 +69,9 @@ public class Speed extends Module {
         }
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
+
+            tmrer.hasReached(75,true);
+
             double speedY = jumpHeight.getValue();
 
             if (mc.player.onGround && jump.getValue()) mc.player.jump();
@@ -91,7 +96,7 @@ public class Speed extends Module {
                 }
             }
             playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
-            double[] dir = MotionUtil.forward(Math.max(playerSpeed, velocity * multiply.getValue()));
+            double[] dir = MotionUtil.forward(boost.getValue() ? Math.max(playerSpeed, velocity * multiply.getValue()) : playerSpeed);
             event.setX(dir[0]);
             event.setZ(dir[1]);
 
