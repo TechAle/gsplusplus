@@ -53,31 +53,38 @@ public class SurroundRewrite extends Module {
     BooleanSetting alertPlayerClip = registerBoolean("Alert Player Clip", true);
     BooleanSetting stopAC = registerBoolean("Stop AC", false);
     IntegerSetting tickStopAC = registerInteger("Tick Stop AC", 3, 0, 5, () -> stopAC.getValue());
+    ArrayList<BlockPos> blockChanged = new ArrayList<>();
 
     @EventHandler
     private final Listener<PacketEvent.Receive> listener2 = new Listener<>(event -> {
+        /*
         if (event.getPacket() instanceof SPacketBlockChange && this.predict.getValue()) {
             SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
-            for (BlockPos pos : this.getOffsets()) {
-                if (!pos.equals(packet.getBlockPosition()) || packet.getBlockState().getBlock() != Blocks.AIR) continue;
-                int blockSlot = this.getSlot();
-                if (blockSlot == -1) {
-                    return;
+            if (!blockChanged.contains(packet.getBlockPosition())) {
+                for (BlockPos pos : this.getOffsets()) {
+                    if (!pos.equals(packet.getBlockPosition()) || packet.getBlockState().getBlock() != Blocks.AIR)
+                        continue;
+                    int blockSlot = this.getSlot();
+                    if (blockSlot == -1) {
+                        return;
+                    }
+                    if (blockSlot != mc.player.inventory.currentItem)
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(blockSlot));
+                    PlacementUtil.place(pos, EnumHand.MAIN_HAND, false, false);
+                    if (blockSlot != mc.player.inventory.currentItem) {
+                        mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                        mc.playerController.updateController();
+                    }
+                    if (stopAC.getValue()) {
+                        tickAC = tickStopAC.getValue();
+                        AutoCrystalRewrite.stopAC = true;
+                    }
+                    PistonCrystal.printDebug("Predict Place", false);
+                    blockChanged.add(pos);
+                    break;
                 }
-                if (blockSlot != mc.player.inventory.currentItem)
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(blockSlot));
-                PlacementUtil.place(pos, EnumHand.MAIN_HAND, false, false);
-                if (blockSlot != mc.player.inventory.currentItem) {
-                    mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
-                    mc.playerController.updateController();
-                }
-                if (stopAC.getValue()) {
-                    tickAC = tickStopAC.getValue();
-                    AutoCrystalRewrite.stopAC = true;
-                }
-                break;
             }
-        }
+        }*/
     });
     Timer alertDelay = new Timer();
     boolean hasPlaced;
@@ -154,6 +161,10 @@ public class SurroundRewrite extends Module {
                 }
 
                 BlockPos targetPos = offsetPattern.get(offsetSteps++);
+
+                if (blockChanged.contains(targetPos))
+                    continue;
+
                 mc.world.getEntitiesInAABBexcluding(null, new AxisAlignedBB(targetPos), null);
                 boolean foundSomeone = false;
                 for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(targetPos))) {
@@ -211,6 +222,8 @@ public class SurroundRewrite extends Module {
                         AutoCrystalRewrite.stopAC = true;
                     }
 
+                    PistonCrystal.printDebug("Normal Place", false);
+
                     blocksPlaced++;
                     if (rotate.getValue())
                         if (afterRotate.getValue() != 0)
@@ -229,6 +242,7 @@ public class SurroundRewrite extends Module {
         }
 
         PlacementUtil.stopSneaking();
+        blockChanged.clear();
 
 
     }
