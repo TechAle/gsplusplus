@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Module.Declaration(name = "SurroundRewrite", category = Category.Combat)
+@Module.Declaration(name = "SurroundRewrite", category = Category.Combat, priority = 101)
 public class SurroundRewrite extends Module {
 
     private final Timer delayTimer = new Timer();
