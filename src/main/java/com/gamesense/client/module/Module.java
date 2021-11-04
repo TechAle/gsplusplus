@@ -11,6 +11,10 @@ import java.util.function.Supplier;
 import com.gamesense.api.setting.values.*;
 import io.netty.util.AsciiString;
 import me.zero.alpine.listener.Listenable;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
 import org.lwjgl.input.Keyboard;
 
 import com.gamesense.api.event.events.RenderEvent;
