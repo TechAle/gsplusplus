@@ -200,8 +200,7 @@ public class Surround extends Module {
                 offsetSteps++;
             }
 
-            if (hasPlaced)
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
         }
     }
 

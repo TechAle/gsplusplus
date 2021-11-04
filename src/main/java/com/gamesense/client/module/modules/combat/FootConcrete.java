@@ -32,7 +32,8 @@ import java.util.Arrays;
 public class FootConcrete extends Module {
 
     final Timer concreteTimer = new Timer();
-    ModeSetting jumpMode = registerMode("jumpMode", Arrays.asList("real", "fake"), "real");
+
+    ModeSetting jumpMode = registerMode("Jump Mode", Arrays.asList("Real", "Instant"), "Instant");
     BooleanSetting general = registerBoolean("General Settings", false);
     ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("flat", "clip", "basic"), "jump");
     IntegerSetting strength = registerInteger("Strength", 1, 0, 25, () -> general.getValue() && !mode.getValue().equalsIgnoreCase("clip"));
@@ -61,7 +62,7 @@ public class FootConcrete extends Module {
 
         invalidHotbar = false;
 
-        //BLINK AND TIMER
+        //BLINK
 
         if (useBlink.getValue() && !mode.getValue().equalsIgnoreCase("Fake")) {
             ModuleManager.getModule(Blink.class).enable();
@@ -86,9 +87,6 @@ public class FootConcrete extends Module {
 
             disable();
 
-            if (useBlink.getValue()) {
-                ModuleManager.getModule(Blink.class).disable();
-            }
 
             disable();
 
@@ -110,8 +108,13 @@ public class FootConcrete extends Module {
                 }
 
                 if (jumpMode.getValue().equals("real")) {
+
+                    if (useBlink.getValue()) {
+                        ModuleManager.getModule(Blink.class).disable();
+                    }
                     mc.player.jump();
                     pos = new BlockPos(mc.player.getPositionVector());
+
                 } else {
 
                     // CIRUU BURROW (not ashamed to admit it)
@@ -152,7 +155,7 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
-        if (mode.getValue().equalsIgnoreCase("Real")) {
+        if (jumpMode.getValue().equalsIgnoreCase("Real")) {
 
             if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
@@ -189,15 +192,19 @@ public class FootConcrete extends Module {
 
         for (BlockPos pos : holes) {
 
-            if (mc.world.isAirBlock(pos.add(0, 1, 0)) && mc.world.isAirBlock(pos) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 2
-                && Math.floor(pos.y) == Math.floor(mc.player.posY)) {
+            if (mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0,1,0))  && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 3
+                    && !(Math.floor(pos.y) == Math.floor(mc.player.posY))) {
                 holes.add(pos);
                 break;
             }
 
         }
 
-        return holes.get(0);
+        try {
+            return holes.get(holes.size() - 1);
+        } catch (Exception e) {
+            return holes.get(0);
+        }
     }
 
     void getPacket() {

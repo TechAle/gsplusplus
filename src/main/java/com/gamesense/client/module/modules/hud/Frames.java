@@ -19,6 +19,7 @@ public class Frames extends HUDModule {
         component = new ListComponent(new Labeled(getName(), null, () -> true), position, getName(), new FramesList(), GameSenseGUI.FONT_HEIGHT, HUDModule.LIST_BORDER);
 
     }
+
     private static class FramesList implements HUDList {
 
         @Override
@@ -46,5 +47,4 @@ public class Frames extends HUDModule {
             return false;
         }
     }
-}
-*/
+}*/

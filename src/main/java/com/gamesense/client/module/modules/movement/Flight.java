@@ -17,13 +17,14 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
-    public int tpid;
+    int tpid;
     float flyspeed;
     boolean bounded;
 
@@ -140,21 +141,18 @@ public class Flight extends Module {
             }
 
 
-            if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % (antiKick.getValue().equalsIgnoreCase("Down") ? antiKickFreq.getValue() : 4) == 0) {
+            if (mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()).add(0,0.1,0))) { // prevent the funi from happening
+                if (!antiKick.getValue().equalsIgnoreCase("None") && mc.player.ticksExisted % (antiKick.getValue().equalsIgnoreCase("Down") ? antiKickFreq.getValue() : 4) == 0) {
 
-                y -= 0.01;
-                bounded = true;
+                    y -= 0.01;
+                    bounded = true;
 
-            } else if (antiKick.getValue().equalsIgnoreCase("Bounce") && mc.player.ticksExisted % 4 == 2) {
+                } else if (antiKick.getValue().equalsIgnoreCase("Bounce") && mc.player.ticksExisted % 4 == 2) {
 
-                y += 0.01;
-                bounded = true;
+                    y += 0.01;
+                    bounded = true;
 
-            } else if (antiKick.getValue().equalsIgnoreCase("None")) {
-
-                event.setY(0);
-                bounded = true;
-
+                }
             }
 
             for (int i = 0; i < packets.getValue(); i++) {

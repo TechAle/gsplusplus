@@ -30,25 +30,8 @@ public class PlayerUtil {
     // Find closest target
     // 0b00101010: replaced getDistance with getDistanceSq as speeds up calculation
     public static EntityPlayer findClosestTarget(double rangeMax, EntityPlayer aimTarget) {
-        rangeMax *= rangeMax;
-        List<EntityPlayer> playerList = mc.world.playerEntities;
 
-        EntityPlayer closestTarget = null;
-
-        for (EntityPlayer entityPlayer : playerList) {
-
-            if (EntityUtil.basicChecksEntity(entityPlayer))
-                continue;
-
-            if (aimTarget == null && mc.player.getDistanceSq(entityPlayer) <= rangeMax) {
-                closestTarget = entityPlayer;
-                continue;
-            }
-            if (aimTarget != null && mc.player.getDistanceSq(entityPlayer) <= rangeMax && mc.player.getDistanceSq(entityPlayer) < mc.player.getDistanceSq(aimTarget)) {
-                closestTarget = entityPlayer;
-            }
-        }
-        return closestTarget;
+        return findClosestTarget(rangeMax,aimTarget,false);
     }
 
     public static EntityPlayer findClosestTarget(double rangeMax, EntityPlayer aimTarget, boolean moving) {

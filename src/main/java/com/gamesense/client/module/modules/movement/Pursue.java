@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "Pursue", category = Category.Movement)
 public class Pursue extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Closest", "Moving"), "Closest");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Closest", "Looking"), "Closest");
 
     @Override
     public void onUpdate() {
