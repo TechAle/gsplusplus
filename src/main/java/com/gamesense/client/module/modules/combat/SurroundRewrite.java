@@ -51,6 +51,8 @@ public class SurroundRewrite extends Module {
     BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false);
     BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false);
     BooleanSetting alertPlayerClip = registerBoolean("Alert Player Clip", true);
+    BooleanSetting stopAC = registerBoolean("Stop AC", false);
+    IntegerSetting tickStopAC = registerInteger("Tick Stop AC", 3, 0, 5, () -> stopAC.getValue());
 
     @EventHandler
     private final Listener<PacketEvent.Receive> listener2 = new Listener<>(event -> {
@@ -68,6 +70,10 @@ public class SurroundRewrite extends Module {
                 if (blockSlot != mc.player.inventory.currentItem) {
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
                     mc.playerController.updateController();
+                }
+                if (stopAC.getValue()) {
+                    tickAC = tickStopAC.getValue();
+                    AutoCrystalRewrite.stopAC = true;
                 }
                 break;
             }
@@ -95,7 +101,7 @@ public class SurroundRewrite extends Module {
         }
         return slot;
     }
-
+    int tickAC = -1;
     @Override
     protected void onEnable() {
         alertDelay.setTimer(0);
@@ -115,6 +121,11 @@ public class SurroundRewrite extends Module {
         if (disableOnJump.getValue() && !mc.player.onGround) {
             disable();
             return;
+        }
+
+        if (tickAC > -1) {
+            if (--tickAC == 0)
+                AutoCrystalRewrite.stopAC = false;
         }
 
 
@@ -194,6 +205,12 @@ public class SurroundRewrite extends Module {
                 }
 
                 if (PlacementUtil.place(targetPos, EnumHand.MAIN_HAND, rotate.getValue(), false)) {
+
+                    if (stopAC.getValue()) {
+                        tickAC = tickStopAC.getValue();
+                        AutoCrystalRewrite.stopAC = true;
+                    }
+
                     blocksPlaced++;
                     if (rotate.getValue())
                         if (afterRotate.getValue() != 0)
