@@ -1,6 +1,8 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.movement.AutoWalk;
 import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;

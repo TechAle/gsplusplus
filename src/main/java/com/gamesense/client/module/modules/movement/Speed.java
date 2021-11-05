@@ -70,7 +70,9 @@ public class Speed extends Module {
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
 
-            tmrer.hasReached(75,true);
+            if (tmrer.hasReached(75, true)) {
+                velocity = 0;
+            }
 
             double speedY = jumpHeight.getValue();
 
