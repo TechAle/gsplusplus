@@ -16,7 +16,7 @@ public class Jesus extends Module {
     @EventHandler
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
 
-        if (event.getBlock().equals(Blocks.WATER))
+        if (event.getBlock().equals(Blocks.WATER) && !mc.gameSettings.keyBindSneak.isKeyDown())
             event.setbb(Block.FULL_BLOCK_AABB);
 
     });
