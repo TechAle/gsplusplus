@@ -114,7 +114,12 @@ public class Flight extends Module {
             }
 
             if (MotionUtil.isMoving(mc.player)) {
-                MotionUtil.setSpeed(mc.player, speed.getValue());
+
+                double[] dir = MotionUtil.forward(speed.getValue());
+
+                event.setX(dir[0]);
+                event.setZ(dir[1]);
+
             } else {
                 event.setX(0);
                 event.setZ(0);
