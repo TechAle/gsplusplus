@@ -1,5 +1,8 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.event.GameSenseEvent;
+import com.gamesense.api.event.events.BoundingBoxEvent;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.module.modules.movement.Avoid;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
@@ -31,20 +34,15 @@ public class MixinGetCollisionBB {
 
     @Inject(method = "getCollisionBoundingBox", at = @At("HEAD"), cancellable = true)
     private void getCollisionBoundingBox(IBlockState blockState, IBlockAccess worldIn, BlockPos pos, CallbackInfoReturnable<AxisAlignedBB> cir) {
-        if (mc.world != null && Avoid.INSTANCE.isEnabled()) {
-            Block checkBlock = getBlock(pos);
-            if (checkBlock.equals(Blocks.FIRE) && Avoid.INSTANCE.fire.getValue() && !Avoid.INSTANCE.bigFire.getValue() ||
-                    checkBlock.equals(Blocks.CACTUS) && Avoid.INSTANCE.cactus.getValue() ||
-                    (!mc.world.isBlockLoaded(pos, false) || pos.getY() < 0) && Avoid.INSTANCE.theVoid.getValue()) {
-                cir.cancel();
-                cir.setReturnValue(Block.FULL_BLOCK_AABB);
-            } else if (checkBlock.equals(Blocks.FIRE) && Avoid.INSTANCE.fire.getValue() && Avoid.INSTANCE.bigFire.getValue() && Avoid.INSTANCE.isEnabled()) {
 
-                cir.cancel();
-                cir.setReturnValue(Block.FULL_BLOCK_AABB.expand(0.1,0.1,0.1));
+        BoundingBoxEvent event = new BoundingBoxEvent(blockState.getBlock());
+        GameSense.EVENT_BUS.post(event);
 
-            }
+        if (event.changed) {
+            cir.cancel();
+            cir.setReturnValue(event.getbb());
         }
+
     }
 
 }

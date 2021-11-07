@@ -40,6 +40,7 @@ public class Speed extends Module {
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
     BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
     DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,3, () -> boost.getValue() && boost.isVisible());
+    DoubleSetting timeout = registerDouble("Timeout", 700,150,1500);
 
     DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
@@ -58,8 +59,8 @@ public class Speed extends Module {
     private boolean slowDown;
     private double playerSpeed;
     private double velocity;
-
-    Timer tmrer = new Timer();
+    
+    Timer kbTimer = new Timer();
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -69,10 +70,6 @@ public class Speed extends Module {
         }
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
-
-            if (tmrer.hasReached(75, true)) {
-                velocity = 0;
-            }
 
             double speedY = jumpHeight.getValue();
 
@@ -98,7 +95,11 @@ public class Speed extends Module {
                 }
             }
             playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
-            double[] dir = MotionUtil.forward(boost.getValue() ? Math.max(playerSpeed, velocity * multiply.getValue()) : playerSpeed);
+
+            if (boost.getValue() && !kbTimer.hasReached(timeout.getValue().longValue()))
+                playerSpeed += velocity;
+
+            double[] dir = MotionUtil.forward(playerSpeed);
             event.setX(dir[0]);
             event.setZ(dir[1]);
 
@@ -139,12 +140,10 @@ public class Speed extends Module {
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof SPacketEntityVelocity)
-            velocity = Math.abs(((SPacketEntityVelocity) event.getPacket()).motionX) + Math.abs(((SPacketEntityVelocity) event.getPacket()).motionZ);
-
-        if (event.getPacket() instanceof SPacketExplosion)
+        if (event.getPacket() instanceof SPacketExplosion) {
             velocity = Math.abs(((SPacketExplosion) event.getPacket()).motionX) + Math.abs(((SPacketExplosion) event.getPacket()).motionZ);
-
+            kbTimer.reset();
+        }
 
     });
 
