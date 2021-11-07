@@ -27,13 +27,12 @@ public class Flight extends Module {
 
     int tpid;
     float flyspeed;
-    boolean bounded;
-
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting antiKickFlight = registerBoolean("AntiKick", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
 
     // Packet settings
     DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -96,6 +95,9 @@ public class Flight extends Module {
             mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
             mc.player.capabilities.isFlying = true;
 
+            if (antiKickFlight.getValue())
+                mc.player.motionY = -0.00001;
+
         } else if (mode.getValue().equalsIgnoreCase("Static")) {
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
@@ -114,11 +116,13 @@ public class Flight extends Module {
             if (MotionUtil.isMoving(mc.player)) {
                 MotionUtil.setSpeed(mc.player, speed.getValue());
             } else {
-
                 event.setX(0);
                 event.setZ(0);
-
             }
+
+            if (antiKickFlight.getValue())
+                event.setY(event.getY() - 0.00001);
+
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
             event.setY(0);
@@ -136,14 +140,10 @@ public class Flight extends Module {
 
                 y -= PlayerUtil.isPlayerClipped() ? 0.0624 : 0.0624 * packetY.getValue();
 
-                bounded = true;
-
             }
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
                 y += PlayerUtil.isPlayerClipped() ? 0.0624 : 0.0624 * packetY.getValue();
-
-                bounded = true;
 
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
@@ -153,8 +153,6 @@ public class Flight extends Module {
                 x += dir[0];
                 z += dir[1];
 
-                bounded = true;
-
             }
 
 
@@ -163,13 +161,11 @@ public class Flight extends Module {
                         && !mc.player.onGround) {
 
                     y -= 0.01;
-                    bounded = true;
 
                 } else if (antiKick.getValue().equalsIgnoreCase("Bounce") && mc.player.ticksExisted % antiKickFreq.getValue() == 1
                         && !mc.player.onGround) {
 
                     y += 0.01;
-                    bounded = true;
 
                 }
             }
