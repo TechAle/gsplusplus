@@ -6,10 +6,11 @@ import net.minecraft.network.play.client.CPacketPlayer;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class PhaseUtil {
 
-    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat");
+    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter");
     public static String normal = "Forward";
 
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -46,6 +47,20 @@ public class PhaseUtil {
                 dir = MotionUtil.forward(100);
                 mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false));
                 break;
+            case "LimitJitter": mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
         }
     }
+
+    public static double limit() {
+
+        Random random = new Random();
+
+        int randomValue = random.nextInt(22);
+        randomValue += 70;
+        if (random.nextBoolean()) {
+            return randomValue;
+        }
+        return -randomValue;
+    }
+
 }
