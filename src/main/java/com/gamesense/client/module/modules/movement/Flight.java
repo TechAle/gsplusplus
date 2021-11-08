@@ -39,6 +39,7 @@ public class Flight extends Module {
     DoubleSetting packetY = registerDouble("Packet Y Speed", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting update = registerBoolean("Update", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting antiRotate = registerBoolean("AntiRotatePacket",false,() -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4,2,8);
@@ -155,6 +156,13 @@ public class Flight extends Module {
 
                 double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped() ? 0.0624 : packetSpeed.getValue() == 0 ? 0.624 : 0.0624 * packetSpeed.getValue());
 
+                if (PlayerUtil.isPlayerClipped()) {
+
+                    mc.player.motionX *= mc.player.motionX / .0624;
+                    mc.player.motionZ *= mc.player.motionZ / .0624;
+
+                }
+
                 x += dir[0];
                 z += dir[1];
 
@@ -185,6 +193,9 @@ public class Flight extends Module {
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
                 }
+
+                if (update.getValue() && !(mc.player.ticksExisted==6))
+                    mc.player.setPosition(x,y,z);
 
                 PhaseUtil.doBounds(bound.getValue());
             }

@@ -39,8 +39,8 @@ public class Speed extends Module {
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
     BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
-    DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,3, () -> boost.getValue() && boost.isVisible());
-    DoubleSetting timeout = registerDouble("Timeout", 700,150,1500);
+    DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,1, () -> boost.getValue() && boost.isVisible());
+    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue());
 
     DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
@@ -96,8 +96,8 @@ public class Speed extends Module {
             }
             playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
 
-            if (boost.getValue() && !kbTimer.hasReached(timeout.getValue().longValue()))
-                playerSpeed += velocity;
+            if (boost.getValue() && !kbTimer.hasReached(50))
+                playerSpeed += Math.min(velocity * multiply.getValue(), max.getValue());
 
             double[] dir = MotionUtil.forward(playerSpeed);
             event.setX(dir[0]);
