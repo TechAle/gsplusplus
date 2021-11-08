@@ -50,7 +50,8 @@ public class PlayerTweaks extends Module {
 
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
-    BooleanSetting strict = registerBoolean("NoSlowStrict", false, () -> noSlow.getValue());
+    BooleanSetting strict = registerBoolean("No Slow Strict", false, () -> noSlow.getValue());
+    DoubleSetting speed = registerDouble("No Slow Strict Ground Speed", 0.2,0,1);
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     public BooleanSetting portalChat = registerBoolean("Portal Chat", false);
@@ -81,9 +82,14 @@ public class PlayerTweaks extends Module {
             }
 
 
-            if (noSlow.getValue() && !strict.getValue() || !mc.player.onGround && noSlow.getValue() && strict.getValue()) {
+            if (noSlow.getValue() || !mc.player.onGround && noSlow.getValue() && strict.getValue()) {
                 mc.player.movementInput.moveForward /= 0.2f;
                 mc.player.movementInput.moveStrafe /= 0.2f;
+            }
+
+            if (mc.player.onGround && strict.getValue()) {
+                mc.player.movementInput.moveForward /= speed.getValue();
+                mc.player.movementInput.moveStrafe /= speed.getValue();
             }
 
         }

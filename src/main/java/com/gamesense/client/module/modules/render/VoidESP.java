@@ -47,11 +47,10 @@ public class VoidESP extends Module {
         List<BlockPos> blockPosList = BlockUtil.getCircle(mc.player.getPosition(), 0, renderDistance.getValue(), false);
 
         for (BlockPos blockPos : blockPosList) {
-            if (mc.world.getBlockState(blockPos).getBlock().equals(Blocks.BEDROCK)) continue;
-
-            if (isBedrock(blockPos)) continue;
-
-            voidHoles.add(blockPos);
+            if (!mc.world.getBlockState(blockPos).getBlock().equals(Blocks.BEDROCK) && !isBedrock(blockPos))
+                voidHoles.add(blockPos);
+            else
+                voidHoles.remove(blockPos);
         }
     }
 

@@ -18,8 +18,11 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
+import net.minecraft.network.play.server.SPacketExplosion;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author Hoosiers
@@ -35,8 +38,11 @@ public class Speed extends Module {
 
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
+    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,1, () -> boost.getValue() && boost.isVisible());
+    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue());
 
-    DoubleSetting gspeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
+    DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
     DoubleSetting yPortSpeed = registerDouble("Speed YPort", 0.06, 0.01, 0.15, () -> mode.getValue().equals("YPort"));
 
@@ -52,7 +58,9 @@ public class Speed extends Module {
 
     private boolean slowDown;
     private double playerSpeed;
-    int i;
+    private double velocity;
+    
+    Timer kbTimer = new Timer();
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -62,13 +70,14 @@ public class Speed extends Module {
         }
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
+
             double speedY = jumpHeight.getValue();
 
             if (mc.player.onGround && jump.getValue()) mc.player.jump();
 
             if (mc.player.onGround && MotionUtil.isMoving(mc.player) && timer.hasReached(jumpDelay.getValue())) {
                 if (mc.player.isPotionActive(MobEffects.JUMP_BOOST)) {
-                    speedY += (mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.1f;
+                    speedY += (Objects.requireNonNull(mc.player.getActivePotionEffect(MobEffects.JUMP_BOOST)).getAmplifier() + 1) * 0.1f;
                 }
 
                 if (jump.getValue())
@@ -86,6 +95,10 @@ public class Speed extends Module {
                 }
             }
             playerSpeed = Math.max(playerSpeed, MotionUtil.getBaseMoveSpeed());
+
+            if (boost.getValue() && !kbTimer.hasReached(50))
+                playerSpeed += Math.min(velocity * multiply.getValue(), max.getValue());
+
             double[] dir = MotionUtil.forward(playerSpeed);
             event.setX(dir[0]);
             event.setZ(dir[1]);
@@ -93,7 +106,7 @@ public class Speed extends Module {
         }
         if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
 
-            playerSpeed = gspeed.getValue();
+            playerSpeed = gSpeed.getValue();
 
             playerSpeed *= MotionUtil.getBaseMoveSpeed() / 0.2873; // get speed
 
@@ -119,6 +132,17 @@ public class Speed extends Module {
                 }
             }
 
+        }
+
+    });
+
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+
+        if (event.getPacket() instanceof SPacketExplosion) {
+            velocity = Math.abs(((SPacketExplosion) event.getPacket()).motionX) + Math.abs(((SPacketExplosion) event.getPacket()).motionZ);
+            kbTimer.reset();
         }
 
     });

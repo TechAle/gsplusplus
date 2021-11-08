@@ -1,6 +1,5 @@
 package com.gamesense.client.module.modules.combat;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -9,10 +8,8 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.HoleUtil;
-import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -23,7 +20,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -199,9 +195,6 @@ public class Surround extends Module {
 
                 offsetSteps++;
             }
-
-            if (hasPlaced)
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
         }
     }
 
@@ -229,7 +222,11 @@ public class Surround extends Module {
             }
         }
 
-        return PlacementUtil.place(pos, handSwing, rotate.getValue(), false);
+        boolean r = PlacementUtil.place(pos, handSwing, rotate.getValue(), false);
+
+        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+
+        return r;
     }
 
     void placeMinBlocks() {

@@ -7,7 +7,6 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import io.netty.util.internal.MathUtil;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
@@ -15,8 +14,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketInput;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent;
 
 import static java.lang.Math.PI;
@@ -39,6 +36,8 @@ public class Freecam extends Module {
 
     public void onEnable() {
         if (mc.player != null) {
+
+
             isRidingEntity = mc.player.getRidingEntity() != null;
 
             if (mc.player.getRidingEntity() == null) {
@@ -75,10 +74,13 @@ public class Freecam extends Module {
             if (isRidingEntity) {
                 mc.player.startRiding(ridingEntity, true);
             }
+
         }
     }
 
     public void onUpdate() {
+
+        mc.player.onGround = true;
 
         if (!source.getValue()){
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
