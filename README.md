@@ -33,7 +33,7 @@ Considerate that if you spam to get vouched u wont get it 100%, we have a channe
 The experience of gamesense was enough for me to make me say "No, never". So i decided to reserve my new updates
 to only few people that have a little bit of brain.
 
-#### gs Contributors
+#### gs++ Contributors
 * TechAle (Main developer, head developer, mainteiner)
 * Doogie13 (Misc modules)
 * Mwa (Profile system and misc)
