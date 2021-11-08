@@ -269,7 +269,8 @@ public class IRC extends Module {
             return;
 
         if (alwaysIRC.getValue() || msg.startsWith(bindIRC.getText().length() > 0 ? String.valueOf(bindIRC.getText().charAt(0)) : "")) {
-            msg = msg.substring(1);
+            if (!alwaysIRC.getValue())
+                msg = msg.substring(1);
 
             for(String key : map.keySet()) {
                 msg = msg.replace(key, map.get(key));
