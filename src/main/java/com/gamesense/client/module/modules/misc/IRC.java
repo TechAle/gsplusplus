@@ -42,6 +42,7 @@ public class IRC extends Module {
     ColorSetting sideColor = registerColor("SideColor", new GSColor(255, 0, 0));
     BooleanSetting alwaysIRC = registerBoolean("Always IRC", false);
     StringSetting bindIRC = registerString("Bind IRC", "#");
+    BooleanSetting addgs = registerBoolean("Add gs", true);
 
     static boolean finish;
     static final Object syn = new Object();
@@ -78,8 +79,11 @@ public class IRC extends Module {
                             if (!realMSG.equals("update")) {
 
                                 //System.out.println(realName + " : " + realMSG);
+                                String text = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realName + ": " + realMSG;
 
-                                MessageBus.sendClientPrefixMessage(ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realName + ": " + realMSG);
+                                if (addgs.getValue())
+                                    MessageBus.sendClientPrefixMessage(text);
+                                else MessageBus.sendClientRawMessage(text);
 
 
                             }
