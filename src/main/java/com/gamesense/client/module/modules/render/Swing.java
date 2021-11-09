@@ -18,7 +18,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "Swing", category = Category.Render)
 public class Swing extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("Swap", "Silent", "Cancel"), "Swap");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("Swap", "Silent"), "Swap");
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -53,10 +53,6 @@ public class Swing extends Module {
             case "Silent": {
                 event.cancel();
                 mc.player.connection.sendPacket(new CPacketAnimation(event.getHand()));
-                break;
-            }
-            case "Cancel": {
-                event.cancel();
                 break;
             }
         }
