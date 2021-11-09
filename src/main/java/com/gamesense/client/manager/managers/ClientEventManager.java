@@ -1,5 +1,6 @@
 package com.gamesense.client.manager.managers;
 
+import com.gamesense.api.event.GameSenseEvent;
 import com.gamesense.api.event.events.*;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.NameUtil;
@@ -255,6 +256,12 @@ public enum ClientEventManager implements Manager {
                 e.printStackTrace();
                 MessageBus.sendCommandMessage(ChatFormatting.DARK_RED + "Error: " + e.getMessage(), true);
             }
+        } else {
+            final SendMessageEvent eventNow = new SendMessageEvent(event.getMessage());
+            GameSense.EVENT_BUS.post(eventNow);
+            if (eventNow.isCancelled())
+                event.setCanceled(true);
         }
+
     }
 }
