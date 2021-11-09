@@ -2,6 +2,7 @@ package com.gamesense.mixin.mixins;
 
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
+import com.gamesense.api.event.events.SwingEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.movement.HighJump;
@@ -15,6 +16,7 @@ import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.MoverType;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
@@ -70,6 +72,15 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         PlayerMoveEvent moveEvent = new PlayerMoveEvent(type, x, y, z);
         GameSense.EVENT_BUS.post(moveEvent);
         super.move(type, moveEvent.getX(), moveEvent.getY(), moveEvent.getZ());
+    }
+
+    @Inject(method = "swingArm", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/AbstractClientPlayer;swingArm(Lnet/minecraft/util/EnumHand;)V"), cancellable = true)
+    public void swingArm(EnumHand hand, CallbackInfo ci) {
+        SwingEvent event = new SwingEvent(hand);
+        GameSense.EVENT_BUS.post(event);
+        if (event.isCancelled()) {
+            ci.cancel();
+        }
     }
 
     @ModifyArg(method = "setSprinting", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/AbstractClientPlayer;setSprinting(Z)V"), index = 0)

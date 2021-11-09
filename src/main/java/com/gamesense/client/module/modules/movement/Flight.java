@@ -24,10 +24,11 @@ import java.util.Arrays;
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
-    // Normal settings
-    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     int tpid;
     float flyspeed;
+
+    // Normal settings
+    public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
@@ -53,6 +54,9 @@ public class Flight extends Module {
         /* TPID HANDLING */
         if ((event.getPacket() instanceof CPacketPlayer.Position) || (event.getPacket() instanceof CPacketPlayer.PositionRotation))
             tpid++;
+
+        if (event.getPacket() instanceof CPacketPlayer)
+            ((CPacketPlayer) event.getPacket()).pitch = 0;
 
     });
 
