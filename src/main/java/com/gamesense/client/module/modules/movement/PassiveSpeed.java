@@ -13,7 +13,7 @@ public class PassiveSpeed extends Module {
 
     @Override
     public void onUpdate() {
-        if (!mc.player.onGround && MotionUtil.isMoving(mc.player) && !ModuleManager.isModuleEnabled(Flight.class)) {
+        if (!mc.player.onGround && MotionUtil.isMoving(mc.player) && !ModuleManager.isModuleEnabled(LongJump.class)) {
 
             mc.player.jumpMovementFactor = 0.02f * speed.getValue().floatValue();
 

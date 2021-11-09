@@ -6,6 +6,7 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.MotionUtil;
@@ -26,6 +27,7 @@ public class ElytraFly extends Module {
 
     public BooleanSetting sound = registerBoolean("Sounds", true);
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Packet", "Boost"), "Boost");
+    BooleanSetting replace = registerBoolean("Replace", false);
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "Freeze", "Fast", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
@@ -35,12 +37,13 @@ public class ElytraFly extends Module {
     BooleanSetting pursue = registerBoolean("Pursue", false, () -> mode.getValue().equalsIgnoreCase("Control") && upMode.getValue().equalsIgnoreCase("Jump"));
     BooleanSetting build = registerBoolean("Build Height", false, () -> pursue.getValue() && pursue.isVisible());
 
+    int ticks;
     boolean setAng,
             shouldEflyPacket;
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
-        if (event.getPacket() instanceof CPacketPlayer && setAng && mode.getValue().equalsIgnoreCase("Control")) {
+        if (event.getPacket() instanceof CPacketPlayer && setAng && !mode.getValue().equalsIgnoreCase("Boost")) {
 
             ((CPacketPlayer) event.getPacket()).pitch = 0f; // spoof pitch
 
@@ -187,6 +190,11 @@ public class ElytraFly extends Module {
                             event.setZ(0);
 
                         }
+
+                        setAng = true;
+
+                        ticks++;
+
                     } else {
 
                         setAng = false;
@@ -198,6 +206,8 @@ public class ElytraFly extends Module {
                 shouldEflyPacket = !mc.player.onGround;
 
                 if (shouldEflyPacket) {
+
+                    setAng = true;
 
                     event.setY(-0.000001 - glideSpeed.getValue());
 
@@ -301,7 +311,19 @@ public class ElytraFly extends Module {
     });
 
     @Override
+    protected void onEnable() {
+        if (replace.getValue())
+            if (!mc.player.inventory.armorItemInSlot(2).getItem().equals(Items.ELYTRA) && InventoryUtil.findFirstItemSlot(Items.ELYTRA.getClass(), 0, 35) != -1)
+                InventoryUtil.swap(InventoryUtil.findFirstItemSlot(Items.ELYTRA.getClass(), 0, 35), 6);
+    }
+
+    @Override
     protected void onDisable() {
         mc.timer.tickLength = 50;
+
+        // take off again if possible
+        if (replace.getValue())
+            if (mc.player.inventory.armorItemInSlot(2).getItem().equals(Items.ELYTRA) && InventoryUtil.findFirstItemSlot(Items.AIR.getClass(), 0, 35) != -1)
+                InventoryUtil.swap(6, InventoryUtil.findFirstItemSlot(Items.AIR.getClass(), 0, 35));
     }
 }

@@ -34,14 +34,14 @@ public class FootConcrete extends Module {
     final Timer concreteTimer = new Timer();
 
     ModeSetting jumpMode = registerMode("Jump Mode", Arrays.asList("Real", "Instant"), "Instant");
+
     BooleanSetting general = registerBoolean("General Settings", false);
-    ModeSetting mode = registerMode("rubberbandMode", Arrays.asList("flat", "clip", "basic"), "jump");
-    IntegerSetting strength = registerInteger("Strength", 1, 0, 25, () -> general.getValue() && !mode.getValue().equalsIgnoreCase("clip"));
-    BooleanSetting useBlink = registerBoolean("useBlink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
+    ModeSetting rubberBandMode = registerMode("Rubberband Mode", Arrays.asList("flat", "clip", "basic"), "jump");
+    IntegerSetting strength = registerInteger("Strength", 1, 0, 25, () -> general.getValue() && !rubberBandMode.getValue().equalsIgnoreCase("clip"));
+    BooleanSetting useBlink = registerBoolean("Use Blink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting conserve = registerBoolean("Conserve", false, () -> general.getValue());
-    IntegerSetting range = registerInteger("clipRange", 50, 1, 99, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
-    BooleanSetting debugpos = registerBoolean("Debug Position", false, () -> mode.getValue().equalsIgnoreCase("clip") && general.getValue());
+    BooleanSetting debugpos = registerBoolean("Debug Position", false, () -> rubberBandMode.getValue().equalsIgnoreCase("clip") && general.getValue());
 
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
     BooleanSetting obby = registerBoolean("Obsidian", true, () -> blocks.getValue());
@@ -63,10 +63,6 @@ public class FootConcrete extends Module {
         invalidHotbar = false;
 
         //BLINK
-
-        if (useBlink.getValue() && !mode.getValue().equalsIgnoreCase("Fake")) {
-            ModuleManager.getModule(Blink.class).enable();
-        }
 
         if (PlayerUtil.isPlayerClipped(false)) {
 
@@ -110,7 +106,7 @@ public class FootConcrete extends Module {
                 if (jumpMode.getValue().equals("real")) {
 
                     if (useBlink.getValue()) {
-                        ModuleManager.getModule(Blink.class).disable();
+                        ModuleManager.getModule(Blink.class).enable();
                     }
                     mc.player.jump();
                     pos = new BlockPos(mc.player.getPositionVector());
@@ -157,6 +153,7 @@ public class FootConcrete extends Module {
 
         if (jumpMode.getValue().equalsIgnoreCase("Real")) {
 
+            // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
             if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
                 targetBlockSlot = getBlocks();
@@ -166,13 +163,16 @@ public class FootConcrete extends Module {
                 if (targetBlockSlot == -1)
                     disable();
 
+                if (useBlink.getValue())
+                    ModuleManager.getModule(Blink.class).disable();
+
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
                 PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue(), false, true);
 
-                getPacket();
-
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
+                getPacket();
 
                 disable();
             }
@@ -181,11 +181,17 @@ public class FootConcrete extends Module {
 
     }
 
+    @Override
+    protected void onDisable() {
+        if (useBlink.getValue())
+            ModuleManager.getModule(Blink.class).disable();
+    }
+
     private BlockPos findHoles() {
 
         NonNullList<BlockPos> holes = NonNullList.create();
 
-        for (int i = -range.getValue() / 2; i < range.getValue() / 2; i++)
+        for (int i = -90 / 2; i < 90 / 2; i++)
             if (!new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ).equals(new BlockPos(mc.player.getPositionVector())) && mc.world.isAirBlock(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ))) {
                 holes.add(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ));
             }
@@ -209,7 +215,7 @@ public class FootConcrete extends Module {
 
     void getPacket() {
 
-        if (mode.getValue().equalsIgnoreCase("Clip")) {
+        if (rubberBandMode.getValue().equalsIgnoreCase("Clip")) {
             BlockPos pos = findHoles();
 
             if (debugpos.getValue())
@@ -217,7 +223,7 @@ public class FootConcrete extends Module {
 
             mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
 
-        } else if (mode.getValue().equalsIgnoreCase("flat")) {
+        } else if (rubberBandMode.getValue().equalsIgnoreCase("flat")) {
 
             for (int i = 0; i < strength.getValue(); i++)
                 mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random() * 1000),

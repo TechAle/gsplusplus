@@ -128,7 +128,7 @@ public class Scaffold extends Module {
 
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown() && (!MotionUtil.isMoving(mc.player) || !hTower.getValue())) { // TOWER
+        if (mc.gameSettings.keyBindJump.isKeyDown() && (!MotionUtil.isMoving(mc.player) || hTower.getValue())) { // TOWER
 
             switch (towerMode.getValue()) {
 
@@ -173,7 +173,7 @@ public class Scaffold extends Module {
 
         }
 
-        if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()) {
+        if (!(mc.gameSettings.keyBindJump.isKeyDown() || !hTower.getValue()) && !mc.gameSettings.keyBindSprint.isKeyDown()) {
 
             placeBlockPacket(scaffold, true);
 

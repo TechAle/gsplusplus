@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IBlockAccess;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +36,7 @@ public class MixinGetCollisionBB {
     @Inject(method = "getCollisionBoundingBox", at = @At("HEAD"), cancellable = true)
     private void getCollisionBoundingBox(IBlockState blockState, IBlockAccess worldIn, BlockPos pos, CallbackInfoReturnable<AxisAlignedBB> cir) {
 
-        BoundingBoxEvent event = new BoundingBoxEvent(blockState.getBlock());
+        BoundingBoxEvent event = new BoundingBoxEvent(blockState.getBlock(), new Vec3d(pos));
         GameSense.EVENT_BUS.post(event);
 
         if (event.changed) {

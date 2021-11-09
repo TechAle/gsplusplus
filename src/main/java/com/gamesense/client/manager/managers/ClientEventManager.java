@@ -152,10 +152,16 @@ public enum ClientEventManager implements Manager {
         if (event.getEntity().getEntityWorld().isRemote && event.getEntityLiving() == getPlayer()) {
             for (Module module : ModuleManager.getModules()) {
 
-                if (module.isEnabled())
-                    module.onUpdate();
-                else
-                    module.onDisabledUpdate();
+                try {
+                    if (module.isEnabled())
+                        module.onUpdate();
+                    else
+                        module.onDisabledUpdate();
+                } catch (Exception e) {
+                    String vowel = "[aeiouAEIOU]";
+                    MessageBus.sendClientPrefixMessage("Disabled " + module.getName() + " due to " + e);
+                    module.setEnabled(false);
+                }
 
             }
 

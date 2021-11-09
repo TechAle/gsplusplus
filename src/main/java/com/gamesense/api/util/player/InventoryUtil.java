@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
@@ -21,6 +22,16 @@ import java.util.List;
 public class InventoryUtil {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
+
+    public static void swap(int InvSlot, int newSlot) {
+
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, newSlot, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
+
+        mc.playerController.updateController();
+
+    }
 
     public static int findObsidianSlot(boolean offHandActived, boolean activeBefore) {
         int slot = -1;
