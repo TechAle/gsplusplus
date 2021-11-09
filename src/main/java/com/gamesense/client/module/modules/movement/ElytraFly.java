@@ -6,15 +6,19 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.misc.MouseClickAction;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Items;
+import net.minecraft.item.ItemArmor;
+import net.minecraft.item.ItemElytra;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.Vec2f;
@@ -26,6 +30,7 @@ public class ElytraFly extends Module {
 
     public BooleanSetting sound = registerBoolean("Sounds", true);
     ModeSetting mode = registerMode("Mode", Arrays.asList("Control", "Packet", "Boost"), "Boost");
+    BooleanSetting replace = registerBoolean("Replace", false);
     ModeSetting toMode = registerMode("Takeoff", Arrays.asList("PacketFly", "Timer", "Freeze", "Fast", "None"), "PacketFly");
     ModeSetting upMode = registerMode("Up Mode", Arrays.asList("Jump", "Aim"), "Jump", () -> !mode.getValue().equals("Boost"));
     DoubleSetting speed = registerDouble("Speed", 2.5, 0, 10, () -> mode.getValue().equalsIgnoreCase("Control"));
@@ -35,8 +40,25 @@ public class ElytraFly extends Module {
     BooleanSetting pursue = registerBoolean("Pursue", false, () -> mode.getValue().equalsIgnoreCase("Control") && upMode.getValue().equalsIgnoreCase("Jump"));
     BooleanSetting build = registerBoolean("Build Height", false, () -> pursue.getValue() && pursue.isVisible());
 
+    @Override
+    protected void onEnable() {
+        if (replace.getValue())
+            if (!mc.player.inventory.armorItemInSlot(2).getItem().equals(Items.ELYTRA) && InventoryUtil.findFirstItemSlot(Items.ELYTRA.getClass(), 0,35) != -1)
+                InventoryUtil.swap(InventoryUtil.findFirstItemSlot(Items.ELYTRA.getClass(), 0,35), 6);
+    }
+
+    @Override
+    protected void onDisable() {
+        mc.timer.tickLength = 50;
+
+        // take off again if possible
+        if (replace.getValue())
+            if (mc.player.inventory.armorItemInSlot(2).getItem().equals(Items.ELYTRA) && InventoryUtil.findFirstItemSlot(Items.AIR.getClass(), 0,35) != -1)
+                InventoryUtil.swap(6, InventoryUtil.findFirstItemSlot(Items.AIR.getClass(), 0,35));
+    }
+
     boolean setAng,
-            shouldEflyPacket;
+    shouldEflyPacket;
     @EventHandler
     private final Listener<PacketEvent.Send> packetSendListener = new Listener<>(event -> {
 
@@ -48,6 +70,7 @@ public class ElytraFly extends Module {
 
     });
     Timer upTimer = new Timer();
+
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -299,9 +322,4 @@ public class ElytraFly extends Module {
         }
 
     });
-
-    @Override
-    protected void onDisable() {
-        mc.timer.tickLength = 50;
-    }
 }

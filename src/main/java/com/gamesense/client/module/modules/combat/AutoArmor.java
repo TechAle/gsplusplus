@@ -1,10 +1,12 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.movement.ElytraFly;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.enchantment.Enchantment;
@@ -14,12 +16,14 @@ import net.minecraft.inventory.ClickType;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 @Module.Declaration(name = "AutoArmor", category = Category.Combat)
 public class AutoArmor extends Module {
 
+    ModeSetting allowElytra = registerMode("Elytra", Arrays.asList("Allow", "Only on ElytraFly", "Disallow"), "Only on ElytraFly");
     BooleanSetting noThorns = registerBoolean("No Thorns", false);
     BooleanSetting lastResortThorns = registerBoolean("No Other Thorns", false);
 
@@ -86,7 +90,7 @@ public class AutoArmor extends Module {
                         return;
                     }
 
-                    if (armorType == 2 && mc.player.inventory.armorItemInSlot(armorType).getItem().equals(Items.ELYTRA)) {
+                    if (armorType == 2 && mc.player.inventory.armorItemInSlot(armorType).getItem().equals(Items.ELYTRA) && (allowElytra.getValue().equalsIgnoreCase("Allow") || allowElytra.getValue().equalsIgnoreCase("Only on ElytraFly") && ModuleManager.isModuleEnabled(ElytraFly.class))) {
                         return;
                     }
 

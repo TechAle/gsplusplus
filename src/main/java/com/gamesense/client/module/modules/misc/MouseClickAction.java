@@ -28,6 +28,8 @@ import org.lwjgl.input.Mouse;
 
 import java.util.Arrays;
 
+import static com.gamesense.api.util.player.InventoryUtil.swap;
+
 @Module.Declaration(name = "MouseClickAction", category = Category.Misc)
 public class MouseClickAction extends Module {
 
@@ -37,20 +39,12 @@ public class MouseClickAction extends Module {
     ModeSetting pearlButton = registerMode("PearlButton", Arrays.asList("MOUSE3", "MOUSE4", "MOUSE5"), "MOUSE4",() -> pearl.getValue());
     BooleanSetting clipRotate = registerBoolean("clipRotate", false, () -> pearl.getValue());
     IntegerSetting pearlPitch = registerInteger("Pitch", 85, -90, 90, () -> clipRotate.getValue());
-    BooleanSetting onGroundCheck = registerBoolean("onGround", true, () -> clipRotate.getValue());
-    BooleanSetting silentSwitch = registerBoolean("silentSwitch", false);
-    BooleanSetting silentInv = registerBoolean("Silent Inventory", false, () -> silentSwitch.getValue());
 
     int MCPButtonCode;
     int MCFButtonCode;
     int pearlInvSlot;
-    boolean swapBack;
 
     public void onUpdate() {
-
-        final Timer MCPdelayTimer = new Timer();
-
-        float pearlPitchFloat = pearlPitch.getValue().floatValue();
 
         if (pearlButton.getValue().equalsIgnoreCase("MOUSE3")) {
             MCPButtonCode = 2; //Mouse3 (used for MCF so using this will retard your gameplay)
@@ -80,11 +74,23 @@ public class MouseClickAction extends Module {
                 return;
 
             pearlInvSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0, 35);
+            int pearlHotSlot = InventoryUtil.findFirstItemSlot(ItemEnderPearl.class, 0,8);
+
             int currentItem = mc.player.inventory.currentItem;
 
-            swap(pearlInvSlot, currentItem);
-            mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
-            swap(pearlInvSlot, currentItem);
+            if (pearlHotSlot == -1) {
+                swap(pearlInvSlot, currentItem + 36);
+                mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+                swap(pearlInvSlot, currentItem + 36);
+            } else {
+
+                int oldSlot = mc.player.inventory.currentItem;
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(pearlHotSlot));
+                mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+
+            }
+
         }
 
     }
@@ -103,22 +109,6 @@ public class MouseClickAction extends Module {
             }
         }
         });
-
-    void swap(int InvSlot, int HotBar) {
-
-        // pick up inventory slot
-        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
-
-        // click on hotbar slot
-        // 36 is the offset for start of hotbar in inventoryContainer
-        mc.playerController.windowClick(0, HotBar + 36, 0, ClickType.PICKUP, mc.player);
-
-        // put back inventory slot
-        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
-
-        mc.playerController.updateController();
-
-    }
 
 }
 
