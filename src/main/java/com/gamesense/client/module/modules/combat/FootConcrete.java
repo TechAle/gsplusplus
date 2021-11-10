@@ -168,7 +168,7 @@ public class FootConcrete extends Module {
 
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue(), false, true);
+                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue(), false, false);
 
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
 
