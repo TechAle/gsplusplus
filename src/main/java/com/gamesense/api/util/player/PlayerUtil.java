@@ -4,6 +4,7 @@ import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -84,6 +85,12 @@ public class PlayerUtil {
     public static boolean isPlayerClipped() {
 
         return isPlayerClipped(false);
+
+    }
+
+    public static boolean isPlayerClipped(Entity e) {
+
+        return !(mc.world.getCollisionBoxes(e, e.getEntityBoundingBox().contract(0, 0, 0)).isEmpty());
 
     }
 

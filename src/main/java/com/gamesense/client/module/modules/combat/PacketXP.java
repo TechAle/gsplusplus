@@ -2,14 +2,13 @@ package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
+import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ClickType;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
@@ -32,6 +31,7 @@ import java.util.List;
 @Module.Declaration(name = "PacketXP", category = Category.Combat)
 public class PacketXP extends Module {
 
+    public boolean pause;
     BooleanSetting removeArmour = registerBoolean("Remove Armour", true);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", true);
     BooleanSetting noEntityCollision = registerBoolean("No Collision", true);
@@ -39,7 +39,6 @@ public class PacketXP extends Module {
     IntegerSetting minDamage = registerInteger("Min Damage", 50, 1, 100);
     IntegerSetting maxHeal = registerInteger("Repair To", 90, 1, 100);
     BooleanSetting predict = registerBoolean("Predict", false);
-
     /*
      * each armour slot is represented by a bit
      * 1 for needs healing
@@ -49,14 +48,11 @@ public class PacketXP extends Module {
      * simplifying the logic
      */
     char toMend = 0;
-    public boolean pause;
 
     public void onUpdate() {
         if (mc.player == null || mc.world == null || mc.player.ticksExisted < 10) {
             return;
         }
-
-
 
 
         int sumOfDamage = 0;
@@ -92,9 +88,9 @@ public class PacketXP extends Module {
             if (predict.getValue()) {
                 // get all the xp orbs on top of us
                 int totalXp = mc.world.loadedEntityList.stream()
-                    .filter(entity -> entity instanceof EntityXPOrb)
-                    .filter(entity -> entity.getDistanceSq(mc.player) <= 1)
-                    .mapToInt(entity -> ((EntityXPOrb) entity).xpValue).sum();
+                        .filter(entity -> entity instanceof EntityXPOrb)
+                        .filter(entity -> entity.getDistanceSq(mc.player) <= 1)
+                        .mapToInt(entity -> ((EntityXPOrb) entity).xpValue).sum();
 
                 // see EntityXpOrbxpToDurability(int xp)
                 if ((totalXp * 2) < sumOfDamage) {
@@ -104,7 +100,7 @@ public class PacketXP extends Module {
                 mendArmor(mc.player.inventory.currentItem);
             }
         } else
-            pause = false;
+            disable();
     }
 
     private void mendArmor(int oldSlot) {
@@ -143,6 +139,7 @@ public class PacketXP extends Module {
             mc.player.inventory.currentItem = oldSlot;
         }
         mc.playerController.syncCurrentPlayItem();
+
     }
 
     private int findXPSlot() {
@@ -168,20 +165,17 @@ public class PacketXP extends Module {
 
     boolean percDmg(ItemStack it) {
 
-        try{
+        try {
             return (it.getItemDamage() / it.getMaxDamage()) * 100 >= maxHeal.getValue();
-        } catch (ArithmeticException ignored) {
-            return true;
+        } catch (ArithmeticException e) {
+            return false;
         }
 
     }
 
     void rem(int i) {
 
-        // click on armour slot
-        mc.playerController.windowClick(0, i, 0, ClickType.PICKUP, mc.player);
-        // pick up inventory slot
-        mc.playerController.windowClick(0, i - 4, 0, ClickType.PICKUP, mc.player);
+        InventoryUtil.swap(i, i-4);
 
     }
 

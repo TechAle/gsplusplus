@@ -56,7 +56,9 @@ public class TickShift extends Module {
                 }
             }
 
-            ticks--;
+            if (ticks > 0) {
+                ticks--;
+            }
 
         } else {
 

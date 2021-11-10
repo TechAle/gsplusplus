@@ -36,17 +36,15 @@ public class Frames extends HUDModule {
 
     private class FrameList implements HUDList {
 
-        public List<Module> activeModules = new ArrayList<Module>();
-
         @Override
         public int getSize() {
-            return activeModules.size();
+            return 1;
         }
 
         @Override
         public String getItem(int index) {
             try {
-                return String.valueOf(mc.fpsCounter) + " FPS";
+                return mc.fpsCounter + " FPS";
             } catch (Exception e) {
                 return 0 + " FPS";
             }
