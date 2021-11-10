@@ -37,14 +37,6 @@ public class TickShift extends Module {
         mc.timer.tickLength = 50;
     }
 
-    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-
-        if (event.getPacket() instanceof CPacketPlayer)
-            if (!(event.getPacket() instanceof CPacketPlayer.Rotation))
-                ticks--;
-
-    });
-
     @Override
     public void onUpdate() {
 
@@ -63,6 +55,8 @@ public class TickShift extends Module {
                     mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) ourTimer, 50f)) : 50 / timer.getValue().floatValue();
                 }
             }
+
+            ticks--;
 
         } else {
 
