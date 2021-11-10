@@ -213,7 +213,7 @@ public class FootConcrete extends Module {
         }
     }
 
-    void getPacket() {
+    public void getPacket() {
 
         if (rubberBandMode.getValue().equalsIgnoreCase("Clip")) {
             BlockPos pos = findHoles();
