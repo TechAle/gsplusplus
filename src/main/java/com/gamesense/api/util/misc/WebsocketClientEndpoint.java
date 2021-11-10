@@ -1,6 +1,7 @@
 package com.gamesense.api.util.misc;
 
 import javax.websocket.*;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -16,6 +17,14 @@ public class WebsocketClientEndpoint {
 
     public int getUserSession() {
         return userSession == null ? 0 : 1;
+    }
+    public void close() {
+        try {
+            if (userSession != null)
+                userSession.close();
+        }catch (IOException | NullPointerException ignored) {
+
+        }
     }
 
     public WebsocketClientEndpoint(URI endpointURI) {

@@ -13,12 +13,15 @@ import com.gamesense.api.util.misc.WebsocketClientEndpoint;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import org.json.simple.JSONArray;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -48,29 +51,94 @@ public class IRC extends Module {
     static final Object syn = new Object();
 
     WebsocketClientEndpoint clientEndPoint;
-    String uuidPlayer;
-    String uuidChannel;
 
 
     @Override
     public void onUpdate() {
         if (clientEndPoint == null) {
             finish = true;
-            uuidPlayer = this.getUUID();
-            uuidChannel = this.getUUID();
 
             try {
                 // open websocket
-                clientEndPoint = new WebsocketClientEndpoint(new URI("wss://heroku-temp-chat-server.herokuapp.com"));
+                clientEndPoint = new WebsocketClientEndpoint(new URI("wss://hack.chat/chat-ws"));
 
                 // send message to websocket
-                clientEndPoint.sendMessage(getCreateChatroomRequest(uuidPlayer, uuidChannel, "testing"));
+                clientEndPoint.sendMessage(getCreateChatroomRequest("MC_" + mc.player.getName()));
 
 
                 // add listener
                 clientEndPoint.addMessageHandler(new WebsocketClientEndpoint.MessageHandler() {
                     public void handleMessage(String message) {
                         JsonObject convertedObject = new Gson().fromJson(message, JsonObject.class);
+
+                        String textMSG;
+                        String name;
+                        switch (convertedObject.get("cmd").getAsString()) {
+                            case "onlineSet":
+                                JsonArray online = convertedObject.get("nicks").getAsJsonArray();
+                                StringBuilder on = new StringBuilder();
+                                for(int i = 0; i < online.size(); i++) {
+                                    if (!online.get(i).equals("server"))
+                                        on.append(online.get(i)).append(" ");
+                                }
+                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + " players online: " + on.toString();
+                                if (addgs.getValue())
+                                    MessageBus.sendClientPrefixMessage(textMSG);
+                                else MessageBus.sendClientRawMessage(textMSG);
+
+                                break;
+
+                            case "onlineRemove":
+                                name = convertedObject.get("nick").toString();
+                                if (name.contains("server"))
+                                    return;
+                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " left the irc";
+                                if (addgs.getValue())
+                                    MessageBus.sendClientPrefixMessage(textMSG);
+                                else MessageBus.sendClientRawMessage(textMSG);
+                                break;
+
+                            case "onlineAdd":
+                                name = convertedObject.get("nick").toString();
+                                if (name.equals("server"))
+                                    return;
+                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " joined the irc";
+                                if (addgs.getValue())
+                                    MessageBus.sendClientPrefixMessage(textMSG);
+                                else MessageBus.sendClientRawMessage(textMSG);
+                                break;
+
+                            case "chat":
+                                String text = convertedObject.get("text").getAsString();
+                                String[] values = text.split(":");
+                                String realAuthor;
+                                String realMSG;
+                                if (values.length == 1) {
+                                    realAuthor = convertedObject.get("nick").getAsString();
+                                    realMSG = text;
+                                } else {
+                                    realAuthor = values[0];
+                                    realMSG = text.substring(text.indexOf(':'));
+                                }
+
+                                if (realAuthor.equals("server"))
+                                    return;
+
+                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realAuthor + realMSG;
+
+                                if (addgs.getValue())
+                                    MessageBus.sendClientPrefixMessage(textMSG);
+                                else MessageBus.sendClientRawMessage(textMSG);
+                                break;
+                            case "warn":
+                                if (convertedObject.get("text").getAsString().equals("Nickname taken")) {
+                                    tries++;
+                                    clientEndPoint.sendMessage(getCreateChatroomRequest("MC_" + mc.player.getName()));
+                                }
+                                break;
+                        }
+
+                        /*
                         JsonElement a = convertedObject.get("data");
                         if (!a.isJsonArray()) {
                             String realMSG = convertedObject.get("data").getAsJsonObject().get("message").getAsString();
@@ -87,39 +155,9 @@ public class IRC extends Module {
 
 
                             }
-                        }
+                        }*/
                     }
                 });
-
-
-                Thread thread = new Thread(){
-                    public void run(){
-                        while(finish) {
-                            synchronized (syn) {
-                                clientEndPoint.sendMessage(getSendMessageRequest(uuidPlayer, uuidChannel, mc.player.getName(), "update"));
-                            }
-                            try {
-                                //noinspection BusyWait
-                                Thread.sleep(7500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                };
-                thread.start();
-
-            /*while(true) {
-
-                String msg = t.nextLine();
-
-                if (msg.equals("img")) {
-                    sendPicture(name);
-                } else
-                    synchronized (syn) {
-                        clientEndPoint.sendMessage(getSendMessageRequest(uuidPlayer, uuidChannel, name, msg));
-                    }
-            }*/
 
             }catch (URISyntaxException ignored) {
 
@@ -131,15 +169,17 @@ public class IRC extends Module {
     @Override
     protected void onDisable() {
         finish = false;
+        clientEndPoint.close();
         clientEndPoint = null;
     }
 
-    String getCreateChatroomRequest(String uuidPlayer, String uuidChannel, String name) {
-        return "{\"type\":\"CREATE_CHATROOM\",\"data\":{\"user\":{\"id\":\""+uuidPlayer+"\",\"name\":\""+name+"\"},\"chatroom\":{\"id\":\""+uuidChannel+"\",\"name\":\"gs\",\"url\":\"gs\",\"type\":\"CREATE_CHATROOM\"}}}";
+    int tries = 0;
+
+    String getCreateChatroomRequest(String name) {
+        return "{\"cmd\":\"join\",\"channel\":\"gs\",\"nick\":\""+name+ (tries == 0 ? "" : String.valueOf(tries)) + "\"}";
     }
-    String getSendMessageRequest(String uuidPlayer, String uuidChannel, String name, String message) {
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        return "{\"type\":\"NEW_MESSAGE\",\"data\":{\"user\":{\"id\":\""+uuidPlayer+"\",\"name\":\""+name+"\"},\"chatroom\":{\"id\":\""+uuidChannel+"\",\"name\":\"gs\",\"url\":\"gs\",\"type\":\"CREATE_CHATROOM\"},\"message\":\""+message+"\",\"sentTimestamp\":\""+timestamp.toString().replace(' ', 'T')+"\"}}";
+    String getSendMessageRequest(String name, String message) {
+        return "{\"cmd\":\"chat\",\"text\":\""+name + ":" + message+"\"}";
     }
 
     String getUUID(String name) {
@@ -287,7 +327,7 @@ public class IRC extends Module {
                     msgSend = msg;
                     Thread t = new Thread() {
                         public void run() {
-                            clientEndPoint.sendMessage(getSendMessageRequest(uuidPlayer, uuidChannel, mc.player.getName(), msgSend));
+                            clientEndPoint.sendMessage(getSendMessageRequest(mc.player.getName(), msgSend));
                             String imageURL = "https://crafatar.com/avatars/" + getUUID(mc.player.getName()).replaceAll("-", "") + "?size=64&default=MHF_Steve&overlay";
 
                             String url = "https://discord.com/api/webhooks/906976095901986846/6mtRpFDzCEWuwTuuvWPfRywdcPPWtBWTjOlWxtusaC2gABELZ7N4Zr3_nQX8XwuFPYVz";
