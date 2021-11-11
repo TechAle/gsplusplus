@@ -299,7 +299,9 @@ public class SurroundRewrite extends Module {
                     {-1, 0},
                     {0, -1}
             }) {
-                offsets.add(playerPos.add(surround[0], -1, surround[1]));
+                if (getDown(playerPos.add(surround[0], 0, surround[1])))
+                    offsets.add(playerPos.add(surround[0], -1, surround[1]));
+
                 offsets.add(playerPos.add(surround[0], 0, surround[1]));
             }
         }

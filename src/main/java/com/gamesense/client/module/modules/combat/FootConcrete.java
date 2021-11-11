@@ -151,31 +151,28 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
-        if (jumpMode.getValue().equalsIgnoreCase("Real")) {
+        // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
+        if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
-            // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
-            if (mc.player.posY > Math.floor(pos.y) + 1.1) {
+            targetBlockSlot = getBlocks();
 
-                targetBlockSlot = getBlocks();
+            oldSlot = mc.player.inventory.currentItem;
 
-                oldSlot = mc.player.inventory.currentItem;
-
-                if (targetBlockSlot == -1)
-                    disable();
-
-                if (useBlink.getValue())
-                    ModuleManager.getModule(Blink.class).disable();
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
-
-                PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue(), false, false);
-
-                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
-
-                getPacket();
-
+            if (targetBlockSlot == -1)
                 disable();
-            }
+
+            if (useBlink.getValue())
+                ModuleManager.getModule(Blink.class).disable();
+
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
+
+            PlacementUtil.place(burrowBlockPos, EnumHand.MAIN_HAND, rotate.getValue(), false, false);
+
+            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldslot));
+
+            getPacket();
+
+            disable();
 
         }
 
@@ -183,7 +180,7 @@ public class FootConcrete extends Module {
 
     @Override
     protected void onDisable() {
-        if (useBlink.getValue())
+        if (useBlink.getValue() && jumpMode.getValue().equalsIgnoreCase("Real"))
             ModuleManager.getModule(Blink.class).disable();
     }
 
@@ -198,7 +195,7 @@ public class FootConcrete extends Module {
 
         for (BlockPos pos : holes) {
 
-            if (mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0,1,0))  && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 3
+            if (mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0, 1, 0)) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 3
                     && !(Math.floor(pos.y) == Math.floor(mc.player.posY))) {
                 holes.add(pos);
                 break;

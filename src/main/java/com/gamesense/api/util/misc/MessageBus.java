@@ -30,6 +30,15 @@ public class MessageBus {
     public static void sendClientPrefixMessage(String message) {
         sendClientPrefixMessageWithID(message, 0);
     }
+
+    public static void sendClientPrefixMessageWithID(String message, boolean generateID) {
+        if (!generateID){
+            sendClientPrefixMessageWithID(message, 0);
+        } else {
+            sendClientPrefixMessageWithID(message, Module.getIdFromString(message));
+        }
+    }
+
     public static void sendClientPrefixMessageWithID(String message, int id) {
         ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
         TextComponentString string1 = new TextComponentString(

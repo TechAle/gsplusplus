@@ -165,11 +165,10 @@ public class PacketXP extends Module {
 
     boolean percDmg(ItemStack it) {
 
-        try {
+        if (it.getItemDamage() != 0)
             return (it.getItemDamage() / it.getMaxDamage()) * 100 >= maxHeal.getValue();
-        } catch (ArithmeticException e) {
-            return false;
-        }
+        else
+            return true;
 
     }
 

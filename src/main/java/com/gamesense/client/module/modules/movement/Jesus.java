@@ -16,7 +16,7 @@ public class Jesus extends Module {
     @EventHandler
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
 
-        if (event.getBlock().equals(Blocks.WATER) && !mc.gameSettings.keyBindSneak.isKeyDown())
+        if ((event.getBlock().equals(Blocks.WATER) || event.getBlock().equals(Blocks.LAVA)) && !mc.gameSettings.keyBindSneak.isKeyDown())
             event.setbb(Block.FULL_BLOCK_AABB);
 
     });
@@ -24,7 +24,7 @@ public class Jesus extends Module {
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        if (mc.world.getBlockState(new BlockPos(mc.player.getPositionVector())).getBlock().equals(Blocks.WATER) && !mc.gameSettings.keyBindSneak.isKeyDown()) {
+        if ((mc.world.getBlockState(new BlockPos(mc.player.getPositionVector())).getBlock().equals(Blocks.WATER) || mc.world.getBlockState(new BlockPos(mc.player.getPositionVector())).getBlock().equals(Blocks.LAVA)) && !mc.gameSettings.keyBindSneak.isKeyDown()) {
 
             mc.player.motionY = 0.1;
 
