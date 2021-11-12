@@ -206,8 +206,17 @@ public class FootConcrete extends Module {
         try {
             return holes.get(holes.size() - 1);
         } catch (Exception e) {
-            return holes.get(0);
+            if (holes.isEmpty()) {
+
+                return new BlockPos(mc.player.posX, mc.player.posY + 1, mc.player.posZ);
+
+            } else {
+
+                return holes.get(0);
+
+            }
         }
+
     }
 
     public void getPacket() {

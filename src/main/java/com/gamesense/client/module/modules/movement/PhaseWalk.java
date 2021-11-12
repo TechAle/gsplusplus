@@ -18,6 +18,7 @@ public class PhaseWalk extends Module {
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min");
     BooleanSetting clipCheck = registerBoolean("Clipped Check", false);
     BooleanSetting update = registerBoolean("Update Pos", false);
+    BooleanSetting sprint = registerBoolean("Sprint Force Enable", true);
 
     @Override
     public void onUpdate() {
@@ -29,7 +30,7 @@ public class PhaseWalk extends Module {
 
         double[] clip = MotionUtil.forward(0.0624);
 
-        if (PlayerUtil.isPlayerClipped(false) || !clipCheck.getValue()) {
+        if ((PlayerUtil.isPlayerClipped(false) || !clipCheck.getValue()) || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()) || mc.gameSettings.keyBindSneak.isKeyDown()) {
 
             if (mc.gameSettings.keyBindSneak.isKeyDown() && mc.player.onGround)
                 tp(mc.player.posX + clip[0], mc.player.posY - 0.0624, mc.player.posZ + clip[1], false);
