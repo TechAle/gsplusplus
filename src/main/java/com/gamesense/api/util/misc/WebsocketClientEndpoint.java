@@ -30,6 +30,7 @@ public class WebsocketClientEndpoint {
     public WebsocketClientEndpoint(URI endpointURI) {
 
         try {
+            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             container.connectToServer(this, endpointURI);
         } catch (Exception e) {

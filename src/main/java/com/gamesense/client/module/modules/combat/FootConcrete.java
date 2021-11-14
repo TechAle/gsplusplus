@@ -41,6 +41,7 @@ public class FootConcrete extends Module {
     BooleanSetting useBlink = registerBoolean("Use Blink", true, () -> jumpMode.getValue().equals("real") && general.getValue());
     BooleanSetting conserve = registerBoolean("Conserve", false, () -> general.getValue());
     BooleanSetting rotate = registerBoolean("rotate", true, () -> general.getValue());
+    BooleanSetting positive = registerBoolean("Positive Pos", false, () -> rubberBandMode.getValue().equalsIgnoreCase("clip"));
     BooleanSetting debugpos = registerBoolean("Debug Position", false, () -> rubberBandMode.getValue().equalsIgnoreCase("clip") && general.getValue());
 
     BooleanSetting blocks = registerBoolean("Blocks Menu", false);
@@ -188,7 +189,7 @@ public class FootConcrete extends Module {
 
         NonNullList<BlockPos> holes = NonNullList.create();
 
-        for (int i = -90 / 2; i < 90 / 2; i++)
+        for (int i = !positive.getValue() ? -90 : 2; i < 90; i++)
             if (!new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ).equals(new BlockPos(mc.player.getPositionVector())) && mc.world.isAirBlock(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ))) {
                 holes.add(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ));
             }

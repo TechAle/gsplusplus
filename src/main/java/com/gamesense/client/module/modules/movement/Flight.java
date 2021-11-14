@@ -19,13 +19,14 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Arrays;
+import java.util.*;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
     int tpid;
     float flyspeed;
+    ArrayList<CPacketPlayer> packetlist = new ArrayList<>();
 
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
@@ -39,7 +40,6 @@ public class Flight extends Module {
     DoubleSetting packetY = registerDouble("Packet Y Speed", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting update = registerBoolean("Update", true, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting reduction = registerDouble("Reduction", 0.5, 0, 1, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -55,8 +55,22 @@ public class Flight extends Module {
         if ((event.getPacket() instanceof CPacketPlayer.Position) || (event.getPacket() instanceof CPacketPlayer.PositionRotation))
             tpid++;
 
-        if (event.getPacket() instanceof CPacketPlayer)
-            ((CPacketPlayer) event.getPacket()).pitch = 0;
+        if (event.getPacket() instanceof CPacketPlayer && mode.getValue().equalsIgnoreCase("Packet")) {
+
+            CPacketPlayer packet = (CPacketPlayer) event.getPacket();
+
+            if (packetlist.contains(packet)) {
+
+                packetlist.remove(packet);
+                ((CPacketPlayer) event.getPacket()).pitch = 0;
+                ((CPacketPlayer) event.getPacket()).yaw = 0;
+
+            }
+
+            else event.cancel();
+
+        }
+
 
     });
 
@@ -133,8 +147,8 @@ public class Flight extends Module {
 
                 if (PlayerUtil.isPlayerClipped()) {
 
-                    mc.player.motionX *= mc.player.motionX / .0624;
-                    mc.player.motionZ *= mc.player.motionZ / .0624;
+                    mc.player.motionX = MotionUtil.forward(.0624)[0];
+                    mc.player.motionZ = MotionUtil.forward(.0624)[1];
 
                 }
 
@@ -160,7 +174,9 @@ public class Flight extends Module {
 
             for (int i = 0; i < packets.getValue(); i++) {
 
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z+mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                CPacketPlayer packet = new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
+                packetlist.add(packet);
+                mc.player.connection.sendPacket(packet);
 
                 // confirm all
                 if (confirm.getValue()) {
@@ -169,9 +185,12 @@ public class Flight extends Module {
                     mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
                 }
 
-                mc.player.setVelocity(x * reduction.getValue(),y*reduction.getValue(),z*reduction.getValue());
+                mc.player.setVelocity(x * reduction.getValue(), y * reduction.getValue(), z * reduction.getValue());
 
-                PhaseUtil.doBounds(bound.getValue());
+                CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
+                packetlist.add(bounds);
+                mc.player.connection.sendPacket(bounds);
+
             }
 
         }

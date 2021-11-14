@@ -15,40 +15,45 @@ public class PhaseUtil {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    public static void doBounds(String mode) {
+    public static CPacketPlayer doBounds(String mode, boolean send) {
 
         double[] dir;
+        CPacketPlayer packet = new CPacketPlayer.PositionRotation(0,0,0,0,0,false);
 
         switch (mode) {
 
             case "Up":
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
             case "Down":
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
             case "Zero":
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX, 0, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
+                break;
             case "Min":
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 100, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 100, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
             case "Alternate":
                 if (mc.player.ticksExisted % 2 == 0)
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                    packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
                 else
-                    mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+                    packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY - 69420, mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
             case "Forward":
                 dir = MotionUtil.forward(67);
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + 33.4, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false));
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + 33.4, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
             case "Flat":
                 dir = MotionUtil.forward(100);
-                mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false));
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
-            case "LimitJitter": mc.player.connection.sendPacket(new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+            case "LimitJitter":
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
+                break;
         }
+        mc.player.connection.sendPacket(packet);
+        return packet;
     }
 
     public static double limit() {
