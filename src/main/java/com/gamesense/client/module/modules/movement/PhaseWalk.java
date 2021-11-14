@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.BoundingBoxEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.PhaseUtil;
@@ -8,6 +9,9 @@ import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
+import net.minecraft.block.Block;
 import net.minecraft.network.play.client.CPacketPlayer;
 
 import java.util.Arrays;
@@ -15,14 +19,26 @@ import java.util.Arrays;
 @Module.Declaration(name = "PhaseWalk", category = Category.Movement)
 public class PhaseWalk extends Module {
 
-    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min");
-    BooleanSetting clipCheck = registerBoolean("Clipped Check", false);
-    BooleanSetting update = registerBoolean("Update Pos", false);
-    BooleanSetting sprint = registerBoolean("Sprint Force Enable", true);
+    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
+    BooleanSetting h = registerBoolean("Keep Floor", false, () -> mode.getValue().equalsIgnoreCase("Vanilla"));
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min", () -> mode.getValue().equalsIgnoreCase("NCP"));
+    BooleanSetting clipCheck = registerBoolean("Clipped Check", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
+    BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
+    BooleanSetting sprint = registerBoolean("Sprint Force Enable", true, () -> mode.getValue().equalsIgnoreCase("NCP"));
+
+
+    @EventHandler
+    private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
+
+        if (mode.getValue().equalsIgnoreCase("Vanilla"))
+            if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue())
+                event.setbb(Block.NULL_AABB);
+
+    });
 
     @Override
     public void onUpdate() {
-        if (mc.player.collidedHorizontally && !ModuleManager.getModule(Flight.class).isEnabled())
+        if (mc.player.collidedHorizontally && !ModuleManager.getModule(Flight.class).isEnabled() && mode.getValue().equalsIgnoreCase("NCP"))
             packetFly();
     }
 
