@@ -111,6 +111,7 @@ shadowJar {
 		include(dependency('com.lukflug:panelstudio-mc12'))
 		include(dependency('club.minnced:discord-webhooks:0.5.6'))
 		include(dependency('javax.websocket:javax.websocket-api:1.1'))
+		include(dependency('org.glassfish.tyrus.bundles:1.9'))
 	}
 	relocate 'org.glassfish', 'shaded.glassfish'
 	relocate 'javax.websocket', 'shaded.websocket'
