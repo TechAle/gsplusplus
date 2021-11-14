@@ -53,6 +53,8 @@ public class PlayerTweaks extends Module {
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting strict = registerBoolean("No Slow Strict", false, () -> noSlow.getValue());
     DoubleSetting speed = registerDouble("No Slow Strict Ground Speed", 0.2,0,1);
+    BooleanSetting ice = registerBoolean("Ice Speed", false);
+    DoubleSetting iceSpeed = registerDouble("Ice Slipperiness", 0.4,0,1,() -> ice.getValue());
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     public BooleanSetting portalChat = registerBoolean("Portal Chat", false);
@@ -281,7 +283,24 @@ public class PlayerTweaks extends Module {
         return false;
     }
 
+    @Override
+    protected void onDisable() {
+        Blocks.ICE.setDefaultSlipperiness(0.4f);
+        Blocks.PACKED_ICE.setDefaultSlipperiness(0.4f);
+        Blocks.FROSTED_ICE.setDefaultSlipperiness(0.4f);
+    }
+
     public void onUpdate() {
+
+        if (ice.getValue()) {
+            Blocks.ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+            Blocks.PACKED_ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+            Blocks.FROSTED_ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+        } else {
+            Blocks.ICE.setDefaultSlipperiness(0.4f);
+            Blocks.PACKED_ICE.setDefaultSlipperiness(0.4f);
+            Blocks.FROSTED_ICE.setDefaultSlipperiness(0.4f);
+        }
 
         if (!ModuleManager.isModuleEnabled(Timer.class)){
             if (mc.player.isInWeb && !mc.player.onGround && webT.getValue()) {
