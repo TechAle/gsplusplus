@@ -20,21 +20,18 @@ public class MobOwner extends Module {
             if (e instanceof IEntityOwnable) {
                 if (!(e instanceof AbstractHorse)){
                     try {
-                        RenderUtil.drawNametag(e, new String[]{Objects.requireNonNull(((IEntityOwnable) e).getOwner()).getName() + ""}, new GSColor(Color.WHITE), 1);
+                        RenderUtil.drawNametag(e, new String[]{Objects.requireNonNull(((IEntityOwnable) e).getOwner()).getName() + ""}, new GSColor(Color.WHITE), 0);
                     } catch (NullPointerException ignored) {}
 
                 } else {
 
-                    StringBuilder string = new StringBuilder();
-
-                    string.append("Name: ");
-                    string.append(e.getCustomNameTag());
-                    string.append(", Owner: ");
-                    string.append(((Objects.requireNonNull(((IEntityOwnable) e).getOwner())).getName()));
-                    string.append(", Speed: ");
-                    string.append(((AbstractHorse) e).getAIMoveSpeed());
-
-                    RenderUtil.drawNametag(e, new String[]{string.toString()}, new GSColor(Color.WHITE), 1);
+                    String string = "Name: " +
+                            e.getCustomNameTag() +
+                            ", Owner: " +
+                            ((Objects.requireNonNull(((IEntityOwnable) e).getOwner())).getName()) +
+                            ", Speed: " +
+                            ((AbstractHorse) e).getAIMoveSpeed();
+                    RenderUtil.drawNametag(e, new String[]{string}, new GSColor(Color.WHITE), 1);
 
                 }
             }
