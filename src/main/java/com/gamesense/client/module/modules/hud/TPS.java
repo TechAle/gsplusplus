@@ -30,9 +30,9 @@ public class TPS extends HUDModule {
         @Override
         public String getItem(int index) {
             try {
-                return "IP: " + mc.serverName;
+                return "TPS: " + mc.serverName;
             } catch (Exception e) {
-                return "IP: null";
+                return "TPS: null";
             }
         }
 
