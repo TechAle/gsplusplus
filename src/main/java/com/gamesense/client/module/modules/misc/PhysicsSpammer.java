@@ -1,3 +1,4 @@
+/*
 package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -70,4 +71,4 @@ public class PhysicsSpammer extends Module {
         int bound = Math.abs(maxDelay.getValue() - minDelay.getValue());
         delay = (bound == 0 ? 0 : random.nextInt(bound)) + Math.min(maxDelay.getValue(), minDelay.getValue());
     }
-}
+}*/
