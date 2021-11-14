@@ -18,7 +18,7 @@ public class BoundsMove extends Module {
         if ((mc.player.moveForward != 0 || mc.player.moveStrafing != 0)
                 && !(ModuleManager.getModule(Flight.class).isEnabled()
                 && ModuleManager.getModule(Flight.class).mode.getValue().equalsIgnoreCase("Packet"))) {
-            PhaseUtil.doBounds(bound.getValue());
+            PhaseUtil.doBounds(bound.getValue(), true);
         }
     }
 }

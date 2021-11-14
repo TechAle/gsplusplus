@@ -27,6 +27,7 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -161,6 +162,9 @@ public enum ClientEventManager implements Manager {
                     String vowel = "[aeiouAEIOU]";
                     MessageBus.sendClientPrefixMessage("Disabled " + module.getName() + " due to " + e);
                     module.setEnabled(false);
+                    for (StackTraceElement stack : e.getStackTrace()) {
+                        System.out.println(stack.toString());
+                    }
                 }
 
             }

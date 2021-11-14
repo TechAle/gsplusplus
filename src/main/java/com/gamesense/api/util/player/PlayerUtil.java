@@ -4,6 +4,7 @@ import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -87,6 +88,12 @@ public class PlayerUtil {
 
     }
 
+    public static boolean isPlayerClipped(Entity e) {
+
+        return !(mc.world.getCollisionBoxes(e, e.getEntityBoundingBox().contract(0, 0, 0)).isEmpty());
+
+    }
+
     public static boolean isPlayerClipped(boolean ignoreTop) {
 
         return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0, ignoreTop ? 1 : 0, 0)).isEmpty());
@@ -138,14 +145,27 @@ public class PlayerUtil {
         return target;
     }
 
-    public static void fakeJump(boolean extra) {
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .419999986887, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .7531999805212, mc.player.posZ, true));
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.0013359791121, mc.player.posZ, true));
-        if (extra)
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.1661092609382, mc.player.posZ, true));
+    public static void fakeJump() {
+        fakeJump(69); // always most packets
     }
+
+    public static void fakeJump(boolean extra) {
+        fakeJump(extra ? 3 : 4);
+    }
+
+    public static void fakeJump(int packets) {
+        if (packets > 0)
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
+        if (packets > 1)
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .419999986887, mc.player.posZ, true));
+        if (packets > 2)
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .7531999805212, mc.player.posZ, true));
+        if (packets > 3)
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.0013359791121, mc.player.posZ, true));
+        if (packets > 4)
+        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.1661092609382, mc.player.posZ, true));
+    }
+
     public static void fall(int distance) {
 
         if (distance >= 1) {

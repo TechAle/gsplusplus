@@ -1,16 +1,14 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
-import com.gamesense.api.event.events.StepEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import me.zero.alpine.listener.EventHandler;
-import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.math.AxisAlignedBB;
 
 import java.util.Arrays;
 
@@ -24,7 +22,43 @@ public class StepRewrite extends Module {
 
     @Override
     public void onUpdate() {
-        mc.player.stepHeight = height.getValue().floatValue();
+        if (mode.getValue().equalsIgnoreCase("Vanilla")) {
+            mc.player.stepHeight = height.getValue().floatValue();
+        }
+
+        if (canStep() && mode.getValue().equalsIgnoreCase("NCP") && (mc.player.onGround || !onGround.getValue())) {
+
+            double step = getCurrentStepHeight();
+
+            switch (String.valueOf(step)) {
+                case "1": {
+                    doStep(one);
+                    break;
+                }
+                case "1.5": {
+                    doStep(oneFive);
+                    break;
+                }
+                case "2": {
+                    doStep(two);
+                    break;
+                }
+                case "2.5": {
+                    doStep(twoFive);
+                    break;
+                }
+            }
+
+            mc.player.setPositionAndUpdate(mc.player.posX,mc.player.posY + step, mc.player.posZ);
+
+        }
+    }
+
+    void doStep(double[] offsets) {
+
+        for (double i : offsets) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + i, mc.player.posZ, false));
+        }
     }
 
     @Override
@@ -32,49 +66,72 @@ public class StepRewrite extends Module {
         mc.player.stepHeight = 0.5f;
     }
 
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<StepEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        if (!(event.getY() == 1 || event.getY() == 1.5 || event.getY() == 2 || event.getY() == 2.5))
-            return;
-
-        if (timer.getValue()) mc.timer.tickLength = 300f;
-
-        if (mc.player.onGround || !onGround.getValue()) {
-            float h = event.getY();
-
-            if (mode.getValue().equalsIgnoreCase("NCP")) {
-                if (h == 1) {
-                    final double[] oneOffset = {0.42, 0.753};
-                    for (double v : oneOffset) {
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + v, mc.player.posZ, mc.player.onGround));
-                    }
-                    MessageBus.sendClientPrefixMessage("1");
-                } else if (h == 1.5 && height.getValue().floatValue() >= 1.5) {
-                    final double[] oneFiveOffset = {0.42, 0.75, 1.0, 1.16, 1.23, 1.2};
-                    for (double v : oneFiveOffset) {
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + v, mc.player.posZ, mc.player.onGround));
-                    }
-                    MessageBus.sendClientPrefixMessage("1.5");
-                } else if (h == 2&& height.getValue().floatValue() >= 2) {
-                    final double[] twoOffset = {0.42, 0.78, 0.63, 0.51, 0.9, 1.21, 1.45, 1.43};
-                    for (double v : twoOffset) {
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + v, mc.player.posZ, mc.player.onGround));
-                    }
-                    MessageBus.sendClientPrefixMessage("2");
-                } else if (h == 2.5&& height.getValue().floatValue() >= 2.5) {
-                    final double[] twoFiveOffset = {0.425, 0.821, 0.699, 0.599, 1.022, 1.372, 1.652, 1.869, 2.019, 1.907};
-                    for (double v : twoFiveOffset) {
-                        mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + v, mc.player.posZ, mc.player.onGround));
-                    }
-                    MessageBus.sendClientPrefixMessage("2.5");
-                } else return;
-            }
-
-            mc.player.posY += h;
+    private boolean canStep() {
+        float rotationYaw = mc.player.rotationYaw;
+        if (mc.player.moveForward < 0.0F)
+            rotationYaw += 180.0F;
+        float forward = 1.0F;
+        if (mc.player.moveForward < 0.0F) {
+            forward = -0.5F;
+        } else if (mc.player.moveForward > 0.0F) {
+            forward = 0.5F;
         }
-        if (timer.getValue()) mc.timer.tickLength = 50f;
-    });
+        if (mc.player.moveStrafing > 0.0F)
+            rotationYaw -= 90.0F * forward;
+        if (mc.player.moveStrafing < 0.0F)
+            rotationYaw += 90.0F * forward;
+
+        float yaw = (float) Math.toRadians(rotationYaw);
+
+        double x = -Math.sin(yaw) * 0.4D;
+        double z = Math.cos(yaw) * 0.4D;
+        return mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(x, 1.001335979112147D, z)).isEmpty();
+    }
+
+    private double getCurrentStepHeight() {
+        boolean collided = (mc.player.onGround && mc.player.collidedHorizontally);
+
+        if (!collided) {
+            return 0.0D;
+        }
+
+        double maximumY = -1.0D;
+
+        float rotationYaw = mc.player.rotationYaw;
+        if (mc.player.moveForward < 0.0F)
+            rotationYaw += 180.0F;
+        float forward = 1.0F;
+        if (mc.player.moveForward < 0.0F) {
+            forward = -0.5F;
+        } else if (mc.player.moveForward > 0.0F) {
+            forward = 0.5F;
+        }
+        if (mc.player.moveStrafing > 0.0F)
+            rotationYaw -= 90.0F * forward;
+        if (mc.player.moveStrafing < 0.0F)
+            rotationYaw += 90.0F * forward;
+
+        float yaw = (float) Math.toRadians(rotationYaw);
+
+        double x = -Math.sin(yaw) * 0.4D;
+        double z = Math.cos(yaw) * 0.4D;
+
+        AxisAlignedBB expandedBB = mc.player.getEntityBoundingBox().offset(0.0D, 0.05D, 0.0D).grow(0.05D);
+        expandedBB = expandedBB.setMaxY(expandedBB.maxY + (height.getValue()));
+
+        for (AxisAlignedBB axisAlignedBB : mc.world.getCollisionBoxes(mc.player, expandedBB)) {
+            if (axisAlignedBB.maxY > maximumY)
+                maximumY = axisAlignedBB.maxY;
+        }
+
+        maximumY -= mc.player.posY;
+        return (maximumY > 0.0D && maximumY <= height.getValue()) ? maximumY : 0.0D;
+    }
+
+    public static final double[] one = {0.42, 0.753};
+    public static final double[] oneFive = {0.42, 0.75, 1.0, 1.16, 1.23, 1.2};
+    public static final double[] two = {0.42, 0.78, 0.63, 0.51, 0.9, 1.21, 1.45, 1.43};
+    public static final double[] twoFive = {0.425, 0.821, 0.699, 0.599, 1.022, 1.372, 1.652, 1.869, 2.019, 1.907};
 
 }

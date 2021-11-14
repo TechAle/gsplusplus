@@ -1,13 +1,17 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.misc.KeyBoardClass;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import me.zero.alpine.listener.Listener;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
 
@@ -38,7 +42,7 @@ public class TickShift extends Module {
 
         if (isMoving()) { // garunteed movement packet
 
-            if (ticks > 0) {
+            if (ticks > 0 && !PlayerUtil.isPlayerClipped()) {
 
                 double steps = (timer.getValue() - min.getValue()) / limit.getValue();
 
@@ -49,8 +53,11 @@ public class TickShift extends Module {
 
                 if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
                     mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) ourTimer, 50f)) : 50 / timer.getValue().floatValue();
-                    ticks--;
                 }
+            }
+
+            if (ticks > 0) {
+                ticks--;
             }
 
         } else {

@@ -104,7 +104,18 @@ public abstract class Module implements Listenable {
     public void enable() {
         setEnabled(true);
         GameSense.EVENT_BUS.subscribe(this);
-        onEnable();
+        try {
+            onEnable();
+        } catch (Exception e) {
+
+            String vowel = "[aeiouAEIOU]";
+            MessageBus.sendClientPrefixMessage("Disabled " + this.getName() + " due to " + e);
+            for (StackTraceElement stack : e.getStackTrace()) {
+                System.out.println(stack.toString());
+            }
+
+        }
+
         if (toggleMsg && mc.player != null)
             MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getEnabledColor() + name + " turned ON!", getIdFromString(name));
     }
@@ -112,7 +123,17 @@ public abstract class Module implements Listenable {
     public void disable() {
         setEnabled(false);
         GameSense.EVENT_BUS.unsubscribe(this);
-        onDisable();
+        try {
+            onDisable();
+        } catch (Exception e) {
+
+            String vowel = "[aeiouAEIOU]";
+            MessageBus.sendClientPrefixMessage("Failed to onDisable " + this.getName() + "properly due to " + e);
+            for (StackTraceElement stack : e.getStackTrace()) {
+                System.out.println(stack.toString());
+            }
+
+        }
         if (toggleMsg && mc.player != null)
             MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getDisabledColor() + disabledMessage, getIdFromString(name));
         setDisabledMessage(name + " turned OFF!");

@@ -28,7 +28,7 @@ public class AutoArmor extends Module {
     BooleanSetting lastResortThorns = registerBoolean("No Other Thorns", false);
 
     public void onUpdate() {
-        if (!ModuleManager.getModule(PacketXP.class).pause || !ModuleManager.getModule(PacketXP.class).isEnabled()) {
+        if (!ModuleManager.getModule(PacketXP.class).pause || !ModuleManager.getModule(PacketXP.class).isEnabled() || !ModuleManager.getModule(AutoMend.class).isEnabled()) {
             if (mc.player.ticksExisted % 2 == 0) return;
             // check screen
             if (mc.currentScreen instanceof GuiContainer

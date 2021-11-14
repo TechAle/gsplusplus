@@ -47,6 +47,7 @@ import java.util.Arrays;
 public class PlayerTweaks extends Module {
 
     boolean snk;
+    boolean lastTickOG;
 
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
@@ -70,15 +71,18 @@ public class PlayerTweaks extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
+
         if(mc.player.isHandActive() && !mc.player.isRiding()) {
 
             if (strict.getValue() && !snk) {
                 mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
                 snk = true;
             }
-            if (strict.getValue() && mc.player.onGround) {
+            if (strict.getValue() && mc.player.onGround && lastTickOG) {
                 mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
                 snk = false;
+                mc.player.movementInput.moveForward /= speed.getValue();
+                mc.player.movementInput.moveStrafe /= speed.getValue();
             }
 
 
@@ -86,13 +90,9 @@ public class PlayerTweaks extends Module {
                 mc.player.movementInput.moveForward /= 0.2f;
                 mc.player.movementInput.moveStrafe /= 0.2f;
             }
-
-            if (mc.player.onGround && strict.getValue()) {
-                mc.player.movementInput.moveForward /= speed.getValue();
-                mc.player.movementInput.moveStrafe /= speed.getValue();
-            }
-
         }
+
+        lastTickOG = mc.player.onGround;
     });
 
     BooleanSetting noPush = registerBoolean("No Push", false);
