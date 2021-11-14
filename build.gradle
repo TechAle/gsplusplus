@@ -71,8 +71,8 @@ dependencies {
 		exclude module: 'gson'
 		exclude module: 'commons-io'
 	}
-	implementation 'javax.websocket:javax.websocket-api:1.1'
-	implementation 'club.minnced:discord-webhooks:0.5.6'
+	compile 'javax.websocket:javax.websocket-api:1.1'
+	compile 'club.minnced:discord-webhooks:0.5.6'
 	compile 'com.github.ZeroMemes:Alpine:1.9'
 	compile group: 'net.jodah', name: 'typetools', version: '0.5.0'
 	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
@@ -99,6 +99,8 @@ processResources {
 }
 
 shadowJar {
+	project.configurations.implementation.canBeResolved = true
+	configurations = [project.configurations.implementation]
 	dependencies {
 		include(dependency('org.spongepowered:mixin'))
 		include(dependency('com.github.ZeroMemes:Alpine'))
@@ -110,6 +112,8 @@ shadowJar {
 		include(dependency('club.minnced:discord-webhooks:0.5.6'))
 		include(dependency('javax.websocket:javax.websocket-api:1.1'))
 	}
+	relocate 'org.glassfish', 'shaded.glassfish'
+	relocate 'javax.websocket', 'shaded.websocket'
 	exclude 'dummyThing'
 	exclude 'LICENSE.txt'
 	classifier = 'release'
