@@ -1,8 +1,10 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.BoundingBoxEvent;
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
@@ -12,7 +14,9 @@ import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
+import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
 
@@ -26,6 +30,7 @@ public class PhaseWalk extends Module {
     BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting sprint = registerBoolean("Sprint Force Enable", true, () -> mode.getValue().equalsIgnoreCase("NCP"));
 
+    int tpid = 0;
 
     @EventHandler
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
@@ -60,12 +65,34 @@ public class PhaseWalk extends Module {
     void tp(double x, double y, double z, boolean onGround) {
 
         mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, onGround));
-        PhaseUtil.doBounds(bound.getValue());
+        mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid -1));
+        mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+        mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
+        PhaseUtil.doBounds(bound.getValue(), true);
 
         if (update.getValue())
             mc.player.setPosition(x, y, z);
 
     }
 
+    @SuppressWarnings("Unused")
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+
+        if (event.getPacket() instanceof SPacketPlayerPosLook) {
+            tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
+        }
+
+    });
+
+    @SuppressWarnings("Unused")
+    @EventHandler
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+
+        if (event.getPacket() instanceof CPacketPlayer.PositionRotation || event.getPacket() instanceof CPacketPlayer.Position) {
+            tpid++;
+        }
+
+    });
 
 }
