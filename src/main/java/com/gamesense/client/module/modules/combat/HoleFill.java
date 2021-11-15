@@ -246,6 +246,9 @@ public class HoleFill extends Module {
             }
         });
 
+        if (holes.isEmpty() && disableOnFinish.getValue())
+            disable();
+
         return holes;
     }
 

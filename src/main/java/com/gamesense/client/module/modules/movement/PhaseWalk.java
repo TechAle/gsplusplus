@@ -4,6 +4,7 @@ import com.gamesense.api.event.events.BoundingBoxEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
@@ -29,18 +30,27 @@ public class PhaseWalk extends Module {
     BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting sprint = registerBoolean("Sprint Force Enable", true);
 
+    int tpid = 0;
+    boolean clipped = false;
+
     @EventHandler
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
 
-        if (mode.getValue().equalsIgnoreCase("Vanilla")
-                && (PlayerUtil.isPlayerClipped() || !clipCheck.getValue())
-                && (mc.gameSettings.keyBindSprint.isKeyDown() || !sprint.getValue()))
+        try {
+            if (event.getPos().distanceTo(mc.player.getPositionVector()) < 3) {
+                if (mode.getValue().equalsIgnoreCase("Vanilla")
+                        && (clipped || !clipCheck.getValue())
+                        || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
 
-            if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue())
-                event.setbb(Block.NULL_AABB);
+                    if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue())
+                        event.setbb(Block.NULL_AABB);
+            }
+        } catch (Exception e) {
+            MessageBus.sendClientPrefixMessage(e.getMessage());
+            disable();
+        }
 
     });
-    int tpid = 0;
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -63,10 +73,14 @@ public class PhaseWalk extends Module {
 
     @Override
     public void onUpdate() {
-        if ((mc.player.collidedHorizontally) && (mc.gameSettings.keyBindSprint.isKeyDown() || !sprint.getValue())
+
+        clipped = PlayerUtil.isPlayerClipped();
+
+        if ((mc.player.collidedHorizontally)
                 && !ModuleManager.getModule(Flight.class).isEnabled()
                 && mode.getValue().equalsIgnoreCase("NCP")
-                && (PlayerUtil.isPlayerClipped() || clipCheck.getValue()))
+                && (clipped || !clipCheck.getValue())
+                ||  (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
             packetFly();
     }
 
