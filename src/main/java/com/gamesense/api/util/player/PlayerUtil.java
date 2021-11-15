@@ -10,9 +10,9 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class PlayerUtil {
 
@@ -80,12 +80,6 @@ public class PlayerUtil {
         }
 
         return closestTarget;
-    }
-
-    public static boolean isPlayerClipped(Entity e) {
-
-        return !(mc.world.getCollisionBoxes(e, e.getEntityBoundingBox().contract(0, 0, 0)).isEmpty());
-
     }
 
     public static boolean isPlayerClipped() {

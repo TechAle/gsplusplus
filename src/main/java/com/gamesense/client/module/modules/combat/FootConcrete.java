@@ -14,7 +14,9 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import com.gamesense.client.module.modules.movement.Blink;
+import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
@@ -65,7 +67,7 @@ public class FootConcrete extends Module {
 
         //BLINK
 
-        if (PlayerUtil.isPlayerClipped(false)) {
+        if (mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()))) {
 
             MessageBus.sendClientPrefixMessage("You are already clipped, disabling!");
             disable();
