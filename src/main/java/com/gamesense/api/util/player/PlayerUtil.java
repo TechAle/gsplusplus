@@ -82,21 +82,15 @@ public class PlayerUtil {
         return closestTarget;
     }
 
-    public static boolean isPlayerClipped() {
-
-        return isPlayerClipped(false);
-
-    }
-
     public static boolean isPlayerClipped(Entity e) {
 
         return !(mc.world.getCollisionBoxes(e, e.getEntityBoundingBox().contract(0, 0, 0)).isEmpty());
 
     }
 
-    public static boolean isPlayerClipped(boolean ignoreTop) {
+    public static boolean isPlayerClipped() {
 
-        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0, ignoreTop ? 1 : 0, 0)).isEmpty());
+        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty());
 
     }
 

@@ -10,6 +10,7 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
+import com.gamesense.client.command.commands.DamageCommand;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -30,6 +31,7 @@ public class Flight extends Module {
 
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
+    BooleanSetting damage = registerBoolean("Damage", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
@@ -223,6 +225,14 @@ public class Flight extends Module {
 
         flyspeed = mc.player.capabilities.getFlySpeed();
 
+        if (damage.getValue() && !mode.getValue().equalsIgnoreCase("Packet")) {
+
+            for (int i = 0; i < 64; i++) {
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
+            }
+
+        }
     }
 
     @Override

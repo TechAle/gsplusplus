@@ -33,7 +33,7 @@ public class PhaseWalk extends Module {
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
 
         if (mode.getValue().equalsIgnoreCase("Vanilla")
-                && (PlayerUtil.isPlayerClipped() || clipCheck.getValue())
+                && (PlayerUtil.isPlayerClipped() || !clipCheck.getValue())
                 && (mc.gameSettings.keyBindSprint.isKeyDown() || !sprint.getValue()))
 
             if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue())
