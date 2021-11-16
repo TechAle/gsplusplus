@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class PhaseUtil {
 
-    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter");
+    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter", "None");
     public static String normal = "Forward";
 
     private static final Minecraft mc = Minecraft.getMinecraft();
