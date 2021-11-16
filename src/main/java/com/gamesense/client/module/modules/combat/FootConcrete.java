@@ -67,7 +67,7 @@ public class FootConcrete extends Module {
 
         //BLINK
 
-        if (mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()))) {
+        if (!mc.world.isAirBlock(new BlockPos(mc.player.getPositionVector()))) {
 
             MessageBus.sendClientPrefixMessage("You are already clipped, disabling!");
             disable();

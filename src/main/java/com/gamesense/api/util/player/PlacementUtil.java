@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.item.Item;
 import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -58,6 +59,21 @@ public class PlacementUtil {
         mc.player.inventory.currentItem = newSlot;
         boolean output = place(blockPos, hand, rotate);
         mc.player.inventory.currentItem = oldSlot;
+
+        return output;
+    }
+
+    public static boolean placeBlockSilent(BlockPos blockPos, EnumHand hand, boolean rotate, Class<? extends Block> blockToPlace) {
+        int oldSlot = mc.player.inventory.currentItem;
+        int newSlot = InventoryUtil.findFirstBlockSlot(blockToPlace, 0, 8);
+
+        if (newSlot == -1) {
+            return false;
+        }
+
+        mc.player.connection.sendPacket(new CPacketHeldItemChange(newSlot));
+        boolean output = place(blockPos, hand, rotate);
+        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
 
         return output;
     }
