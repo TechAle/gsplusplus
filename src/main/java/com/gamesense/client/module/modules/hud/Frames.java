@@ -46,9 +46,9 @@ public class Frames extends HUDModule {
         @Override
         public String getItem(int index) {
             try {
-                return "FPS > " + Minecraft.getDebugFPS();
+                return "FPS " + Minecraft.getDebugFPS();
             } catch (Exception e) {
-                return "FPS > " + 0;
+                return "FPS " + 0;
             }
         }
 
