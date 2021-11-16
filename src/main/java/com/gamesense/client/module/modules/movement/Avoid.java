@@ -20,7 +20,7 @@ public class Avoid extends Module {
         INSTANCE = this;
     }
 
-    public BooleanSetting theVoid = registerBoolean("Void", false);
+    public BooleanSetting unloaded = registerBoolean("Unloaded", false);
     public BooleanSetting cactus = registerBoolean("Cactus", false);
     public BooleanSetting fire = registerBoolean("Fire", false);
     public BooleanSetting bigFire = registerBoolean("Extend Fire", false, () -> fire.getValue());
@@ -28,7 +28,7 @@ public class Avoid extends Module {
     @EventHandler
     private final Listener<BoundingBoxEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        if (event.getBlock().equals(Blocks.STRUCTURE_VOID) && theVoid.getValue()
+        if (event.getBlock().equals(Blocks.STRUCTURE_VOID) && unloaded.getValue()
                 || event.getBlock().equals(Blocks.CACTUS) && cactus.getValue()
                 || event.getBlock().equals(Blocks.FIRE) && fire.getValue())
 

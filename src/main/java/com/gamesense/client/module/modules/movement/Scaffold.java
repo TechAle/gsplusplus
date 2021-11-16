@@ -48,8 +48,6 @@ public class Scaffold extends Module {
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "FakeJump", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
     IntegerSetting delay = registerInteger("Jump Delay", 2,1,10, () -> towerMode.getValue().equalsIgnoreCase("FakeJump"));
-    BooleanSetting hTower = registerBoolean("Allow Horizontal Towering", false, () -> !towerMode.getValue().equalsIgnoreCase("None"));
-    BooleanSetting allowEchestOnHeld = registerBoolean("Allow Echest On Held", false);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int timer;
@@ -98,8 +96,7 @@ public class Scaffold extends Module {
 
         // Courtesy of KAMI, this block finding algo
         newSlot = -1;
-        if (!Block.getBlockFromItem(mc.player.getHeldItemMainhand().item).getDefaultState().isFullBlock()
-                || Block.getBlockFromItem(mc.player.getHeldItemMainhand().item).equals(Blocks.ENDER_CHEST) && allowEchestOnHeld.getValue()) {
+        if (!Block.getBlockFromItem(mc.player.getHeldItemMainhand().item).getDefaultState().isFullBlock()) {
             for (int i = 0; i < 9; i++) {
                 // filter out non-block items
                 ItemStack stack =
@@ -135,8 +132,6 @@ public class Scaffold extends Module {
 
         }
 
-        if (mc.gameSettings.keyBindJump.isKeyDown() && (!MotionUtil.isMoving(mc.player) || hTower.getValue())) { // TOWER
-
             switch (towerMode.getValue()) {
 
                 case "Jump": {
@@ -153,6 +148,8 @@ public class Scaffold extends Module {
                         mc.player.motionY = -(mc.player.posY - Math.floor(mc.player.posY)); // go down faster whist looking smoothest
 
                     }
+
+                    placeBlockPacket(towerPos, false);
 
                     break;
 
@@ -172,6 +169,9 @@ public class Scaffold extends Module {
 
                     }
 
+                    placeBlockPacket(towerPos, false);
+                    break;
+
                 }
                 case "FakeJump": {
 
@@ -180,17 +180,15 @@ public class Scaffold extends Module {
                         PlayerUtil.fakeJump(3);
                         mc.player.setPosition(mc.player.posX,mc.player.posY + 1.0013359791121,mc.player.posZ);
 
+                        placeBlockPacket(towerPos, false);
+                        break;
                     }
 
                 }
             }
 
 
-            placeBlockPacket(towerPos, false);
-
-        }
-
-        if (mc.gameSettings.keyBindJump.isKeyDown() && !hTower.getValue())
+        if (mc.gameSettings.keyBindJump.isKeyDown())
             placeBlockPacket(towerPos, false);
 
         if (!mc.gameSettings.keyBindJump.isKeyDown() && !mc.gameSettings.keyBindSprint.isKeyDown()) {
