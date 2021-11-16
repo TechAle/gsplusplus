@@ -26,9 +26,7 @@ of gs++ gs++ got leaked and i decided that, if gs++ ever got leaked, i will make
 the source code public<br>
 * I have an issue with gs++, can you help me? Unless you are a gs++ member, you wont get any support from me.
 Remember that this is a private client that is different from open source<br>
-* How can i get gs++? For be a member of gs++ you must get vouched by at least 3 gs++' members, 
-and you can make the request by asking 1 of the gs++ users of starting a vouch for you.
-Considerate that if you spam to get vouched u wont get it 100%, we have a channel where we post people that beg for the client.<br>
+* How can i get gs++? To be a member of gs++, you need to be vouched by most if not all members..<br>
 * Why continuing as private client? I decided to continue developing gamesense as private because well, people are annoying.
 The experience of gamesense was enough for me to make me say "No, never". So i decided to reserve my new updates
 to only few people that have a little bit of brain.
@@ -37,9 +35,9 @@ to only few people that have a little bit of brain.
 * TechAle (Main developer, head developer, mainteiner)
 * Doogie13 (Misc modules)
 * Mwa (Profile system and misc)
-* Sable__(best coder hacker man ever!!!)
+* Phantom826(new FPS counter
 #### gs++ Credits
-I think it's the duty of a developer saying if he took inspiration / took some piece of code from another client.
+I think it's the duty of a developer to say if he took inspiration / took some piece of code from another client.
 * How customchat is implemented for overriding  minecraft's chat (https://www.curseforge.com/minecraft/mc-mods/better-chat)
 
 
@@ -66,4 +64,4 @@ This client started out based off of FINZ0's Osiris, which in turn was based off
 Without these projects, GameSense would not exist so a lot of credit is due to them for their work.
 
 This client also implements the ClickGUI using PanelStudio: https://github.com/lukflug/PanelStudio/.
-If you believe that we are using your code and credits are not properly given, please message GooberTown#7384 on Discord.
+If you believe that we are using your code and credits are not properly given, please message Techale#1195 on Discord.
