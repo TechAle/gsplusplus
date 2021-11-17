@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class PhaseUtil {
 
-    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter", "None");
+    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter", "Constrict", "None");
     public static String normal = "Forward";
 
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -50,6 +50,10 @@ public class PhaseUtil {
                 break;
             case "LimitJitter":
                 packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
+                break;
+            case "Constrict":
+                dir = MotionUtil.forward(67);
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + mc.player.posY > 64 ? -33.4 : 33.4, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
         }
         mc.player.connection.sendPacket(packet);

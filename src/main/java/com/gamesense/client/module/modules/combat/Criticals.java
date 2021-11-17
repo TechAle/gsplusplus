@@ -10,6 +10,7 @@ import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.entity.item.EntityEnderCrystal;
+import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketUseEntity;
 
@@ -34,7 +35,7 @@ public class Criticals extends Module {
                 if (((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world) != null)
                     if (((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK && mc.player.onGround && !(mc.world.getEntityByID(Objects.requireNonNull(((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world)).getEntityId()) instanceof EntityEnderCrystal)) {
                         switch (mode.getValue().toLowerCase()) {
-                            case "packet" :{
+                            case "packet": {
                                 send = false;
                                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.11, mc.player.posZ, false));
                                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.1100013579, mc.player.posZ, false));
@@ -43,7 +44,7 @@ public class Criticals extends Module {
                                 break;
                             }
 
-                            case "hop" : {
+                            case "hop": {
                                 mc.player.motionY = 0.1f;
                                 mc.player.fallDistance = 0.1f;
                                 mc.player.onGround = false;
@@ -55,7 +56,7 @@ public class Criticals extends Module {
                             }
 
                             case "jump": {
-                                mc.player.jump();
+                                mc.player.motionY = 0.25;
                                 send = true;
                                 e = (CPacketUseEntity) event.getPacket();
                                 event.cancel();
@@ -65,6 +66,9 @@ public class Criticals extends Module {
                         }
                     }
             }
+        if (send && event.getPacket() instanceof CPacketAnimation) {
+            event.cancel();
+        }
     });
 
     @Override
@@ -76,6 +80,7 @@ public class Criticals extends Module {
         assert e != null;
         if (mc.player.motionY < 0 && send) {
             mc.player.connection.sendPacket(e);
+            mc.player.connection.sendPacket(new CPacketAnimation(e.getHand()));
             send = false;
         }
     }

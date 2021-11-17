@@ -27,6 +27,7 @@ public class PhaseWalk extends Module {
     BooleanSetting h = registerBoolean("Keep Floor", false, () -> mode.getValue().equalsIgnoreCase("Vanilla"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min", () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting clipCheck = registerBoolean("Clipped Check", false);
+    BooleanSetting twobeetwoteepeeveepee = registerBoolean("2b2tpvp", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting sprint = registerBoolean("Sprint Force Enable", true);
 
@@ -80,7 +81,7 @@ public class PhaseWalk extends Module {
                 && !ModuleManager.getModule(Flight.class).isEnabled()
                 && mode.getValue().equalsIgnoreCase("NCP")
                 && (clipped || !clipCheck.getValue())
-                ||  (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
+                ||  (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()) && mc.player.collidedHorizontally)
             packetFly();
     }
 
@@ -98,6 +99,11 @@ public class PhaseWalk extends Module {
     }
 
     void tp(double x, double y, double z, boolean onGround) {
+
+        double[] dir = MotionUtil.forward(-0.0312);;
+
+        if (twobeetwoteepeeveepee.getValue())
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], onGround)); // move back a bit
 
         mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, onGround));
         mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));

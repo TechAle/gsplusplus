@@ -137,10 +137,6 @@ public class PlayerUtil {
         fakeJump(69); // always most packets
     }
 
-    public static void fakeJump(boolean extra) {
-        fakeJump(extra ? 3 : 4);
-    }
-
     public static void fakeJump(int packets) {
         if (packets > 0)
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));

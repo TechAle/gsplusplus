@@ -8,6 +8,7 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.RotationUtil;
@@ -40,6 +41,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.InputUpdateEvent;
+import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 
 import java.util.Arrays;
@@ -172,49 +174,58 @@ public class PlayerTweaks extends Module {
         if (PlayerUtil.nullCheck()) {
 
             if (noFall.getValue() && event.getPacket() instanceof CPacketPlayer && !(mc.player.isElytraFlying())) {
+                try {
+                    mc.player.connection.getNetworkManager().handleDisconnection();
 
-                mc.player.connection.getNetworkManager().handleDisconnection();
+                    CPacketPlayer packet = (CPacketPlayer) event.getPacket();
+                    if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
+                        packet.onGround = true;
+                        mc.player.fallDistance = 0;
 
-                CPacketPlayer packet = (CPacketPlayer) event.getPacket();
-                if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
-                    packet.onGround = true;
-                    mc.player.fallDistance = 0;
+                    } else if (noFallMode.getValue().equalsIgnoreCase("OldFag")) {
 
-                } else if (noFallMode.getValue().equalsIgnoreCase("OldFag") ) {
-
-                    if (predict(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)) && mc.player.fallDistance >= 3) {
-                        mc.player.motionY = 0.0;
-                        packet.y = n1.getY();
-                        mc.player.fallDistance = 0.0f;
-                    }
-
-                } else if (noFallMode.getValue().equalsIgnoreCase("Catch")) {
-
-                    if (mc.player.fallDistance >= 3) {
-
-                        int oldSlot = mc.player.inventory.currentItem;
-                        int slot = catchM.getValue().equalsIgnoreCase("Web") ? getSlot(Blocks.WEB) : getSlot(Items.WATER_BUCKET);
-
-                        if (slot != -1) {
-                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-
-                            if (catchM.getValue().equalsIgnoreCase("Web")) {
-                                try {
-                                    PlacementUtil.place(getDownPos(), EnumHand.MAIN_HAND, false);
-                                } catch (NullPointerException ignored) {
-                                }
-                            } else {
-                                mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0, 0, 0));
-                            }
-
-                            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                        if (predict(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)) && mc.player.fallDistance >= 3) {
+                            mc.player.motionY = 0.0;
+                            packet.y = n1.getY();
+                            mc.player.fallDistance = 0.0f;
                         }
+
+                    } else if (noFallMode.getValue().equalsIgnoreCase("Catch")) {
+
+                        if (mc.player.fallDistance >= 3) {
+
+                            int oldSlot = mc.player.inventory.currentItem;
+                            int slot = catchM.getValue().equalsIgnoreCase("Web") ? getSlot(Blocks.WEB) : getSlot(Items.WATER_BUCKET);
+
+                            if (slot != -1) {
+                                mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+
+                                if (catchM.getValue().equalsIgnoreCase("Web")) {
+                                    try {
+                                        PlacementUtil.place(getDownPos(), EnumHand.MAIN_HAND, false);
+                                    } catch (NullPointerException ignored) {
+                                    }
+                                } else {
+                                    mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0, 0, 0));
+                                }
+
+                                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                            }
+                        }
+
+                    } else if (noFallMode.getValue().equalsIgnoreCase("Glitch")) {
+
+                        if (mc.player.fallDistance > 2)
+                            ModuleManager.getModule(FootConcrete.class).getPacket();
+
                     }
+                } catch (Exception e) {
 
-                } else if (noFallMode.getValue().equalsIgnoreCase("Glitch")) {
-
-                    if (mc.player.fallDistance > 2)
-                        ModuleManager.getModule(FootConcrete.class).getPacket();
+                    try {
+                        MessageBus.sendClientPrefixMessageWithID(e.getMessage(), true);
+                        for (StackTraceElement p : e.getStackTrace())
+                            System.out.println(p.toString());
+                    } catch (Exception ignored) {}
 
                 }
             }

@@ -47,7 +47,7 @@ public class Scaffold extends Module {
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "FakeJump", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
-    IntegerSetting delay = registerInteger("Jump Delay", 2,1,10, () -> towerMode.getValue().equalsIgnoreCase("FakeJump"));
+    IntegerSetting delay = registerInteger("Jump Delay", 2,1,10);
     BooleanSetting rotate = registerBoolean("Rotate", false);
 
     int timer;
@@ -162,7 +162,7 @@ public class Scaffold extends Module {
                     else
                         timer++;
 
-                    if (timer == 3 && mc.gameSettings.keyBindJump.isKeyDown()) {
+                    if (timer == delay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
 
                         mc.player.motionY = 0.42;
                         timer = 0;
@@ -175,7 +175,7 @@ public class Scaffold extends Module {
                 }
                 case "FakeJump": {
 
-                    if (mc.player.ticksExisted % delay.getValue() == 0 && mc.player.onGround) {
+                    if (mc.player.ticksExisted % delay.getValue() == 0 && mc.player.onGround && mc.gameSettings.keyBindJump.isKeyDown()) {
 
                         PlayerUtil.fakeJump(3);
                         mc.player.setPosition(mc.player.posX,mc.player.posY + 1.0013359791121,mc.player.posZ);
