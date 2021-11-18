@@ -1,6 +1,8 @@
 package com.gamesense.api.util.player;
 
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.world.MotionUtil;
+import com.gamesense.client.module.Module;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketPlayer;
 
@@ -53,7 +55,7 @@ public class PhaseUtil {
                 break;
             case "Constrict":
                 dir = MotionUtil.forward(67);
-                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + mc.player.posY > 64 ? -33.4 : 33.4, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + (mc.player.posY > 64 ? -33.4 : 33.4), mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
         }
         mc.player.connection.sendPacket(packet);

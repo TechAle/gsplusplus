@@ -11,7 +11,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "BoundsMove", category = Category.Movement)
 public class BoundsMove extends Module {
 
-    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Up");
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal);
 
     @Override
     public void onUpdate() {

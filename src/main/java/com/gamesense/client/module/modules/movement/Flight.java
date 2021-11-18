@@ -10,7 +10,6 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
-import com.gamesense.client.command.commands.DamageCommand;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -18,16 +17,15 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
-
-    int tpid;
-    float flyspeed;
-    ArrayList<CPacketPlayer> packetlist = new ArrayList<>();
 
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
@@ -36,18 +34,20 @@ public class Flight extends Module {
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting antiKickFlight = registerBoolean("AntiKick", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-
     // Packet settings
     DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 1, 3, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting packetY = registerDouble("Packet Y Speed", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting reduction = registerDouble("Reduction", 0.5, 0, 1, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+
+    int tpid;
+    float flyspeed;
+    ArrayList<CPacketPlayer> packetlist = new ArrayList<>();
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -67,15 +67,12 @@ public class Flight extends Module {
                 ((CPacketPlayer) event.getPacket()).pitch = 0;
                 ((CPacketPlayer) event.getPacket()).yaw = 0;
 
-            }
-
-            else event.cancel();
+            } else event.cancel();
 
         }
 
 
     });
-
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
@@ -174,30 +171,48 @@ public class Flight extends Module {
                 }
             }
 
-            for (int i = 0; i < packets.getValue(); i++) {
 
-                CPacketPlayer packet = new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
-                packetlist.add(packet);
-                mc.player.connection.sendPacket(packet);
+            List<CPacketPlayer> packet = NonNullList.create();
 
-                // confirm all
-                if (confirm.getValue()) {
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
-                }
+            packet.add((new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false)));
 
-                mc.player.setVelocity(x * reduction.getValue(), y * reduction.getValue(), z * reduction.getValue());
+            /*
+            * if packet factor is 1 we just use normal packet, else we send more
+            * we send all packets then send another for the .x extra (if applicable) since we can have decimal factors
+            * for example: factor 1.3 sends 2 packets, 1st is normal and 2nd is 0.3x extra
+            */
 
-                CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
-                packetlist.add(bounds);
-                mc.player.connection.sendPacket(bounds);
+            if (packetFactor.getValue() != 1 && !PlayerUtil.isPlayerClipped()) {
+                for (int p = 2; p < Math.floor(packetFactor.getValue()); p++)
+                    packet.add(new CPacketPlayer.PositionRotation(x * p + mc.player.posX, y * y > 0 ? (p) : 1 + mc.player.posY, z * p + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
+                if (packetFactor.getValue() != Math.floor(packetFactor.getValue()))
+                    packet.add(new CPacketPlayer.PositionRotation(x * packetFactor.getValue() + mc.player.posX, y * y > 0 ? packetFactor.getValue() : 1 + mc.player.posY, z * packetFactor.getValue() + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
             }
+
+            for (CPacketPlayer pkt : packet) {
+                packetlist.add(pkt);
+                mc.player.connection.sendPacket(pkt);
+            }
+
+            // confirm all
+            if (confirm.getValue()) {
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
+            }
+
+            mc.player.setVelocity(x * reduction.getValue() * packetFactor.getValue(), y * reduction.getValue() * packetFactor.getValue(), z * reduction.getValue() * packetFactor.getValue());
+
+            CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
+            packetlist.add(bounds);
+            mc.player.connection.sendPacket(bounds);
+
 
         }
 
     });
+    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
