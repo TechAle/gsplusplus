@@ -1,12 +1,10 @@
 package com.gamesense.client.module.modules.combat;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Pair;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
@@ -17,8 +15,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.AutoGG;
-import me.zero.alpine.listener.EventHandler;
-import me.zero.alpine.listener.Listener;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -31,8 +27,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
-import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.client.CPacketUseEntity;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.Vec2f;
 

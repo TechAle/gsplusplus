@@ -10,7 +10,6 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;

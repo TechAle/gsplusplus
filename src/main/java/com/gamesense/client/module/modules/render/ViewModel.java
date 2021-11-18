@@ -4,7 +4,6 @@ import com.gamesense.api.event.events.TransformSideFirstPersonEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -13,10 +12,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.EnumHandSide;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 
-import java.util.Arrays;
-
 import static org.lwjgl.opengl.GL11.glRotatef;
-import static org.lwjgl.opengl.GL11.glTranslatef;
 
 /**
  * @author TechAle

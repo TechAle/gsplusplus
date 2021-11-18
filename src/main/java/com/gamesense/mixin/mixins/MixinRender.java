@@ -4,7 +4,6 @@ import com.gamesense.api.event.events.ShaderColorEvent;
 import com.gamesense.client.GameSense;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.entity.Entity;
-import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

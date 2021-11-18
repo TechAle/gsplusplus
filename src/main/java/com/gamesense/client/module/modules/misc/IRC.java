@@ -13,7 +13,6 @@ import com.gamesense.api.util.misc.WebsocketClientEndpoint;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,7 +20,6 @@ import com.google.gson.JsonObject;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import org.json.simple.JSONArray;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,7 +31,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,96 +64,94 @@ public class IRC extends Module {
 
 
                 // add listener
-                clientEndPoint.addMessageHandler(new WebsocketClientEndpoint.MessageHandler() {
-                    public void handleMessage(String message) {
-                        JsonObject convertedObject = new Gson().fromJson(message, JsonObject.class);
+                clientEndPoint.addMessageHandler(message -> {
+                    JsonObject convertedObject = new Gson().fromJson(message, JsonObject.class);
 
-                        String textMSG;
-                        String name;
-                        switch (convertedObject.get("cmd").getAsString()) {
-                            case "onlineSet":
-                                JsonArray online = convertedObject.get("nicks").getAsJsonArray();
-                                StringBuilder on = new StringBuilder();
-                                for(int i = 0; i < online.size(); i++) {
-                                    if (!online.get(i).equals("server"))
-                                        on.append(online.get(i)).append(" ");
-                                }
-                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + " players online: " + on.toString();
-                                if (addgs.getValue())
-                                    MessageBus.sendClientPrefixMessage(textMSG);
-                                else MessageBus.sendClientRawMessage(textMSG);
-
-                                break;
-
-                            case "onlineRemove":
-                                name = convertedObject.get("nick").toString();
-                                if (name.contains("server"))
-                                    return;
-                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " left the irc";
-                                if (addgs.getValue())
-                                    MessageBus.sendClientPrefixMessage(textMSG);
-                                else MessageBus.sendClientRawMessage(textMSG);
-                                break;
-
-                            case "onlineAdd":
-                                name = convertedObject.get("nick").toString();
-                                if (name.equals("server"))
-                                    return;
-                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " joined the irc";
-                                if (addgs.getValue())
-                                    MessageBus.sendClientPrefixMessage(textMSG);
-                                else MessageBus.sendClientRawMessage(textMSG);
-                                break;
-
-                            case "chat":
-                                String text = convertedObject.get("text").getAsString();
-                                String[] values = text.split(":");
-                                String realAuthor;
-                                String realMSG;
-                                if (values.length == 1) {
-                                    realAuthor = convertedObject.get("nick").getAsString();
-                                    realMSG = text;
-                                } else {
-                                    realAuthor = values[0];
-                                    realMSG = text.substring(text.indexOf(':'));
-                                }
-
-                                if (realAuthor.equals("server"))
-                                    return;
-
-                                textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realAuthor + realMSG;
-
-                                if (addgs.getValue())
-                                    MessageBus.sendClientPrefixMessage(textMSG);
-                                else MessageBus.sendClientRawMessage(textMSG);
-                                break;
-                            case "warn":
-                                if (convertedObject.get("text").getAsString().equals("Nickname taken")) {
-                                    tries++;
-                                    clientEndPoint.sendMessage(getCreateChatroomRequest("MC_" + mc.player.getName()));
-                                }
-                                break;
-                        }
-
-                        /*
-                        JsonElement a = convertedObject.get("data");
-                        if (!a.isJsonArray()) {
-                            String realMSG = convertedObject.get("data").getAsJsonObject().get("message").getAsString();
-                            String realName = convertedObject.get("data").getAsJsonObject().get("user").getAsJsonObject().get("name").getAsString();
-
-                            if (!realMSG.equals("update")) {
-
-                                //System.out.println(realName + " : " + realMSG);
-                                String text = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realName + ": " + realMSG;
-
-                                if (addgs.getValue())
-                                    MessageBus.sendClientPrefixMessage(text);
-                                else MessageBus.sendClientRawMessage(text);
-
-
+                    String textMSG;
+                    String name;
+                    switch (convertedObject.get("cmd").getAsString()) {
+                        case "onlineSet":
+                            JsonArray online = convertedObject.get("nicks").getAsJsonArray();
+                            StringBuilder on = new StringBuilder();
+                            for(int i = 0; i < online.size(); i++) {
+                                if (!online.get(i).equals("server"))
+                                    on.append(online.get(i)).append(" ");
                             }
-                        }*/
+                            textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + " players online: " + on.toString();
+                            if (addgs.getValue())
+                                MessageBus.sendClientPrefixMessage(textMSG);
+                            else MessageBus.sendClientRawMessage(textMSG);
+
+                            break;
+
+                        case "onlineRemove":
+                            name = convertedObject.get("nick").toString();
+                            if (name.contains("server"))
+                                return;
+                            textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " left the irc";
+                            if (addgs.getValue())
+                                MessageBus.sendClientPrefixMessage(textMSG);
+                            else MessageBus.sendClientRawMessage(textMSG);
+                            break;
+
+                        case "onlineAdd":
+                            name = convertedObject.get("nick").toString();
+                            if (name.equals("server"))
+                                return;
+                            textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC "+ ChatFormatting.RESET + name + " joined the irc";
+                            if (addgs.getValue())
+                                MessageBus.sendClientPrefixMessage(textMSG);
+                            else MessageBus.sendClientRawMessage(textMSG);
+                            break;
+
+                        case "chat":
+                            String text = convertedObject.get("text").getAsString();
+                            String[] values = text.split(":");
+                            String realAuthor;
+                            String realMSG;
+                            if (values.length == 1) {
+                                realAuthor = convertedObject.get("nick").getAsString();
+                                realMSG = text;
+                            } else {
+                                realAuthor = values[0];
+                                realMSG = text.substring(text.indexOf(':'));
+                            }
+
+                            if (realAuthor.equals("server"))
+                                return;
+
+                            textMSG = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realAuthor + realMSG;
+
+                            if (addgs.getValue())
+                                MessageBus.sendClientPrefixMessage(textMSG);
+                            else MessageBus.sendClientRawMessage(textMSG);
+                            break;
+                        case "warn":
+                            if (convertedObject.get("text").getAsString().equals("Nickname taken")) {
+                                tries++;
+                                clientEndPoint.sendMessage(getCreateChatroomRequest("MC_" + mc.player.getName()));
+                            }
+                            break;
                     }
+
+                    /*
+                    JsonElement a = convertedObject.get("data");
+                    if (!a.isJsonArray()) {
+                        String realMSG = convertedObject.get("data").getAsJsonObject().get("message").getAsString();
+                        String realName = convertedObject.get("data").getAsJsonObject().get("user").getAsJsonObject().get("name").getAsString();
+
+                        if (!realMSG.equals("update")) {
+
+                            //System.out.println(realName + " : " + realMSG);
+                            String text = ChatFormatting.BOLD + "" + ChatFormatting.AQUA + "IRC " + ChatFormatting.RESET + realName + ": " + realMSG;
+
+                            if (addgs.getValue())
+                                MessageBus.sendClientPrefixMessage(text);
+                            else MessageBus.sendClientRawMessage(text);
+
+
+                        }
+                    }*/
                 });
 
             }catch (URISyntaxException ignored) {
@@ -244,26 +239,24 @@ public class IRC extends Module {
 
     void sendPicture(String realName) {
         realNameMsg = realName;
-        Thread t = new Thread() {
-            public void run() {
-                String imageURL = "https://crafatar.com/avatars/" + getUUID(realNameMsg).replaceAll("-", "") + "?size=64&default=MHF_Steve&overlay";
+        Thread t = new Thread(() -> {
+            String imageURL = "https://crafatar.com/avatars/" + getUUID(realNameMsg).replaceAll("-", "") + "?size=64&default=MHF_Steve&overlay";
 
-                String url = "https://discord.com/api/webhooks/906976095901986846/6mtRpFDzCEWuwTuuvWPfRywdcPPWtBWTjOlWxtusaC2gABELZ7N4Zr3_nQX8XwuFPYVz";
-                WebhookClient client = WebhookClient.withUrl(url);
+            String url = "https://discord.com/api/webhooks/906976095901986846/6mtRpFDzCEWuwTuuvWPfRywdcPPWtBWTjOlWxtusaC2gABELZ7N4Zr3_nQX8XwuFPYVz";
+            WebhookClient client = WebhookClient.withUrl(url);
 
-                if (Files.exists(Paths.get("screenshots"))) {
+            if (Files.exists(Paths.get("screenshots"))) {
 
-                    File uploadFile1 = getLastModified(Paths.get("screenshots").toAbsolutePath().toString());
-                    WebhookMessage msg = new WebhookMessageBuilder()
-                            .addFile(uploadFile1)
-                            .setAvatarUrl(imageURL)
-                            .setUsername(realNameMsg)
-                            .build();
+                File uploadFile1 = getLastModified(Paths.get("screenshots").toAbsolutePath().toString());
+                WebhookMessage msg = new WebhookMessageBuilder()
+                        .addFile(uploadFile1)
+                        .setAvatarUrl(imageURL)
+                        .setUsername(realNameMsg)
+                        .build();
 
-                    client.send(msg);
-                }
+                client.send(msg);
             }
-        };
+        });
         t.start();
 
     }

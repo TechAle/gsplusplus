@@ -2,7 +2,6 @@ package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
-import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
@@ -16,11 +15,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
-import net.minecraft.item.ItemPickaxe;
-import net.minecraft.network.play.client.CPacketPlayerDigging;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 

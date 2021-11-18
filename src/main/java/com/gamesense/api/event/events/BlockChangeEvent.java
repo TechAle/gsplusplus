@@ -2,7 +2,6 @@ package com.gamesense.api.event.events;
 
 import com.gamesense.api.event.GameSenseEvent;
 import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockChangeEvent extends GameSenseEvent {

@@ -6,7 +6,6 @@ import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.movement.SafeWalk;
 import com.gamesense.client.module.modules.movement.Scaffold;
-import com.gamesense.client.module.modules.movement.Step;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MoverType;

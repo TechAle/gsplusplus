@@ -28,7 +28,6 @@ import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.CPacketEntityAction;

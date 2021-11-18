@@ -1,8 +1,5 @@
 package com.gamesense.client.module.modules.hud;
 
-import java.awt.Color;
-import java.util.*;
-
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.module.Category;
@@ -13,9 +10,11 @@ import com.lukflug.panelstudio.hud.ListComponent;
 import com.lukflug.panelstudio.setting.Labeled;
 import com.lukflug.panelstudio.theme.ITheme;
 import com.mojang.realmsclient.gui.ChatFormatting;
-
 import net.minecraft.client.resources.I18n;
-import net.minecraft.potion.*;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
+
+import java.awt.*;
 
 @Module.Declaration(name = "PotionEffects", category = Category.HUD)
 @HUDModule.Declaration(posX = 0, posZ = 300)

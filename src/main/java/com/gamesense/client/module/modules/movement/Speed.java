@@ -18,7 +18,6 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
 import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 
 import java.util.Arrays;

@@ -1,6 +1,5 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
@@ -10,8 +9,6 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import me.zero.alpine.listener.Listener;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.text.TextFormatting;
 import org.lwjgl.input.Keyboard;
 
