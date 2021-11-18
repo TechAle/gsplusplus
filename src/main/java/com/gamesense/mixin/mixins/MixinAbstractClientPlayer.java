@@ -46,11 +46,11 @@ public abstract class MixinAbstractClientPlayer {
                 return;
 
             if (capesModule.capeMode.getValue().equalsIgnoreCase("Old")) {
-                callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capeblack.png"));
+                callbackInfoReturnable.setReturnValue(CapeUtil.capes.get(0));
             } else if (capesModule.capeMode.getValue().equalsIgnoreCase("New")) {
-                callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capewhite.png"));
+                callbackInfoReturnable.setReturnValue(CapeUtil.capes.get(1));
             } else {
-                callbackInfoReturnable.setReturnValue(new ResourceLocation("gamesense:capeamber.png"));
+                callbackInfoReturnable.setReturnValue(CapeUtil.capes.get(2));
             }
         }
     }
