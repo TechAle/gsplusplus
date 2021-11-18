@@ -124,11 +124,6 @@ public class Speed extends Module {
                 if (mc.player.onGround && (above || !strictOG.getValue())) {
                     mc.player.motionX *= onGroundSpeed.getValue();
                     mc.player.motionZ *= onGroundSpeed.getValue();
-                } else if ((above || !strictOG.getValue())) {
-
-                    mc.player.posY = Math.floor(mc.player.posY);
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true));
-
                 }
             }
 
@@ -183,7 +178,7 @@ public class Speed extends Module {
             mc.player.jump(); // motion = 0.42
             MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() + yPortSpeed.getValue()); // set speed
         } else {
-            mc.player.motionY = -1; // return to ground instantly }
+            mc.player.motionY = -1; // return to ground instantly
         }
     }
 

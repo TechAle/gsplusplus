@@ -1,6 +1,5 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
@@ -11,7 +10,6 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.PredictUtil;
-import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -23,21 +21,17 @@ import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockFalling;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
 /**
  * @author Doogie13
- * */
+ */
 
 @Module.Declaration(name = "Scaffold", category = Category.Movement)
 public class Scaffold extends Module {
@@ -46,29 +40,23 @@ public class Scaffold extends Module {
 
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
-    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "FakeJump", "None"), "Motion");DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
-    IntegerSetting delay = registerInteger("Jump Delay", 2,1,10);
+    ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "FakeJump", "None"), "Motion");
+    private final Listener<PlayerJumpEvent> jumpEventListener = new Listener<>(event -> {
+        if (towerMode.getValue().equalsIgnoreCase("FakeJump"))
+            event.cancel();
+    });
+    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    IntegerSetting delay = registerInteger("Jump Delay", 2, 1, 10);
     BooleanSetting rotate = registerBoolean("Rotate", false);
-
     int timer;
-
     int oldSlot;
     int newSlot;
-
     double oldTower;
-
     EntityPlayer predPlayer;
-
     BlockPos scaffold;
     BlockPos towerPos;
     BlockPos downPos;
     BlockPos rotateTo;
-
-    @Override
-    protected void onEnable() {
-        timer = 0;
-    }
-
     @EventHandler
     private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> {
 
@@ -132,60 +120,41 @@ public class Scaffold extends Module {
 
         }
 
-            switch (towerMode.getValue()) {
+        switch (towerMode.getValue()) {
 
-                case "Jump": {
+            case "Jump": {
 
-                    if (mc.player.onGround) {
+                if (mc.player.onGround) {
 
-                        oldTower = mc.player.posY;
-                        mc.player.jump();
-
-                    }
-
-                    if (Math.floor(mc.player.posY) == oldTower + 1 && !mc.player.onGround) {
-
-                        mc.player.motionY = -(mc.player.posY - Math.floor(mc.player.posY)); // go down faster whist looking smoothest
-
-                    }
-
-                    placeBlockPacket(towerPos, false);
-
-                    break;
+                    oldTower = mc.player.posY;
+                    mc.player.jump();
 
                 }
 
-                case "Motion": { // Best scaffold ever 100%
+                if (Math.floor(mc.player.posY) == oldTower + 1 && !mc.player.onGround) {
 
-                    if (mc.player.onGround)
-                        timer = 0;
-                    else
-                        timer++;
-
-                    if (timer == delay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
-
-                        mc.player.motionY = 0.42;
-                        timer = 0;
-
-                    }
-
-                    placeBlockPacket(towerPos, false);
-                    break;
+                    mc.player.motionY = -(mc.player.posY - Math.floor(mc.player.posY)); // go down faster whist looking smoothest
 
                 }
-                case "FakeJump": {
 
-                    if (mc.player.ticksExisted % delay.getValue() == 0 && mc.player.onGround && mc.gameSettings.keyBindJump.isKeyDown()) {
+                placeBlockPacket(towerPos, false);
 
-                        PlayerUtil.fakeJump(3);
-                        mc.player.setPosition(mc.player.posX,mc.player.posY + 1.0013359791121,mc.player.posZ);
+                break;
 
-                        placeBlockPacket(towerPos, false);
-                        break;
-                    }
-
-                }
             }
+            case "FakeJump": {
+
+                if (mc.player.ticksExisted % delay.getValue() == 0 && mc.player.onGround && mc.gameSettings.keyBindJump.isKeyDown()) {
+
+                    PlayerUtil.fakeJump(3);
+                    mc.player.setPosition(mc.player.posX, mc.player.posY + 1.0013359791121, mc.player.posZ);
+
+                    placeBlockPacket(towerPos, false);
+                    break;
+                }
+
+            }
+        }
 
 
         if (mc.gameSettings.keyBindJump.isKeyDown())
@@ -207,11 +176,33 @@ public class Scaffold extends Module {
         }
     });
 
+    @Override
+    protected void onEnable() {
+        timer = 0;
+    }
+
+    @Override
+    public void onUpdate() {
+
+
+        if (mc.player.onGround)
+            timer = 0;
+        else
+            timer++;
+
+        if (timer == delay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
+
+            mc.player.jump();
+            timer = 0;
+
+        }
+    }
+
     boolean placeBlockPacket(BlockPos pos, boolean allowSupport) {
 
         mc.player.rotationYaw += mc.player.ticksExisted % 2 == 0 ? 0.00001 : -0.00001; // force rotation packet
 
-        boolean shouldplace = mc.world.getBlockState(pos).getBlock().isReplaceable(mc.world,pos) && BlockUtil.getPlaceableSide(pos) != null;
+        boolean shouldplace = mc.world.getBlockState(pos).getBlock().isReplaceable(mc.world, pos) && BlockUtil.getPlaceableSide(pos) != null;
 
         rotateTo = pos;
 
@@ -253,11 +244,6 @@ public class Scaffold extends Module {
                 if (!placeBlockPacket(zpPos, false))
                     placeBlockPacket(zmPos, false);
     }
-
-    private final Listener<PlayerJumpEvent> jumpEventListener = new Listener<>(event -> {
-        if (towerMode.getValue().equalsIgnoreCase("FakeJump"))
-            event.cancel();
-    });
 
 }
 
