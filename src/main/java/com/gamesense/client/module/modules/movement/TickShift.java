@@ -16,6 +16,7 @@ import org.lwjgl.input.Keyboard;
 public class TickShift extends Module {
 
     IntegerSetting limit = registerInteger("Limit", 16, 1, 50);
+    DoubleSetting minSpeed = registerDouble("Min Speed", 1,0,1);
     DoubleSetting timer = registerDouble("Timer", 2, 1, 5);
     BooleanSetting doDecay = registerBoolean("Decay", false);
     DoubleSetting min = registerDouble("Lowest", 1.4, 1, 5, () -> doDecay.getValue());
@@ -39,25 +40,27 @@ public class TickShift extends Module {
 
         if (isMoving()) { // garunteed movement packet
 
-            if (ticks > 0 && !PlayerUtil.isPlayerClipped()) {
+            if (MotionUtil.getMotion(mc.player) > (minSpeed.getValue() * MotionUtil.getBaseMoveSpeed())) { // minimum speed to do exploit
+                if (ticks > 0 && !PlayerUtil.isPlayerClipped()) {
 
-                double ourTimer = 1;
-                double diff;
-                double steps;
+                    double ourTimer = 1;
+                    double diff;
+                    double steps;
 
-                diff = timer.getValue() - min.getValue();
-                steps = diff / limit.getValue();
-                ourTimer = doDecay.getValue() ? min.getValue() + steps : timer.getValue();
+                    diff = timer.getValue() - min.getValue();
+                    steps = diff / limit.getValue();
+                    ourTimer = doDecay.getValue() ? min.getValue() + steps : timer.getValue();
 
-                String bind = onClick.getText();
+                    String bind = onClick.getText();
 
-                if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
-                    mc.timer.tickLength = doDecay.getValue() ? (float) (Math.max(50f / ourTimer, 50f)) : 50 / timer.getValue().floatValue();
+                    if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
+                        mc.timer.tickLength = doDecay.getValue() ? (float) (Math.max(50f / ourTimer, 50f)) : 50 / timer.getValue().floatValue();
+                    }
                 }
-            }
 
-            if (ticks > 0) {
-                ticks--;
+                if (ticks > 0) {
+                    ticks--;
+                }
             }
 
         } else {
