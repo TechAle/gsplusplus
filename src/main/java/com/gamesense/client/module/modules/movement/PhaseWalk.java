@@ -43,7 +43,7 @@ public class PhaseWalk extends Module {
                         && (clipped || !clipCheck.getValue())
                         || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
 
-                    if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue())
+                    if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue() || mc.gameSettings.keyBindSneak.isKeyDown())
                         event.setbb(Block.NULL_AABB);
             }
         } catch (Exception e) {
@@ -77,7 +77,7 @@ public class PhaseWalk extends Module {
 
         clipped = PlayerUtil.isPlayerClipped();
 
-        if ((mc.player.collidedHorizontally)
+        if ((mc.player.collidedHorizontally || mc.gameSettings.keyBindSneak.isKeyDown())
                 && !ModuleManager.getModule(Flight.class).isEnabled()
                 && mode.getValue().equalsIgnoreCase("NCP")
                 && (clipped || !clipCheck.getValue())
@@ -89,7 +89,10 @@ public class PhaseWalk extends Module {
 
         double[] clip = MotionUtil.forward(0.0624);
 
-        tp(clip[0],0,clip[1], true);
+        if (mc.gameSettings.keyBindSneak.isKeyDown() && mc.player.onGround)
+            tp(0d,-0.0624,0d,false);
+        else
+            tp(clip[0],0,clip[1], true);
 
 
     }
