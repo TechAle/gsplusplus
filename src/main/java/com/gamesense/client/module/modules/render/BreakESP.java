@@ -13,18 +13,11 @@ import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockAir;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.SoundEvents;
-import net.minecraft.network.play.client.CPacketPlayerDigging;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItem;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.network.play.server.SPacketBlockBreakAnim;
-import net.minecraft.network.play.server.SPacketSoundEffect;
-import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 

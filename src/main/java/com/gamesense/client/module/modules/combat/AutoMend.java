@@ -8,7 +8,6 @@ import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.ModuleManager;
 import net.minecraft.init.Items;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;

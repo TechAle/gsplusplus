@@ -1,7 +1,6 @@
 package com.gamesense.client.command.commands;
 
 import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.client.command.Command;
 

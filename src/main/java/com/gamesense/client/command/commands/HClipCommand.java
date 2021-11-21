@@ -2,11 +2,8 @@ package com.gamesense.client.command.commands;
 
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.command.Command;
-import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
-import com.gamesense.api.util.world.MotionUtil;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.Vec3d;
 
 @Command.Declaration(name = "HorizontalClip", syntax = "HClip [Distance]", alias = {"hclip", "hc", "forward", "fwd", "chineseComunistParty"})

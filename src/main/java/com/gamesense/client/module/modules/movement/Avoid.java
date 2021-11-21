@@ -1,7 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.BoundingBoxEvent;
-import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -9,8 +8,6 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 
 @Module.Declaration(name = "Avoid", category = Category.Movement)
 public class Avoid extends Module {

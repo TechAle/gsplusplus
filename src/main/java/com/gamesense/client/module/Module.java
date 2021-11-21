@@ -1,33 +1,22 @@
 package com.gamesense.client.module;
 
+import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.setting.SettingsManager;
+import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.client.GameSense;
+import com.gamesense.client.module.modules.gui.ColorMain;
+import me.zero.alpine.listener.Listenable;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.input.Keyboard;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Supplier;
-
-import com.gamesense.api.setting.values.*;
-import io.netty.util.AsciiString;
-import me.zero.alpine.listener.Listenable;
-import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.network.NetHandlerPlayClient;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.world.World;
-import org.lwjgl.input.Keyboard;
-
-import com.gamesense.api.event.events.RenderEvent;
-import com.gamesense.api.setting.SettingsManager;
-import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.render.GSColor;
-import com.gamesense.client.GameSense;
-import com.gamesense.client.module.modules.gui.ColorMain;
-
-import net.minecraft.client.Minecraft;
-import scala.Int;
-
-import javax.annotation.RegEx;
 
 public abstract class Module implements Listenable {
 

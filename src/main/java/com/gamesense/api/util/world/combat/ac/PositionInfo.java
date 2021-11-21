@@ -1,6 +1,5 @@
 package com.gamesense.api.util.world.combat.ac;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.util.math.BlockPos;
 
