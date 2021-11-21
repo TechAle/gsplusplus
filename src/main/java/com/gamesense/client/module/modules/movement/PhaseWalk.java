@@ -38,14 +38,13 @@ public class PhaseWalk extends Module {
     private final Listener<BoundingBoxEvent> boundingBoxEventListener = new Listener<>(event -> {
 
         try {
-            if (event.getPos().distanceTo(mc.player.getPositionVector()) < 3) {
                 if (mode.getValue().equalsIgnoreCase("Vanilla")
                         && (clipped || !clipCheck.getValue())
                         || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
 
                     if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue() || mc.gameSettings.keyBindSneak.isKeyDown())
                         event.setbb(Block.NULL_AABB);
-            }
+
         } catch (Exception e) {
             MessageBus.sendClientPrefixMessage(e.getMessage());
             disable();

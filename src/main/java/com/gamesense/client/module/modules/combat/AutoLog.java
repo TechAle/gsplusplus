@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 @Module.Declaration(name = "AutoLog", category = Category.Combat)
 public class AutoLog extends Module {
 
-    IntegerSetting tots = registerInteger("Totems", 1, 0, mc.player.inventory.getSizeInventory());
+    IntegerSetting tots = registerInteger("Totems", 1, 0, 36);
     IntegerSetting hp = registerInteger("Health", 12, 0, 36);
 
     @Override

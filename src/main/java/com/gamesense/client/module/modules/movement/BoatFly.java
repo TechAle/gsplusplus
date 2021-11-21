@@ -1,12 +1,11 @@
 package com.gamesense.client.module.modules.movement;
 
-import com.gamesense.api.event.events.BoatMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import me.zero.alpine.listener.Listener;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.util.EnumHand;
 
@@ -19,36 +18,38 @@ public class BoatFly extends Module {
     BooleanSetting hover = registerBoolean("Hover", false);
     BooleanSetting bypass = registerBoolean("Bypass", false);
 
-    private final Listener<BoatMoveEvent> boatMoveEventListener = new Listener<>(event -> {
+    @Override
+    public void onUpdate() {
+
+        Entity e = mc.player.ridingEntity;
+
+        if (e == null)
+            return;
 
         if (mc.gameSettings.keyBindJump.isKeyDown())
-            event.setY(ySpeed.getValue());
+            e.motionY = ySpeed.getValue();
 
-         else if (mc.gameSettings.keyBindSneak.isKeyDown())
-            event.setY(-ySpeed.getValue());
+        else if (mc.gameSettings.keyBindSneak.isKeyDown())
+            e.motionY = -ySpeed.getValue();
 
         else
-            event.setY(hover.getValue() && mc.player.ticksExisted % 2 == 0 ? glideSpeed.getValue() : -glideSpeed.getValue());
+            e.motionY = hover.getValue() && mc.player.ticksExisted % 2 == 0 ? glideSpeed.getValue() : -glideSpeed.getValue();
 
 
         if (MotionUtil.isMoving(mc.player)) {
 
             double[] dir = MotionUtil.forward(speed.getValue());
 
-            event.setX(dir[0]);
-            event.setZ(dir[1]);
+            e.motionX = dir[0];
+            e.motionZ = dir[1];
 
         } else {
-            event.setX(0);
-            event.setZ(0);
+            e.motionX = 0;
+            e.motionZ = 0;
         }
 
-    });
-
-    @Override
-    public void onUpdate() {
         if (bypass.getValue() && mc.player.ticksExisted % 4 == 0)
             if (mc.player.ridingEntity instanceof EntityBoat)
-                mc.playerController.interactWithEntity(mc.player,mc.player.ridingEntity, EnumHand.MAIN_HAND);
+                mc.playerController.interactWithEntity(mc.player, mc.player.ridingEntity, EnumHand.MAIN_HAND);
     }
 }

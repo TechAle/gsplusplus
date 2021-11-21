@@ -7,6 +7,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.PredictUtil;
@@ -41,13 +42,14 @@ public class Scaffold extends Module {
     IntegerSetting distance = registerInteger("Distance Predict", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Predict"));
     IntegerSetting distanceP = registerInteger("Distance Player", 2, 0, 20, () -> logic.getValue().equalsIgnoreCase("Player"));
     ModeSetting towerMode = registerMode("Tower Mode", Arrays.asList("Jump", "Motion", "FakeJump", "None"), "Motion");
+    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
+    IntegerSetting delay = registerInteger("Jump Delay", 2, 1, 10);
+    BooleanSetting rotate = registerBoolean("Rotate", false);
+
     private final Listener<PlayerJumpEvent> jumpEventListener = new Listener<>(event -> {
         if (towerMode.getValue().equalsIgnoreCase("FakeJump"))
             event.cancel();
     });
-    DoubleSetting downSpeed = registerDouble("DownSpeed", 0, 0, 0.2);
-    IntegerSetting delay = registerInteger("Jump Delay", 2, 1, 10);
-    BooleanSetting rotate = registerBoolean("Rotate", false);
     int timer;
     int oldSlot;
     int newSlot;
@@ -57,6 +59,8 @@ public class Scaffold extends Module {
     BlockPos towerPos;
     BlockPos downPos;
     BlockPos rotateTo;
+    Timer cancelTimer = new Timer();
+
     @EventHandler
     private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> {
 
@@ -190,7 +194,7 @@ public class Scaffold extends Module {
         else
             timer++;
 
-        if (timer == delay.getValue() && mc.gameSettings.keyBindJump.isKeyDown()) {
+        if (timer == delay.getValue() && mc.gameSettings.keyBindJump.isKeyDown() && !cancelTimer.hasReached(1200, true)) {
 
             mc.player.jump();
             timer = 0;

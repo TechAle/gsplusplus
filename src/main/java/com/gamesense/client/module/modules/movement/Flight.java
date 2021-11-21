@@ -49,6 +49,7 @@ public class Flight extends Module {
     BooleanSetting jitter = registerBoolean("Jitter", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting jitterness = registerInteger("Jitter Amount", 6,1,16, () -> jitter.getValue());
     BooleanSetting speedup = registerBoolean("Accelerate", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting speedTicks = registerInteger("Accelerate Ticks", 3,1,20, () -> mode.getValue().equalsIgnoreCase("Packet") && speedup.getValue());
 
     int tpid;
     float flyspeed;
@@ -186,7 +187,7 @@ public class Flight extends Module {
                 mlt = 0;
 
             if (mlt < 1)
-                mlt += 0.333;
+                mlt += 1 / speedTicks.getValue();
 
             if (mlt > 1)
                 mlt = 1;
