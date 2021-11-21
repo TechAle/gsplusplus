@@ -43,8 +43,7 @@ import java.util.Optional;
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
 
-    BooleanSetting hitDelay = registerBoolean("Hit Delay", true);
-    IntegerSetting hitSpeed = registerInteger("Hit Speed", 8,1,20, () -> !hitDelay.getValue());
+
     BooleanSetting players = registerBoolean("Players", true);
     BooleanSetting hostileMobs = registerBoolean("Monsters", false);
     BooleanSetting passiveMobs = registerBoolean("Animals", false);
@@ -178,7 +177,7 @@ public class KillAura extends Module {
     }
 
     private void attack(Entity e) {
-        if (hitDelay.getValue() && mc.player.getCooledAttackStrength(0.0f) >= 1.0f || mc.player.ticksExisted % hitSpeed.getValue() == 0 && !hitDelay.getValue()) {
+        if (mc.player.getCooledAttackStrength(0.0f) >= 1.0f) {
             isAttacking = true;
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
