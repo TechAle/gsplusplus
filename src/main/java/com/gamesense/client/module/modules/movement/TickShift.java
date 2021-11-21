@@ -41,15 +41,18 @@ public class TickShift extends Module {
 
             if (ticks > 0 && !PlayerUtil.isPlayerClipped()) {
 
-                double steps = (timer.getValue() - min.getValue()) / limit.getValue();
+                double ourTimer = 1;
+                double diff;
+                double steps;
 
-                double ourTimer = !doDecay.getValue() ? timer.getValue() :
-                        steps * ticks + min.getValue();
+                diff = timer.getValue() - min.getValue();
+                steps = diff / limit.getValue();
+                ourTimer = doDecay.getValue() ? min.getValue() + steps : timer.getValue();
 
                 String bind = onClick.getText();
 
                 if (ticks > 0 && (bind.length() == 0 || Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.charAt(0))))) {
-                    mc.timer.tickLength = doDecay.getValue() ? (Math.max(50f / (float) ourTimer, 50f)) : 50 / timer.getValue().floatValue();
+                    mc.timer.tickLength = doDecay.getValue() ? (float) (Math.max(50f / ourTimer, 50f)) : 50 / timer.getValue().floatValue();
                 }
             }
 

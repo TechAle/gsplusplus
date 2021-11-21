@@ -44,11 +44,16 @@ public class Flight extends Module {
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting extra = registerBoolean("Extra IDs", false, () -> confirm.getValue());
     BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting jitter = registerBoolean("Jitter", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting jitterness = registerInteger("Jitter Amount", 6,1,16, () -> jitter.getValue());
+    BooleanSetting speedup = registerBoolean("Accelerate", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
 
     int tpid;
     float flyspeed;
     List<CPacketPlayer> packetlist = new NonNullList<CPacketPlayer>(){};
+    float mlt;
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -172,6 +177,24 @@ public class Flight extends Module {
                 }
             }
 
+            if (jitter.getValue() && mc.player.ticksExisted == jitterness.getValue()) {
+                mc.player.setVelocity(0,0,0);
+                return;
+            }
+
+            if (mc.player.motionX == 0 && mc.player.motionZ == 0)
+                mlt = 0;
+
+            if (mlt < 1)
+                mlt += 0.333;
+
+            if (mlt > 1)
+                mlt = 1;
+
+            if (speedup.getValue()) {
+                x *= mlt;
+                z *= mlt;
+            }
 
             List<CPacketPlayer> packet = NonNullList.create();
 
@@ -196,11 +219,14 @@ public class Flight extends Module {
                 mc.player.connection.sendPacket(pkt);
             }
 
-            // confirm all
             if (confirm.getValue()) {
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
+                if (extra.getValue())
+                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
+
                 mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
+
+                if (extra.getValue())
+                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
             }
 
             mc.player.setVelocity(x * reduction.getValue() * packetFactor.getValue(), y * reduction.getValue() * packetFactor.getValue(), z * reduction.getValue() * packetFactor.getValue());
@@ -209,10 +235,10 @@ public class Flight extends Module {
             packetlist.add(bounds);
             mc.player.connection.sendPacket(bounds);
 
-
         }
 
     });
+
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
