@@ -89,23 +89,19 @@ public class PhaseWalk extends Module {
 
         double[] clip = MotionUtil.forward(0.0624);
 
-
-        if (mc.gameSettings.keyBindSneak.isKeyDown() && mc.player.onGround)
-            tp(mc.player.posX + clip[0], mc.player.posY - 0.0624, mc.player.posZ + clip[1], false);
-        else
-            tp(mc.player.posX + clip[0], mc.player.posY, mc.player.posZ + clip[1], true);
+        tp(clip[0],0,clip[1], true);
 
 
     }
 
     void tp(double x, double y, double z, boolean onGround) {
 
-        double[] dir = MotionUtil.forward(-0.0312);;
+        double[] dir = MotionUtil.forward(-0.0312);
 
         if (twoBeePvP.getValue())
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], onGround)); // move back a bit
 
-        mc.player.connection.sendPacket(new CPacketPlayer.Position(x, y, z, onGround));
+        mc.player.connection.sendPacket(new CPacketPlayer.Position((twoBeePvP.getValue() ? (x/2) : x) + mc.player.posX, y + mc.player.posY, (twoBeePvP.getValue() ? (z/2) : z) + mc.player.posZ, onGround));
         mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
         mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
         mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
