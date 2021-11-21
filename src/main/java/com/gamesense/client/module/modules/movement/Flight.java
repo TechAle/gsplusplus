@@ -177,7 +177,7 @@ public class Flight extends Module {
                 }
             }
 
-            if (jitter.getValue() && mc.player.ticksExisted == jitterness.getValue()) {
+            if (jitter.getValue() && mc.player.ticksExisted % jitterness.getValue() == 0) {
                 mc.player.setVelocity(0,0,0);
                 return;
             }
