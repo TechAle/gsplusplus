@@ -50,9 +50,6 @@ public class PhaseUtil {
                 dir = MotionUtil.forward(100);
                 packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
-            case "LimitJitter":
-                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
-                break;
             case "Constrict":
                 dir = MotionUtil.forward(67);
                 packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + (mc.player.posY > 64 ? -33.4 : 33.4), mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
@@ -61,17 +58,4 @@ public class PhaseUtil {
         mc.player.connection.sendPacket(packet);
         return packet;
     }
-
-    public static double limit() {
-
-        Random random = new Random();
-
-        int randomValue = random.nextInt(22);
-        randomValue += 70;
-        if (random.nextBoolean()) {
-            return randomValue;
-        }
-        return -randomValue;
-    }
-
 }

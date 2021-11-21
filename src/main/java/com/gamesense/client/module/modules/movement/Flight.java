@@ -44,10 +44,11 @@ public class Flight extends Module {
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
 
     int tpid;
     float flyspeed;
-    ArrayList<CPacketPlayer> packetlist = new ArrayList<>();
+    List<CPacketPlayer> packetlist = new NonNullList<CPacketPlayer>(){};
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -212,7 +213,6 @@ public class Flight extends Module {
         }
 
     });
-    BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {

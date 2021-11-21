@@ -184,15 +184,14 @@ public class LongJump extends Module {
 
             if (mc.player.onGround) {
 
+                if (MotionUtil.isMoving(mc.player))
+                    mc.player.jump();
                 mc.player.jumpMovementFactor = mf;
-                if (mc.gameSettings.keyBindJump.isKeyDown()) {
-                    mc.player.motionY = jumpHeight.getValue();
-                    dir = MotionUtil.forward(MotionUtil.getBaseMoveSpeed());
+                mc.player.motionY = jumpHeight.getValue();
+                dir = MotionUtil.forward(MotionUtil.getBaseMoveSpeed());
 
-                    mc.player.motionX = dir[0]; // instant accel
-                    mc.player.motionZ = dir[1]; // instant accel
-                }
-
+                mc.player.motionX = dir[0]; // instant accel
+                mc.player.motionZ = dir[1]; // instant accel
 
             } else {
 
