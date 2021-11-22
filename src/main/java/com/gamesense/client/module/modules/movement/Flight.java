@@ -34,6 +34,8 @@ public class Flight extends Module {
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting antiKickFlight = registerBoolean("AntiKick", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting forceY = registerInteger("Force Y", 120,-1,256, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+
     // Packet settings
     DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 1, 3, () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -51,10 +53,17 @@ public class Flight extends Module {
     BooleanSetting speedup = registerBoolean("Accelerate", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting speedTicks = registerInteger("Accelerate Ticks", 3,1,20, () -> mode.getValue().equalsIgnoreCase("Packet") && speedup.getValue());
 
+    BooleanSetting noclip = registerBoolean("NoClip", false);
+
     int tpid;
     float flyspeed;
     List<CPacketPlayer> packetlist = new NonNullList<CPacketPlayer>(){};
     float mlt;
+
+    @Override
+    public void onUpdate() {
+        mc.player.noClip = noclip.getValue();
+    }
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -85,6 +94,9 @@ public class Flight extends Module {
 
         if (!PlayerUtil.nullCheck())
             return;
+
+        if (!mode.getValue().equals("Packet") && forceY.getValue() != -1 && mc.player.posY != forceY.getValue())
+            mc.player.setPosition(mc.player.posX,forceY.getValue(),mc.player.posZ);
 
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
 

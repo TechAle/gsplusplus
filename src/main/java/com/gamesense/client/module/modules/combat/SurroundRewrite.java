@@ -22,7 +22,6 @@ import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketAnimation;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketUseEntity;
-import net.minecraft.network.play.server.SPacketBlockChange;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -54,6 +53,8 @@ public class SurroundRewrite extends Module {
     BooleanSetting stopAC = registerBoolean("Stop AC", false);
     IntegerSetting tickStopAC = registerInteger("Tick Stop AC", 3, 0, 5, () -> stopAC.getValue());
     ArrayList<BlockPos> blockChanged = new ArrayList<>();
+
+    int y;
 
     @EventHandler
     private final Listener<PacketEvent.Receive> listener2 = new Listener<>(event -> {
@@ -112,6 +113,7 @@ public class SurroundRewrite extends Module {
     @Override
     protected void onEnable() {
         alertDelay.setTimer(0);
+        y = (int) Math.floor(mc.player.posY);
     }
 
     public void onUpdate() {
@@ -125,7 +127,7 @@ public class SurroundRewrite extends Module {
         if (onlyOnSneak.getValue() && !mc.gameSettings.keyBindSneak.isPressed())
             return;
 
-        if (disableOnJump.getValue() && !mc.player.onGround) {
+        if (disableOnJump.getValue() && y != mc.player.posY) {
             disable();
             return;
         }
@@ -216,6 +218,11 @@ public class SurroundRewrite extends Module {
                 }
 
                 if (PlacementUtil.place(targetPos, EnumHand.MAIN_HAND, rotate.getValue(), false)) {
+
+                    if (centre.getValue())
+                        PlayerUtil.centerPlayer(mc.player.getPositionVector());
+
+                    y = (int) Math.floor(mc.player.posY);
 
                     if (stopAC.getValue()) {
                         tickAC = tickStopAC.getValue();

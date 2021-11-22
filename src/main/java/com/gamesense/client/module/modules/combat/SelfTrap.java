@@ -32,7 +32,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "SelfTrap", category = Category.Combat)
 public class SelfTrap extends Module {
 
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple", "Simple No Step"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
@@ -137,10 +137,17 @@ public class SelfTrap extends Module {
                         maxSteps = Offsets.TRAP_SIMPLE.length;
                         break;
                     }
-                    default: {
+                    case "Normal": {
                         offsetPattern = Offsets.TRAP_FULL;
                         maxSteps = Offsets.TRAP_FULL.length;
                         break;
+                    }
+                    default: {
+
+                        offsetPattern = Offsets.TRAP_SIMPLE_NOSTEP;
+                        maxSteps = offsetPattern.length;
+                        break;
+
                     }
                 }
 
