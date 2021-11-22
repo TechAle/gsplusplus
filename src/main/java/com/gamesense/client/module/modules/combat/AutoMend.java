@@ -9,6 +9,7 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItem;
@@ -52,7 +53,7 @@ public class AutoMend extends Module {
                 InventoryUtil.swap(i, i - 4); // -4 gets us to corresponding crafting slot }
         }
 
-        int slot = InventoryUtil.findFirstItemSlot(Items.EXPERIENCE_BOTTLE.getClass(), 0,8);
+        int slot = InventoryUtil.findFirstItemSlot(Items.EXPERIENCE_BOTTLE.getClass(), 0, 8);
 
         if (slot == -1) {
             MessageBus.sendClientPrefixMessageWithID("Disabled due to no XP", true);
@@ -67,27 +68,21 @@ public class AutoMend extends Module {
         else
             mc.player.inventory.currentItem = slot;
 
-        mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw,90,mc.player.onGround));
+        mc.player.connection.sendPacket(new CPacketPlayer.Rotation(mc.player.rotationYaw, 90, mc.player.onGround));
         mc.player.connection.sendPacket(new CPacketPlayerTryUseItem(EnumHand.MAIN_HAND));
 
         if (silentSwitch.getValue())
             mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
-        else
-            mc.player.inventory.currentItem = oldSlot;
 
     }
 
     boolean craftFull() {
-
-        for (int i = 1; i < 4; i++) {
-
+        for (int i = 1; i < 4; i++)
             if (mc.player.inventory.getStackInSlot(i).getItem() != Items.AIR)
                 return true;
 
-        }
-
         return false;
-
     }
+
 
 }
