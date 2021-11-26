@@ -80,40 +80,57 @@ public class Shaders extends Module {
                     FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Aqua":
-                    AquaShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue());
-                    AquaShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Red":
-                    RedShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    RedShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue());
-                    RedShader.INSTANCE.update(speed.getValue());
-                    break;
-                case "Smoke":
-                    SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());                    break;
+                case "Smoke": 
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue());
-                    SmokeShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Triangle":
-                    TriangleShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    TriangleShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                    TriangleShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "RainbowCube":
-                    RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    RainbowCubeShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                    RainbowCubeShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Gradient":
-                    GradientShader.INSTANCE.startDraw(event.getPartialTicks());
+                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                    GradientShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
+                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
+                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
+                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                    FlowShader.INSTANCE.update(speed.getValue());
                     break;
             }
 
