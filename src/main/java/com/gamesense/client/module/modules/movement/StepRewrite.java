@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.network.play.client.CPacketPlayer;
@@ -22,32 +23,35 @@ public class StepRewrite extends Module {
     public void onUpdate() {
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
             mc.player.stepHeight = height.getValue().floatValue();
-        }
+        } else
+            mc.player.stepHeight = 0.5f;
+
+
 
         if (canStep() && mode.getValue().equalsIgnoreCase("NCP") && (mc.player.onGround || !onGround.getValue())) {
 
             double step = getCurrentStepHeight();
 
-            switch (String.valueOf(step)) {
-                case "1": {
+            switch ((int)(step * 10)) {
+                case 10: {
                     doStep(one);
                     break;
                 }
-                case "1.5": {
+                case 15: {
                     doStep(oneFive);
                     break;
                 }
-                case "2": {
+                case 20: {
                     doStep(two);
                     break;
                 }
-                case "2.5": {
+                case 25: {
                     doStep(twoFive);
                     break;
                 }
             }
 
-            mc.player.setPositionAndUpdate(mc.player.posX,mc.player.posY + step, mc.player.posZ);
+            mc.player.setPosition(mc.player.posX + mc.player.motionX,mc.player.posY + step, mc.player.posZ + mc.player.motionZ);
 
         }
     }
@@ -55,8 +59,10 @@ public class StepRewrite extends Module {
     void doStep(double[] offsets) {
 
         for (double i : offsets) {
+            MessageBus.sendClientPrefixMessage(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + i, mc.player.posZ, false).toString());
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY + i, mc.player.posZ, false));
         }
+
     }
 
     @Override
@@ -84,7 +90,7 @@ public class StepRewrite extends Module {
 
         double x = -Math.sin(yaw) * 0.4D;
         double z = Math.cos(yaw) * 0.4D;
-        return mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(x, 1.001335979112147D, z)).isEmpty();
+        return mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(x, 1, z)).isEmpty();
     }
 
     private double getCurrentStepHeight() {
@@ -127,9 +133,9 @@ public class StepRewrite extends Module {
         return (maximumY > 0.0D && maximumY <= height.getValue()) ? maximumY : 0.0D;
     }
 
-    public static final double[] one = {0.42, 0.753};
-    public static final double[] oneFive = {0.42, 0.75, 1.0, 1.16, 1.23, 1.2};
-    public static final double[] two = {0.42, 0.78, 0.63, 0.51, 0.9, 1.21, 1.45, 1.43};
-    public static final double[] twoFive = {0.425, 0.821, 0.699, 0.599, 1.022, 1.372, 1.652, 1.869, 2.019, 1.907};
+    double[] one = new double[]{0.41999998688698D, 0.7531999805212D};
+    double[] oneFive = new double[]{0.42D, 0.753D, 1.001D, 1.084D, 1.006D};
+    double[] two = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D};
+    double[] twoFive = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D, 2.019D, 1.907D};
 
 }
