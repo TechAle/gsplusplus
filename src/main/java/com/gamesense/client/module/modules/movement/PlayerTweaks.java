@@ -26,11 +26,9 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
+import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.tileentity.TileEntity;
@@ -55,7 +53,7 @@ public class PlayerTweaks extends Module {
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting strict = registerBoolean("No Slow Strict", false, () -> noSlow.getValue());
-    DoubleSetting speed = registerDouble("No Slow Strict Ground Speed", 0.2,0,1);
+    BooleanSetting mode2 = registerBoolean("Strict Mode",false,()->strict.getValue() && strict.isVisible());
     BooleanSetting ice = registerBoolean("Ice Speed", false);
     DoubleSetting iceSpeed = registerDouble("Ice Slipperiness", 0.4,0,1,() -> ice.getValue());
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
@@ -79,22 +77,21 @@ public class PlayerTweaks extends Module {
 
         if(mc.player.isHandActive() && !mc.player.isRiding()) {
 
-            if (strict.getValue() && !snk) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
-                snk = true;
-            }
-            if (strict.getValue() && mc.player.onGround && lastTickOG) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-                snk = false;
-                mc.player.movementInput.moveForward /= speed.getValue();
-                mc.player.movementInput.moveStrafe /= speed.getValue();
-            }
+            if (strict.getValue() && !mc.player.onGround && mode2.getValue())
+                mc.player.setSneaking(true);
 
+            if (strict.getValue() && !mode2.getValue() && mc.player.inventory.getCurrentItem().item instanceof ItemFood)
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
-            if (noSlow.getValue() || !mc.player.onGround && noSlow.getValue() && strict.getValue()) {
-                mc.player.movementInput.moveForward /= 0.2f;
-                mc.player.movementInput.moveStrafe /= 0.2f;
-            }
+            mc.player.movementInput.moveForward /= 0.2;
+            mc.player.movementInput.moveStrafe /= 0.2;
+
+        }
+
+        if (!mc.player.isHandActive() && mc.player.onGround && strict.getValue() && mode2.getValue()) {
+
+            mc.player.setSneaking(false);
+
         }
 
         lastTickOG = mc.player.onGround;
