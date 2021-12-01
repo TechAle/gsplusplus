@@ -1,5 +1,6 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.event.GameSenseEvent;
 import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.StepEvent;
 import com.gamesense.client.GameSense;
@@ -34,12 +35,15 @@ public class MixinEntity {
         return (ModuleManager.isModuleEnabled(Scaffold.class)) && !Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown()|| ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
     }
 
-    @Shadow public float stepHeight;
+/*    @Shadow private double d14; // X as defined on line 664
+    @Shadow private double d7; // Z as defined on line 666 (spooky)
+    @Shadow private double x;
+    @Shadow private double z;
     @Inject(method = "move", at = @At(value = "HEAD"))
-    public void prova(MoverType type, double x, double y, double z, CallbackInfo ci) {
-        if (stepHeight != 0) {
-            StepEvent bleach = new StepEvent(y);
-            GameSense.EVENT_BUS.post(bleach);
+    public void move(MoverType type, double x, double y, double z, CallbackInfo ci) {
+        if (!(d14 * d14 + d7 * d7 >= x * x + z * z)) {
+            StepEvent event = new StepEvent();
+            GameSense.EVENT_BUS.post(event);
         }
-    }
+    }*/
 }

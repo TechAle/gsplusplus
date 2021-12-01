@@ -1,5 +1,4 @@
 package com.gamesense.client.module.modules.render;
-
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.shaders.impl.*;
@@ -21,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Module.Declaration(name = "Shaders", category = Category.Render)
 public class Shaders extends Module {
-
+ 
     BooleanSetting glowESP = registerBoolean("Glow ESP", false);
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
@@ -52,23 +51,17 @@ public class Shaders extends Module {
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
     IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
-
+  
     public boolean renderTags = true,
                    renderCape = true;
-
-
     @EventHandler
     private final Listener<RenderGameOverlayEvent.Pre> renderGameOverlayEventListener = new Listener<>(event -> {
-
         if (event.getType() == RenderGameOverlayEvent.ElementType.ALL) {
             if (mc.world == null)
                 return;
-
-
             GlStateManager.pushMatrix();
             renderTags = false;
             renderCape = false;
-
             switch (fillShader.getValue()) {
                 case "Astral":
                     FlowShader.INSTANCE.startDraw(event.getPartialTicks());
@@ -118,20 +111,30 @@ public class Shaders extends Module {
             }
 
 
+    
+          
+            
+    
+
+          
+          
+            
+    
+
+          
+    
+    void renderPlayers(float tick) {
+  
             if (glowESP.getValue()) {
                 GlowShader.INSTANCE.startDraw(event.getPartialTicks());
                 renderPlayers(event.getPartialTicks());
                 GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
             }
-
             renderTags = true;
             renderCape = true;
-
             GlStateManager.popMatrix();
         }
     });
-
-
     void renderPlayers(float tick) {
         boolean rangeCheck = this.rangeCheck.getValue();
         double minRange = this.minRange.getValue() * this.minRange.getValue();
@@ -169,8 +172,4 @@ public class Shaders extends Module {
             }
         }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
     }
-
-
-
-
-}
+        
