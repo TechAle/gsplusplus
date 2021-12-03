@@ -133,11 +133,17 @@ public class PlayerUtil {
     }
 
     public static void fakeJump() {
-        fakeJump(69); // always most packets
+        fakeJump(5); // always most packets
     }
 
+    /**
+     *
+     * 5 means dont do first packet and do full 4
+     *
+     * */
+
     public static void fakeJump(int packets) {
-        if (packets > 0)
+        if (packets > 0 && packets != 5)
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
         if (packets > 1)
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .419999986887, mc.player.posZ, true));

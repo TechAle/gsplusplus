@@ -103,8 +103,13 @@ public class Flight extends Module {
             mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
             mc.player.capabilities.isFlying = true;
 
-            if (antiKickFlight.getValue())
-                mc.player.motionY = -0.00001;
+            if (antiKickFlight.getValue() && mc.player.ticksExisted % 4 == 0 && !mc.player.onGround) {
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY-0.01,mc.player.posZ,false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,false));
+
+            }
+
 
         } else if (mode.getValue().equalsIgnoreCase("Static")) {
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
@@ -133,8 +138,12 @@ public class Flight extends Module {
                 event.setZ(0);
             }
 
-            if (antiKickFlight.getValue())
-                event.setY(event.getY() - 0.00001);
+            if (antiKickFlight.getValue() && mc.player.ticksExisted % 4 == 0 && !mc.player.onGround) {
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY-0.01,mc.player.posZ,false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,false));
+
+            }
 
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
