@@ -15,8 +15,10 @@ public class WallClimb extends Module {
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        if (mc.player.collidedHorizontally && (mc.player.movementInput.moveForward != 0 || mc.player.movementInput.moveStrafe != 0))
+        if (mc.player.collidedHorizontally && (mc.player.movementInput.moveForward != 0 || mc.player.movementInput.moveStrafe != 0)) {
             event.setY(speed.getValue());
+            mc.player.fallDistance = 0;
+        }
 
     });
 

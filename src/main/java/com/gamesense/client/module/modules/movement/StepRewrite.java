@@ -21,6 +21,8 @@ public class StepRewrite extends Module {
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Beta"), "NCP");
     BooleanSetting onGround = registerBoolean("On Ground", false);
+    BooleanSetting timer = registerBoolean("Timer",false, () -> !mode.getValue().equalsIgnoreCase("VANILLA"));
+    BooleanSetting debug = registerBoolean("Debug Height", false);
 
     double[] one = new double[]{0.41999998688698D, 0.7531999805212D};
     double[] oneFive = new double[]{0.42D, 0.753D, 1.001D, 1.084D, 1.006D};
@@ -33,7 +35,7 @@ public class StepRewrite extends Module {
 
     @Override
     public void onUpdate() {
-        mc.player.stepHeight = height.getValue().floatValue();
+        mc.player.stepHeight = onGround.getValue() && !mc.player.onGround ? 0.5f : height.getValue().floatValue(); // 0.5 height if not on ground so it doesnt flag
     }
 
     @Override
@@ -47,7 +49,8 @@ public class StepRewrite extends Module {
 
         double step = (event.getBB().minY - mc.player.posY);
 
-        MessageBus.sendClientPrefixMessageWithID(step + "STEP STEP STEP STEP" + step, true);
+        if (debug.getValue())
+            MessageBus.sendClientPrefixMessageWithID("Stepping " + step + " blocks", Module.getIdFromString("Stepping ... Blocks"));
 
         if (mode.getValue().equalsIgnoreCase("Vanilla"))
             return;
