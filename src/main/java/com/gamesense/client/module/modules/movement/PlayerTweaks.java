@@ -53,7 +53,6 @@ public class PlayerTweaks extends Module {
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting strict = registerBoolean("No Slow Strict", false, () -> noSlow.getValue());
-    BooleanSetting mode2 = registerBoolean("Strict Mode",false,()->strict.getValue() && strict.isVisible());
     BooleanSetting ice = registerBoolean("Ice Speed", false);
     DoubleSetting iceSpeed = registerDouble("Ice Slipperiness", 0.4,0,1,() -> ice.getValue());
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
@@ -71,26 +70,19 @@ public class PlayerTweaks extends Module {
     BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
     IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40, () -> pistonPush.getValue());
 
+    public boolean pauseNoFallPacket;
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
 
         if(mc.player.isHandActive() && !mc.player.isRiding()) {
 
-            if (strict.getValue() && !mc.player.onGround && mode2.getValue())
-                mc.player.setSneaking(true);
-
-            if (strict.getValue() && !mode2.getValue() && mc.player.inventory.getCurrentItem().item instanceof ItemFood)
+            if (strict.getValue() && mc.player.inventory.getCurrentItem().item instanceof ItemFood)
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
             mc.player.movementInput.moveForward /= 0.2;
             mc.player.movementInput.moveStrafe /= 0.2;
-
-        }
-
-        if (!mc.player.isHandActive() && mc.player.onGround && strict.getValue() && mode2.getValue()) {
-
-            mc.player.setSneaking(false);
 
         }
 
@@ -176,8 +168,14 @@ public class PlayerTweaks extends Module {
 
                     CPacketPlayer packet = (CPacketPlayer) event.getPacket();
                     if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
-                        packet.onGround = true;
-                        mc.player.fallDistance = 0;
+
+                        if (mc.player.onGround)
+                            return;
+                        if (!pauseNoFallPacket){
+                            packet.onGround = true;
+                            mc.player.fallDistance = 0;
+                        } else
+                            pauseNoFallPacket = false;
 
                     } else if (noFallMode.getValue().equalsIgnoreCase("OldFag")) {
 

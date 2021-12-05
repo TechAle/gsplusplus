@@ -16,7 +16,7 @@ public class WallClimb extends Module {
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
         if (mc.player.collidedHorizontally && (mc.player.movementInput.moveForward != 0 || mc.player.movementInput.moveStrafe != 0))
-            event.setY(event.getY() + speed.getValue());
+            event.setY(speed.getValue());
 
     });
 

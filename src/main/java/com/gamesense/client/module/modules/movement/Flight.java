@@ -12,6 +12,7 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketConfirmTeleport;
@@ -297,10 +298,14 @@ public class Flight extends Module {
 
         if (damage.getValue() && !mode.getValue().equalsIgnoreCase("Packet")) {
 
+            ModuleManager.getModule(PlayerTweaks.class).pauseNoFallPacket = true;
+
             for (int i = 0; i < 64; i++) {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
             }
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true));
 
             mc.player.fallDistance = 3.1f;
 
