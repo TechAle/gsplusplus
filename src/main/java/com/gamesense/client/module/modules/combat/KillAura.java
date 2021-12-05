@@ -2,7 +2,6 @@ package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Pair;
 import com.gamesense.api.util.player.InventoryUtil;
@@ -40,6 +39,7 @@ import java.util.Optional;
  * @since 07/02/2021
  */
 
+@SuppressWarnings("unused")
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
 
@@ -55,21 +55,32 @@ public class KillAura extends Module {
     BooleanSetting autoSwitch = registerBoolean("Switch", false);
     DoubleSetting switchHealth = registerDouble("Min Switch Health", 0f, 0f, 20f);
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
-
-    private boolean isAttacking = false;
+    DoubleSetting walls = registerDouble("Wall Range",3.5,0,10);
 
     boolean calcDelay = true;
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
 
-        final double rangeSq = range.getValue() * range.getValue();
+        final double rangeSq = Math.pow(range.getValue(), 2);
         Optional<Entity> optionalTarget = mc.world.loadedEntityList.stream()
             .filter(entity -> entity instanceof EntityLivingBase)
             .filter(entity -> !EntityUtil.basicChecksEntity(entity))
             .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSq)
             .filter(this::attackCheck)
             .min(Comparator.comparing(e -> (enemyPriority.getValue().equals("Closest") ? mc.player.getDistanceSq(e) : ((EntityLivingBase) e).getHealth())));
+
+        final double wallsRangeSq = Math.pow(walls.getValue(), 2);
+        Optional<Entity> wallsOptionalTarget = mc.world.loadedEntityList.stream()
+                .filter(entity -> entity instanceof EntityLivingBase)
+                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
+                .filter(entity -> mc.player.getDistanceSq(entity) <= wallsRangeSq)
+                .filter(this::attackCheck)
+                .min(Comparator.comparing(e -> (enemyPriority.getValue().equals("Closest") ? mc.player.getDistanceSq(e) : ((EntityLivingBase) e).getHealth())));
+
+        if (wallsRangeSq < rangeSq) {
+            optionalTarget = wallsOptionalTarget;
+        }
 
         boolean sword = itemUsed.getValue().equalsIgnoreCase("Sword");
         boolean axe = itemUsed.getValue().equalsIgnoreCase("Axe");
@@ -114,12 +125,6 @@ public class KillAura extends Module {
                 mc.player.inventory.currentItem = temp;
             }
         }
-    }
-
-    int getRand(int min, int max) {
-
-        return (((int) (Math.random() * (max - min))) + min);
-
     }
 
     private Pair<Float, Integer> findSwordSlot() {
@@ -178,11 +183,9 @@ public class KillAura extends Module {
 
     private void attack(Entity e) {
         if (mc.player.getCooledAttackStrength(0.0f) >= 1.0f) {
-            isAttacking = true;
             mc.playerController.attackEntity(mc.player, e);
             mc.player.swingArm(EnumHand.MAIN_HAND);
             calcDelay = true;
-            isAttacking = false;
         }
     }
 
