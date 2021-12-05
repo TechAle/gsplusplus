@@ -7,6 +7,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -35,11 +36,11 @@ public class Speed extends Module {
     public int yl;
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "GroundStrafe", "OnGround", "Fake", "YPort"), "Strafe");
 
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
-    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
-    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
+    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
+    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
     DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,1, () -> boost.getValue() && boost.isVisible());
-    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue());
+    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue() && boost.isVisible());
 
     DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
@@ -49,8 +50,8 @@ public class Speed extends Module {
     BooleanSetting strictOG = registerBoolean("Head Block Only", false, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,1,5, () -> mode.getValue().equalsIgnoreCase("OnGround"));
 
-    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
-    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
+    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
 
     BooleanSetting useTimer = registerBoolean("Timer", false);
     DoubleSetting timerVal = registerDouble("Timer Speed", 1.088, 0.8,1.2);
@@ -70,6 +71,11 @@ public class Speed extends Module {
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
 
+            double desired = speed.getValue();
+
+            if (PlayerUtil.hungry())
+                desired /= .2873 / 0.21583333;
+
             double speedY = jumpHeight.getValue();
 
             if (mc.player.onGround && jump.getValue()) mc.player.jump();
@@ -82,7 +88,7 @@ public class Speed extends Module {
                 if (jump.getValue())
                     event.setY(mc.player.motionY = speedY);
 
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : desired);
                 slowDown = true;
                 timer.reset();
             } else {
@@ -105,7 +111,12 @@ public class Speed extends Module {
         }
         if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
 
-            playerSpeed = gSpeed.getValue();
+            double desired = gSpeed.getValue();
+
+            if (PlayerUtil.hungry())
+                playerSpeed /= .2873 / 0.21583333;
+
+            playerSpeed = desired;
 
             playerSpeed *= MotionUtil.getBaseMoveSpeed() / 0.2873; // get speed
 

@@ -27,6 +27,12 @@ public class PlayerUtil {
 
     }
 
+    public static boolean hungry() {
+
+        return mc.player.foodStats.getFoodLevel() > 6;
+
+    }
+
     // Find closest target
     // 0b00101010: replaced getDistance with getDistanceSq as speeds up calculation
     public static EntityPlayer findClosestTarget(double rangeMax, EntityPlayer aimTarget) {

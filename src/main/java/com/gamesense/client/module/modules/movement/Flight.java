@@ -30,6 +30,7 @@ public class Flight extends Module {
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     BooleanSetting damage = registerBoolean("Damage", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting jump = registerBoolean("Jump",false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
@@ -126,6 +127,12 @@ public class Flight extends Module {
 
             }
 
+            if (jump.getValue() && mc.player.onGround && event.getY() == 0) {
+
+                event.setY(0.42); // not on ground
+
+            }
+
             if (MotionUtil.isMoving(mc.player)) {
 
                 double[] dir = MotionUtil.forward(speed.getValue());
@@ -208,7 +215,7 @@ public class Flight extends Module {
                 mlt = 0;
 
             if (mlt < 1)
-                mlt += 1 / speedTicks.getValue();
+                mlt += 1f / speedTicks.getValue();
 
             if (mlt > 1)
                 mlt = 1;
@@ -294,6 +301,8 @@ public class Flight extends Module {
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
                 mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
             }
+
+            mc.player.fallDistance = 3.1f;
 
         }
     }
