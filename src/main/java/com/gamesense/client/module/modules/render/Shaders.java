@@ -22,8 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Module.Declaration(name = "Shaders", category = Category.Render)
 public class Shaders extends Module {
 
-    public boolean renderTags = true,
-            renderCape = true;
     BooleanSetting glowESP = registerBoolean("Glow ESP", false);
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
@@ -54,14 +52,23 @@ public class Shaders extends Module {
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
     IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
+
+    public boolean renderTags = true,
+            renderCape = true;
+
+
     @EventHandler
     private final Listener<RenderGameOverlayEvent.Pre> renderGameOverlayEventListener = new Listener<>(event -> {
+
         if (event.getType() == RenderGameOverlayEvent.ElementType.ALL) {
             if (mc.world == null)
                 return;
+
+
             GlStateManager.pushMatrix();
             renderTags = false;
             renderCape = false;
+
             switch (fillShader.getValue()) {
                 case "Astral":
                     FlowShader.INSTANCE.startDraw(event.getPartialTicks());
@@ -109,47 +116,61 @@ public class Shaders extends Module {
                     GradientShader.INSTANCE.update(speed.getValue());
                     break;
             }
-        }
 
-        });
-        void renderPlayers ( float tick){
-            boolean rangeCheck = this.rangeCheck.getValue();
-            double minRange = this.minRange.getValue() * this.minRange.getValue();
-            double maxRange = this.maxRange.getValue() * this.maxRange.getValue();
-            AtomicInteger nEntities = new AtomicInteger();
-            int maxEntities = this.maxEntities.getValue();
-            mc.world.loadedEntityList.stream().filter(e -> {
-                        if (nEntities.getAndIncrement() > maxEntities)
-                            return false;
-                        if (e instanceof EntityPlayer) {
-                            if (players.getValue())
-                                if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
-                                    return true;
-                        } else if (e instanceof EntityItem) {
-                            if (items.getValue())
-                                return true;
-                        } else if (e instanceof EntityCreature) {
-                            if (mobs.getValue())
-                                return true;
-                        } else if (e instanceof EntityEnderCrystal) {
-                            if (crystals.getValue())
-                                return true;
-                        } else if (e instanceof EntityXPOrb) {
-                            if (xp.getValue())
-                                return true;
-                        }
+
+            if (glowESP.getValue()) {
+                GlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                renderPlayers(event.getPartialTicks());
+                GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
+            }
+
+            renderTags = true;
+            renderCape = true;
+
+            GlStateManager.popMatrix();
+        }
+    });
+
+
+    void renderPlayers(float tick) {
+        boolean rangeCheck = this.rangeCheck.getValue();
+        double minRange = this.minRange.getValue() * this.minRange.getValue();
+        double maxRange = this.maxRange.getValue() * this.maxRange.getValue();
+        AtomicInteger nEntities = new AtomicInteger();
+        int maxEntities = this.maxEntities.getValue();
+        mc.world.loadedEntityList.stream().filter(e -> {
+                    if (nEntities.getAndIncrement() > maxEntities)
                         return false;
+                    if (e instanceof EntityPlayer) {
+                        if (players.getValue())
+                            if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
+                                return true;
+                    } else if (e instanceof EntityItem) {
+                        if (items.getValue())
+                            return true;
+                    } else if (e instanceof EntityCreature) {
+                        if (mobs.getValue())
+                            return true;
+                    } else if (e instanceof EntityEnderCrystal) {
+                        if (crystals.getValue())
+                            return true;
+                    } else if (e instanceof EntityXPOrb) {
+                        if (xp.getValue())
+                            return true;
                     }
-            ).filter(e -> {
-                if (!rangeCheck)
-                    return true;
-                else {
-                    double distancePl = mc.player.getDistanceSq(e);
-                    return distancePl > minRange && distancePl < maxRange;
+                    return false;
                 }
-            }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
-        }
-
-
-
+        ).filter(e -> {
+            if (!rangeCheck)
+                return true;
+            else {
+                double distancePl = mc.player.getDistanceSq(e);
+                return distancePl > minRange && distancePl < maxRange;
+            }
+        }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
     }
+
+
+
+
+}

@@ -1,7 +1,7 @@
 package com.gamesense.api.event.events;
 
 import com.gamesense.api.event.GameSenseEvent;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.math.AxisAlignedBB;
 
 /**
  * @see com.gamesense.mixin.mixins.MixinEntity
@@ -9,13 +9,14 @@ import net.minecraft.entity.player.EntityPlayer;
 
 public class StepEvent extends GameSenseEvent {
 
-    EntityPlayer player;
+    AxisAlignedBB BB;
 
-    public StepEvent(EntityPlayer player) {
-
+    public StepEvent(AxisAlignedBB bb) {
         super();
-        this.player = player;
-
+        this.BB = bb;
     }
 
+    public AxisAlignedBB getBB() {
+        return BB;
+    }
 }

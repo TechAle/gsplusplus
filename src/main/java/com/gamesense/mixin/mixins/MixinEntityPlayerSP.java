@@ -71,7 +71,7 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
     public void move(AbstractClientPlayer player, MoverType type, double x, double y, double z) {
         PlayerMoveEvent moveEvent = new PlayerMoveEvent(type, x, y, z);
         GameSense.EVENT_BUS.post(moveEvent);
-        super.move(type, moveEvent.getX(), moveEvent.getY(), moveEvent.getZ());
+        super.move(type, moveEvent.getX(), moveEvent.getY(), moveEvent.getZ()); // dumb fix but i want to die so it doesnt matter
     }
 
     @Inject(method = "swingArm", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/AbstractClientPlayer;swingArm(Lnet/minecraft/util/EnumHand;)V"), cancellable = true)
