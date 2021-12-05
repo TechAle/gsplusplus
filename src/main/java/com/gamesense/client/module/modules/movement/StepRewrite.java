@@ -1,12 +1,14 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.GameSenseEvent;
+import com.gamesense.api.event.events.StepEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 
@@ -17,31 +19,37 @@ public class StepRewrite extends Module {
 
     DoubleSetting height = registerDouble("Height", 2.5, 0.5, 2.5);
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Beta"), "NCP");
-    BooleanSetting instant = registerBoolean("Instant",false,() -> mode.getValue().equalsIgnoreCase("Beta"));
     BooleanSetting onGround = registerBoolean("On Ground", false);
-
-    int jump;
 
     double[] one = new double[]{0.41999998688698D, 0.7531999805212D};
     double[] oneFive = new double[]{0.42D, 0.753D, 1.001D, 1.084D, 1.006D};
     double[] two = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D};
     double[] twoFive = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D, 2.019D, 1.907D};
 
-    double[] betaShared = {.419999986887,.7531999805212,1.0013359791121,1.1661092609382,1.249187078744682,1.176759275064238};
+    double[] betaShared = {.419999986887, .7531999805212, 1.0013359791121, 1.1661092609382, 1.249187078744682, 1.176759275064238};
     double[] betaOneFive = {1.5};
-    double[] betaTwo = {1.596759261951216,1.929959255585439,2};
+    double[] betaTwo = {1.596759261951216, 1.929959255585439, 2};
 
     @Override
     public void onUpdate() {
-        if (mode.getValue().equalsIgnoreCase("Vanilla")) {
-            mc.player.stepHeight = height.getValue().floatValue();
-        } else
-            mc.player.stepHeight = 0.5f;
+        mc.player.stepHeight = height.getValue().floatValue();
+    }
 
+    @Override
+    protected void onDisable() {
+        mc.player.stepHeight = 0.5f;
+    }
 
-        if ((canStep() || jump != 69) && (mode.getValue().equalsIgnoreCase("NCP") || mode.getValue().equalsIgnoreCase("Beta")) && (mc.player.onGround || !onGround.getValue())) {
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<StepEvent> stepEventListener = new Listener<>(event -> {
 
-            double step = getCurrentStepHeight();
+        double step = mc.player.getEntityBoundingBox().minY - mc.player.posY;
+
+        if (step > height.getValue())
+            return;
+
+        if ((mode.getValue().equalsIgnoreCase("NCP") || mode.getValue().equalsIgnoreCase("Beta")) && (mc.player.onGround || !onGround.getValue())) {
 
             if (mode.getValue().equalsIgnoreCase("Beta"))
                 mc.player.stepHeight = 1;
@@ -49,44 +57,24 @@ public class StepRewrite extends Module {
             if (mode.getValue().equalsIgnoreCase("NCP"))
                 switch ((int) (step * 10)) {
                     case 10: {
-                        doStep(one);
+                        sendOffsets(one);
                         break;
                     }
                     case 15: {
-                        doStep(oneFive);
+                        sendOffsets(oneFive);
                         break;
                     }
                     case 20: {
-                        doStep(two);
+                        sendOffsets(two);
                         break;
                     }
                     case 25: {
-                        doStep(twoFive);
+                        sendOffsets(twoFive);
                         break;
                     }
                 }
-            else if (mc.player.onGround && !instant.getValue() && mode.getValue().equalsIgnoreCase("Beta"))
-                switch ((int) (step*10)) {
 
-                    case 20:
-                    case 15: {
-
-                        jump = 0;
-
-                    }
-
-                }
-
-            if (mode.getValue().equalsIgnoreCase("Beta") && !instant.getValue() && height.getValue() > 1) {
-                if (jump != 7)
-                    jump++;
-                else {
-                    mc.player.motionY = .42;
-                    jump = 69;
-                }
-            }
-
-            if (mode.getValue().equalsIgnoreCase("Beta") && instant.getValue()) {
+            if (mode.getValue().equalsIgnoreCase("Beta")) {
 
                 // we fakejump, then fall a bit, then jump again, this is basically double jump
 
@@ -109,93 +97,23 @@ public class StepRewrite extends Module {
                 Client	Position	1493	49	x: 77.69999998807907 y: 4.298056115603426 z: 31.619644581562387 onGround: false
                  */
 
-                doStep(betaShared);
+                sendOffsets(betaShared);
 
-                if (step == 1.5 && height.getValue() >= 1.5)
-                    doStep(betaOneFive);
-                else if (step == 2 && height.getValue() >= 2)
-                    doStep(betaTwo);
+                if (step == 1.5)
+                    sendOffsets(betaOneFive);
+                else if (step == 2)
+                    sendOffsets(betaTwo);
             }
 
-            if (mode.getValue().equalsIgnoreCase("NCP") || instant.getValue())
-                mc.player.setPosition(mc.player.posX + mc.player.motionX, mc.player.posY + step, mc.player.posZ + mc.player.motionZ);
-
         }
-    }
+    });
 
-    void doStep(double[] offsets) {
+    void sendOffsets(double[] offsets) {
 
         for (double i : offsets) {
             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + i, mc.player.posZ, false));
         }
 
-    }
-
-    @Override
-    protected void onDisable() {
-        mc.player.stepHeight = 0.5f;
-    }
-
-    private boolean canStep() {
-        float rotationYaw = mc.player.rotationYaw;
-        if (mc.player.moveForward < 0.0F)
-            rotationYaw += 180.0F;
-        float forward = 1.0F;
-        if (mc.player.moveForward < 0.0F) {
-            forward = -0.5F;
-        } else if (mc.player.moveForward > 0.0F) {
-            forward = 0.5F;
-        }
-        if (mc.player.moveStrafing > 0.0F)
-            rotationYaw -= 90.0F * forward;
-        if (mc.player.moveStrafing < 0.0F)
-            rotationYaw += 90.0F * forward;
-
-        float yaw = (float) Math.toRadians(rotationYaw);
-
-        double x = -Math.sin(yaw) * 0.4D;
-        double z = Math.cos(yaw) * 0.4D;
-        return mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(x, 1, z)).isEmpty();
-    }
-
-    private double getCurrentStepHeight() {
-        boolean collided = (mc.player.onGround && mc.player.collidedHorizontally);
-
-        if (!collided) {
-            return 0.0D;
-        }
-
-        double maximumY = -1.0D;
-
-        float rotationYaw = mc.player.rotationYaw;
-        if (mc.player.moveForward < 0.0F)
-            rotationYaw += 180.0F;
-        float forward = 1.0F;
-        if (mc.player.moveForward < 0.0F) {
-            forward = -0.5F;
-        } else if (mc.player.moveForward > 0.0F) {
-            forward = 0.5F;
-        }
-        if (mc.player.moveStrafing > 0.0F)
-            rotationYaw -= 90.0F * forward;
-        if (mc.player.moveStrafing < 0.0F)
-            rotationYaw += 90.0F * forward;
-
-        float yaw = (float) Math.toRadians(rotationYaw);
-
-        double x = -Math.sin(yaw) * 0.4D;
-        double z = Math.cos(yaw) * 0.4D;
-
-        AxisAlignedBB expandedBB = mc.player.getEntityBoundingBox().offset(0.0D, 0.05D, 0.0D).grow(0.05D);
-        expandedBB = expandedBB.setMaxY(expandedBB.maxY + (height.getValue()));
-
-        for (AxisAlignedBB axisAlignedBB : mc.world.getCollisionBoxes(mc.player, expandedBB)) {
-            if (axisAlignedBB.maxY > maximumY)
-                maximumY = axisAlignedBB.maxY;
-        }
-
-        maximumY -= mc.player.posY;
-        return (maximumY > 0.0D && maximumY <= height.getValue()) ? maximumY : 0.0D;
     }
 
 }
