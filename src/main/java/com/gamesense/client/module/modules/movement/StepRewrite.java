@@ -22,6 +22,7 @@ public class StepRewrite extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Beta"), "NCP");
     BooleanSetting onGround = registerBoolean("On Ground", false);
     BooleanSetting timer = registerBoolean("Timer",false, () -> !mode.getValue().equalsIgnoreCase("VANILLA"));
+    DoubleSetting multiplier = registerDouble("Multiplier",1,0.1,3,() -> timer.getValue() && timer.isVisible());
     BooleanSetting debug = registerBoolean("Debug Height", false);
 
     double[] one = new double[]{0.41999998688698D, 0.7531999805212D};
@@ -33,14 +34,21 @@ public class StepRewrite extends Module {
     double[] betaOneFive = {1.5};
     double[] betaTwo = {1.596759261951216, 1.929959255585439, 2};
 
+    boolean prevTickTimer;
+
     @Override
     public void onUpdate() {
         mc.player.stepHeight = onGround.getValue() && !mc.player.onGround ? 0.5f : height.getValue().floatValue(); // 0.5 height if not on ground so it doesnt flag
+        if (prevTickTimer) {
+            prevTickTimer = false;
+            mc.timer.tickLength = 50f;
+        }
     }
 
     @Override
     protected void onDisable() {
         mc.player.stepHeight = 0.5f;
+        mc.timer.tickLength = 50;
     }
 
     @SuppressWarnings("unused")
@@ -56,21 +64,49 @@ public class StepRewrite extends Module {
             return;
 
         if (mode.getValue().equalsIgnoreCase("NCP")) {
-            if (step == 1)
+            if (step == 1) {
                 sendOffsets(one);
-            if (step == 1.5)
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * one.length * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            }
+            if (step == 1.5) {
                 sendOffsets(oneFive);
-            if (step == 2)
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * oneFive.length * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            }
+            if (step == 2) {
                 sendOffsets(two);
-            if (step == 2.5)
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * two.length * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            }
+            if (step == 2.5) {
                 sendOffsets(twoFive);
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * twoFive.length * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            }
         } else if (mode.getValue().equalsIgnoreCase("Beta")) {
             if (step == 1.5) {
                 sendOffsets(betaShared);
                 sendOffsets(betaOneFive);
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * (betaShared.length + betaOneFive.length) * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
             } else if (step == 2) {
                 sendOffsets(betaShared);
                 sendOffsets(betaTwo);
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * (betaShared.length + betaTwo.length) * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
             }
         }
 

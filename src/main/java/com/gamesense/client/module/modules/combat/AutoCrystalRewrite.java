@@ -3329,110 +3329,112 @@ public class AutoCrystalRewrite extends Module {
     // Listen for when we are breaking a block
     @EventHandler
     private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
+        try {
 
-        if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
-        if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
+            if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
+            if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
 
-        // If air (Minecraft is strange)
-        BlockPos blockPos = event.getBlockPos();
+            // If air (Minecraft is strange)
+            BlockPos blockPos = event.getBlockPos();
 
-        if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+            if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
 
-        if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
-            return;
+            if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
+                return;
 
-        // Check distance
-        if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
-            // If percent
-            float armourPercent = armourFacePlace.getValue() / 100.0f;
+            // Check distance
+            if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+                // If percent
+                float armourPercent = armourFacePlace.getValue() / 100.0f;
 
-            // Check around the block
-            for (Vec3i surround : new Vec3i[]{
-                    new Vec3i(1, 0, 0),
-                    new Vec3i(-1, 0, 0),
-                    new Vec3i(0, 0, 1),
-                    new Vec3i(0, 0, -1)
-            }) {
-                // Get possible players that collide
-                List<Entity> players =
-                        new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
-                                null, new AxisAlignedBB(blockPos.add(surround))));
+                // Check around the block
+                for (Vec3i surround : new Vec3i[]{
+                        new Vec3i(1, 0, 0),
+                        new Vec3i(-1, 0, 0),
+                        new Vec3i(0, 0, 1),
+                        new Vec3i(0, 0, -1)
+                }) {
+                    // Get possible players that collide
+                    List<Entity> players =
+                            new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                                    null, new AxisAlignedBB(blockPos.add(surround))));
 
-                PlayerInfo info = null;
-                // Iterate
-                for(Entity pl : players) {
-                    // Remove us and remove players above
-                    if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
-                        EntityPlayer temp;
-                        // If we found 1, we are fine
-                        info = new PlayerInfo( (temp = (EntityPlayer) pl), armourPercent,
-                                temp.getTotalArmorValue(),
-                                (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
-                        break;
-                    }
-                }
-
-                // This is for force quitting. Is used for not multiPlacing
-                boolean quit = false;
-                if (info != null) {
-                    // Best values
-                    BlockPos coords = null;
-                    double damage = Double.MIN_VALUE;
-                    // Set to air the block for calculating the damage
-                    Block toReplace = BlockUtil.getBlock(blockPos);
-                    mc.world.setBlockToAir(blockPos);
-                    // Check around
-                    for (Vec3i placement : new Vec3i[]{
-                            new Vec3i(1, -1, 0),
-                            new Vec3i(-1, -1, 0),
-                            new Vec3i(0, -1, 1),
-                            new Vec3i(0, -1, -1)
-                    }) {
-                        // If it's placable
-                        BlockPos temp;
-                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
-
-                            // Check the damage on us
-                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue() )
-                                continue;
-
-                            // If there is a crystal, stop
-                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
-                                quit = true;
-                                break;
-                            }
-
-                            // Check damage on the target
-                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
-                                    info, ignoreTerrain.getValue());
-
-                            // IF >, add
-                            if (damagePlayer > damage) {
-                                damage = damagePlayer;
-                                coords = temp;
-                                quit = true;
-                            }
+                    PlayerInfo info = null;
+                    // Iterate
+                    for (Entity pl : players) {
+                        // Remove us and remove players above
+                        if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                            EntityPlayer temp;
+                            // If we found 1, we are fine
+                            info = new PlayerInfo((temp = (EntityPlayer) pl), armourPercent,
+                                    temp.getTotalArmorValue(),
+                                    (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+                            break;
                         }
                     }
 
-                    // Reset block
-                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+                    // This is for force quitting. Is used for not multiPlacing
+                    boolean quit = false;
+                    if (info != null) {
+                        // Best values
+                        BlockPos coords = null;
+                        double damage = Double.MIN_VALUE;
+                        // Set to air the block for calculating the damage
+                        Block toReplace = BlockUtil.getBlock(blockPos);
+                        mc.world.setBlockToAir(blockPos);
+                        // Check around
+                        for (Vec3i placement : new Vec3i[]{
+                                new Vec3i(1, -1, 0),
+                                new Vec3i(-1, -1, 0),
+                                new Vec3i(0, -1, 1),
+                                new Vec3i(0, -1, -1)
+                        }) {
+                            // If it's placable
+                            BlockPos temp;
+                            if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
 
-                    // Add to packet block
-                    if (coords != null) {
-                        packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                                // Check the damage on us
+                                if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue())
+                                    continue;
+
+                                // If there is a crystal, stop
+                                if (!placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                                    quit = true;
+                                    break;
+                                }
+
+                                // Check damage on the target
+                                float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                        info, ignoreTerrain.getValue());
+
+                                // IF >, add
+                                if (damagePlayer > damage) {
+                                    damage = damagePlayer;
+                                    coords = temp;
+                                    quit = true;
+                                }
+                            }
+                        }
+
+                        // Reset block
+                        mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                        // Add to packet block
+                        if (coords != null) {
+                            packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                        }
+
+                        // Quit
+                        if (quit)
+                            break;
+
                     }
 
-                    // Quit
-                    if (quit)
-                        break;
 
                 }
 
-
             }
-
-        }
+        } catch (Exception ignored) {}
 
 
     });
