@@ -127,7 +127,7 @@ public class SurroundRewrite extends Module {
         if (onlyOnSneak.getValue() && !mc.gameSettings.keyBindSneak.isPressed())
             return;
 
-        if (disableOnJump.getValue() && y != mc.player.posY) {
+        if (disableOnJump.getValue() && Math.abs(Math.abs(y) - Math.abs(mc.player.posY)) >= 0.3) { // enough for jump to cause unless under a block
             disable();
             return;
         }
