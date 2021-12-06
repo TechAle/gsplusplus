@@ -27,7 +27,7 @@ public class MotionUtil {
     }
 
     public static double getBaseMoveSpeed() {
-        double baseSpeed = Minecraft.getMinecraft().player.foodStats.getFoodLevel() > 6 ? .2873 : .21583333;
+        double baseSpeed = .2873;
         if (Minecraft.getMinecraft().player != null && Minecraft.getMinecraft().player.isPotionActive(Objects.requireNonNull(Potion.getPotionById(1)))) {
             final int amplifier = Objects.requireNonNull(Minecraft.getMinecraft().player.getActivePotionEffect(Objects.requireNonNull(Potion.getPotionById(1)))).getAmplifier();
             baseSpeed *= 1.0 + 0.2 * (amplifier + 1);

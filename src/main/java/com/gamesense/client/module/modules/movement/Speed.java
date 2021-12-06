@@ -18,7 +18,9 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 
 import java.util.Arrays;
@@ -40,6 +42,7 @@ public class Speed extends Module {
     BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
     BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
     DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,1, () -> boost.getValue() && boost.isVisible());
+    BooleanSetting strict = registerBoolean("Strict",false,() -> boost.getValue() && boost.isVisible());
     DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue() && boost.isVisible());
 
     DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
@@ -71,11 +74,6 @@ public class Speed extends Module {
 
         if (mode.getValue().equalsIgnoreCase("Strafe")) {
 
-            double desired = speed.getValue();
-
-            if (PlayerUtil.hungry())
-                desired /= .2873 / 0.21583333;
-
             double speedY = jumpHeight.getValue();
 
             if (mc.player.onGround && jump.getValue()) mc.player.jump();
@@ -88,7 +86,7 @@ public class Speed extends Module {
                 if (jump.getValue())
                     event.setY(mc.player.motionY = speedY);
 
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : desired);
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
                 slowDown = true;
                 timer.reset();
             } else {
@@ -111,12 +109,7 @@ public class Speed extends Module {
         }
         if (mode.getValue().equalsIgnoreCase("GroundStrafe")) {
 
-            double desired = gSpeed.getValue();
-
-            if (PlayerUtil.hungry())
-                playerSpeed /= .2873 / 0.21583333;
-
-            playerSpeed = desired;
+            playerSpeed = gSpeed.getValue();
 
             playerSpeed *= MotionUtil.getBaseMoveSpeed() / 0.2873; // get speed
 
@@ -150,7 +143,32 @@ public class Speed extends Module {
             kbTimer.reset();
         }
 
+        if (event.getPacket() instanceof SPacketEntityVelocity) {
+            if (((SPacketEntityVelocity) event.getPacket()).getEntityID() != mc.player.getEntityId())
+                return;
+            if (velocity < Math.abs(((SPacketEntityVelocity) event.getPacket()).motionX) + Math.abs(((SPacketEntityVelocity) event.getPacket()).motionZ)) {
+                if (getYaw(event.getPacket()) || !strict.getValue())
+                velocity = Math.abs(((SPacketEntityVelocity) event.getPacket()).motionX) + Math.abs(((SPacketEntityVelocity) event.getPacket()).motionZ);
+                kbTimer.reset();
+            }
+        }
+
     });
+
+    boolean getYaw(Packet packet) { // idc if intellij thinks i shouldn't use Packet cope seethe
+
+        boolean result = true;
+
+        if (packet instanceof SPacketEntityVelocity) {
+            result = ((SPacketEntityVelocity) packet).motionX > 0 && mc.player.motionX > 0 || ((SPacketEntityVelocity) packet).motionZ > 0 && mc.player.motionZ > 0;
+        }
+        if (packet instanceof SPacketExplosion) {
+            result = ((SPacketExplosion) packet).motionX > 0 && mc.player.motionX > 0 || ((SPacketExplosion) packet).motionZ > 0 && mc.player.motionZ > 0;
+        }
+
+        return result;
+
+    }
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
