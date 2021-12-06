@@ -177,8 +177,12 @@ public class OffHand extends Module {
                 // If we are fine, finish
                 if (strict.getValue()) {
 
-                    dontMove = true;
-                    mc.playerController.onStoppedUsingItem(mc.player);
+                    try {
+                        dontMove = true;
+                        mc.playerController.onStoppedUsingItem(mc.player);
+                    } catch (Exception ignored) {
+                        dontMove = true;
+                    }
 
                 }
                 tickWaited = 0;
