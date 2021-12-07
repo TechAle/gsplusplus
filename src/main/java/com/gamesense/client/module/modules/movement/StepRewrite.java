@@ -24,10 +24,12 @@ public class StepRewrite extends Module {
     DoubleSetting multiplier = registerDouble("Multiplier", 1, 0.1, 3, () -> timer.getValue() && timer.isVisible());
     BooleanSetting debug = registerBoolean("Debug Height", false);
 
-    double[] one = new double[]{0.41999998688698D, 0.7531999805212D};
-    double[] oneFive = new double[]{0.42D, 0.753D, 1.001D, 1.084D, 1.006D};
-    double[] two = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D};
-    double[] twoFive = new double[]{0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D, 2.019D, 1.907D};
+    double[] pointFiveToOne = {0.41999998688698D};
+    double[] one = {0.41999998688698D, 0.7531999805212D};
+    double[] oneFive = {0.42D, 0.753D, 1.001D, 1.084D, 1.006D};
+    double[] oneSixTwoFive = {0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D};
+    double[] two = {0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D};
+    double[] twoFive = {0.425D, 0.821D, 0.699D, 0.599D, 1.022D, 1.372D, 1.652D, 1.869D, 2.019D, 1.907D};
 
     double[] betaShared = {.419999986887, .7531999805212, 1.0013359791121, 1.1661092609382, 1.249187078744682, 1.176759275064238};
     double[] betaOneFive = {1.5};
@@ -67,7 +69,14 @@ public class StepRewrite extends Module {
             return;
 
         if (mode.getValue().equalsIgnoreCase("NCP")) {
-            if (step == 1) {
+
+            if (step == 0.625) {
+                sendOffsets(pointFiveToOne);
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * (pointFiveToOne.length + 1) * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            } else if (step == 1 || step == 0.875 || step == 1.0625 || step == 0.9375) { // we dont add a range so when vanilla does a stupid for no reason we catch it (0.414141 block step sometimes when in mid air)
                 sendOffsets(one);
                 if (timer.getValue()) {
                     mc.timer.tickLength = 50f * (one.length + 1) * multiplier.getValue().floatValue();
@@ -77,6 +86,12 @@ public class StepRewrite extends Module {
                 sendOffsets(oneFive);
                 if (timer.getValue()) {
                     mc.timer.tickLength = 50f * (oneFive.length + 1) * multiplier.getValue().floatValue();
+                    prevTickTimer = true;
+                }
+            }else if (step == 1.625) {
+                sendOffsets(oneSixTwoFive);
+                if (timer.getValue()) {
+                    mc.timer.tickLength = 50f * (oneSixTwoFive.length + 1) * multiplier.getValue().floatValue();
                     prevTickTimer = true;
                 }
             } else if (step == 2) {
