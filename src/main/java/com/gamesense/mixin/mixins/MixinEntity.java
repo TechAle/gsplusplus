@@ -238,6 +238,10 @@ public abstract class MixinEntity {
                     StepEvent event = new StepEvent(bb);
                     GameSense.EVENT_BUS.post(event);
 
+                    if (event.isCancelled()) {
+                        mc.player.stepHeight = 0.5f;
+                    }
+
                 }
 
             }
