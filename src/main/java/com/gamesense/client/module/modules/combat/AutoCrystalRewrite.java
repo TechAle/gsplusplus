@@ -4058,7 +4058,9 @@ public class AutoCrystalRewrite extends Module {
                         if (entity instanceof EntityEnderCrystal) {
                             // SetDead, that's just visual lol
                             if (setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
-                                entity.setDead();
+                                try {
+                                    entity.setDead();
+                                } catch (Exception ignored) {}
                             }
 
                             // For not spamming of packets lol

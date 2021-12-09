@@ -37,6 +37,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.InputUpdateEvent;
 import org.lwjgl.Sys;
@@ -71,6 +72,7 @@ public class PlayerTweaks extends Module {
     IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40, () -> pistonPush.getValue());
 
     public boolean pauseNoFallPacket;
+    Vec3d pos = new Vec3d(0,0,0);
 
     @SuppressWarnings("unused")
     @EventHandler
@@ -211,7 +213,9 @@ public class PlayerTweaks extends Module {
                     } else if (noFallMode.getValue().equalsIgnoreCase("Glitch")) {
 
                         if (mc.player.fallDistance > 2)
-                            ModuleManager.getModule(FootConcrete.class).getPacket();
+                            mc.player.setPosition(pos.x,pos.y,pos.z);
+                        else if (mc.player.onGround)
+                            pos = mc.player.getPositionVector();
 
                     }
                 } catch (Exception e) {
