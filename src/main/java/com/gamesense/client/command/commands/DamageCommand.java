@@ -4,6 +4,7 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.client.command.Command;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.gui.ColorMain;
+import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import net.minecraft.network.play.client.CPacketPlayer;
 
 @Command.Declaration(name = "Damage", syntax = "damage", alias = {"damage", "dmg", "hurt", "legbreak"})
@@ -14,6 +15,8 @@ public class DamageCommand extends Command {
         if (mc.player != null) {
             String dmg = message[0];
             int damage = 0;
+
+            ModuleManager.getModule(PlayerTweaks.class).pauseNoFallPacket = true;
 
             try {
                 damage = Integer.parseInt(dmg);

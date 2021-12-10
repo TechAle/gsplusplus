@@ -1,6 +1,5 @@
 package com.gamesense.client.manager.managers;
 
-import com.gamesense.api.event.GameSenseEvent;
 import com.gamesense.api.event.events.*;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.NameUtil;
@@ -27,7 +26,6 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 

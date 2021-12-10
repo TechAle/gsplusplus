@@ -48,4 +48,5 @@ public class BoatMoveEvent extends GameSenseEvent {
     public void setZ(double z) {
         this.z = z;
     }
+
 }

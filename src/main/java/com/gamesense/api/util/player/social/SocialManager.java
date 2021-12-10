@@ -1,10 +1,8 @@
 package com.gamesense.api.util.player.social;
 
 import com.gamesense.client.module.modules.combat.Friends;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class SocialManager {
 

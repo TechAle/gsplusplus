@@ -12,40 +12,60 @@ import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.network.play.client.CPacketConfirmTeleport;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
-    int tpid;
-    float flyspeed;
-    ArrayList<CPacketPlayer> packetlist = new ArrayList<>();
-
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
+    BooleanSetting damage = registerBoolean("Damage", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting jump = registerBoolean("Jump",false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting antiKickFlight = registerBoolean("AntiKick", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting forceY = registerInteger("Force Y", 120,-1,256, () -> !mode.getValue().equalsIgnoreCase("Packet"));
 
     // Packet settings
     DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 1, 3, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting packetY = registerDouble("Packet Y Speed", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting reduction = registerDouble("Reduction", 0.5, 0, 1, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
-    IntegerSetting packets = registerInteger("Packets", 1, 1, 25, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting extra = registerBoolean("Extra IDs", false, () -> confirm.getValue());
     BooleanSetting debug = registerBoolean("Debug IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet") && confirm.getValue());
+    BooleanSetting jitter = registerBoolean("Jitter", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting jitterness = registerInteger("Jitter Amount", 6,1,16, () -> jitter.getValue());
+    BooleanSetting speedup = registerBoolean("Accelerate", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    IntegerSetting speedTicks = registerInteger("Accelerate Ticks", 3,1,20, () -> mode.getValue().equalsIgnoreCase("Packet") && speedup.getValue());
+
+    BooleanSetting noclip = registerBoolean("NoClip", false);
+
+    int tpid;
+    float flyspeed;
+    List<CPacketPlayer> packetlist = new NonNullList<CPacketPlayer>(){};
+    float mlt;
+
+    @Override
+    public void onUpdate() {
+        mc.player.noClip = noclip.getValue();
+    }
 
     @SuppressWarnings("Unused")
     @EventHandler
@@ -65,28 +85,33 @@ public class Flight extends Module {
                 ((CPacketPlayer) event.getPacket()).pitch = 0;
                 ((CPacketPlayer) event.getPacket()).yaw = 0;
 
-            }
-
-            else event.cancel();
+            } else event.cancel();
 
         }
 
 
     });
-
     @EventHandler
     private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
 
         if (!PlayerUtil.nullCheck())
             return;
 
+        if (!mode.getValue().equals("Packet") && forceY.getValue() != -1 && mc.player.posY != forceY.getValue())
+            mc.player.setPosition(mc.player.posX,forceY.getValue(),mc.player.posZ);
+
         if (mode.getValue().equalsIgnoreCase("Vanilla")) {
 
             mc.player.capabilities.setFlySpeed(flyspeed * speed.getValue().floatValue());
             mc.player.capabilities.isFlying = true;
 
-            if (antiKickFlight.getValue())
-                mc.player.motionY = -0.00001;
+            if (antiKickFlight.getValue() && mc.player.ticksExisted % 4 == 0 && !mc.player.onGround) {
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY-0.01,mc.player.posZ,false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,false));
+
+            }
+
 
         } else if (mode.getValue().equalsIgnoreCase("Static")) {
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
@@ -103,6 +128,12 @@ public class Flight extends Module {
 
             }
 
+            if (jump.getValue() && mc.player.onGround && event.getY() == 0) {
+
+                event.setY(0.42); // not on ground
+
+            }
+
             if (MotionUtil.isMoving(mc.player)) {
 
                 double[] dir = MotionUtil.forward(speed.getValue());
@@ -115,8 +146,12 @@ public class Flight extends Module {
                 event.setZ(0);
             }
 
-            if (antiKickFlight.getValue())
-                event.setY(event.getY() - 0.00001);
+            if (antiKickFlight.getValue() && mc.player.ticksExisted % 4 == 0 && !mc.player.onGround) {
+
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY-0.01,mc.player.posZ,false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,false));
+
+            }
 
         } else if (mode.getValue().equalsIgnoreCase("Packet")) {
 
@@ -172,30 +207,68 @@ public class Flight extends Module {
                 }
             }
 
-            for (int i = 0; i < packets.getValue(); i++) {
-
-                CPacketPlayer packet = new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
-                packetlist.add(packet);
-                mc.player.connection.sendPacket(packet);
-
-                // confirm all
-                if (confirm.getValue()) {
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
-                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
-                }
-
-                mc.player.setVelocity(x * reduction.getValue(), y * reduction.getValue(), z * reduction.getValue());
-
-                CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
-                packetlist.add(bounds);
-                mc.player.connection.sendPacket(bounds);
-
+            if (jitter.getValue() && mc.player.ticksExisted % jitterness.getValue() == 0) {
+                mc.player.setVelocity(0,0,0);
+                return;
             }
+
+            if (mc.player.motionX == 0 && mc.player.motionZ == 0)
+                mlt = 0;
+
+            if (mlt < 1)
+                mlt += 1f / speedTicks.getValue();
+
+            if (mlt > 1)
+                mlt = 1;
+
+            if (speedup.getValue()) {
+                x *= mlt;
+                z *= mlt;
+            }
+
+            List<CPacketPlayer> packet = NonNullList.create();
+
+            packet.add((new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false)));
+
+            /*
+            * if packet factor is 1 we just use normal packet, else we send more
+            * we send all packets then send another for the .x extra (if applicable) since we can have decimal factors
+            * for example: factor 1.3 sends 2 packets, 1st is normal and 2nd is 0.3x extra
+            */
+
+            if (packetFactor.getValue() != 1 && !PlayerUtil.isPlayerClipped()) {
+                for (int p = 2; p < Math.floor(packetFactor.getValue()); p++)
+                    packet.add(new CPacketPlayer.PositionRotation(x * p + mc.player.posX, y * y > 0 ? (p) : 1 + mc.player.posY, z * p + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+
+                if (packetFactor.getValue() != Math.floor(packetFactor.getValue()))
+                    packet.add(new CPacketPlayer.PositionRotation(x * packetFactor.getValue() + mc.player.posX, y * y > 0 ? packetFactor.getValue() : 1 + mc.player.posY, z * packetFactor.getValue() + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
+            }
+
+            for (CPacketPlayer pkt : packet) {
+                packetlist.add(pkt);
+                mc.player.connection.sendPacket(pkt);
+            }
+
+            if (confirm.getValue()) {
+                if (extra.getValue())
+                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
+
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+
+                if (extra.getValue())
+                    mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
+            }
+
+            mc.player.setVelocity(x * reduction.getValue() * packetFactor.getValue(), y * reduction.getValue() * packetFactor.getValue(), z * reduction.getValue() * packetFactor.getValue());
+
+            CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
+            packetlist.add(bounds);
+            mc.player.connection.sendPacket(bounds);
 
         }
 
     });
+
     @SuppressWarnings("Unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
@@ -223,6 +296,20 @@ public class Flight extends Module {
 
         flyspeed = mc.player.capabilities.getFlySpeed();
 
+        if (damage.getValue() && !mode.getValue().equalsIgnoreCase("Packet")) {
+
+            ModuleManager.getModule(PlayerTweaks.class).pauseNoFallPacket = true;
+
+            for (int i = 0; i < 64; i++) {
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.049, mc.player.posZ, false));
+                mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, false));
+            }
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true));
+
+            mc.player.fallDistance = 3.1f;
+
+        }
     }
 
     @Override

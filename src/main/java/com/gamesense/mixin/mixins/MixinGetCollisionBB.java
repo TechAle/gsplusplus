@@ -1,16 +1,13 @@
 package com.gamesense.mixin.mixins;
 
-import com.gamesense.api.event.GameSenseEvent;
 import com.gamesense.api.event.events.BoundingBoxEvent;
 import com.gamesense.client.GameSense;
-import com.gamesense.client.module.modules.movement.Avoid;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockCactus;
 import net.minecraft.block.BlockFire;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -19,8 +16,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import static com.gamesense.api.util.world.BlockUtil.getBlock;
 
 /**
  * @author ToxicAven

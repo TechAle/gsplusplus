@@ -3,12 +3,12 @@ package com.gamesense.client.module.modules.combat;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.BlockUtil;
+import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -16,7 +16,6 @@ import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -33,7 +32,7 @@ import java.util.Arrays;
 @Module.Declaration(name = "SelfTrap", category = Category.Combat)
 public class SelfTrap extends Module {
 
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple", "Simple No Step"), "Normal");
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
     BooleanSetting rotate = registerBoolean("Rotate", true);
@@ -138,10 +137,17 @@ public class SelfTrap extends Module {
                         maxSteps = Offsets.TRAP_SIMPLE.length;
                         break;
                     }
-                    default: {
+                    case "Normal": {
                         offsetPattern = Offsets.TRAP_FULL;
                         maxSteps = Offsets.TRAP_FULL.length;
                         break;
+                    }
+                    default: {
+
+                        offsetPattern = Offsets.TRAP_SIMPLE_NOSTEP;
+                        maxSteps = offsetPattern.length;
+                        break;
+
                     }
                 }
 

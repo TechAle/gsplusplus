@@ -11,13 +11,8 @@ import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
-import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.BlockLiquid;
-import net.minecraft.init.MobEffects;
-import net.minecraft.network.play.client.CPacketEntityAction;
 
 import java.util.Arrays;
 

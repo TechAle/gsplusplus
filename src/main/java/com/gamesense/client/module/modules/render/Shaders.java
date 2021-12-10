@@ -54,7 +54,7 @@ public class Shaders extends Module {
     IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
 
     public boolean renderTags = true,
-                   renderCape = true;
+            renderCape = true;
 
 
     @EventHandler
@@ -139,26 +139,26 @@ public class Shaders extends Module {
         AtomicInteger nEntities = new AtomicInteger();
         int maxEntities = this.maxEntities.getValue();
         mc.world.loadedEntityList.stream().filter(e -> {
-            if (nEntities.getAndIncrement() > maxEntities)
-                return false;
-            if (e instanceof EntityPlayer) {
-                if (players.getValue())
-                    if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
-                        return true;
-            } else if (e instanceof EntityItem) {
-                if (items.getValue())
-                    return true;
-            } else if (e instanceof EntityCreature) {
-                if (mobs.getValue())
-                    return true;
-            } else if (e instanceof EntityEnderCrystal) {
-                if (crystals.getValue())
-                    return true;
-            } else if (e instanceof EntityXPOrb) {
-                if (xp.getValue())
-                    return true;
-            }
-            return false;
+                    if (nEntities.getAndIncrement() > maxEntities)
+                        return false;
+                    if (e instanceof EntityPlayer) {
+                        if (players.getValue())
+                            if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
+                                return true;
+                    } else if (e instanceof EntityItem) {
+                        if (items.getValue())
+                            return true;
+                    } else if (e instanceof EntityCreature) {
+                        if (mobs.getValue())
+                            return true;
+                    } else if (e instanceof EntityEnderCrystal) {
+                        if (crystals.getValue())
+                            return true;
+                    } else if (e instanceof EntityXPOrb) {
+                        if (xp.getValue())
+                            return true;
+                    }
+                    return false;
                 }
         ).filter(e -> {
             if (!rangeCheck)

@@ -1,7 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.BoundingBoxEvent;
-import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -9,8 +8,6 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 
 @Module.Declaration(name = "Avoid", category = Category.Movement)
 public class Avoid extends Module {
@@ -20,7 +17,7 @@ public class Avoid extends Module {
         INSTANCE = this;
     }
 
-    public BooleanSetting theVoid = registerBoolean("Void", false);
+    public BooleanSetting unloaded = registerBoolean("Unloaded", false);
     public BooleanSetting cactus = registerBoolean("Cactus", false);
     public BooleanSetting fire = registerBoolean("Fire", false);
     public BooleanSetting bigFire = registerBoolean("Extend Fire", false, () -> fire.getValue());
@@ -28,7 +25,7 @@ public class Avoid extends Module {
     @EventHandler
     private final Listener<BoundingBoxEvent> playerMoveEventListener = new Listener<>(event -> {
 
-        if (event.getBlock().equals(Blocks.STRUCTURE_VOID) && theVoid.getValue()
+        if (event.getBlock().equals(Blocks.STRUCTURE_VOID) && unloaded.getValue()
                 || event.getBlock().equals(Blocks.CACTUS) && cactus.getValue()
                 || event.getBlock().equals(Blocks.FIRE) && fire.getValue())
 

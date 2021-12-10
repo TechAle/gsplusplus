@@ -2,21 +2,21 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.event.events.EntityCollisionEvent;
 import com.gamesense.api.event.events.PacketEvent;
-import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.event.events.WaterPushEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.combat.FootConcrete;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -26,6 +26,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
@@ -36,9 +37,10 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.InputUpdateEvent;
+import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 
 import java.util.Arrays;
@@ -52,13 +54,14 @@ public class PlayerTweaks extends Module {
     public BooleanSetting guiMove = registerBoolean("Gui Move", false);
     public BooleanSetting noSlow = registerBoolean("No Slow", false);
     BooleanSetting strict = registerBoolean("No Slow Strict", false, () -> noSlow.getValue());
-    DoubleSetting speed = registerDouble("No Slow Strict Ground Speed", 0.2,0,1);
+    BooleanSetting ice = registerBoolean("Ice Speed", false);
+    DoubleSetting iceSpeed = registerDouble("Ice Slipperiness", 0.4,0,1,() -> ice.getValue());
     public BooleanSetting webT = registerBoolean("No Slow Web", false);
     public BooleanSetting noPushBlock = registerBoolean("No Push Block", false);
     public BooleanSetting portalChat = registerBoolean("Portal Chat", false);
     BooleanSetting noPushWater = registerBoolean("No Push Liquid", false);
     BooleanSetting noFall = registerBoolean("No Fall", false);
-    ModeSetting noFallMode = registerMode("No Fall Mode", Arrays.asList("Packet", "OldFag", "Catch"), "Packet", () -> noFall.getValue());
+    ModeSetting noFallMode = registerMode("No Fall Mode", Arrays.asList("Packet", "OldFag", "Catch", "Glitch"), "Packet", () -> noFall.getValue());
     ModeSetting catchM = registerMode("Catch Material", Arrays.asList("Web", "Water"), "Water", () -> noFallMode.getValue().equalsIgnoreCase("Catch"));
     BooleanSetting noFallDC = registerBoolean("Disconnect", false, () -> noFall.getValue());
     BooleanSetting antiKnockBack = registerBoolean("Velocity", false);
@@ -68,28 +71,21 @@ public class PlayerTweaks extends Module {
     BooleanSetting pistonPush = registerBoolean("Anti Piston Push", false);
     IntegerSetting postSecure = registerInteger("Post Secure", 15, 1, 40, () -> pistonPush.getValue());
 
+    public boolean pauseNoFallPacket;
+    Vec3d pos = new Vec3d(0,0,0);
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<InputUpdateEvent> eventListener = new Listener<>(event -> {
 
         if(mc.player.isHandActive() && !mc.player.isRiding()) {
 
-            if (strict.getValue() && !snk) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.START_SNEAKING));
-                snk = true;
-            }
-            if (strict.getValue() && mc.player.onGround && lastTickOG) {
-                mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
-                snk = false;
-                mc.player.movementInput.moveForward /= speed.getValue();
-                mc.player.movementInput.moveStrafe /= speed.getValue();
-            }
+            if (strict.getValue() && mc.player.inventory.getCurrentItem().item instanceof ItemFood)
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
 
+            mc.player.movementInput.moveForward /= 0.2;
+            mc.player.movementInput.moveStrafe /= 0.2;
 
-            if (noSlow.getValue() || !mc.player.onGround && noSlow.getValue() && strict.getValue()) {
-                mc.player.movementInput.moveForward /= 0.2f;
-                mc.player.movementInput.moveStrafe /= 0.2f;
-            }
         }
 
         lastTickOG = mc.player.onGround;
@@ -163,48 +159,73 @@ public class PlayerTweaks extends Module {
         }
     });
     BlockPos n1;
-    Vec2f rot;
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
         if (PlayerUtil.nullCheck()) {
 
-            if (noFall.getValue() && event.getPacket() instanceof CPacketPlayer && mc.player.fallDistance >= 3.0 && !(mc.player.isElytraFlying())) {
+            if (noFall.getValue() && event.getPacket() instanceof CPacketPlayer && !(mc.player.isElytraFlying())) {
+                try {
+                    mc.player.connection.getNetworkManager().handleDisconnection();
 
-                mc.player.connection.getNetworkManager().handleDisconnection();
+                    CPacketPlayer packet = (CPacketPlayer) event.getPacket();
+                    if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
 
-                CPacketPlayer packet = (CPacketPlayer) event.getPacket();
-                if (noFallMode.getValue().equalsIgnoreCase("Packet")) {
-                    packet.onGround = true;
-                    mc.player.fallDistance = 0;
+                        if (mc.player.onGround)
+                            return;
+                        if (!pauseNoFallPacket){
+                            packet.onGround = true;
+                            mc.player.fallDistance = 0;
+                        } else
+                            pauseNoFallPacket = false;
 
-                } else if (noFallMode.getValue().equalsIgnoreCase("OldFag") && predict(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ))) {
+                    } else if (noFallMode.getValue().equalsIgnoreCase("OldFag")) {
 
-                    mc.player.motionY = 0.0;
-                    packet.y = n1.getY();
-                    mc.player.fallDistance = 0.0f;
-
-                } else if (noFallMode.getValue().equalsIgnoreCase("Catch")) {
-
-                    rot = RotationUtil.getRotationTo(mc.player.getPositionVector().add(0, -3, 0));
-
-                    int oldSlot = mc.player.inventory.currentItem;
-                    int slot = catchM.getValue().equalsIgnoreCase("Web") ? getSlot(Blocks.WEB) : getSlot(Items.WATER_BUCKET);
-
-                    if (slot != -1) {
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-
-                        if (catchM.getValue().equalsIgnoreCase("Web")) {
-                            try {
-                                PlacementUtil.place(getDownPos(), EnumHand.MAIN_HAND, false);
-                            } catch (NullPointerException ignored) {
-                            }
-                        } else {
-                            mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0, 0, 0));
+                        if (predict(new BlockPos(mc.player.posX, mc.player.posY, mc.player.posZ)) && mc.player.fallDistance >= 3) {
+                            mc.player.motionY = 0.0;
+                            packet.y = n1.getY();
+                            mc.player.fallDistance = 0.0f;
                         }
 
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                    } else if (noFallMode.getValue().equalsIgnoreCase("Catch")) {
+
+                        if (mc.player.fallDistance >= 3) {
+
+                            int oldSlot = mc.player.inventory.currentItem;
+                            int slot = catchM.getValue().equalsIgnoreCase("Web") ? getSlot(Blocks.WEB) : getSlot(Items.WATER_BUCKET);
+
+                            if (slot != -1) {
+                                mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+
+                                if (catchM.getValue().equalsIgnoreCase("Web")) {
+                                    try {
+                                        PlacementUtil.place(getDownPos(), EnumHand.MAIN_HAND, false);
+                                    } catch (NullPointerException ignored) {
+                                    }
+                                } else {
+                                    mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(getDownPos(), EnumFacing.UP, EnumHand.MAIN_HAND, 0, 0, 0));
+                                }
+
+                                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                            }
+                        }
+
+                    } else if (noFallMode.getValue().equalsIgnoreCase("Glitch")) {
+
+                        if (mc.player.fallDistance > 2)
+                            mc.player.setPosition(pos.x,pos.y,pos.z);
+                        else if (mc.player.onGround)
+                            pos = mc.player.getPositionVector();
+
                     }
+                } catch (Exception e) {
+
+                    try {
+                        MessageBus.sendClientPrefixMessageWithID(e.getMessage(), true);
+                        for (StackTraceElement p : e.getStackTrace())
+                            System.out.println(p.toString());
+                    } catch (Exception ignored) {}
+
                 }
             }
             if (noFallDC.getValue() && (mc.player.fallDistance - 2.1 >= mc.player.getHealth())) {
@@ -281,7 +302,24 @@ public class PlayerTweaks extends Module {
         return false;
     }
 
+    @Override
+    protected void onDisable() {
+        Blocks.ICE.setDefaultSlipperiness(0.4f);
+        Blocks.PACKED_ICE.setDefaultSlipperiness(0.4f);
+        Blocks.FROSTED_ICE.setDefaultSlipperiness(0.4f);
+    }
+
     public void onUpdate() {
+
+        if (ice.getValue()) {
+            Blocks.ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+            Blocks.PACKED_ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+            Blocks.FROSTED_ICE.setDefaultSlipperiness(iceSpeed.getValue().floatValue());
+        } else {
+            Blocks.ICE.setDefaultSlipperiness(0.4f);
+            Blocks.PACKED_ICE.setDefaultSlipperiness(0.4f);
+            Blocks.FROSTED_ICE.setDefaultSlipperiness(0.4f);
+        }
 
         if (!ModuleManager.isModuleEnabled(Timer.class)){
             if (mc.player.isInWeb && !mc.player.onGround && webT.getValue()) {
