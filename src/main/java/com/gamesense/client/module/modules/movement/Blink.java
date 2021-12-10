@@ -20,7 +20,6 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Module.Declaration(name = "Blink", category = Category.Movement)
 public class Blink extends Module {

@@ -15,14 +15,13 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraft.client.gui.GuiIngame;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 import java.text.SimpleDateFormat;

@@ -8,7 +8,6 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.TextComponentString;
-import org.apache.commons.lang3.concurrent.ConcurrentException;
 
 import java.util.ConcurrentModificationException;
 

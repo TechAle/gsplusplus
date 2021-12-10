@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ColorSetting;
+import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
@@ -19,15 +20,16 @@ import com.lukflug.panelstudio.hud.ListComponent;
 import com.lukflug.panelstudio.setting.Labeled;
 import com.lukflug.panelstudio.theme.ITheme;
 import com.mojang.realmsclient.gui.ChatFormatting;
+import net.minecraft.client.Minecraft;
 
 @Module.Declaration(name = "Frames", category = Category.HUD)
 @HUDModule.Declaration(posX = 0, posZ = 0)
 public class Frames extends HUDModule {
 
-    BooleanSetting sortUp = registerBoolean("Sort Up", true);
-    BooleanSetting sortRight = registerBoolean("Sort Right", false);
+    int frames;
 
     private final FrameList list = new FrameList();
+
 
     @Override
     public void populate(ITheme theme) {
@@ -44,9 +46,9 @@ public class Frames extends HUDModule {
         @Override
         public String getItem(int index) {
             try {
-                return mc.fpsCounter + " FPS";
+                return "FPS " + Minecraft.getDebugFPS();
             } catch (Exception e) {
-                return 0 + " FPS";
+                return "FPS " + 0;
             }
         }
 
@@ -57,12 +59,12 @@ public class Frames extends HUDModule {
 
         @Override
         public boolean sortUp() {
-            return sortUp.getValue();
+            return true;
         }
 
         @Override
         public boolean sortRight() {
-            return sortRight.getValue();
+            return false;
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.gamesense.api.util.player;
 
+import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.world.MotionUtil;
+import com.gamesense.client.module.Module;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketPlayer;
 
@@ -10,7 +12,7 @@ import java.util.Random;
 
 public class PhaseUtil {
 
-    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter");
+    public static List<String> bound = Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward", "Flat", "LimitJitter", "Constrict", "None");
     public static String normal = "Forward";
 
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -48,24 +50,12 @@ public class PhaseUtil {
                 dir = MotionUtil.forward(100);
                 packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY, mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
-            case "LimitJitter":
-                packet = new CPacketPlayer.PositionRotation(mc.player.posX, mc.player.posY + limit(), mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false);
+            case "Constrict":
+                dir = MotionUtil.forward(67);
+                packet = new CPacketPlayer.PositionRotation(mc.player.posX + dir[0], mc.player.posY + (mc.player.posY > 64 ? -33.4 : 33.4), mc.player.posZ + dir[1], mc.player.rotationYaw, mc.player.rotationPitch, false);
                 break;
         }
         mc.player.connection.sendPacket(packet);
         return packet;
     }
-
-    public static double limit() {
-
-        Random random = new Random();
-
-        int randomValue = random.nextInt(22);
-        randomValue += 70;
-        if (random.nextBoolean()) {
-            return randomValue;
-        }
-        return -randomValue;
-    }
-
 }

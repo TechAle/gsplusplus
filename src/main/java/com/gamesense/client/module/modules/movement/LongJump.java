@@ -43,8 +43,7 @@ public class LongJump extends Module {
     DoubleSetting yvelocity = registerDouble("Y Velocity Multiplier", 0.1,0,2, () -> mode.getValue().equalsIgnoreCase("Velocity"));
 
     // Continuous
-    DoubleSetting speedFactor = registerDouble("Factor Acceleration", 0.3,0,3, () -> mode.getValue().equalsIgnoreCase("Continuous"));
-    DoubleSetting factorMax = registerDouble("Factor Max", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Continuous"));
+    DoubleSetting factorMax = registerDouble("Factor", 0,0,50, () -> mode.getValue().equalsIgnoreCase("Continuous"));
 
     // Ground
     DoubleSetting normalSpeed = registerDouble("Ground Speed", 3,0,10, () -> mode.getValue().equalsIgnoreCase("Ground"));
@@ -185,12 +184,18 @@ public class LongJump extends Module {
 
             if (mc.player.onGround) {
 
+                if (MotionUtil.isMoving(mc.player))
+                    mc.player.jump();
                 mc.player.jumpMovementFactor = mf;
                 mc.player.motionY = jumpHeight.getValue();
+                dir = MotionUtil.forward(MotionUtil.getBaseMoveSpeed());
 
-            } else if (!(mc.player.jumpMovementFactor / 10 > factorMax.getValue() / 100)){
+                mc.player.motionX = dir[0]; // instant accel
+                mc.player.motionZ = dir[1]; // instant accel
 
-                mc.player.jumpMovementFactor += speedFactor.getValue() / 10;
+            } else {
+
+                mc.player.jumpMovementFactor = 0.02f * factorMax.getValue().floatValue();
 
             }
 

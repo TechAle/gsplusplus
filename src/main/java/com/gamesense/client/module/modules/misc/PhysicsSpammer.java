@@ -6,7 +6,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,7 +53,6 @@ public class PhysicsSpammer extends Module {
                         }
                     }
                     scanner.close();
-                } catch (MalformedURLException e) {
                 } catch (IOException e) {
                 }
             }

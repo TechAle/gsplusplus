@@ -4,7 +4,6 @@ import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -25,6 +24,12 @@ public class PlayerUtil {
     public static boolean nullCheck() {
 
         return !(mc.world == null || mc.player == null);
+
+    }
+
+    public static boolean hungry() {
+
+        return mc.player.foodStats.getFoodLevel() > 6;
 
     }
 
@@ -84,19 +89,7 @@ public class PlayerUtil {
 
     public static boolean isPlayerClipped() {
 
-        return isPlayerClipped(false);
-
-    }
-
-    public static boolean isPlayerClipped(Entity e) {
-
-        return !(mc.world.getCollisionBoxes(e, e.getEntityBoundingBox().contract(0, 0, 0)).isEmpty());
-
-    }
-
-    public static boolean isPlayerClipped(boolean ignoreTop) {
-
-        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().contract(0, ignoreTop ? 1 : 0, 0)).isEmpty());
+        return !(mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox()).isEmpty());
 
     }
 
@@ -146,15 +139,17 @@ public class PlayerUtil {
     }
 
     public static void fakeJump() {
-        fakeJump(69); // always most packets
+        fakeJump(5); // always most packets
     }
 
-    public static void fakeJump(boolean extra) {
-        fakeJump(extra ? 3 : 4);
-    }
+    /**
+     *
+     * 5 means dont do first packet and do full 4
+     *
+     * */
 
     public static void fakeJump(int packets) {
-        if (packets > 0)
+        if (packets > 0 && packets != 5)
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY, mc.player.posZ, true));
         if (packets > 1)
         mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + .419999986887, mc.player.posZ, true));

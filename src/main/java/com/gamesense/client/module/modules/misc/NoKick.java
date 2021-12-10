@@ -10,7 +10,6 @@ import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.network.play.client.CPacketUpdateSign;
 import net.minecraft.network.play.server.SPacketSoundEffect;
-import org.lwjgl.LWJGLUtil;
 import org.lwjgl.input.Keyboard;
 
 /**

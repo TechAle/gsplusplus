@@ -25,10 +25,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-
-import static java.lang.Math.*;
 
 /**
  * @author Hoosiers

@@ -201,6 +201,27 @@ public class Offsets {
         new Vec3d(0, 2, 0)
     };
 
+    public static final Vec3d[] TRAP_SIMPLE_NOSTEP = {
+            //layer below feet
+            new Vec3d(0, -1, 0),
+            new Vec3d(-1, -1, 0),
+            new Vec3d(1, -1, 0),
+            new Vec3d(0, -1, -1),
+            new Vec3d(0, -1, 1),
+            //layer at feet level
+            new Vec3d(-1, 0, 0),
+            new Vec3d(1, 0, 0),
+            new Vec3d(0, 0, -1),
+            new Vec3d(0, 0, 1),
+            //layer at head level (scaffold)
+            new Vec3d(1, 1, 0),
+            //roof layer
+            new Vec3d(1, 2, 0),
+            new Vec3d(0, 2, 0),
+            //no step
+            new Vec3d(0, 3, 0),
+    };
+
     public static final Vec3d[] BURROW = {
         new Vec3d(0, 0, 0)
     };

@@ -11,11 +11,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(EntityBoat.class)
 public abstract class MixinEntityBoat {
 
-    @Redirect(method = "onUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/item/EntityBoat;move(Lnet/minecraft/entity/MoverType;DDD)V")) // TY AresClient
+    @Redirect(method = "onUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/item/EntityBoat;move(Lnet/minecraft/entity/MoverType;DDD)V")) // credit to ares client
     public void onMove(EntityBoat entityBoat, MoverType type, double x, double y, double z) {
-        BoatMoveEvent boatMoveEvent = new BoatMoveEvent(type,x,y,z);
+        BoatMoveEvent boatMoveEvent = new BoatMoveEvent(type, x, y, z);
         GameSense.EVENT_BUS.post(boatMoveEvent);
-        if(!boatMoveEvent.isCancelled()) entityBoat.move(type, x, y, z);
+        if (!boatMoveEvent.isCancelled())
+            entityBoat.move(type, boatMoveEvent.getX(), boatMoveEvent.getY(), boatMoveEvent.getZ());
     }
 
 }

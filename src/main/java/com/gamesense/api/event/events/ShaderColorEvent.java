@@ -1,7 +1,6 @@
 package com.gamesense.api.event.events;
 
 import com.gamesense.api.event.GameSenseEvent;
-import com.gamesense.api.util.render.GSColor;
 import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.common.eventhandler.Cancelable;
 

@@ -6,12 +6,10 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 
-import java.util.Arrays;
-
 @Module.Declaration(name = "BoundsMove", category = Category.Movement)
 public class BoundsMove extends Module {
 
-    ModeSetting bound = registerMode("Bounds", Arrays.asList("Up", "Alternate", "Down", "Zero", "Min", "Forward"), "Up");
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal);
 
     @Override
     public void onUpdate() {

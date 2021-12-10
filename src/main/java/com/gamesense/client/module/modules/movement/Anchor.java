@@ -6,7 +6,6 @@ import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.init.Blocks;

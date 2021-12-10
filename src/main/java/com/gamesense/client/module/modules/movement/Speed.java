@@ -7,6 +7,7 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.Timer;
+import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -17,6 +18,7 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
@@ -36,11 +38,12 @@ public class Speed extends Module {
     public int yl;
     ModeSetting mode = registerMode("Mode", Arrays.asList("Strafe", "GroundStrafe", "OnGround", "Fake", "YPort"), "Strafe");
 
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe"));
-    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe"));
-    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe"));
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> mode.getValue().equals("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
+    BooleanSetting jump = registerBoolean("Jump", true, () -> mode.getValue().equals("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
+    BooleanSetting boost = registerBoolean("Boost", false, () -> mode.getValue().equalsIgnoreCase("Strafe") || mode.getValue().equalsIgnoreCase("Beta"));
     DoubleSetting multiply = registerDouble("Multiply", 0.8,0.1,1, () -> boost.getValue() && boost.isVisible());
-    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue());
+    BooleanSetting strict = registerBoolean("Strict",false,() -> boost.getValue() && boost.isVisible());
+    DoubleSetting max = registerDouble("Maximum", 0.5,0,1, () -> boost.getValue() && boost.isVisible());
 
     DoubleSetting gSpeed = registerDouble("Ground Speed", 0.3, 0, 0.5, () -> mode.getValue().equals("GroundStrafe"));
 
@@ -50,8 +53,8 @@ public class Speed extends Module {
     BooleanSetting strictOG = registerBoolean("Head Block Only", false, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,1,5, () -> mode.getValue().equalsIgnoreCase("OnGround"));
 
-    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
-    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue());
+    DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
+    IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
 
     BooleanSetting useTimer = registerBoolean("Timer", false);
     DoubleSetting timerVal = registerDouble("Timer Speed", 1.088, 0.8,1.2);
@@ -124,11 +127,6 @@ public class Speed extends Module {
                 if (mc.player.onGround && (above || !strictOG.getValue())) {
                     mc.player.motionX *= onGroundSpeed.getValue();
                     mc.player.motionZ *= onGroundSpeed.getValue();
-                } else if ((above || !strictOG.getValue())) {
-
-                    mc.player.posY = Math.floor(mc.player.posY);
-                    mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX,mc.player.posY,mc.player.posZ,true));
-
                 }
             }
 
@@ -145,7 +143,32 @@ public class Speed extends Module {
             kbTimer.reset();
         }
 
+        if (event.getPacket() instanceof SPacketEntityVelocity) {
+            if (((SPacketEntityVelocity) event.getPacket()).getEntityID() != mc.player.getEntityId())
+                return;
+            if (velocity < Math.abs(((SPacketEntityVelocity) event.getPacket()).motionX) + Math.abs(((SPacketEntityVelocity) event.getPacket()).motionZ)) {
+                if (getYaw(event.getPacket()) || !strict.getValue())
+                velocity = Math.abs(((SPacketEntityVelocity) event.getPacket()).motionX) + Math.abs(((SPacketEntityVelocity) event.getPacket()).motionZ);
+                kbTimer.reset();
+            }
+        }
+
     });
+
+    boolean getYaw(Packet packet) { // idc if intellij thinks i shouldn't use Packet cope seethe
+
+        boolean result = true;
+
+        if (packet instanceof SPacketEntityVelocity) {
+            result = ((SPacketEntityVelocity) packet).motionX > 0 && mc.player.motionX > 0 || ((SPacketEntityVelocity) packet).motionZ > 0 && mc.player.motionZ > 0;
+        }
+        if (packet instanceof SPacketExplosion) {
+            result = ((SPacketExplosion) packet).motionX > 0 && mc.player.motionX > 0 || ((SPacketExplosion) packet).motionZ > 0 && mc.player.motionZ > 0;
+        }
+
+        return result;
+
+    }
 
     public void onEnable() {
         playerSpeed = MotionUtil.getBaseMoveSpeed();
@@ -183,7 +206,7 @@ public class Speed extends Module {
             mc.player.jump(); // motion = 0.42
             MotionUtil.setSpeed(mc.player, MotionUtil.getBaseMoveSpeed() + yPortSpeed.getValue()); // set speed
         } else {
-            mc.player.motionY = -1; // return to ground instantly }
+            mc.player.motionY = -1; // return to ground instantly
         }
     }
 

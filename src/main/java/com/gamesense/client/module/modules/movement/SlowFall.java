@@ -4,7 +4,6 @@ import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import org.lwjgl.opengl.GL11;
 
 import java.util.Arrays;
 

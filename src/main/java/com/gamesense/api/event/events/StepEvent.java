@@ -1,18 +1,22 @@
 package com.gamesense.api.event.events;
 
 import com.gamesense.api.event.GameSenseEvent;
+import net.minecraft.util.math.AxisAlignedBB;
+
+/**
+ * @see com.gamesense.mixin.mixins.MixinEntity
+ * */
 
 public class StepEvent extends GameSenseEvent {
 
-    private double y;
+    AxisAlignedBB BB;
 
-    public StepEvent(double y) {
+    public StepEvent(AxisAlignedBB bb) {
         super();
-        this.y = y;
+        this.BB = bb;
     }
 
-    public float getY() {
-        return (float) this.y;
+    public AxisAlignedBB getBB() {
+        return BB;
     }
-
 }

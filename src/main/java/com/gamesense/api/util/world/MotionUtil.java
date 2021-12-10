@@ -1,10 +1,12 @@
 package com.gamesense.api.util.world;
 
+import com.lukflug.panelstudio.mc12.MinecraftGUI;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.potion.Potion;
+
+import java.util.Objects;
 
 public class MotionUtil {
 
@@ -25,9 +27,9 @@ public class MotionUtil {
     }
 
     public static double getBaseMoveSpeed() {
-        double baseSpeed = 0.2873;
-        if (Minecraft.getMinecraft().player != null && Minecraft.getMinecraft().player.isPotionActive(Potion.getPotionById(1))) {
-            final int amplifier = Minecraft.getMinecraft().player.getActivePotionEffect(Potion.getPotionById(1)).getAmplifier();
+        double baseSpeed = .2873;
+        if (Minecraft.getMinecraft().player != null && Minecraft.getMinecraft().player.isPotionActive(Objects.requireNonNull(Potion.getPotionById(1)))) {
+            final int amplifier = Objects.requireNonNull(Minecraft.getMinecraft().player.getActivePotionEffect(Objects.requireNonNull(Potion.getPotionById(1)))).getAmplifier();
             baseSpeed *= 1.0 + 0.2 * (amplifier + 1);
         }
         return baseSpeed;

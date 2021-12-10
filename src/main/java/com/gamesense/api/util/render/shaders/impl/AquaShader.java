@@ -1,6 +1,5 @@
 package com.gamesense.api.util.render.shaders.impl;
 
-import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
