@@ -83,10 +83,7 @@ public enum ClientEventManager implements Manager {
 
     @SubscribeEvent
     public void onChatReceived(ClientChatReceivedEvent event) {
-        if (event.getMessage().getFormattedText().contains("${")) {
-            event.setCanceled(true);
-        } else
-            GameSense.EVENT_BUS.post(event);
+        GameSense.EVENT_BUS.post(event);
     }
 
     @SubscribeEvent
@@ -254,9 +251,6 @@ public enum ClientEventManager implements Manager {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onChatSent(ClientChatEvent event) {
-        if (event.getMessage().contains("${")) {
-            event.setCanceled(true);
-        }else
         if (event.getMessage().startsWith(CommandManager.getCommandPrefix())) {
             event.setCanceled(true);
             try {
