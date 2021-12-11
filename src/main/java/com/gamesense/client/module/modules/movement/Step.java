@@ -16,6 +16,8 @@ import java.util.Arrays;
 @Module.Declaration(name = "Step", category = Category.Movement)
 public class Step extends Module {
 
+    //region Settings
+
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Beta"), "NCP");
     ModeSetting height = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> !mode.getValue().equalsIgnoreCase("Beta"));
     ModeSetting vHeight = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> !mode.getValue().equalsIgnoreCase("Beta"));
@@ -23,8 +25,10 @@ public class Step extends Module {
     BooleanSetting abnormal = registerBoolean("Abnormal", false,() -> !mode.getValue().equalsIgnoreCase("Vanilla"));
     BooleanSetting onGround = registerBoolean("On Ground", false);
     BooleanSetting timer = registerBoolean("Timer", false, () -> !mode.getValue().equalsIgnoreCase("VANILLA"));
-    DoubleSetting multiplier = registerDouble("Multiplier", 1, 0.1, 3, () -> timer.getValue() && timer.isVisible());
+    DoubleSetting multiplier = registerDouble("Multiplier", 1, 0, 3, () -> timer.getValue() && timer.isVisible());
     BooleanSetting debug = registerBoolean("Debug Height", false);
+
+    //endregion
 
     double[] pointFiveToOne = {0.41999998688698D};
     double[] one = {0.41999998688698D, 0.7531999805212D};
@@ -75,43 +79,43 @@ public class Step extends Module {
             if (step == 0.625 && abnormal.getValue()) {
                 sendOffsets(pointFiveToOne);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (pointFiveToOne.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (pointFiveToOne.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 1 || (step == 0.875 || step == 1.0625 || step == 0.9375) && abnormal.getValue()) { // we dont add a range so when vanilla does a stupid for no reason we catch it (0.414141 block step sometimes when in mid air)
                 sendOffsets(one);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (one.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (one.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 1.5) {
                 sendOffsets(oneFive);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (oneFive.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (oneFive.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 1.875 && abnormal.getValue()) {
                 sendOffsets(oneEightSevenFive);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (oneEightSevenFive.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (oneEightSevenFive.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 1.625 && abnormal.getValue()) {
                 sendOffsets(oneSixTwoFive);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (oneSixTwoFive.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (oneSixTwoFive.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 2) {
                 sendOffsets(two);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (two.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (two.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 2.5) {
                 sendOffsets(twoFive);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (twoFive.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (twoFive.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else event.cancel();
@@ -120,21 +124,21 @@ public class Step extends Module {
             if (step == 1.5) {
                 sendOffsets(betaShared);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (betaShared.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (betaShared.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 2) {
                 sendOffsets(betaShared);
                 sendOffsets(betaTwo);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (betaShared.length + betaTwo.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (betaShared.length + betaTwo.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else if (step == 2.5) {
                 sendOffsets(betaShared);
                 sendOffsets(betaTwoFive);
                 if (timer.getValue()) {
-                    mc.timer.tickLength = 50f * (betaShared.length + betaTwoFive.length + 1) * multiplier.getValue().floatValue();
+                    mc.timer.tickLength = 50f * (betaShared.length + betaTwoFive.length + 1) * (multiplier.getValue().floatValue() == 0 ? 1 : multiplier.getValue().floatValue());
                     prevTickTimer = true;
                 }
             } else event.cancel();
