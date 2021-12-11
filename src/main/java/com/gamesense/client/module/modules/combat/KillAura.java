@@ -27,12 +27,11 @@ import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author 0b00101010
@@ -55,7 +54,7 @@ public class KillAura extends Module {
     BooleanSetting autoSwitch = registerBoolean("Switch", false);
     DoubleSetting switchHealth = registerDouble("Min Switch Health", 0f, 0f, 20f);
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
-    DoubleSetting walls = registerDouble("Wall Range",3.5,0,10);
+    BooleanSetting raytrace = registerBoolean("RayTrace",false);
 
     boolean calcDelay = true;
 
@@ -67,20 +66,9 @@ public class KillAura extends Module {
             .filter(entity -> entity instanceof EntityLivingBase)
             .filter(entity -> !EntityUtil.basicChecksEntity(entity))
             .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSq)
-            .filter(this::attackCheck)
+                /* raytrace */
+            .filter(this::attackCheck).filter(entity -> (Objects.requireNonNull(mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ), new Vec3d(entity.posX + 0.5d, entity.posY + .5d, entity.posZ + 0.5d))).sideHit != null))
             .min(Comparator.comparing(e -> (enemyPriority.getValue().equals("Closest") ? mc.player.getDistanceSq(e) : ((EntityLivingBase) e).getHealth())));
-
-        final double wallsRangeSq = Math.pow(walls.getValue(), 2);
-        Optional<Entity> wallsOptionalTarget = mc.world.loadedEntityList.stream()
-                .filter(entity -> entity instanceof EntityLivingBase)
-                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
-                .filter(entity -> mc.player.getDistanceSq(entity) <= wallsRangeSq)
-                .filter(this::attackCheck)
-                .min(Comparator.comparing(e -> (enemyPriority.getValue().equals("Closest") ? mc.player.getDistanceSq(e) : ((EntityLivingBase) e).getHealth())));
-
-        if (wallsRangeSq < rangeSq) {
-            optionalTarget = wallsOptionalTarget;
-        }
 
         boolean sword = itemUsed.getValue().equalsIgnoreCase("Sword");
         boolean axe = itemUsed.getValue().equalsIgnoreCase("Axe");

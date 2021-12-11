@@ -12,6 +12,7 @@ import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.exploits.RubberBand;
 import com.gamesense.client.module.modules.gui.ColorMain;
 import com.gamesense.client.module.modules.movement.Blink;
 import net.minecraft.init.Blocks;
@@ -123,7 +124,7 @@ public class FootConcrete extends Module {
 
     public void onUpdate() {
 
-        if (jumpMode.getValue().equalsIgnoreCase("Real")) {        // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
+        if (jumpMode.getValue().equalsIgnoreCase("Real")) { // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
             if (mc.player.posY > Math.floor(pos.y) + 1.1) {
 
                 targetBlockSlot = getBlocks();
@@ -138,7 +139,7 @@ public class FootConcrete extends Module {
 
                 place(burrowBlockPos,targetBlockSlot,oldSlot);
 
-                getPacket();
+                RubberBand.getPacket(debugpos.getValue(),positive.getValue());
 
                 disable();
 
@@ -157,7 +158,7 @@ public class FootConcrete extends Module {
 
             place(burrowBlockPos,targetBlockSlot,oldSlot);
 
-            getPacket();
+            RubberBand.getPacket(debugpos.getValue(),positive.getValue());
 
             disable();
 
@@ -179,64 +180,6 @@ public class FootConcrete extends Module {
     protected void onDisable() {
         if (useBlink.getValue() && jumpMode.getValue().equalsIgnoreCase("Real") && ModuleManager.isModuleEnabled(Blink.class))
             ModuleManager.getModule(Blink.class).disable();
-    }
-
-    private BlockPos findHoles() {
-
-        NonNullList<BlockPos> holes = NonNullList.create();
-
-        for (int i = !positive.getValue() ? -90 : 2; i < 90; i++)
-            if (!new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ).equals(new BlockPos(mc.player.getPositionVector())) && mc.world.isAirBlock(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ))) {
-                holes.add(new BlockPos(mc.player.posX, mc.player.posY + i, mc.player.posZ));
-            }
-
-        for (BlockPos pos : holes) {
-
-            if (mc.world.isAirBlock(pos) && mc.world.isAirBlock(pos.add(0, 1, 0)) && pos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) >= 3
-                    && !(Math.floor(pos.y) == Math.floor(mc.player.posY))) {
-                holes.add(pos);
-                break;
-            }
-
-        }
-
-        try {
-            return holes.get(holes.size() - 1);
-        } catch (Exception e) {
-            if (holes.isEmpty()) {
-
-                return new BlockPos(mc.player.posX, mc.player.posY + 1, mc.player.posZ);
-
-            } else {
-
-                return holes.get(0);
-
-            }
-        }
-
-    }
-
-    public void getPacket() {
-
-        if (rubberBandMode.getValue().equalsIgnoreCase("Clip")) {
-            BlockPos pos = findHoles();
-
-            if (debugpos.getValue())
-                MessageBus.sendClientPrefixMessage("Pos: " + (Math.floor(pos.x) + 0.5) + " " + Math.floor(pos.y) + " " + (Math.floor(pos.z) + 0.5) + " " + mc.world.isAirBlock(pos.down()));
-
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(Math.floor(pos.x) + 0.5, Math.floor(pos.y), Math.floor(pos.z) + 0.5, mc.world.isAirBlock(pos.down())));
-
-        } else if (rubberBandMode.getValue().equalsIgnoreCase("flat")) {
-
-            for (int i = 0; i < strength.getValue(); i++)
-                mc.player.connection.sendPacket(new CPacketPlayer.Rotation(RotationUtil.normalizeAngle((float) Math.random() * 1000),
-                        RotationUtil.normalizeAngle((float) Math.random() * 1000), false)); // rotations to rubberband us lmao
-
-        } else {
-
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + strength.getValue(), mc.player.posZ, false));
-
-        }
     }
 
     int getBlocks() {

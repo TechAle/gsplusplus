@@ -28,26 +28,24 @@ public class AutoArmor extends Module {
     BooleanSetting lastResortThorns = registerBoolean("No Other Thorns", false);
 
     public void onUpdate() {
-        if (!ModuleManager.getModule(PacketXP.class).pause || !ModuleManager.getModule(PacketXP.class).isEnabled() || !ModuleManager.getModule(AutoMend.class).isEnabled()) {
-            if (mc.player.ticksExisted % 2 == 0) return;
-            // check screen
-            if (mc.currentScreen instanceof GuiContainer
-                    && !(mc.currentScreen instanceof InventoryEffectRenderer))
-                return;
+        if (mc.player.ticksExisted % 2 == 0) return;
+        // check screen
+        if (mc.currentScreen instanceof GuiContainer
+                && !(mc.currentScreen instanceof InventoryEffectRenderer))
+            return;
 
-            List<ItemStack> armorInventory = mc.player.inventory.armorInventory;
-            List<ItemStack> inventory = mc.player.inventory.mainInventory;
+        List<ItemStack> armorInventory = mc.player.inventory.armorInventory;
+        List<ItemStack> inventory = mc.player.inventory.mainInventory;
 
-            // store slots and values of best armor pieces
-            int[] bestArmorSlots = {-1, -1, -1, -1};
-            int[] bestArmorValues = {-1, -1, -1, -1};
+        // store slots and values of best armor pieces
+        int[] bestArmorSlots = {-1, -1, -1, -1};
+        int[] bestArmorValues = {-1, -1, -1, -1};
 
-            // initialize with currently equipped armour
-            for (int i = 0; i < 4; i++) {
-                ItemStack oldArmour = armorInventory.get(i);
-                if (oldArmour.getItem() instanceof ItemArmor) {
-                    bestArmorValues[i] = ((ItemArmor) oldArmour.getItem()).damageReduceAmount;
-                }
+        // initialize with currently equipped armour
+        for (int i = 0; i < 4; i++) {
+            ItemStack oldArmour = armorInventory.get(i);
+            if (oldArmour.getItem() instanceof ItemArmor) {
+                bestArmorValues[i] = ((ItemArmor) oldArmour.getItem()).damageReduceAmount;
             }
 
             List<Integer> slots = InventoryUtil.findAllItemSlots(ItemArmor.class);
@@ -104,9 +102,9 @@ public class AutoArmor extends Module {
             }
 
             // equip better armor
-            for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
                 // check if better armor was found
-                int slot = bestArmorSlots[i];
+                int slot = bestArmorSlots[j];
                 if (slot == -1) {
                     continue;
                 }
@@ -118,7 +116,7 @@ public class AutoArmor extends Module {
                 // pick up inventory slot
                 mc.playerController.windowClick(0, slot, 0, ClickType.PICKUP, mc.player);
                 // click on armour slot
-                mc.playerController.windowClick(0, 8 - i, 0, ClickType.PICKUP, mc.player);
+                mc.playerController.windowClick(0, 8 - j, 0, ClickType.PICKUP, mc.player);
                 // put back inventory slot
                 mc.playerController.windowClick(0, slot, 0, ClickType.PICKUP, mc.player);
             }

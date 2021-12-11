@@ -16,6 +16,7 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.event.world.BlockEvent;
 
+import java.awt.*;
 import java.util.List;
 
 @Module.Declaration(name = "StorageESP", category = Category.Render)
@@ -39,9 +40,9 @@ public class StorageESP extends Module {
             Block block = mc.world.getBlockState(pos).getBlock();
             int colour = block.blockMapColor.colorValue;
 
-            int r = colour >> 16;
-            int g = colour >> 8 & 255;
-            int b = colour & 255;
+            int r = (int) ((colour >> 16 & 255) / 255.0F);
+            int g = (int) ((colour >> 8 & 255) / 255.0F);
+            int b = (int) ((colour & 255) / 255.0F);
 
             RenderUtil.drawBox(pos, 1, new GSColor(r,g,b), Quad.ALL);
             RenderUtil.drawBoundingBox(pos,1,1, new GSColor(r,g,b));

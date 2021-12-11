@@ -30,7 +30,6 @@ public class Criticals extends Module {
                         if (((CPacketUseEntity) event.getPacket()).getAction() == CPacketUseEntity.Action.ATTACK
                                 && !(mc.world.getEntityByID(Objects.requireNonNull(((CPacketUseEntity) event.getPacket()).getEntityFromWorld(mc.world)).getEntityId()) instanceof EntityEnderCrystal)) {
                             ModuleManager.getModule(PlayerTweaks.class).pauseNoFallPacket = true; // so it works kek
-                            // ^ not an end crystal since no reason to crit crystals
                             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.11, mc.player.posZ, false));
                             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 0.1100013579, mc.player.posZ, false));
                             mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + 1.3579E-6, mc.player.posZ, false));

@@ -31,7 +31,6 @@ import java.util.List;
 public class PacketXP extends Module {
 
     public boolean pause;
-    BooleanSetting removeArmour = registerBoolean("Remove Armour", true);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", true);
     BooleanSetting noEntityCollision = registerBoolean("No Collision", true);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", true);
@@ -82,8 +81,6 @@ public class PacketXP extends Module {
 
         if (toMend > 0) {
             pause = true;
-            if (removeArmour.getValue())
-                handleArmour(mc.player);
             if (predict.getValue()) {
                 // get all the xp orbs on top of us
                 int totalXp = mc.world.loadedEntityList.stream()

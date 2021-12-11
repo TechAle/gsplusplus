@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // from lambda client
 
-@Mixin({Block.class, BlockAir.class, BlockFire.class, BlockCactus.class})
+@Mixin(Block.class)
 public class MixinGetCollisionBB {
 
     Minecraft mc = Minecraft.getMinecraft();
