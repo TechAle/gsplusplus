@@ -19,8 +19,8 @@ public class Step extends Module {
     //region Settings
 
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Beta"), "NCP");
-    ModeSetting height = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> !mode.getValue().equalsIgnoreCase("Beta"));
-    ModeSetting vHeight = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> !mode.getValue().equalsIgnoreCase("Beta"));
+    ModeSetting height = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> mode.getValue().equalsIgnoreCase("NCP"));
+    ModeSetting vHeight = registerMode("Height", Arrays.asList("1", "1.5", "2", "2.5"), "2.5", () -> mode.getValue().equalsIgnoreCase("Vanilla"));
     ModeSetting bHeight = registerMode("Height", Arrays.asList("1", "1.5", "2","2.5"), "2", () -> mode.getValue().equalsIgnoreCase("Beta"));
     BooleanSetting abnormal = registerBoolean("Abnormal", false,() -> !mode.getValue().equalsIgnoreCase("Vanilla"));
     BooleanSetting onGround = registerBoolean("On Ground", false);

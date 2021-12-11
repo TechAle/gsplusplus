@@ -63,9 +63,9 @@ public class HoleSnap extends Module {
         double dist = mc.player.getPositionVector().distanceTo(new Vec3d(hole.getX(), hole.getY(), hole.getZ()));
 
         if (mc.player.onGround)
-            speed = Math.min(0.2805, Math.abs(dist) / 2); // divide by 2 because motion
+            speed = Math.min(MotionUtil.getBaseMoveSpeed(), Math.abs(dist) / 2); // divide by 2 because motion
         else
-            speed = (Math.abs(mc.player.motionX) + Math.abs(mc.player.motionZ));
+            speed = Math.min((Math.abs(mc.player.motionX) + Math.abs(mc.player.motionZ)), Math.abs(dist) / 2);
 
         speed *= speedA.getValue();
 

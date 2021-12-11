@@ -38,7 +38,6 @@ import java.util.*;
  * @since 07/02/2021
  */
 
-@SuppressWarnings("unused")
 @Module.Declaration(name = "KillAura", category = Category.Combat)
 public class KillAura extends Module {
 
@@ -54,7 +53,6 @@ public class KillAura extends Module {
     BooleanSetting autoSwitch = registerBoolean("Switch", false);
     DoubleSetting switchHealth = registerDouble("Min Switch Health", 0f, 0f, 20f);
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
-    BooleanSetting raytrace = registerBoolean("RayTrace",false);
 
     boolean calcDelay = true;
 
@@ -66,8 +64,6 @@ public class KillAura extends Module {
             .filter(entity -> entity instanceof EntityLivingBase)
             .filter(entity -> !EntityUtil.basicChecksEntity(entity))
             .filter(entity -> mc.player.getDistanceSq(entity) <= rangeSq)
-                /* raytrace */
-            .filter(this::attackCheck).filter(entity -> (Objects.requireNonNull(mc.world.rayTraceBlocks(new Vec3d(mc.player.posX, mc.player.posY + (double) mc.player.getEyeHeight(), mc.player.posZ), new Vec3d(entity.posX + 0.5d, entity.posY + .5d, entity.posZ + 0.5d))).sideHit != null))
             .min(Comparator.comparing(e -> (enemyPriority.getValue().equals("Closest") ? mc.player.getDistanceSq(e) : ((EntityLivingBase) e).getHealth())));
 
         boolean sword = itemUsed.getValue().equalsIgnoreCase("Sword");

@@ -129,7 +129,7 @@ public class ElytraFly extends Module {
                                     if (mc.player.posY > target.posY)
                                         event.setY(-ySpeed.getValue());
                                     else if (mc.player.posY < target.posY)
-                                        event.setY(ySpeed.getValue());
+                                        event.setY(Math.min(ySpeed.getValue(),target.posY));
                                     else
                                         event.setY(0);
                                 } else {
