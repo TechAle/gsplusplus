@@ -167,14 +167,10 @@ public class Step extends Module {
         mc.timer.tickLength = 50;
     }
 
-    void sendOffsets(double[] offsets, int add) {
-        for (double i : offsets) {
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + i + add, mc.player.posZ, false));
-        }
-    }
-
     void sendOffsets(double[] offsets) {
-        sendOffsets(offsets, 0);
+        for (double i : offsets) {
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(mc.player.posX, mc.player.posY + i + 0, mc.player.posZ, false));
+        }
     }
 
 }
