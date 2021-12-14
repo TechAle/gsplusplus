@@ -30,6 +30,8 @@ public class Shaders extends Module {
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
     ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua"), true);
+    IntegerSetting MaxIter = registerInteger("Max Iter", 5, 0, 30, () -> fillShader.getValue().equals("Aqua"));
+    DoubleSetting tau = registerDouble("TAU", 6.28318530718, 0, 20, () -> fillShader.getValue().equals("Aqua"));
     IntegerSetting red = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting green = registerDouble("Green", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting blue = registerDouble("Blue", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
@@ -82,7 +84,7 @@ public class Shaders extends Module {
                 case "Aqua":
                     AquaShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue());
+                    AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue(), MaxIter.getValue(), tau.getValue());
                     AquaShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Red":

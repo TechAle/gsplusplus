@@ -23,15 +23,19 @@ public class AquaShader extends FramebufferShader {
         this.setupUniform( "resolution" );
         this.setupUniform( "time" );
         this.setupUniform("rgba");
+        this.setupUniform("lines");
+        this.setupUniform("tau");
     }
 
-    public void updateUniforms (float duplicate, Color color) {
+    public void updateUniforms (float duplicate, Color color, int lines, double tau) {
         GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( ) / duplicate, new ScaledResolution( mc ).getScaledHeight( ) / duplicate );
         GL20.glUniform1f( getUniform( "time" ), this.time );
         GL20.glUniform4f(getUniform("rgba"), color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f, color.getAlpha() / 255.0f );
+        GL20.glUniform1i(getUniform("lines"), lines);
+        GL20.glUniform1f(getUniform("tau"), (float) tau);
     }
 
-    public void stopDraw(final Color color, final float radius, final float quality, float duplicate ) {
+    public void stopDraw(final Color color, final float radius, final float quality, float duplicate, final int lines, final double tau ) {
         mc.gameSettings.entityShadows = entityShadows;
         framebuffer.unbindFramebuffer( );
         GL11.glEnable( 3042 );
@@ -45,7 +49,7 @@ public class AquaShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
-        startShader(duplicate, color);
+        startShader(duplicate, color, lines, tau);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
         stopShader( );
@@ -54,14 +58,14 @@ public class AquaShader extends FramebufferShader {
         GlStateManager.popAttrib( );
     }
 
-    public void startShader(float duplicate, Color color) {
+    public void startShader(float duplicate, Color color, int lines, double tau) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
             this.setupUniforms();
         }
-        this.updateUniforms(duplicate, color);
+        this.updateUniforms(duplicate, color, lines, tau);
     }
 
 
