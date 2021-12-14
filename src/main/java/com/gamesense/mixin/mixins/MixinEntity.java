@@ -44,11 +44,19 @@ public abstract class MixinEntity {
         return (ModuleManager.isModuleEnabled(Scaffold.class)) && !Minecraft.getMinecraft().gameSettings.keyBindSprint.isKeyDown() || ModuleManager.isModuleEnabled(SafeWalk.class) || entity.isSneaking();
     }
 
+
     // I am truly sorry Nep for making you read obfuscated minecraft code :pensive:
     @Inject(method = "move", at = @At(value = "HEAD"))
     public void move(MoverType type, double tx, double ty, double tz, CallbackInfo ci) { // I BEG YOU TO SKID THIS PLEASE THE WORLD NEEDS A BETTER STEP
+        /*
+            This is the awful godly
+            ~TechAle
+         */
 
         Minecraft mc = Minecraft.getMinecraft();
+
+        if (mc.getCurrentServerData() == null)
+            return;
 
         double x = tx;
         double y = ty;
