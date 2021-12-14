@@ -5,6 +5,10 @@ precision mediump float;
 uniform vec2 resolution;
 uniform float time;
 uniform sampler2D texture;
+uniform vec4 first;
+uniform vec3 second;
+uniform vec3 third;
+uniform int oct;
 
 float random (in vec2 _st) {
     return fract(sin(dot(_st.xy,
@@ -31,7 +35,6 @@ float noise (in vec2 _st) {
     (d - b) * u.x * u.y;
 }
 
-    #define NUM_OCTAVES 5
 
 float fbm ( in vec2 _st) {
     float v = 0.0;
@@ -40,7 +43,7 @@ float fbm ( in vec2 _st) {
     // Rotate to reduce axial bias
     mat2 rot = mat2(cos(0.5), sin(0.5),
     -sin(0.5), cos(0.50));
-    for (int i = 0; i < NUM_OCTAVES; ++i) {
+    for (int i = 0; i < oct; ++i) {
         v += a * noise(_st);
         _st = rot * _st * 2.0 + shift;
         a *= 0.5;
@@ -68,16 +71,16 @@ if(centerCol.a == 0.0) {
     float f = fbm(st+r);
 
     color = mix(vec3(0.101961,0.619608,0.666667),
-    vec3(0.666667,0.666667,0.498039),
+    vec3(first[0],first[1],first[2]),
     clamp((f*f)*4.0,0.0,1.0));
 
     color = mix(color,
-    vec3(0,0,0.164706),
+    vec3(second[0],second[1],second[2]),
     clamp(length(q),0.0,1.0));
 
     color = mix(color,
-    vec3(0.666667,1,1),
+    vec3(third[0],third[1],third[2]),
     clamp(length(r.x),0.0,1.0));
 
-    gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color,centerCol.a);}
+    gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color,first[3]);}
 }

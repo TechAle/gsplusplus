@@ -26,10 +26,13 @@ public class Shaders extends Module {
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality ESP", 1, 0, 5);
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Red", "Smoke", "Triangle", "RainbowCube", "Gradient", "None"), "Astral");
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "Triangle", "RainbowCube", "Gradient", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
-    ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua"), true);
+    ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke"), true);
+    ColorSetting secondColorImg = registerColor("Second Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
+    ColorSetting thirdColorImg = registerColor("Third Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
+    IntegerSetting NUM_OCTAVES = registerInteger("NUM_OCTAVES", 5, 1, 30, () -> fillShader.getValue().equals("Smoke"));
     IntegerSetting MaxIter = registerInteger("Max Iter", 5, 0, 30, () -> fillShader.getValue().equals("Aqua"));
     DoubleSetting tau = registerDouble("TAU", 6.28318530718, 0, 20, () -> fillShader.getValue().equals("Aqua"));
     IntegerSetting red = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
@@ -87,16 +90,10 @@ public class Shaders extends Module {
                     AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue(), MaxIter.getValue(), tau.getValue());
                     AquaShader.INSTANCE.update(speed.getValue());
                     break;
-                case "Red":
-                    RedShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayers(event.getPartialTicks());
-                    RedShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue());
-                    RedShader.INSTANCE.update(speed.getValue());
-                    break;
                 case "Smoke":
                     SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue());
+                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImg.getColor(), secondColorImg.getColor(), thirdColorImg.getColor(), NUM_OCTAVES.getValue());
                     SmokeShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Triangle":
