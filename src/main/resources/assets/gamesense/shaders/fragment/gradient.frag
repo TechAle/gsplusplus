@@ -8,6 +8,9 @@ precision mediump float;
 #define NUM_OCTAVES 16
 
 uniform float time;
+uniform float Creepy;
+uniform float moreGradient;
+uniform float alpha;
 uniform sampler2D texture;
 uniform vec2 resolution;
 
@@ -44,7 +47,7 @@ if(centerCol.a == 0.0) {
     gl_FragColor = vec4(centerCol.rgb, 0);
 } else {
     float minrz = min(resolution.x, resolution.y);
-    vec2 p = (((vec2(2.0, 2.0) * gl_FragCoord.xy) - resolution.xy) * vec2((1.0 / min(resolution.x, resolution.y)), (1.0 / min(resolution.x, resolution.y))));
+    vec2 p = (((vec2(2.0, 2.0) * gl_FragCoord.xy) - resolution.xy) * vec2((moreGradient / min(resolution.x, resolution.y)), (moreGradient / min(resolution.x, resolution.y))));
 
     float t = 0.0;
 
@@ -55,8 +58,8 @@ if(centerCol.a == 0.0) {
     q.y = fbm(p + vec2(1.0));
 
     gl_FragColor = vec4(vec3(noise(p + vec2(1.0)),
-    noise(p + 1.0 * q + vec2(1.7, 9.2) + 0.15 * time2),
-    noise(p + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time2)),
-    centerCol.a);}
+    noise(p + Creepy * q + vec2(1.7, 9.2) + 0.15 * time2),
+    noise(p + Creepy * q + vec2(8.3, 2.8) + 0.126 * time2)),
+    alpha);}
 
 }

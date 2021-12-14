@@ -29,6 +29,8 @@ public class Shaders extends Module {
     ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
+    DoubleSetting moreGradient = registerDouble("More Gradient", 1, 0, 10, () -> fillShader.getValue().equals("Gradient"));
+    DoubleSetting creepy = registerDouble("Creepy", 1, 0, 20, () -> fillShader.getValue().equals("Gradient"));
     IntegerSetting WaveLenght = registerInteger("Wave Lenght", 555, 0, 2000, () -> fillShader.getValue().equals("RainbowCube"));
     IntegerSetting RSTART = registerInteger("RSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
     IntegerSetting GSTART = registerInteger("GSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
@@ -42,7 +44,7 @@ public class Shaders extends Module {
     IntegerSetting red = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting green = registerDouble("Green", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting blue = registerDouble("Blue", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting alpha = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting alpha = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral") || fillShader.getValue().equals("Gradient"));
     IntegerSetting iterations = registerInteger("Iteration", 4, 3, 20, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting formuparam2 = registerDouble("formuparam2", 0.89, 0, 1.5, () -> fillShader.getValue().equals("Astral"));
     DoubleSetting zoom = registerDouble("Zoom", 3.9, 0, 20, () -> fillShader.getValue().equals("Astral"));
@@ -116,7 +118,7 @@ public class Shaders extends Module {
                 case "Gradient":
                     GradientShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue(), moreGradient.getValue().floatValue(), creepy.getValue().floatValue(), alpha.getValue().floatValue());
                     GradientShader.INSTANCE.update(speed.getValue());
                     break;
             }
