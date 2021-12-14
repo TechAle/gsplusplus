@@ -7,11 +7,18 @@ uniform float time;
 uniform vec2 resolution;
 uniform sampler2D texture;
 
-#define WAVELENGTH 22.0
+uniform float alpha;
+uniform float WAVELENGTH;
 #define C 555.0
-#define R_CENTER vec2(0, 0)
-#define G_CENTER vec2(0, resolution.y/04.0)
-#define B_CENTER vec2(0, resolution.y)
+uniform int R;
+uniform int RSTART;
+#define R_CENTER vec2(RSTART, R)
+uniform int G;
+uniform int GSTART;
+#define G_CENTER vec2(GSTART, G)
+uniform int B;
+uniform int BSTART;
+#define B_CENTER vec2(BSTART, B)
 
 float wave(vec2 c, vec2 pos)
 {
@@ -30,6 +37,6 @@ if(centerCol.a == 0.0) {
     wave(R_CENTER, pos),
     wave(G_CENTER, pos),
     wave(B_CENTER, pos),
-    centerCol.a);
+    alpha);
 }
 }

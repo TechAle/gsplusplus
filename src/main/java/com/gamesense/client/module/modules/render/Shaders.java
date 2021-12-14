@@ -26,10 +26,14 @@ public class Shaders extends Module {
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality ESP", 1, 0, 5);
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "Triangle", "RainbowCube", "Gradient", "None"), "Astral");
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "None"), "Astral");
     DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
     DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
-    ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke"), true);
+    IntegerSetting WaveLenght = registerInteger("Wave Lenght", 555, 0, 2000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting RSTART = registerInteger("RSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting GSTART = registerInteger("GSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting BSTART = registerInteger("BSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke") || fillShader.getValue().equals("RainbowCube"), true);
     ColorSetting secondColorImg = registerColor("Second Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
     ColorSetting thirdColorImg = registerColor("Third Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
     IntegerSetting NUM_OCTAVES = registerInteger("NUM_OCTAVES", 5, 1, 30, () -> fillShader.getValue().equals("Smoke"));
@@ -96,16 +100,17 @@ public class Shaders extends Module {
                     SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImg.getColor(), secondColorImg.getColor(), thirdColorImg.getColor(), NUM_OCTAVES.getValue());
                     SmokeShader.INSTANCE.update(speed.getValue());
                     break;
+                /*
                 case "Triangle":
                     TriangleShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     TriangleShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
                     TriangleShader.INSTANCE.update(speed.getValue());
-                    break;
+                    break;*/
                 case "RainbowCube":
                     RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    RainbowCubeShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
+                    RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImg.getColor(), WaveLenght.getValue(), RSTART.getValue(), GSTART.getValue(), BSTART.getValue());
                     RainbowCubeShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Gradient":
