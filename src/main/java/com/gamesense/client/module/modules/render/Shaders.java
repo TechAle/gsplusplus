@@ -71,7 +71,7 @@ public class Shaders extends Module {
     @EventHandler
     private final Listener<RenderGameOverlayEvent.Pre> renderGameOverlayEventListener = new Listener<>(event -> {
 
-        if (event.getType() == RenderGameOverlayEvent.ElementType.ALL) {
+        if (event.getType() == RenderGameOverlayEvent.ElementType.HOTBAR) {
             if (mc.world == null)
                 return;
 
@@ -134,6 +134,7 @@ public class Shaders extends Module {
             renderCape = true;
 
             GlStateManager.popMatrix();
+
         }
     });
 
