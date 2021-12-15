@@ -49,4 +49,12 @@ public class PlayerMoveEvent extends GameSenseEvent {
     public void setZ(double z) {
         this.z = z;
     }
+
+    public void setVelocity(double x, double y, double z) {
+
+        this.x = x;
+        this.y = y;
+        this.z = z;
+
+    }
 }

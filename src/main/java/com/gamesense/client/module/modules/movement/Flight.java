@@ -45,6 +45,7 @@ public class Flight extends Module {
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting wait = registerBoolean("Freeze", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting reduction = registerDouble("Reduction", 0.5, 0, 1, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    BooleanSetting restrict = registerBoolean("Restrict Packets", false,() -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting antiKick = registerMode("AntiKick", Arrays.asList("None", "Down", "Bounce"), "Bounce", () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting antiKickFreq = registerInteger("AntiKick Frequency", 4, 2, 8, () -> mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting confirm = registerBoolean("Confirm IDs", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -79,7 +80,7 @@ public class Flight extends Module {
 
             CPacketPlayer packet = (CPacketPlayer) event.getPacket();
 
-            if (packetlist.contains(packet)) {
+            if (packetlist.contains(packet) || !restrict.getValue()) {
 
                 packetlist.remove(packet);
                 ((CPacketPlayer) event.getPacket()).pitch = 0;
@@ -228,21 +229,16 @@ public class Flight extends Module {
 
             List<CPacketPlayer> packet = NonNullList.create();
 
-            packet.add((new CPacketPlayer.PositionRotation(x + mc.player.posX, y + mc.player.posY, z + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false)));
-
             /*
             * if packet factor is 1 we just use normal packet, else we send more
             * we send all packets then send another for the .x extra (if applicable) since we can have decimal factors
             * for example: factor 1.3 sends 2 packets, 1st is normal and 2nd is 0.3x extra
             */
+             for (int i = 0; i < Math.floor(packetFactor.getValue()); i++)
+                 packet.add(new CPacketPlayer.PositionRotation(x * (i+1) + mc.player.posX, y * (i+1) + mc.player.posY, z * (i+1) + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
-            if (packetFactor.getValue() != 1 && !PlayerUtil.isPlayerClipped()) {
-                for (int p = 2; p < Math.floor(packetFactor.getValue()); p++)
-                    packet.add(new CPacketPlayer.PositionRotation(x * p + mc.player.posX, y * y > 0 ? (p) : 1 + mc.player.posY, z * p + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-
-                if (packetFactor.getValue() != Math.floor(packetFactor.getValue()))
-                    packet.add(new CPacketPlayer.PositionRotation(x * packetFactor.getValue() + mc.player.posX, y * y > 0 ? packetFactor.getValue() : 1 + mc.player.posY, z * packetFactor.getValue() + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
-            }
+             if (packetFactor.getValue() != Math.floor(packetFactor.getValue()))
+                 packet.add(new CPacketPlayer.PositionRotation(x * packetFactor.getValue() + mc.player.posX, y * y > 0 ? packetFactor.getValue() : 1 + mc.player.posY, z * packetFactor.getValue() + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
             for (CPacketPlayer pkt : packet) {
                 packetlist.add(pkt);
@@ -278,8 +274,8 @@ public class Flight extends Module {
                 MessageBus.sendClientPrefixMessageWithID(tpid - ((SPacketPlayerPosLook) event.getPacket()).teleportId + "", 69420);
             tpid = ((SPacketPlayerPosLook) event.getPacket()).teleportId;
 
-            ((SPacketPlayerPosLook) event.getPacket()).yaw = mc.player.rotationYaw;
-            ((SPacketPlayerPosLook) event.getPacket()).pitch = mc.player.rotationPitch;
+            ((SPacketPlayerPosLook) event.getPacket()).getFlags().remove(SPacketPlayerPosLook.EnumFlags.X_ROT);
+            ((SPacketPlayerPosLook) event.getPacket()).getFlags().remove(SPacketPlayerPosLook.EnumFlags.Y_ROT);
 
         }
 
