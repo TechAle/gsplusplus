@@ -2,7 +2,9 @@ package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.GSColor;
-import com.gamesense.api.util.render.shaders.impl.*;
+import com.gamesense.api.util.render.shaders.impl.fill.*;
+import com.gamesense.api.util.render.shaders.impl.outline.GlowShader;
+import com.gamesense.api.util.render.shaders.impl.outline.GradientOutlineShader;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -22,47 +24,51 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Module.Declaration(name = "Shaders", category = Category.Render)
 public class Shaders extends Module {
 
-    BooleanSetting glowESP = registerBoolean("Glow ESP", false);
+    ModeSetting glowESP = registerMode("Glow ESP", Arrays.asList("None", "Color", "Astral", "RainbowCube", "Gradient"), "None");
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
-    DoubleSetting quality = registerDouble("Quality ESP", 1, 0, 5);
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "None"), "Astral");
-    DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
-    DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
-    DoubleSetting moreGradient = registerDouble("More Gradient", 1, 0, 10, () -> fillShader.getValue().equals("Gradient"));
-    DoubleSetting creepy = registerDouble("Creepy", 1, 0, 20, () -> fillShader.getValue().equals("Gradient"));
-    IntegerSetting WaveLenght = registerInteger("Wave Lenght", 555, 0, 2000, () -> fillShader.getValue().equals("RainbowCube"));
-    IntegerSetting RSTART = registerInteger("RSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
-    IntegerSetting GSTART = registerInteger("GSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
-    IntegerSetting BSTART = registerInteger("BSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
-    ColorSetting colorImg = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke") || fillShader.getValue().equals("RainbowCube"), true);
-    ColorSetting secondColorImg = registerColor("Second Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
-    ColorSetting thirdColorImg = registerColor("Third Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
-    IntegerSetting NUM_OCTAVES = registerInteger("NUM_OCTAVES", 5, 1, 30, () -> fillShader.getValue().equals("Smoke"));
-    IntegerSetting MaxIter = registerInteger("Max Iter", 5, 0, 30, () -> fillShader.getValue().equals("Aqua"));
-    DoubleSetting tau = registerDouble("TAU", 6.28318530718, 0, 20, () -> fillShader.getValue().equals("Aqua"));
-    IntegerSetting red = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting green = registerDouble("Green", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting blue = registerDouble("Blue", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting alpha = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral") || fillShader.getValue().equals("Gradient"));
-    IntegerSetting iterations = registerInteger("Iteration", 4, 3, 20, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting formuparam2 = registerDouble("formuparam2", 0.89, 0, 1.5, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting zoom = registerDouble("Zoom", 3.9, 0, 20, () -> fillShader.getValue().equals("Astral"));
-    IntegerSetting volumSteps = registerInteger("Volum Steps", 10, 0, 10, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting stepSize = registerDouble("Step Size", 0.190, 0.0, 0.7, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting title = registerDouble("Tile", 0.45, 0, 1.3, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting distfading = registerDouble("distfading", 0.56, 0, 1, () -> fillShader.getValue().equals("Astral"));
-    DoubleSetting saturation = registerDouble("saturation", 0.4, 0, 3, () -> fillShader.getValue().equals("Astral"));
-    BooleanSetting fade = registerBoolean("Fade", false, () -> fillShader.getValue().equals("Astral"));
-    BooleanSetting items = registerBoolean("Items", false);
-    BooleanSetting mobs = registerBoolean("Mobs", false);
-    BooleanSetting players = registerBoolean("Players", false);
-    BooleanSetting crystals = registerBoolean("Crystals", false);
-    BooleanSetting xp = registerBoolean("XP", false);
+    DoubleSetting quality = registerDouble("Quality ESP", 1, 0, 20);
+    BooleanSetting GradientAlpha = registerBoolean("Gradient Alpha", false);
+    IntegerSetting alphaValue = registerInteger("Alpha Outline", 255, 0, 255, () -> !GradientAlpha.getValue());
+
+
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "None"), "None");
+    DoubleSetting moreGradientFill = registerDouble("More Gradient", 1, 0, 10, () -> fillShader.getValue().equals("Gradient"));
+    DoubleSetting creepyFill = registerDouble("Creepy", 1, 0, 20, () -> fillShader.getValue().equals("Gradient"));
+    IntegerSetting WaveLenghtFIll = registerInteger("Wave Lenght", 555, 0, 2000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting RSTARTFill = registerInteger("RSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting GSTARTFill = registerInteger("GSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    IntegerSetting BSTARTFIll = registerInteger("BSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
+    ColorSetting colorImgFill = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke") || fillShader.getValue().equals("RainbowCube"), true);
+    ColorSetting secondColorImgFill = registerColor("Second Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
+    ColorSetting thirdColorImgFIll = registerColor("Third Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
+    IntegerSetting NUM_OCTAVESFill = registerInteger("NUM_OCTAVES", 5, 1, 30, () -> fillShader.getValue().equals("Smoke"));
+    IntegerSetting MaxIterFill = registerInteger("Max Iter", 5, 0, 30, () -> fillShader.getValue().equals("Aqua"));
+    DoubleSetting tauFill = registerDouble("TAU", 6.28318530718, 0, 20, () -> fillShader.getValue().equals("Aqua"));
+    IntegerSetting redFill = registerInteger("Red", 0, 0, 100, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting greenFill = registerDouble("Green", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting blueFill = registerDouble("Blue", 0, 0, 5, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting alphaFill = registerDouble("Alpha", 1, 0, 1, () -> fillShader.getValue().equals("Astral") || fillShader.getValue().equals("Gradient"));
+    IntegerSetting iterationsFill = registerInteger("Iteration", 4, 3, 20, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting formuparam2Fill = registerDouble("formuparam2", 0.89, 0, 1.5, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting zoomFill = registerDouble("Zoom", 3.9, 0, 20, () -> fillShader.getValue().equals("Astral"));
+    IntegerSetting volumStepsFill = registerInteger("Volum Steps", 10, 0, 10, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting stepSizeFill = registerDouble("Step Size", 0.190, 0.0, 0.7, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting titleFill = registerDouble("Tile", 0.45, 0, 1.3, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting distfadingFill = registerDouble("distfading", 0.56, 0, 1, () -> fillShader.getValue().equals("Astral"));
+    DoubleSetting saturationFill = registerDouble("saturation", 0.4, 0, 3, () -> fillShader.getValue().equals("Astral"));
+    BooleanSetting fadeFill = registerBoolean("Fade Fill", false, () -> fillShader.getValue().equals("Astral"));
+    BooleanSetting itemsFill = registerBoolean("Items Fill", false);
+    BooleanSetting mobsFill = registerBoolean("Mobs Fill", false);
+    BooleanSetting playersFill = registerBoolean("Players Fill", false);
+    BooleanSetting crystalsFill = registerBoolean("Crystals Fill", false);
+    BooleanSetting xpFill = registerBoolean("XP Fill", false);
     BooleanSetting rangeCheck = registerBoolean("Range Check", true);
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
     IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
+    DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
+    DoubleSetting duplicate = registerDouble("Duplicate", 1, 0, 5);
 
     public boolean renderTags = true,
             renderCape = true;
@@ -85,49 +91,51 @@ public class Shaders extends Module {
                     FlowShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(),
-                            red.getValue().floatValue(), green.getValue().floatValue(), blue.getValue().floatValue(), alpha.getValue().floatValue(),
-                            iterations.getValue(), formuparam2.getValue().floatValue(), zoom.getValue().floatValue(), volumSteps.getValue(), stepSize.getValue().floatValue(), title.getValue().floatValue(), distfading.getValue().floatValue(),
-                            saturation.getValue().floatValue(), 0f, fade.getValue() ? 1 : 0);
+                            redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
+                            iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
+                            saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0);
                     FlowShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Aqua":
                     AquaShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    AquaShader.INSTANCE.stopDraw(colorImg.getColor(), 1f, 1f, duplicate.getValue().floatValue(), MaxIter.getValue(), tau.getValue());
+                    AquaShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicate.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
                     AquaShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Smoke":
                     SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImg.getColor(), secondColorImg.getColor(), thirdColorImg.getColor(), NUM_OCTAVES.getValue());
+                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());
                     SmokeShader.INSTANCE.update(speed.getValue());
                     break;
-                /*
-                case "Triangle":
-                    TriangleShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayers(event.getPartialTicks());
-                    TriangleShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue());
-                    TriangleShader.INSTANCE.update(speed.getValue());
-                    break;*/
                 case "RainbowCube":
                     RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImg.getColor(), WaveLenght.getValue(), RSTART.getValue(), GSTART.getValue(), BSTART.getValue());
+                    RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicate.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());
                     RainbowCubeShader.INSTANCE.update(speed.getValue());
                     break;
                 case "Gradient":
                     GradientShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue(), moreGradient.getValue().floatValue(), creepy.getValue().floatValue(), alpha.getValue().floatValue());
+                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue());
                     GradientShader.INSTANCE.update(speed.getValue());
                     break;
             }
 
+            switch (glowESP.getValue()) {
+                case "Color":
+                    GlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                    renderPlayers(event.getPartialTicks());
+                    GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue());
+                    break;
+                case "RainbowCube":
+                    break;
+                case "Gradient":
+                    GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                    renderPlayers(event.getPartialTicks());
+                    GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
+                    break;
 
-            if (glowESP.getValue()) {
-                GlowShader.INSTANCE.startDraw(event.getPartialTicks());
-                renderPlayers(event.getPartialTicks());
-                GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
             }
 
             renderTags = true;
@@ -149,20 +157,20 @@ public class Shaders extends Module {
                     if (nEntities.getAndIncrement() > maxEntities)
                         return false;
                     if (e instanceof EntityPlayer) {
-                        if (players.getValue())
+                        if (playersFill.getValue())
                             if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
                                 return true;
                     } else if (e instanceof EntityItem) {
-                        if (items.getValue())
+                        if (itemsFill.getValue())
                             return true;
                     } else if (e instanceof EntityCreature) {
-                        if (mobs.getValue())
+                        if (mobsFill.getValue())
                             return true;
                     } else if (e instanceof EntityEnderCrystal) {
-                        if (crystals.getValue())
+                        if (crystalsFill.getValue())
                             return true;
                     } else if (e instanceof EntityXPOrb) {
-                        if (xp.getValue())
+                        if (xpFill.getValue())
                             return true;
                     }
                     return false;

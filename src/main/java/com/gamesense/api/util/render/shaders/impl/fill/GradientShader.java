@@ -1,4 +1,4 @@
-package com.gamesense.api.util.render.shaders.impl;
+package com.gamesense.api.util.render.shaders.impl.fill;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
@@ -16,7 +16,7 @@ public class GradientShader extends FramebufferShader {
     public float time;
 
     public GradientShader( ) {
-        super( "gradient.frag" );
+        super( "outlineGradient.frag" );
     }
 
     @Override public void setupUniforms ( ) {

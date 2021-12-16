@@ -1,16 +1,16 @@
-package com.gamesense.api.util.render.shaders.impl;
+package com.gamesense.api.util.render.shaders.impl.outline;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL20;
 
-public final class GlowShader extends FramebufferShader
+public final class GradientOutlineShader extends FramebufferShader
 {
-    public static final GlowShader INSTANCE;
+    public static final GradientOutlineShader INSTANCE;
     public float time = 0;
 
-    public GlowShader() {
-        super("glow.frag");
+    public GradientOutlineShader() {
+        super("outlineGradient.frag");
     }
 
     @Override public void setupUniforms() {
@@ -42,6 +42,6 @@ public final class GlowShader extends FramebufferShader
     }
 
     static {
-        INSTANCE = new GlowShader();
+        INSTANCE = new GradientOutlineShader();
     }
 }

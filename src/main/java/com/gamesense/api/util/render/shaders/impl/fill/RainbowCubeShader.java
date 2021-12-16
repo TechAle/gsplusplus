@@ -1,4 +1,4 @@
-package com.gamesense.api.util.render.shaders.impl;
+package com.gamesense.api.util.render.shaders.impl.fill;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
@@ -10,37 +10,47 @@ import org.lwjgl.opengl.GL20;
 import java.awt.*;
 import java.util.HashMap;
 
-public class SmokeShader extends FramebufferShader {
+public class RainbowCubeShader extends FramebufferShader {
 
-    public static final SmokeShader INSTANCE;
+    public static final RainbowCubeShader INSTANCE;
     public float time;
 
-    public SmokeShader( ) {
-        super( "smoke.frag" );
+    public RainbowCubeShader( ) {
+        super( "rainbowCube.frag" );
     }
 
-    public void setupUniforms ( ) {
+    @Override public void setupUniforms ( ) {
         this.setupUniform( "resolution" );
         this.setupUniform( "time" );
-        this.setupUniform("first");
-        this.setupUniform("second");
-        this.setupUniform("third");
-        this.setupUniform("oct");
+        this.setupUniform("alpha");
+        this.setupUniform("WAVELENGTH");
+        this.setupUniform("R");
+        this.setupUniform("G");
+        this.setupUniform("B");
+        this.setupUniform("RSTART");
+        this.setupUniform("GSTART");
+        this.setupUniform("BSTART");
     }
 
-    public void updateUniforms ( float duplicate, final Color first, final Color second, final Color third, int oct ) {
+    public void updateUniforms ( float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
         GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( )/duplicate, new ScaledResolution( mc ).getScaledHeight( )/duplicate );
         GL20.glUniform1f( getUniform( "time" ), time );
-        GL20.glUniform4f(getUniform("first"), first.getRed() / 255.0f * 5, first.getGreen() / 255.0f * 5, first.getBlue() / 255.0f * 5, first.getAlpha() / 255.0f );
-        GL20.glUniform3f(getUniform("second"), second.getRed() / 255.0f * 5, second.getGreen() / 255.0f * 5, second.getBlue() / 255.0f * 5 );
-        GL20.glUniform3f(getUniform("third"), third.getRed() / 255.0f * 5, third.getGreen() / 255.0f * 5, third.getBlue() / 255.0f * 5 );
-        GL20.glUniform1i(getUniform("oct"), oct);
+        GL20.glUniform1f(getUniform("alpha"), start.getAlpha() / 255.0f);
+        GL20.glUniform1f(getUniform("WAVELENGTH"), (float) wave);
+        GL20.glUniform1i(getUniform("R"), start.getRed());
+        GL20.glUniform1i(getUniform("G"), start.getGreen());
+        GL20.glUniform1i(getUniform("B"), start.getBlue());
+        GL20.glUniform1i(getUniform("RSTART"), rStart);
+        GL20.glUniform1i(getUniform("GSTART"), gStart);
+        GL20.glUniform1i(getUniform("BSTART"), bStart);
+
+
     }
     static {
-        INSTANCE = new SmokeShader();
+        INSTANCE = new RainbowCubeShader();
     }
 
-    public void stopDraw(final Color color, final float radius, final float quality, float duplicate, final Color first, final Color second, final Color third, int oct ) {
+    public void stopDraw(final Color color, final float radius, final float quality, float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
         mc.gameSettings.entityShadows = entityShadows;
         framebuffer.unbindFramebuffer( );
         GL11.glEnable( 3042 );
@@ -54,7 +64,7 @@ public class SmokeShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
-        startShader(duplicate, first, second, third, oct);
+        startShader(duplicate, start, wave, rStart, gStart, bStart);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
         stopShader( );
@@ -63,14 +73,14 @@ public class SmokeShader extends FramebufferShader {
         GlStateManager.popAttrib( );
     }
 
-    public void startShader(float duplicate, final Color first, final Color second, final Color third, int oct) {
+    public void startShader(float duplicate, Color start, int wave, int rStart, int gStart, int bStart) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
             this.setupUniforms();
         }
-        this.updateUniforms(duplicate, first, second, third, oct);
+        this.updateUniforms(duplicate, start, wave, rStart, gStart, bStart);
     }
 
     public void update(double speed) {
