@@ -87,9 +87,7 @@ void main() {
 
                 if (currentColor.a != 0)
                 if (alpha0 == -1.0) {
-                    if (colorFinal[0] == -1) {
-                        colorFinal = getColor(centerCol);
-                    }
+
                     alphaOutline += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
                 }
                 else {
@@ -97,6 +95,9 @@ void main() {
                     return;
                 }
             }
+        }
+        if (alphaOutline > 0) {
+            colorFinal = getColor(centerCol);
         }
         gl_FragColor = vec4(colorFinal, alphaOutline);
     }

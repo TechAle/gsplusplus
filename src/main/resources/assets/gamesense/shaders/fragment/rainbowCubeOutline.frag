@@ -49,15 +49,7 @@ void main() {
 
                 if (currentColor.a != 0)
                 if (alpha0 == -1.0) {
-                    if (colorFinal[0] == -1) {
-                        vec2 pos = gl_FragCoord.xy;
-                        vec4 test = vec4(
-                        wave(R_CENTER, pos),
-                        wave(G_CENTER, pos),
-                        wave(B_CENTER, pos),
-                        alpha);
-                        colorFinal = vec3(test[0], test[1], test[2]);
-                    }
+
                     alphaOutline += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
                 }
                 else {
@@ -71,6 +63,15 @@ void main() {
                     return;
                 }
             }
+        }
+        if (alphaOutline > 0) {
+            vec2 pos = gl_FragCoord.xy;
+            vec4 test = vec4(
+            wave(R_CENTER, pos),
+            wave(G_CENTER, pos),
+            wave(B_CENTER, pos),
+            alpha);
+            colorFinal = vec3(test[0], test[1], test[2]);
         }
         gl_FragColor = vec4(colorFinal, alphaOutline);
     }

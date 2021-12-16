@@ -3,11 +3,13 @@ package com.gamesense.client.module.modules.render;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.shaders.impl.fill.*;
+import com.gamesense.api.util.render.shaders.impl.outline.AstralOutlineShader;
 import com.gamesense.api.util.render.shaders.impl.outline.GlowShader;
 import com.gamesense.api.util.render.shaders.impl.outline.GradientOutlineShader;
 import com.gamesense.api.util.render.shaders.impl.outline.RainbowCubeOutlineShader;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.renderer.GlStateManager;
@@ -118,7 +120,7 @@ public class Shaders extends Module {
     private final Listener<RenderGameOverlayEvent.Pre> renderGameOverlayEventListener = new Listener<>(event -> {
 
         if (event.getType() == RenderGameOverlayEvent.ElementType.HOTBAR) {
-            if (mc.world == null)
+            if (mc.world == null || mc.player == null)
                 return;
 
 
@@ -186,6 +188,16 @@ public class Shaders extends Module {
                     GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), moreGradientOutline.getValue().floatValue(), creepyOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(), NUM_OCTAVESOutline.getValue());
                     GradientOutlineShader.INSTANCE.update(speedOutline.getValue());
                     break;
+                case "Astral":
+                    AstralOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                    renderPlayersOutline(event.getPartialTicks());
+                    AstralOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(),
+                            redOutline.getValue().floatValue(), greenOutline.getValue().floatValue(), blueOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(),
+                            iterationsOutline.getValue(), formuparam2Outline.getValue().floatValue(), zoomOutline.getValue().floatValue(), volumStepsOutline.getValue(), stepSizeOutline.getValue().floatValue(), titleOutline.getValue().floatValue(), distfadingOutline.getValue().floatValue(),
+                            saturationOutline.getValue().floatValue(), 0f, fadeOutline.getValue() ? 1 : 0);
+                    AstralOutlineShader.INSTANCE.update(speedOutline.getValue());
+                    break;
+
 
             }
 
@@ -204,51 +216,55 @@ public class Shaders extends Module {
         double maxRange = this.maxRange.getValue() * this.maxRange.getValue();
         AtomicInteger nEntities = new AtomicInteger();
         int maxEntities = this.maxEntities.getValue();
-        mc.world.loadedEntityList.stream().filter(e -> {
-                    if (nEntities.getAndIncrement() > maxEntities)
-                        return false;
-                    if (e instanceof EntityPlayer) {
-                        if (playersFill.getValue())
-                            if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
+        try {
+            mc.world.loadedEntityList.stream().filter(e -> {
+                        if (nEntities.getAndIncrement() > maxEntities)
+                            return false;
+                        if (e instanceof EntityPlayer) {
+                            if (playersFill.getValue())
+                                if (e != mc.player || mc.gameSettings.thirdPersonView != 0)
+                                    return true;
+                        } else if (e instanceof EntityItem) {
+                            if (itemsFill.getValue())
                                 return true;
-                    } else if (e instanceof EntityItem) {
-                        if (itemsFill.getValue())
-                            return true;
-                    } else if (e instanceof EntityCreature) {
-                        if (mobsFill.getValue())
-                            return true;
-                    } else if (e instanceof EntityEnderCrystal) {
-                        if (crystalsFill.getValue())
-                            return true;
-                    } else if (e instanceof EntityXPOrb) {
-                        if (xpFill.getValue())
-                            return true;
-                    }else if (e instanceof EntityExpBottle) {
-                        if (bottleFill.getValue())
-                            return true;
-                    }else if (e instanceof EntityBoat) {
-                        if (boatFill.getValue())
-                            return true;
-                    }else if (e instanceof EntityMinecart) {
-                        if (minecartFill.getValue())
-                            return true;
-                    }else if (e instanceof EntityEnderPearl) {
-                        if (enderPerleFill.getValue())
-                            return true;
-                    } else if (e instanceof EntityArrow) {
-                        if (arrowFill.getValue())
-                            return true;
+                        } else if (e instanceof EntityCreature) {
+                            if (mobsFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityEnderCrystal) {
+                            if (crystalsFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityXPOrb) {
+                            if (xpFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityExpBottle) {
+                            if (bottleFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityBoat) {
+                            if (boatFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityMinecart) {
+                            if (minecartFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityEnderPearl) {
+                            if (enderPerleFill.getValue())
+                                return true;
+                        } else if (e instanceof EntityArrow) {
+                            if (arrowFill.getValue())
+                                return true;
+                        }
+                        return false;
                     }
-                    return false;
+            ).filter(e -> {
+                if (!rangeCheck)
+                    return true;
+                else {
+                    double distancePl = mc.player.getDistanceSq(e);
+                    return distancePl > minRange && distancePl < maxRange;
                 }
-        ).filter(e -> {
-            if (!rangeCheck)
-                return true;
-            else {
-                double distancePl = mc.player.getDistanceSq(e);
-                return distancePl > minRange && distancePl < maxRange;
-            }
-        }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
+            }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
+        }catch (NullPointerException e) {
+            PistonCrystal.printDebug("e", false);
+        }
     }
 
     void renderPlayersOutline(float tick) {
