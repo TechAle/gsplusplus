@@ -9,6 +9,8 @@ uniform vec3 color;
 uniform float radius;
 uniform float divider;
 uniform float maxSample;
+uniform vec2 resolution;
+uniform float time;
 
 vec3 getColor(vec4 centerCol) {
     return vec3(-1);

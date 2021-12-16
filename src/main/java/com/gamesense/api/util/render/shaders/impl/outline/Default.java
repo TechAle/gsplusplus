@@ -1,7 +1,6 @@
 package com.gamesense.api.util.render.shaders.impl.outline;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
-import com.gamesense.api.util.render.shaders.impl.fill.GradientShader;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
@@ -11,13 +10,13 @@ import org.lwjgl.opengl.GL20;
 import java.awt.*;
 import java.util.HashMap;
 
-public final class GradientOutlineShader extends FramebufferShader
+public final class Default extends FramebufferShader
 {
-    public static final GradientOutlineShader INSTANCE;
+    public static final Default INSTANCE;
     public float time = 0;
 
-    public GradientOutlineShader() {
-        super("outlineGradient.frag");
+    public Default() {
+        super("default.frag");
     }
 
     @Override public void setupUniforms() {
@@ -30,13 +29,9 @@ public final class GradientOutlineShader extends FramebufferShader
         this.setupUniform("alpha0");
         this.setupUniform( "resolution" );
         this.setupUniform( "time" );
-        this.setupUniform("moreGradient");
-        this.setupUniform("Creepy");
-        this.setupUniform("alpha");
-        this.setupUniform("NUM_OCTAVES");
     }
 
-    public void updateUniforms(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float moreGradient, float creepy, float alpha, int numOctaves) {
+    public void updateUniforms(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate) {
         GL20.glUniform1i(this.getUniform("texture"), 0);
         GL20.glUniform2f(this.getUniform("texelSize"), 1.0f / this.mc.displayWidth * (radius * quality), 1.0f / this.mc.displayHeight * (radius * quality));
         GL20.glUniform3f(this.getUniform("color"), color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f);
@@ -46,14 +41,9 @@ public final class GradientOutlineShader extends FramebufferShader
         GL20.glUniform1f(this.getUniform("alpha0"), gradientAlpha ? -1.0f : alphaOutline / 255.0f);
         GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( )/duplicate, new ScaledResolution( mc ).getScaledHeight( )/duplicate );
         GL20.glUniform1f( getUniform( "time" ), time );
-        GL20.glUniform1f(getUniform("moreGradient"), moreGradient);
-        GL20.glUniform1f(getUniform("Creepy"), creepy);
-        GL20.glUniform1f(getUniform("alpha"), alpha);
-        GL20.glUniform1i(getUniform("NUM_OCTAVES"), numOctaves);
-
     }
 
-    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float moreGradient, float creepy, float alpha, int numOctaves) {
+    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate) {
         mc.gameSettings.entityShadows = entityShadows;
         framebuffer.unbindFramebuffer( );
         GL11.glEnable( 3042 );
@@ -61,7 +51,7 @@ public final class GradientOutlineShader extends FramebufferShader
         mc.getFramebuffer( ).bindFramebuffer( true );
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
-        startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate, moreGradient, creepy, alpha, numOctaves);
+        startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
         stopShader( );
@@ -70,18 +60,18 @@ public final class GradientOutlineShader extends FramebufferShader
         GlStateManager.popAttrib( );
     }
 
-    public void startShader(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float moreGradient, float creepy, float alpha, int numOctaves) {
+    public void startShader(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
             this.setupUniforms();
         }
-        this.updateUniforms(color, radius, quality, gradientAlpha, alphaOutline, duplicate, moreGradient, creepy, alpha, numOctaves);
+        this.updateUniforms(color, radius, quality, gradientAlpha, alphaOutline, duplicate);
     }
 
     static {
-        INSTANCE = new GradientOutlineShader();
+        INSTANCE = new Default();
     }
 
     public void update(double speed) {

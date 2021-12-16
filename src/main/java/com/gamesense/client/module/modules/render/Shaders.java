@@ -5,6 +5,7 @@ import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.shaders.impl.fill.*;
 import com.gamesense.api.util.render.shaders.impl.outline.GlowShader;
 import com.gamesense.api.util.render.shaders.impl.outline.GradientOutlineShader;
+import com.gamesense.api.util.render.shaders.impl.outline.Default;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
@@ -67,7 +68,8 @@ public class Shaders extends Module {
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
     IntegerSetting maxEntities = registerInteger("Max Entities", 100, 10, 500);
-    DoubleSetting speed = registerDouble("Speed", 0.1, 0.001, 0.1);
+    DoubleSetting speedFill = registerDouble("Speed Fill", 0.1, 0.001, 0.1);
+    DoubleSetting speedOutline = registerDouble("Speed Outline", 0.1, 0.001, 0.1);
     DoubleSetting duplicateFill = registerDouble("Duplicate Fill", 1, 0, 5);
     DoubleSetting duplicateOutline = registerDouble("Duplicate Outline", 1, 0, 20);
 
@@ -95,31 +97,31 @@ public class Shaders extends Module {
                             redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
                             iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
                             saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0);
-                    FlowShader.INSTANCE.update(speed.getValue());
+                    FlowShader.INSTANCE.update(speedFill.getValue());
                     break;
                 case "Aqua":
                     AquaShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     AquaShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
-                    AquaShader.INSTANCE.update(speed.getValue());
+                    AquaShader.INSTANCE.update(speedFill.getValue());
                     break;
                 case "Smoke":
                     SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());
-                    SmokeShader.INSTANCE.update(speed.getValue());
+                    SmokeShader.INSTANCE.update(speedFill.getValue());
                     break;
                 case "RainbowCube":
                     RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());
-                    RainbowCubeShader.INSTANCE.update(speed.getValue());
+                    RainbowCubeShader.INSTANCE.update(speedFill.getValue());
                     break;
                 case "Gradient":
                     GradientShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicateFill.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());
-                    GradientShader.INSTANCE.update(speed.getValue());
+                    GradientShader.INSTANCE.update(speedFill.getValue());
                     break;
             }
 
@@ -130,11 +132,15 @@ public class Shaders extends Module {
                     GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue());
                     break;
                 case "RainbowCube":
+                    Default.INSTANCE.startDraw(event.getPartialTicks());
+                    renderPlayers(event.getPartialTicks());
+                    Default.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue());
                     break;
                 case "Gradient":
                     GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
                     GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());
+                    GradientOutlineShader.INSTANCE.update(speedOutline.getValue());
                     break;
 
             }
