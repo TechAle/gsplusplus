@@ -12,10 +12,9 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityCreature;
-import net.minecraft.entity.item.EntityEnderCrystal;
-import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.item.EntityXPOrb;
+import net.minecraft.entity.item.*;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 import java.awt.*;
@@ -87,11 +86,21 @@ public class Shaders extends Module {
     BooleanSetting playersFill = registerBoolean("Players Fill", false);
     BooleanSetting crystalsFill = registerBoolean("Crystals Fill", false);
     BooleanSetting xpFill = registerBoolean("XP Fill", false);
+    BooleanSetting bottleFill = registerBoolean("Bottle Fill", false);
+    BooleanSetting boatFill = registerBoolean("Boat Fill", false);
+    BooleanSetting minecartFill = registerBoolean("MinecartTnt Fill", false);
+    BooleanSetting enderPerleFill = registerBoolean("EnderPerle Fill", false);
+    BooleanSetting arrowFill = registerBoolean("Arrow Fill", false);
     BooleanSetting itemsOutline = registerBoolean("Items Outline", false);
     BooleanSetting mobsOutline = registerBoolean("Mobs Outline", false);
     BooleanSetting playersOutline = registerBoolean("Players Outline", false);
     BooleanSetting crystalsOutline = registerBoolean("Crystals Outline", false);
     BooleanSetting xpOutline = registerBoolean("XP Outline", false);
+    BooleanSetting bottleOutline = registerBoolean("Bottle Outline", false);
+    BooleanSetting boatOutline = registerBoolean("Boat Outline", false);
+    BooleanSetting minecartTntOutline = registerBoolean("MinecartTnt Outline", false);
+    BooleanSetting enderPerleOutline = registerBoolean("EnderPerle Outline", false);
+    BooleanSetting arrowOutline = registerBoolean("Arrow Outline", false);
     BooleanSetting rangeCheck = registerBoolean("Range Check", true);
     DoubleSetting minRange = registerDouble("Min range", 1, 0, 5, () -> rangeCheck.getValue());
     DoubleSetting maxRange = registerDouble("Max Range", 20, 10, 100, () -> rangeCheck.getValue());
@@ -214,6 +223,21 @@ public class Shaders extends Module {
                     } else if (e instanceof EntityXPOrb) {
                         if (xpFill.getValue())
                             return true;
+                    }else if (e instanceof EntityExpBottle) {
+                        if (bottleFill.getValue())
+                            return true;
+                    }else if (e instanceof EntityBoat) {
+                        if (boatFill.getValue())
+                            return true;
+                    }else if (e instanceof EntityMinecart) {
+                        if (minecartFill.getValue())
+                            return true;
+                    }else if (e instanceof EntityEnderPearl) {
+                        if (enderPerleFill.getValue())
+                            return true;
+                    } else if (e instanceof EntityArrow) {
+                        if (arrowFill.getValue())
+                            return true;
                     }
                     return false;
                 }
@@ -251,6 +275,21 @@ public class Shaders extends Module {
                             return true;
                     } else if (e instanceof EntityXPOrb) {
                         if (xpOutline.getValue())
+                            return true;
+                    } else if (e instanceof EntityExpBottle) {
+                        if (bottleOutline.getValue())
+                            return true;
+                    } else if (e instanceof EntityBoat) {
+                        if (boatOutline.getValue())
+                            return true;
+                    } else if (e instanceof EntityMinecart) {
+                        if (minecartTntOutline.getValue())
+                            return true;
+                    } else if (e instanceof EntityEnderPearl) {
+                        if (enderPerleOutline.getValue())
+                            return true;
+                    }else if (e instanceof EntityArrow) {
+                        if (arrowOutline.getValue())
                             return true;
                     }
                     return false;
