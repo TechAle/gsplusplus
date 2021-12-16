@@ -5,8 +5,7 @@ precision mediump float;
 
 #extension GL_OES_standard_derivatives : enable
 
-#define NUM_OCTAVES 16
-
+uniform int NUM_OCTAVES;
 uniform float time;
 uniform float Creepy;
 uniform float moreGradient;
