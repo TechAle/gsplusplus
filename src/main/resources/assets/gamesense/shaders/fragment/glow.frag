@@ -18,7 +18,7 @@ void main() {
         gl_FragColor = vec4(centerCol.rgb, 0);
     } else {
 
-        float alpha = 0;
+        float alphaOutline = 0;
 
         for (float x = -radius; x < radius; x++) {
             for (float y = -radius; y < radius; y++) {
@@ -26,7 +26,7 @@ void main() {
 
                 if (currentColor.a != 0)
                     if (alpha0 == -1.0) {
-                        alpha += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
+                        alphaOutline += divider > 0 ? max(0, (maxSample - distance(vec2(x, y), vec2(0))) / divider) : 1;
                     }
                     else {
                         gl_FragColor = vec4(color, alpha0);
@@ -34,6 +34,6 @@ void main() {
                     }
             }
         }
-        gl_FragColor = vec4(color, alpha);
+        gl_FragColor = vec4(color, alphaOutline);
     }
 }

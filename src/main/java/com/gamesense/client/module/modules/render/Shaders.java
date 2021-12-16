@@ -117,7 +117,7 @@ public class Shaders extends Module {
                 case "Gradient":
                     GradientShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue());
+                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicate.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());
                     GradientShader.INSTANCE.update(speed.getValue());
                     break;
             }
@@ -133,7 +133,7 @@ public class Shaders extends Module {
                 case "Gradient":
                     GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
                     renderPlayers(event.getPartialTicks());
-                    GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), 0f);
+                    GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue());
                     break;
 
             }
