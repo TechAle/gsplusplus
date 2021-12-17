@@ -77,7 +77,7 @@ public class Scaffold extends Module {
     });
 
     @EventHandler
-    private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> {
+    private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> { // BEFORE PACKET SENT
 
         oldSlot = mc.player.inventory.currentItem;
 
