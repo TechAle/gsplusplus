@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.movement;
 
+import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerJumpEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
@@ -25,6 +26,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 
@@ -62,7 +64,20 @@ public class Scaffold extends Module {
     Timer cancelTimer = new Timer();
 
     @EventHandler
-    private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> {
+    private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
+        if (event.getPacket() instanceof CPacketPlayer.PositionRotation) {
+
+            CPacketPlayer.PositionRotation e = (CPacketPlayer.PositionRotation) event.getPacket();
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(e.x,e.y,e.z,e.onGround));
+
+            event.cancel();
+
+        }
+    });
+
+    @EventHandler
+    private final Listener<PlayerMoveEvent> moveEventListener = new Listener<>(event -> { // BEFORE PACKET SENT
 
         oldSlot = mc.player.inventory.currentItem;
 

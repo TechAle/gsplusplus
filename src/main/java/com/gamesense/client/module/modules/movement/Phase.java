@@ -3,11 +3,13 @@ package com.gamesense.client.module.modules.movement;
 import com.gamesense.api.event.events.BoundingBoxEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
+import com.gamesense.client.command.commands.HClipCommand;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -19,17 +21,23 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
+import java.util.Objects;
 
-@Module.Declaration(name = "PhaseWalk", category = Category.Movement)
-public class PhaseWalk extends Module {
+@Module.Declaration(name = "Phase", category = Category.Movement)
+public class Phase extends Module {
 
-    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla"), "NCP");
+    ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Skip"), "NCP");
+
+    DoubleSetting safety = registerDouble("Safety",0.15,0,1, () -> mode.getValue().equalsIgnoreCase("Skip"));
+
     BooleanSetting h = registerBoolean("Keep Floor", false, () -> mode.getValue().equalsIgnoreCase("Vanilla"));
+
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min", () -> mode.getValue().equalsIgnoreCase("NCP"));
-    BooleanSetting clipCheck = registerBoolean("Clipped Check", false);
     BooleanSetting twoBeePvP = registerBoolean("2b2tpvp", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
-    BooleanSetting sprint = registerBoolean("Sprint Force Enable", true);
+
+    BooleanSetting clipCheck = registerBoolean("Clipped Check", false, () -> !mode.getValue().equalsIgnoreCase("Skip"));
+    BooleanSetting sprint = registerBoolean("Sprint Force Enable", true, () -> !mode.getValue().equalsIgnoreCase("Skip"));
 
     int tpid = 0;
     boolean clipped = false;
@@ -39,8 +47,8 @@ public class PhaseWalk extends Module {
 
         try {
                 if (mode.getValue().equalsIgnoreCase("Vanilla")
-                        && (clipped || !clipCheck.getValue())
-                        || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()))
+                        && ((clipped || !clipCheck.getValue())
+                        || (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue())))
 
                     if (event.getPos().y >= mc.player.getPositionVector().y || !h.getValue() || mc.gameSettings.keyBindSneak.isKeyDown())
                         event.setbb(Block.NULL_AABB);
@@ -76,12 +84,35 @@ public class PhaseWalk extends Module {
 
         clipped = PlayerUtil.isPlayerClipped();
 
-        if ((mc.player.collidedHorizontally || mc.gameSettings.keyBindSneak.isKeyDown())
+        if ((((mc.player.collidedHorizontally || mc.gameSettings.keyBindSneak.isKeyDown()) && mode.getValue().equalsIgnoreCase("NCP"))
                 && !ModuleManager.getModule(Flight.class).isEnabled()
                 && mode.getValue().equalsIgnoreCase("NCP")
                 && (clipped || !clipCheck.getValue())
-                ||  (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()) && mc.player.collidedHorizontally)
+                ||  (mc.gameSettings.keyBindSprint.isKeyDown() && sprint.getValue()) && mc.player.collidedHorizontally) && mode.getValue().equalsIgnoreCase("NCP"))
             packetFly();
+
+        if (mode.getValue().equalsIgnoreCase("Skip"))
+            skip();
+    }
+
+    void skip() {
+
+        double[] dir = MotionUtil.forward(1,(Math.round(mc.player.rotationYaw / 8) * 8)); // 1 means we can multiply this
+
+        if (!mc.player.collidedHorizontally || !(mc.player.motionX + mc.player.motionZ == 0))
+            return;
+
+        for (float i = 0.1f; i < 1; i += 0.1) {
+            double dirX = dir[0] * i;
+            double dirZ = dir[1] * i;
+            if (!mc.world.collidesWithAnyBlock((mc.player.getEntityBoundingBox()).offset(dirX, 0, dirZ))) {
+                double[] safetyDir = MotionUtil.forward(i+safety.getValue(),(Math.round(mc.player.rotationYaw / 8) * 8));
+                mc.player.setPosition(mc.player.posX + safetyDir[0], mc.player.posY, mc.player.posZ + safetyDir[1]);
+            } else {
+                MessageBus.sendClientPrefixMessageWithID("Pos: " + String.valueOf(dirX) + " " + String.valueOf(dirZ),70);
+            }
+        }
+
     }
 
     void packetFly() {

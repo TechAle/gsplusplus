@@ -17,7 +17,6 @@ import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.init.MobEffects;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 
@@ -48,7 +47,6 @@ public class Speed extends Module {
 
     DoubleSetting onGroundSpeed = registerDouble("Speed OnGround", 1.5, 0.01, 3, () -> mode.getValue().equalsIgnoreCase("OnGround"));
     BooleanSetting strictOG = registerBoolean("Head Block Only", false, () -> mode.getValue().equalsIgnoreCase("OnGround"));
-    IntegerSetting ogd = registerInteger("Ticks Active Delay", 1,1,5, () -> mode.getValue().equalsIgnoreCase("OnGround"));
 
     DoubleSetting jumpHeight = registerDouble("Jump Speed", 0.41, 0, 1, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
     IntegerSetting jumpDelay = registerInteger("Jump Delay", 300, 0, 1000, () -> mode.getValue().equalsIgnoreCase("Strafe") && jump.getValue() || mode.getValue().equalsIgnoreCase("Beta") && jump.getValue());
@@ -118,13 +116,28 @@ public class Speed extends Module {
 
         } else if (mode.getValue().equalsIgnoreCase("OnGround")) {
 
-            boolean above = !mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(0.0, 1, 0.0)).isEmpty();
+            if (mc.player.collidedHorizontally) {
+                return;
+            }
 
-            if (mc.player.ticksExisted % ogd.getValue() == 0 && !mc.player.collidedHorizontally){
-                if (mc.player.onGround && (above || !strictOG.getValue())) {
-                    mc.player.motionX *= onGroundSpeed.getValue();
-                    mc.player.motionZ *= onGroundSpeed.getValue();
-                }
+            double offset = 0.4;
+
+            if (mc.world.collidesWithAnyBlock(mc.player.boundingBox.offset(0,0.4,0)))
+                offset = 2 - mc.player.boundingBox.maxY;
+            else if (strictOG.getValue())
+                return;
+
+                mc.player.posY -= offset;
+            mc.player.motionY = -1000.0;
+            mc.player.cameraPitch = 0.3f;
+            mc.player.distanceWalkedModified = 44.0f;
+            if (mc.player.onGround) {
+                mc.player.posY += offset;
+                mc.player.motionY = offset;
+                mc.player.distanceWalkedOnStepModified = 44.0f;
+                mc.player.motionX *= onGroundSpeed.getValue();
+                mc.player.motionZ *= onGroundSpeed.getValue();
+                mc.player.cameraPitch = 0.0f;
             }
 
         }
