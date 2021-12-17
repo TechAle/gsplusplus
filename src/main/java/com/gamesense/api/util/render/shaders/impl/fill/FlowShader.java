@@ -1,4 +1,4 @@
-package com.gamesense.api.util.render.shaders.impl;
+package com.gamesense.api.util.render.shaders.impl.fill;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
@@ -30,8 +30,7 @@ public class FlowShader extends FramebufferShader {
         this.setupUniform("zoom");
         this.setupUniform("tile");
         this.setupUniform("distfading");
-        this.setupUniform("saturation");/*
-        this.setupUniform("cloud");*/
+        this.setupUniform("saturation");
         this.setupUniform("fadeBol");
     }
 

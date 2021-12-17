@@ -1,4 +1,4 @@
-package com.gamesense.api.util.render.shaders.impl;
+package com.gamesense.api.util.render.shaders.impl.outline;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
 import net.minecraft.client.gui.ScaledResolution;
@@ -10,19 +10,25 @@ import org.lwjgl.opengl.GL20;
 import java.awt.*;
 import java.util.HashMap;
 
-public class RainbowCubeShader extends FramebufferShader {
+public final class RainbowCubeOutlineShader extends FramebufferShader
+{
+    public static final RainbowCubeOutlineShader INSTANCE;
+    public float time = 0;
 
-    public static final RainbowCubeShader INSTANCE;
-    public float time;
-
-    public RainbowCubeShader( ) {
-        super( "rainbowCube.frag" );
+    public RainbowCubeOutlineShader() {
+        super("rainbowCubeOutline.frag");
     }
 
-    @Override public void setupUniforms ( ) {
+    @Override public void setupUniforms() {
+        this.setupUniform("texture");
+        this.setupUniform("texelSize");
+        this.setupUniform("color");
+        this.setupUniform("divider");
+        this.setupUniform("radius");
+        this.setupUniform("maxSample");
+        this.setupUniform("alpha0");
         this.setupUniform( "resolution" );
         this.setupUniform( "time" );
-        this.setupUniform("alpha");
         this.setupUniform("WAVELENGTH");
         this.setupUniform("R");
         this.setupUniform("G");
@@ -30,9 +36,16 @@ public class RainbowCubeShader extends FramebufferShader {
         this.setupUniform("RSTART");
         this.setupUniform("GSTART");
         this.setupUniform("BSTART");
+        this.setupUniform("alpha");
     }
 
-    public void updateUniforms ( float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
+    public void updateUniforms(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
+        GL20.glUniform1i(this.getUniform("texture"), 0);
+        GL20.glUniform2f(this.getUniform("texelSize"), 1.0f / this.mc.displayWidth * (radius * quality), 1.0f / this.mc.displayHeight * (radius * quality));
+        GL20.glUniform1f(this.getUniform("divider"), 140.0f);
+        GL20.glUniform1f(this.getUniform("radius"), radius);
+        GL20.glUniform1f(this.getUniform("maxSample"), 10.0f);
+        GL20.glUniform1f(this.getUniform("alpha0"), gradientAlpha ? -1.0f : alphaOutline / 255.0f);
         GL20.glUniform2f( getUniform( "resolution" ), new ScaledResolution( mc ).getScaledWidth( )/duplicate, new ScaledResolution( mc ).getScaledHeight( )/duplicate );
         GL20.glUniform1f( getUniform( "time" ), time );
         GL20.glUniform1f(getUniform("alpha"), start.getAlpha() / 255.0f);
@@ -43,28 +56,17 @@ public class RainbowCubeShader extends FramebufferShader {
         GL20.glUniform1i(getUniform("RSTART"), rStart);
         GL20.glUniform1i(getUniform("GSTART"), gStart);
         GL20.glUniform1i(getUniform("BSTART"), bStart);
-
-
-    }
-    static {
-        INSTANCE = new RainbowCubeShader();
     }
 
-    public void stopDraw(final Color color, final float radius, final float quality, float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
+    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
         mc.gameSettings.entityShadows = entityShadows;
         framebuffer.unbindFramebuffer( );
         GL11.glEnable( 3042 );
         GL11.glBlendFunc( 770, 771 );
         mc.getFramebuffer( ).bindFramebuffer( true );
-        red = color.getRed( ) / 255.0f;
-        green = color.getGreen( ) / 255.0f;
-        blue = color.getBlue( ) / 255.0f;
-        alpha = color.getAlpha( ) / 255.0f;
-        this.radius = radius;
-        this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
-        startShader(duplicate, start, wave, rStart, gStart, bStart);
+        startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate, start, wave, rStart, gStart, bStart);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
         stopShader( );
@@ -73,14 +75,18 @@ public class RainbowCubeShader extends FramebufferShader {
         GlStateManager.popAttrib( );
     }
 
-    public void startShader(float duplicate, Color start, int wave, int rStart, int gStart, int bStart) {
+    public void startShader(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, Color start, int wave, int rStart, int gStart, int bStart ) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
             this.setupUniforms();
         }
-        this.updateUniforms(duplicate, start, wave, rStart, gStart, bStart);
+        this.updateUniforms(color, radius, quality, gradientAlpha, alphaOutline, duplicate, start, wave, rStart, gStart, bStart);
+    }
+
+    static {
+        INSTANCE = new RainbowCubeOutlineShader();
     }
 
     public void update(double speed) {
