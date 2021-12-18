@@ -81,7 +81,7 @@ public class Speed extends Module {
                 if (jump.getValue())
                     event.setY(mc.player.motionY = speedY);
 
-                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.9 : speed.getValue());
+                playerSpeed = MotionUtil.getBaseMoveSpeed() * (EntityUtil.isColliding(0, -0.5, 0) instanceof BlockLiquid && !EntityUtil.isInLiquid() ? 0.91 : speed.getValue());
                 slowDown = true;
                 timer.reset();
             } else {
