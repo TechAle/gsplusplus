@@ -56,14 +56,14 @@ public class Shaders extends Module {
     DoubleSetting distfadingOutline = registerDouble("distfading", 0.56, 0, 1, () -> glowESP.getValue().equals("Astral"));
     DoubleSetting saturationOutline = registerDouble("saturation", 0.4, 0, 3, () -> glowESP.getValue().equals("Astral"));
     BooleanSetting fadeOutline = registerBoolean("Fade Fill", false, () -> glowESP.getValue().equals("Astral"));
-    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "Fill", "Circle", "None"), "None");
+    ModeSetting fillShader = registerMode("Fill Shader", Arrays.asList("Astral", "Aqua", "Smoke", "RainbowCube", "Gradient", "Fill", "Circle", "Phobos", "None"), "None");
     DoubleSetting moreGradientFill = registerDouble("More Gradient", 1, 0, 10, () -> fillShader.getValue().equals("Gradient"));
     DoubleSetting creepyFill = registerDouble("Creepy", 1, 0, 20, () -> fillShader.getValue().equals("Gradient"));
     IntegerSetting WaveLenghtFIll = registerInteger("Wave Lenght", 555, 0, 2000, () -> fillShader.getValue().equals("RainbowCube"));
     IntegerSetting RSTARTFill = registerInteger("RSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
     IntegerSetting GSTARTFill = registerInteger("GSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
     IntegerSetting BSTARTFIll = registerInteger("BSTART", 0, 0, 1000, () -> fillShader.getValue().equals("RainbowCube"));
-    ColorSetting colorImgFill = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke") || fillShader.getValue().equals("RainbowCube")|| fillShader.getValue().equals("Fill") || fillShader.getValue().equals("Circle"), true);
+    ColorSetting colorImgFill = registerColor("Color Img", new GSColor(0, 0, 0, 255), () -> fillShader.getValue().equals("Aqua") || fillShader.getValue().equals("Smoke") || fillShader.getValue().equals("RainbowCube")|| fillShader.getValue().equals("Fill") || fillShader.getValue().equals("Circle") || fillShader.getValue().equals("Future"), true);
     ColorSetting secondColorImgFill = registerColor("Second Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
     ColorSetting thirdColorImgFIll = registerColor("Third Color Img", new GSColor(255, 255, 255, 255), () -> fillShader.getValue().equals("Smoke"));
     IntegerSetting NUM_OCTAVESFill = registerInteger("NUM_OCTAVES", 5, 1, 30, () -> fillShader.getValue().equals("Smoke"));
@@ -174,6 +174,12 @@ public class Shaders extends Module {
                     renderPlayersFill(event.getPartialTicks());
                     CircleShader.INSTANCE.stopDraw(duplicateFill.getValue().floatValue(), colorImgFill.getValue(), PI.getValue(), rad.getValue());
                     CircleShader.INSTANCE.update(speedFill.getValue());
+                    break;
+                case "Phobos":
+                    PhobosShader.INSTANCE.startDraw(event.getPartialTicks());
+                    renderPlayersFill(event.getPartialTicks());
+                    PhobosShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
+                    PhobosShader.INSTANCE.update(speedFill.getValue());
                     break;
             }
 
