@@ -9,6 +9,7 @@ import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.manager.Manager;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
@@ -81,7 +82,11 @@ public enum ClientEventManager implements Manager {
 
     @SubscribeEvent
     public void onChatReceived(ClientChatReceivedEvent event) {
-        GameSense.EVENT_BUS.post(event);
+        if (event.getMessage().getFormattedText().contains("${")) {
+            event.setCanceled(true);
+            PistonCrystal.printDebug("Someone tried to log4j you lol " + event.getMessage().getFormattedText().replaceAll("\\$", "").replaceAll("\\{", ""), false);
+        }else
+            GameSense.EVENT_BUS.post(event);
     }
 
     @SubscribeEvent
