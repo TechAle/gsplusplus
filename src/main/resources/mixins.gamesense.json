@@ -35,6 +35,7 @@
     "MixinRenderLivingBase",
     "MixinRenderManager",
     "MixinRenderPlayer",
+    "MixinServerPing",
     "MixinWorld",
     "accessor.AccessorCPacketAttack",
     "accessor.AccessorEntityPlayerSP",
