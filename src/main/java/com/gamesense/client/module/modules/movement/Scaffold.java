@@ -12,6 +12,7 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.player.PredictUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
@@ -29,6 +30,7 @@ import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
 
@@ -62,16 +64,19 @@ public class Scaffold extends Module {
     BlockPos downPos;
     BlockPos rotateTo;
     Timer cancelTimer = new Timer();
+    CPacketPlayer.Rotation RotVec = null;
 
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-        if (event.getPacket() instanceof CPacketPlayer.PositionRotation) {
+        if (event.getPacket() instanceof CPacketPlayer.PositionRotation && rotate.getValue()) {
 
             CPacketPlayer.PositionRotation e = (CPacketPlayer.PositionRotation) event.getPacket();
 
-            mc.player.connection.sendPacket(new CPacketPlayer.Position(e.x,e.y,e.z,e.onGround));
+            if (RotVec == null)
+                return;
 
-            event.cancel();
+            e.pitch = RotVec.pitch;
+            e.yaw = RotVec.yaw;
 
         }
     });
@@ -234,15 +239,14 @@ public class Scaffold extends Module {
                 mc.player.inventory.currentItem = newSlot;
             }
 
-
-            boolean success = PlacementUtil.place(pos, EnumHand.MAIN_HAND, rotate.getValue(), false, false);
+            RotVec = PlacementUtil.placeBlockGetRotate(pos, EnumHand.MAIN_HAND, false, null, false);
 
             if (swap) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
                 mc.player.inventory.currentItem = oldSlot;
             }
 
-            return success;
+            return RotVec != null;
 
         } else if (allowSupport && BlockUtil.getPlaceableSide(pos) == null)
             clutch();

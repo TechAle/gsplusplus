@@ -71,7 +71,17 @@ public class BlockUtil {
         return e;
     }
 
-    private static float[] getNeededRotations2(Vec3d vec) {
+    public static CPacketPlayer.Rotation getFaceVectorPacket(Vec3d vec, Boolean roundAngles) {
+        float[] rotations = getNeededRotations2(vec);
+
+        CPacketPlayer.Rotation e = new CPacketPlayer.Rotation(rotations[0], roundAngles ? MathHelper.normalizeAngle((int) rotations[1], 360) : rotations[1], mc.player.onGround);
+
+        mc.player.connection.sendPacket(e);
+
+        return e;
+    }
+
+    public static float[] getNeededRotations2(Vec3d vec) {
         Vec3d eyesPos = getEyesPos();
 
         double diffX = vec.x - eyesPos.x;
