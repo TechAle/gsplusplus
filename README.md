@@ -73,6 +73,7 @@ I think it's the duty of a developer to say if he took inspiration / took some p
 * ChorusPost (k5)
 * Aspect (quantum)
 * fix log exploit (https://github.com/ChloePrime/fix4log4j)
+* AntiPing (Phobos)
 ### gs++ changelogs
 (thanks phantom)
 ## Modules Added: 
