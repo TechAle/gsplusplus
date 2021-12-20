@@ -6,17 +6,12 @@ import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.render.GSColor;
-import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL11.*;
 import org.lwjgl.opengl.GL32;
 
 import java.util.ArrayList;
