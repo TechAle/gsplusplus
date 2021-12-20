@@ -17,8 +17,11 @@ public class KillEffect extends Module {
     IntegerSetting numbersThunder = registerInteger("Number Thunder", 1, 1, 10);
     BooleanSetting sound = registerBoolean("Sound", true);
     IntegerSetting numberSound = registerInteger("Number Sound", 1, 1, 10);
+    BooleanSetting circle = registerBoolean("Circle", false);
+
 
     ArrayList<EntityPlayer> playersDead = new ArrayList<>();
+
 
     @Override
     protected void onEnable() {
