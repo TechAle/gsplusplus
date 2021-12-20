@@ -1,5 +1,6 @@
 package com.gamesense.api.util.render;
 
+import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.util.font.FontUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
@@ -440,6 +441,32 @@ public class RenderUtil {
         if (alpha == 0) alpha = 1;
 
         for (int i = 0; i < 361; i++) {
+            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, alpha).endVertex();
+        }
+
+        tessellator.draw();
+
+        GlStateManager.enableCull();
+        GlStateManager.enableAlpha();
+        GlStateManager.shadeModel(GL_FLAT);
+
+    }
+
+    public static void drawCircle(float x, float y, float z, Double radius, int stepCircle, int alphaVal) {
+
+        GlStateManager.disableCull();
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(GL_SMOOTH);
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        int alpha = 255 - alphaVal;
+
+        if (alpha == 0) alpha = 1;
+
+        for (int i = 0; i < 361; i++) {
+            GSColor colour = ColorSetting.getRainbowColor((i % 180) * stepCircle);
             bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, alpha).endVertex();
         }
 
