@@ -74,6 +74,7 @@ I think it's the duty of a developer to say if he took inspiration / took some p
 * Aspect (quantum)
 * fix log exploit (https://github.com/ChloePrime/fix4log4j)
 * AntiPing (Phobos)
+* NewChunks (Seppuku)
 ### gs++ changelogs
 (thanks phantom)
 ## Modules Added: 
