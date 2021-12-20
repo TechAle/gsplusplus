@@ -21,6 +21,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 
 @Module.Declaration(name = "KillEffect", category = Category.Misc, enabled = true)
 public class KillEffect extends Module {
@@ -148,6 +149,10 @@ public class KillEffect extends Module {
 
     @Override
     public void onWorldRender(RenderEvent event) {
-        circleList.forEach(circleRender::render);
+        try {
+            circleList.forEach(circleRender::render);
+        }catch (ConcurrentModificationException ignored) {
+
+        }
     }
 }
