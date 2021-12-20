@@ -520,6 +520,10 @@ public class RenderUtil {
         bufferbuilder.pos(x - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, z - mc.getRenderManager().viewerPosZ).color(color.getRed(), color.getGreen(), color.getBlue(), alpha).endVertex();
     }
 
+    public static void PublicColorVertex(double x, double y, double z, GSColor color, int alpha, BufferBuilder bufferbuilder) {
+        bufferbuilder.pos(x - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, z - mc.getRenderManager().viewerPosZ).color(color.getRed(), color.getGreen(), color.getBlue(), alpha).endVertex();
+    }
+
     private static AxisAlignedBB getBoundingBox(BlockPos bp, double width, double height, double depth) {
         double x = bp.getX();
         double y = bp.getY();

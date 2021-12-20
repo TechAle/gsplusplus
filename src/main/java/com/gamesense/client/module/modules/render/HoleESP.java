@@ -334,6 +334,7 @@ public class HoleESP extends Module {
     BooleanSetting hideOwn = registerBoolean("Hide Own", false);
     BooleanSetting flatOwn = registerBoolean("Flat Own", false);
     DoubleSetting slabHeight = registerDouble("Slab Height", 0.5, 0.1, 1.5);
+    BooleanSetting animated = registerBoolean("Animated", false, () -> mode.getValue().equals("Slab"));
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     IntegerSetting ufoAlpha = registerInteger("UFOAlpha", 255, 0, 255);
 
@@ -742,7 +743,11 @@ public class HoleESP extends Module {
             case "Slab":
                 if (flatOwn.getValue() && hole.intersects(mc.player.getEntityBoundingBox())) {
                     hole = hole.setMaxY(hole.maxY - 1);
-                } else hole = hole.setMaxY(hole.minY + slabHeight.getValue());
+                } else {
+                    hole = hole.setMaxY(hole.minY + slabHeight.getValue() * (animated.getValue() ?
+                        1 - mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / Math.pow(range.getValue(), 2)
+                : 1));
+                }
                 break;
             case "Flat":
                 hole = hole.setMaxY(hole.maxY - 1);
