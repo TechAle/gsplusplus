@@ -17,7 +17,7 @@ import org.lwjgl.opengl.GL32;
 import java.util.ArrayList;
 
 @Module.Declaration(name = "Trails", category = Category.Render)
-public class Trails extends Module {
+public class zTrails extends Module {
 
     BooleanSetting self = registerBoolean("Self", true);
     BooleanSetting others = registerBoolean("Others", false);
