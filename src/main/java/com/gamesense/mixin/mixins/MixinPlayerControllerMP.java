@@ -5,7 +5,9 @@ import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.DestroyBlockEvent;
 import com.gamesense.api.event.events.ReachDistanceEvent;
 import com.gamesense.client.GameSense;
+import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.combat.AutoArmor;
 import com.gamesense.client.module.modules.combat.OffHand;
 import com.gamesense.client.module.modules.exploits.PacketUtils;
 import com.gamesense.client.module.modules.render.noGlitchBlock;
@@ -68,9 +70,10 @@ public abstract class MixinPlayerControllerMP {
     public void onStoppedUsingItem(EntityPlayer playerIn, CallbackInfo ci) {
         PacketUtils packetUtils = ModuleManager.getModule(PacketUtils.class);
         OffHand offHand = ModuleManager.getModule(OffHand.class);
+        AutoArmor armor = ModuleManager.getModule(AutoArmor.class);
 
         if (packetUtils.isEnabled()) {
-           if (!offHand.dontMove && (packetUtils.food.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemFood)
+           if ((!offHand.dontMove || !armor.dontMove) && (packetUtils.food.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemFood)
                 || (packetUtils.potion.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemPotion)
                 || packetUtils.all.getValue()) {
                 this.syncCurrentPlayItem();

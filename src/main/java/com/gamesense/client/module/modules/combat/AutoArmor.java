@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.InventoryUtil;
@@ -7,6 +8,8 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.movement.ElytraFly;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.enchantment.Enchantment;
@@ -26,6 +29,24 @@ public class AutoArmor extends Module {
     ModeSetting allowElytra = registerMode("Elytra", Arrays.asList("Allow", "Only on ElytraFly", "Disallow"), "Only on ElytraFly");
     BooleanSetting noThorns = registerBoolean("No Thorns", false);
     BooleanSetting lastResortThorns = registerBoolean("No Other Thorns", false);
+    BooleanSetting oneAtTime = registerBoolean("One At Time", false);
+    BooleanSetting strict = registerBoolean("Strict", false);
+
+    public boolean dontMove;
+
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+
+        if (dontMove) {
+
+            event.setX(0);
+            event.setZ(0);
+
+            dontMove = false;
+
+        }
+
+    });
 
     public void onUpdate() {
         if (mc.player.ticksExisted % 2 == 0) return;
@@ -113,12 +134,24 @@ public class AutoArmor extends Module {
                     slot += 36;
                 }
 
+                if (strict.getValue()) {
+                    try {
+                        dontMove = true;
+                        mc.playerController.onStoppedUsingItem(mc.player);
+                    } catch (Exception ignored) {
+                        dontMove = true;
+                    }
+                }
+
                 // pick up inventory slot
                 mc.playerController.windowClick(0, slot, 0, ClickType.PICKUP, mc.player);
                 // click on armour slot
                 mc.playerController.windowClick(0, 8 - j, 0, ClickType.PICKUP, mc.player);
                 // put back inventory slot
                 mc.playerController.windowClick(0, slot, 0, ClickType.PICKUP, mc.player);
+
+                if (oneAtTime.getValue())
+                    break;
             }
         }
     }
