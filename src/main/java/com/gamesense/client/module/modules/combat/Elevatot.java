@@ -728,7 +728,7 @@ public class Elevatot extends Module {
             if (is_in_hole()) {
                 // Get enemy coordinates
                 enemyCoordsDouble = new double[]{aimTarget.posX, aimTarget.posY, aimTarget.posZ};
-                enemyCoordsInt = new int[]{aimTarget.getPosition().getX(), aimTarget.getPosition().getY(), aimTarget.getPosition().getZ()};
+                enemyCoordsInt = new int[]{(int) aimTarget.posX, aimTarget.getPosition().getY(), (int) aimTarget.posZ};
                 // Get me coordinates
                 meCoordsInt = new int[]{(int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ};
                 // Start choosing where to place what
@@ -807,6 +807,33 @@ public class Elevatot extends Module {
                 && (!(BlockUtil.getBlock(startTrap) instanceof BlockAir)
                     || !(BlockUtil.getBlock(startTrap.getX(), startTrap.getY() + 1, startTrap.getZ()) instanceof BlockAir))) {
                 continue;
+            }
+
+
+            // Checks in case you have rotate on
+            if (rotate.getValue()) {
+                int[] pistonCordInt = new int[]{(int) pistonCoordsAbs[0], (int) pistonCoordsAbs[1], (int) pistonCoordsAbs[2]};
+
+                boolean behindBol = false;
+
+                if (Math.abs(meCoordsInt[0] - enemyCoordsInt[0]) != 1 || Math.abs(meCoordsInt[2] - enemyCoordsInt[2]) != 1) {
+                    // I'm sorry phantom, but i'm too lazy-
+                    behindBol = true;
+                    if (meCoordsInt[0] == enemyCoordsInt[0] && enemyCoordsInt[0] == pistonCordInt[0]) {
+                        if (meCoordsInt[2] > enemyCoordsInt[2] == enemyCoordsInt[2] > pistonCordInt[2])
+                            behindBol = false;
+                    } else
+                    if (meCoordsInt[2] == enemyCoordsInt[2] && enemyCoordsInt[2] == pistonCordInt[2]) {
+                        if (meCoordsInt[0] > enemyCoordsInt[0] == enemyCoordsInt[0] > pistonCordInt[0])
+                            behindBol = false;
+                    }
+                }
+
+
+                // Exit
+                if (behindBol)
+                    continue;
+
             }
 
 

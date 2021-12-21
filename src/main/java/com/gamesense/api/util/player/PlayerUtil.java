@@ -214,8 +214,6 @@ public class PlayerUtil {
         double zDeviation = Math.abs(centeredBlock.z - mc.player.posZ);
 
         if (xDeviation <= 0.1 && zDeviation <= 0.1) {
-            centeredBlock = Vec3d.ZERO;
-        } else {
             double newX = -2;
             double newZ = -2;
             int xRel = (mc.player.posX < 0 ? -1 : 1);
@@ -255,6 +253,55 @@ public class PlayerUtil {
 
             mc.player.connection.sendPacket(new CPacketPlayer.Position(newX, mc.player.posY, newZ, true));
             mc.player.setPosition(newX, mc.player.posY, newZ);
+        }
+    }
+
+
+    public static void centerPlayer(Vec3d centeredBlock, double diffX, double diffZ) {
+
+        double xDeviation = Math.abs(centeredBlock.x - mc.player.posX);
+        double zDeviation = Math.abs(centeredBlock.z - mc.player.posZ);
+
+        if (xDeviation <= 0.1 && zDeviation <= 0.1) {
+            double newX = -2;
+            double newZ = -2;
+            int xRel = (mc.player.posX < 0 ? -1 : 1);
+            int zRel = (mc.player.posZ < 0 ? -1 : 1);
+            if (BlockUtil.getBlock(mc.player.posX, mc.player.posY - 1, mc.player.posZ) instanceof BlockAir) {
+                if (Math.abs((mc.player.posX % 1)) * 1E2 <= 30) {
+                    newX = Math.round(mc.player.posX - (0.3 * xRel)) + 0.5 * -xRel;
+                } else if (Math.abs((mc.player.posX % 1)) * 1E2 >= 70) {
+                    newX = Math.round(mc.player.posX + (0.3 * xRel)) - 0.5 * -xRel;
+                }
+                if (Math.abs((mc.player.posZ % 1)) * 1E2 <= 30) {
+                    newZ = Math.round(mc.player.posZ - (0.3 * zRel)) + 0.5 * -zRel;
+                } else if (Math.abs((mc.player.posZ % 1)) * 1E2 >= 70) {
+                    newZ = Math.round(mc.player.posZ + (0.3 * zRel)) - 0.5 * -zRel;
+                }
+            }
+
+            if (newX == -2)
+                if (mc.player.posX > Math.round(mc.player.posX)) {
+                    newX = Math.round(mc.player.posX) + 0.5;
+                }
+                // (mc.player.posX % 1)*1E2 < 30
+                else if (mc.player.posX < Math.round(mc.player.posX)) {
+                    newX = Math.round(mc.player.posX) - 0.5;
+                } else {
+                    newX = mc.player.posX;
+                }
+
+            if (newZ == -2)
+                if (mc.player.posZ > Math.round(mc.player.posZ)) {
+                    newZ = Math.round(mc.player.posZ) + 0.5;
+                } else if (mc.player.posZ < Math.round(mc.player.posZ)) {
+                    newZ = Math.round(mc.player.posZ) - 0.5;
+                } else {
+                    newZ = mc.player.posZ;
+                }
+
+            mc.player.connection.sendPacket(new CPacketPlayer.Position(newX + diffX, mc.player.posY, newZ + diffZ, true));
+            mc.player.setPosition(newX + diffX, mc.player.posY, newZ + diffZ);
         }
     }
 }
