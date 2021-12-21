@@ -2,21 +2,29 @@ package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.player.social.SocialManager;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.api.util.render.RenderUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
+import com.gamesense.client.module.modules.combat.Friends;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockAir;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,179 +41,115 @@ import java.util.stream.Collectors;
 public class CityESP extends Module {
 
     IntegerSetting range = registerInteger("Range", 20, 1, 30);
-    IntegerSetting down = registerInteger("Down", 1, 0, 3);
-    IntegerSetting sides = registerInteger("Sides", 1, 0, 4);
-    IntegerSetting depth = registerInteger("Depth", 3, 0, 10);
-    DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 10);
-    DoubleSetting maxDamage = registerDouble("Max Self Damage", 7, 0, 20);
-    BooleanSetting ignoreCrystals = registerBoolean("Ignore Crystals", true);
-    ModeSetting targetMode = registerMode("Target", Arrays.asList("Single", "All"), "Single");
     ModeSetting selectMode = registerMode("Select", Arrays.asList("Closest", "All"), "Closest");
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
+    BooleanSetting self = registerBoolean("Self", false);
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     ColorSetting color = registerColor("Color", new GSColor(102, 51, 153));
-
-    private final HashMap<EntityPlayer, List<BlockPos>> cityable = new HashMap<>();
-    private int oldSlot;
-    private boolean packetMined = false;
-    private BlockPos coordsPacketMined = new BlockPos(-1, -1, -1);
-
-    public void onUpdate() {
-        if (mc.player == null || mc.world == null)
-            return;
-
-        cityable.clear();
-
-        List<EntityPlayer> players = mc.world.playerEntities.stream()
-            .filter(entityPlayer -> entityPlayer.getDistanceSq(mc.player) <= range.getValue() * range.getValue())
-            .filter(entityPlayer -> !EntityUtil.basicChecksEntity(entityPlayer)).collect(Collectors.toList());
-
-        for (EntityPlayer player : players) {
-            if (player == mc.player) {
-                continue;
-            }
-
-            List<BlockPos> blocks = EntityUtil.getBlocksIn(player);
-            if (blocks.size() == 0) {
-                continue;
-            }
-
-            // find lowest point of the player
-            int minY = Integer.MAX_VALUE;
-            for (BlockPos block : blocks) {
-                int y = block.getY();
-                if (y < minY) {
-                    minY = y;
-                }
-            }
-            if (player.posY % 1 > .2) {
-                minY++;
-            }
-
-            int finalMinY = minY;
-            blocks = blocks.stream().filter(blockPos -> blockPos.getY() == finalMinY).collect(Collectors.toList());
-
-            Optional<BlockPos> any = blocks.stream().findAny();
-            if (!any.isPresent()) {
-                continue;
-            }
-
-            HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(any.get(), false, true);
-            if (holeInfo.getType() == HoleUtil.HoleType.NONE || holeInfo.getSafety() == HoleUtil.BlockSafety.UNBREAKABLE) {
-                continue;
-            }
-
-            List<BlockPos> sides = new ArrayList<>();
-            for (BlockPos block : blocks) {
-                sides.addAll(cityableSides(block, HoleUtil.getUnsafeSides(block).keySet(), player));
-            }
-
-            if (sides.size() > 0) {
-                cityable.put(player, sides);
-            }
-        }
-
-    }
+    BooleanSetting newPlace = registerBoolean("New Place", false);
+    DoubleSetting maxSelfDamage = registerDouble("Max Self Damage", 6, 0, 20);
+    DoubleSetting minDamage = registerDouble("Min Damage", 6, 0, 20);
 
     public void onWorldRender(RenderEvent event) {
-        AtomicBoolean noRender = new AtomicBoolean(false);
+        if (mc.player != null && mc.world != null) {
+            mc.world.playerEntities.stream()
+                    .filter(entityPlayer -> entityPlayer.getDistance(mc.player) <= range.getValue())
+                    .filter(entityPlayer ->  !SocialManager.isFriend(entityPlayer.getName()))
+                    .filter(entityPlayer -> self.getValue() || entityPlayer != mc.player)
+                    .forEach(entityPlayer -> {
 
-        cityable.entrySet().stream().sorted((entry, entry1) -> (int) entry.getKey().getDistanceSq(entry1.getKey())).forEach((entry) -> {
-            if (noRender.get()) {
-                return;
-            }
-            renderBoxes(entry.getValue());
-            if (targetMode.getValue().equalsIgnoreCase("All")) {
-                noRender.set(true);
-            }
-        });
-    }
+                        for(int[] positions : new int[][] {
+                                {1,0,0},
+                                {-1,0,0},
+                                {0,0,1},
+                                {0,0,-1}
+                        }) {
+                            BlockPos blockPos = new BlockPos(entityPlayer.posX + positions[0], entityPlayer.posY + positions[1], entityPlayer.posZ + positions[2]);
+                            if (BlockUtil.getBlock(blockPos) instanceof BlockAir)
+                                continue;
+                            // Best
+                            BlockPos coords = null;
+                            double damage = Double.MIN_VALUE;
+                            // For calculating the damage, set to air
+                            Block toReplace = BlockUtil.getBlock(blockPos);
+                            mc.world.setBlockToAir(blockPos);
+                            // Check around
+                            for (Vec3i placement : new Vec3i[]{
+                                    new Vec3i(1, -1, 0),
+                                    new Vec3i(-1, -1, 0),
+                                    new Vec3i(0, -1, 1),
+                                    new Vec3i(0, -1, -1)
+                            }) {
+                                // If we can place the crystal
+                                BlockPos temp;
+                                if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
 
-    private List<BlockPos> cityableSides(BlockPos centre, Set<HoleUtil.BlockOffset> weakSides, EntityPlayer player) {
-        List<BlockPos> cityableSides = new ArrayList<>();
-        HashMap<BlockPos, HoleUtil.BlockOffset> directions = new HashMap<>();
-        for (HoleUtil.BlockOffset weakSide : weakSides) {
-            BlockPos pos = weakSide.offset(centre);
-            if (mc.world.getBlockState(pos).getBlock() != Blocks.AIR) {
-                directions.put(pos, weakSide);
-            }
-        }
-
-        directions.forEach(((blockPos, blockOffset) -> {
-            if (blockOffset == HoleUtil.BlockOffset.DOWN) {
-                return;
-            }
-
-            BlockPos pos1 = blockOffset.left(blockPos.down(down.getValue()), sides.getValue());
-            BlockPos pos2 = blockOffset.forward(blockOffset.right(blockPos, sides.getValue()), depth.getValue());
-            List<BlockPos> square = EntityUtil.getSquare(pos1, pos2);
-
-            IBlockState holder = mc.world.getBlockState(blockPos);
-            mc.world.setBlockToAir(blockPos);
+                                    // Check damage
+                                    if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, false) >= maxSelfDamage.getValue())
+                                        continue;
 
 
-            for (BlockPos pos : square) {
-                if (this.canPlaceCrystal(pos.down(), ignoreCrystals.getValue())) {
+                                    // Calculate damage
+                                    float damagePlayer = DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                            entityPlayer, false);
 
-                    if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, player, false) >= minDamage.getValue()) {
-                        if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, mc.player, false) <= maxDamage.getValue()) {
-                            cityableSides.add(blockPos);
+                                    if (damagePlayer < minDamage.getValue())
+                                        continue;
+
+                                    renderBox2(blockPos);
+                                    break;
+                                }
+                            }
+
+                            // Reset surround
+                            mc.world.setBlockState(blockPos, toReplace.getDefaultState());
                         }
-                        break;
-                    }
-                }
-            }
-
-            mc.world.setBlockState(blockPos, holder);
-        }));
-
-        return cityableSides;
+                    });
+        }
     }
 
-    private boolean canPlaceCrystal(BlockPos blockPos, boolean ignoreCrystal) {
-        BlockPos boost = blockPos.add(0, 1, 0);
-        BlockPos boost2 = blockPos.add(0, 2, 0);
-        AxisAlignedBB axisAlignedBB = new AxisAlignedBB(boost, boost2);
 
-        if (!(mc.world.getBlockState(blockPos).getBlock() == Blocks.BEDROCK
-            || mc.world.getBlockState(blockPos).getBlock() == Blocks.OBSIDIAN)) {
-            return false;
+    //this doesn't check if there is a block below the target block, might add it later if people want it
+    private List<BlockPos> getBlocksToRender(EntityPlayer entityPlayer) {
+        NonNullList<BlockPos> blockPosList = NonNullList.create();
+        BlockPos blockPos = new BlockPos(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ);
+
+        if (mc.world.getBlockState(blockPos.east()).getBlock() != Blocks.BEDROCK) {
+            blockPosList.add(blockPos.east());
+        }
+        if (mc.world.getBlockState(blockPos.west()).getBlock() != Blocks.BEDROCK) {
+            blockPosList.add(blockPos.west());
+        }
+        if (mc.world.getBlockState(blockPos.north()).getBlock() != Blocks.BEDROCK) {
+            blockPosList.add(blockPos.north());
+        }
+        if (mc.world.getBlockState(blockPos.south()).getBlock() != Blocks.BEDROCK) {
+            blockPosList.add(blockPos.south());
         }
 
-        if (!(mc.world.getBlockState(boost).getBlock() == Blocks.AIR)) {
-            return false;
-        }
-
-        if (!(mc.world.getBlockState(boost2).getBlock() == Blocks.AIR)) {
-            return false;
-        }
-
-        if (!ignoreCrystal)
-            return mc.world.getEntitiesWithinAABB(Entity.class, axisAlignedBB).isEmpty();
-        else {
-            List<Entity> entityList = mc.world.getEntitiesWithinAABB(Entity.class, axisAlignedBB);
-            entityList.removeIf(entity -> entity instanceof EntityEnderCrystal);
-            return entityList.isEmpty();
-        }
-
+        return blockPosList;
     }
 
-    private void renderBoxes(List<BlockPos> blockPosList) {
+    private void renderBox(List<BlockPos> blockPosList) {
         switch (selectMode.getValue()) {
             case "Closest": {
-                blockPosList.stream().min(Comparator.comparing(blockPos -> blockPos.distanceSq((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ))).ifPresent(this::renderBox);
+                BlockPos renderPos = blockPosList.stream().sorted(Comparator.comparing(blockPos -> blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ))).findFirst().orElse(null);
+
+                if (renderPos != null) {
+                    renderBox2(renderPos);
+                }
                 break;
             }
             case "All": {
                 for (BlockPos blockPos : blockPosList) {
-                    renderBox(blockPos);
+                    renderBox2(blockPos);
                 }
                 break;
             }
         }
     }
 
-    private void renderBox(BlockPos blockPos) {
+    private void renderBox2(BlockPos blockPos) {
         GSColor gsColor1 = new GSColor(color.getValue(), 255);
         GSColor gsColor2 = new GSColor(color.getValue(), 50);
 
