@@ -9,7 +9,6 @@ import com.gamesense.api.util.misc.MessageBus;
 import com.gamesense.api.util.player.PhaseUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.MotionUtil;
-import com.gamesense.client.command.commands.HClipCommand;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -21,7 +20,6 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 @Module.Declaration(name = "Phase", category = Category.Movement)
 public class Phase extends Module {
@@ -29,10 +27,11 @@ public class Phase extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("NCP", "Vanilla", "Skip"), "NCP");
 
     DoubleSetting safety = registerDouble("Safety",0.15,0,1, () -> mode.getValue().equalsIgnoreCase("Skip"));
+    BooleanSetting bounded = registerBoolean("Bounded",false,()->mode.getValue().equalsIgnoreCase("Skip"));
 
     BooleanSetting h = registerBoolean("Keep Floor", false, () -> mode.getValue().equalsIgnoreCase("Vanilla"));
 
-    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min", () -> mode.getValue().equalsIgnoreCase("NCP"));
+    ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, "Min", () -> mode.getValue().equalsIgnoreCase("NCP") || mode.getValue().equalsIgnoreCase("Skip") && bounded.getValue());
     BooleanSetting twoBeePvP = registerBoolean("2b2tpvp", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
     BooleanSetting update = registerBoolean("Update Pos", false, () -> mode.getValue().equalsIgnoreCase("NCP"));
 
@@ -106,10 +105,17 @@ public class Phase extends Module {
             double dirX = dir[0] * i;
             double dirZ = dir[1] * i;
             if (!mc.world.collidesWithAnyBlock((mc.player.getEntityBoundingBox()).offset(dirX, 0, dirZ))) {
-                double[] safetyDir = MotionUtil.forward(i+safety.getValue(),(Math.round(mc.player.rotationYaw / 8) * 8));
+                double[] safetyDir = MotionUtil.forward(i+safety.getValue(),(Math.round((mc.player.rotationYaw + (mc.player.moveStrafing * 45) + (mc.player.moveForward < 0 ? 180 : 0)) / 8) * 8));
                 mc.player.setPosition(mc.player.posX + safetyDir[0], mc.player.posY, mc.player.posZ + safetyDir[1]);
+                if (bounded.getValue())
+                    PhaseUtil.doBounds(bound.getValue(),true);
+
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid - 1));
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid));
+                mc.player.connection.sendPacket(new CPacketConfirmTeleport(tpid + 1));
+
             } else {
-                MessageBus.sendClientPrefixMessageWithID("Pos: " + String.valueOf(dirX) + " " + String.valueOf(dirZ),70);
+                MessageBus.sendClientPrefixMessageWithID("Pos: " + dirX + " " + dirZ,70);
             }
         }
 

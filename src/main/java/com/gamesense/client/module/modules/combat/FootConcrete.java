@@ -8,7 +8,6 @@ import com.gamesense.api.util.misc.Timer;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlacementUtil;
 import com.gamesense.api.util.player.PlayerUtil;
-import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
@@ -17,9 +16,7 @@ import com.gamesense.client.module.modules.gui.ColorMain;
 import com.gamesense.client.module.modules.movement.Blink;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
@@ -51,13 +48,12 @@ public class FootConcrete extends Module {
     BooleanSetting anvil = registerBoolean("Anvil", false, () -> blocks.getValue());
     BooleanSetting any = registerBoolean("Any", false, () -> blocks.getValue());
 
-    boolean doGlitch;
     boolean invalidHotbar;
     int oldSlot;
     int targetBlockSlot;
     BlockPos burrowBlockPos;
     int oldslot;
-    BlockPos pos;
+    int pos;
 
     public void onEnable() {
 
@@ -108,7 +104,7 @@ public class FootConcrete extends Module {
                         ModuleManager.getModule(Blink.class).enable();
                     }
                     mc.player.jump();
-                    pos = new BlockPos(mc.player.getPositionVector());
+                    pos = (int)(mc.player.getPositionVector().y);
 
                 }
 
@@ -125,7 +121,7 @@ public class FootConcrete extends Module {
     public void onUpdate() {
 
         if (jumpMode.getValue().equalsIgnoreCase("Real")) { // should be 4 ticks since jump will go 0.42, 0.75, 1.01, 1.16
-            if (mc.player.posY > Math.floor(pos.y) + 1.1) {
+            if (mc.player.posY > pos + 1.02) {
 
                 targetBlockSlot = getBlocks();
 
@@ -137,7 +133,7 @@ public class FootConcrete extends Module {
                 if (useBlink.getValue())
                     ModuleManager.getModule(Blink.class).disable();
 
-                place(burrowBlockPos,targetBlockSlot,oldSlot);
+                place(burrowBlockPos,targetBlockSlot);
 
                 RubberBand.getPacket(debugpos.getValue(),positive.getValue());
 
@@ -156,7 +152,7 @@ public class FootConcrete extends Module {
 
             PlayerUtil.fakeJump();
 
-            place(burrowBlockPos,targetBlockSlot,oldSlot);
+            place(burrowBlockPos,targetBlockSlot);
 
             RubberBand.getPacket(debugpos.getValue(),positive.getValue());
 
@@ -166,7 +162,7 @@ public class FootConcrete extends Module {
 
     }
 
-    void place(BlockPos pos, int targetBlockSlot, int oldSlot) {
+    void place(BlockPos pos, int targetBlockSlot) {
 
         mc.player.connection.sendPacket(new CPacketHeldItemChange(targetBlockSlot));
 
