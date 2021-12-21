@@ -1,10 +1,8 @@
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.events.PlayerMoveEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.KeyBoardClass;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
@@ -27,6 +25,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
+import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +50,8 @@ public class OffHand extends Module {
             "Gapple", () -> itemSection.getValue());
     ModeSetting potionChoose = registerMode("Potion", Arrays.asList("first", "strength", "swiftness"),
             "first", () -> itemSection.getValue());
+    StringSetting bind = registerString("Bind", "");
+    ModeSetting bindItem = registerMode("Bind Item", Arrays.asList("Totem", "Crystal", "Gapple", "Obby", "Pot", "Exp", "Plates", "String", "Skull"), "Crystal", () -> bind.getText().length() > 0);
 
     BooleanSetting switchSection = registerBoolean("Switch Section", true);
     IntegerSetting healthSwitch = registerInteger("Health Switch", 14, 0, 36, () -> switchSection.getValue());
@@ -156,7 +157,7 @@ public class OffHand extends Module {
         firstChange = true;
         // If they are gonna force us obby
         forceItem = "";
-        returnBack = false;
+        returnBack = isPressing = pressedBind = false;
     }
 
     @Override
@@ -261,6 +262,8 @@ public class OffHand extends Module {
         toOffHand(t);
     }
 
+    boolean pressedBind = false;
+    boolean isPressing = false;
     private String getItem() {
         // This is going to contain the item
         String itemCheck = "";
@@ -283,6 +286,21 @@ public class OffHand extends Module {
             itemCheck = forceItem;
             normalOffHand = false;
         }
+
+        // If bind
+        if (bind.getText().length() > 0) {
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.getText().charAt(0)))) {
+                if (!isPressing) {
+                    isPressing = true;
+                    pressedBind = !pressedBind;
+
+                }
+            } else if (isPressing) isPressing = false;
+        }
+        if (pressedBind) {
+            itemCheck = bindItem.getValue();
+        }
+
         // If crystal obby
         Item mainHandItem = mc.player.getHeldItemMainhand().getItem();
         if ((normalOffHand && (
