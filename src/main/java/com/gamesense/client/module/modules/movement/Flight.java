@@ -28,18 +28,20 @@ import java.util.List;
 @Module.Declaration(name = "Flight", category = Category.Movement)
 public class Flight extends Module {
 
+    BooleanSetting autoSpeed = registerBoolean("WalkSpeed", false);
+
     // Normal settings
     public ModeSetting mode = registerMode("Mode", Arrays.asList("Vanilla", "Static", "Packet"), "Static");
     BooleanSetting damage = registerBoolean("Damage", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting jump = registerBoolean("Jump",false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
-    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting speed = registerDouble("Speed", 2, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet") && !autoSpeed.getValue());
     DoubleSetting ySpeed = registerDouble("Y Speed", 1, 0, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting glideSpeed = registerDouble("Glide Speed", 0, -10, 10, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     BooleanSetting antiKickFlight = registerBoolean("AntiKick", false, () -> !mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting forceY = registerInteger("Force Y", 120,-1,256, () -> !mode.getValue().equalsIgnoreCase("Packet"));
 
     // Packet settings
-    DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet"));
+    DoubleSetting packetSpeed = registerDouble("Packet Speed", 1, 0, 10, () -> mode.getValue().equalsIgnoreCase("Packet") && !autoSpeed.getValue());
     DoubleSetting packetFactor = registerDouble("Packet Factor", 1, 1, 3, () -> mode.getValue().equalsIgnoreCase("Packet"));
     DoubleSetting packetY = registerDouble("Packet Y Speed", 1, 0, 5, () -> mode.getValue().equalsIgnoreCase("Packet"));
     ModeSetting bound = registerMode("Bounds", PhaseUtil.bound, PhaseUtil.normal, () -> mode.getValue().equalsIgnoreCase("Packet"));
@@ -55,12 +57,13 @@ public class Flight extends Module {
     IntegerSetting jitterness = registerInteger("Jitter Amount", 6,1,16, () -> jitter.getValue());
     BooleanSetting speedup = registerBoolean("Accelerate", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
     IntegerSetting speedTicks = registerInteger("Accelerate Ticks", 3,1,20, () -> mode.getValue().equalsIgnoreCase("Packet") && speedup.getValue());
+    BooleanSetting debugPackets = registerBoolean("Debug Packets", false, () -> mode.getValue().equalsIgnoreCase("Packet"));
 
     BooleanSetting noclip = registerBoolean("NoClip", false);
 
     int tpid;
     float flyspeed;
-    List<CPacketPlayer> packetlist = new NonNullList<CPacketPlayer>(){};
+    List<CPacketPlayer> packetList = new NonNullList<CPacketPlayer>(){};
     float mlt;
 
     @Override
@@ -80,9 +83,13 @@ public class Flight extends Module {
 
             CPacketPlayer packet = (CPacketPlayer) event.getPacket();
 
-            if (packetlist.contains(packet) || !restrict.getValue()) {
+            if (debugPackets.getValue()) {
+                MessageBus.sendClientRawMessage(packetList.toString());
+            }
 
-                packetlist.remove(packet);
+            if (packetList.contains(packet) || !restrict.getValue()) {
+
+                packetList.remove(packet);
                 ((CPacketPlayer) event.getPacket()).pitch = 0;
                 ((CPacketPlayer) event.getPacket()).yaw = 0;
 
@@ -137,7 +144,7 @@ public class Flight extends Module {
 
             if (MotionUtil.isMoving(mc.player)) {
 
-                double[] dir = MotionUtil.forward(speed.getValue());
+                double[] dir = MotionUtil.forward(autoSpeed.getValue() ? MotionUtil.getBaseMoveSpeed() : speed.getValue());
 
                 event.setX(dir[0]);
                 event.setZ(dir[1]);
@@ -179,7 +186,7 @@ public class Flight extends Module {
             }
             if (mc.gameSettings.keyBindForward.isKeyDown() || mc.gameSettings.keyBindBack.isKeyDown() || mc.gameSettings.keyBindLeft.isKeyDown() || mc.gameSettings.keyBindRight.isKeyDown()) {
 
-                double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped() ? 0.0624 : packetSpeed.getValue() == 0 ? 0.624 : 0.0624 * packetSpeed.getValue());
+                double[] dir = MotionUtil.forward(PlayerUtil.isPlayerClipped() ? 0.0624 : autoSpeed.getValue() ? MotionUtil.getBaseMoveSpeed() : packetSpeed.getValue() == 0 ? 0.624 : 0.0624 * packetSpeed.getValue());
 
                 if (PlayerUtil.isPlayerClipped()) {
 
@@ -241,7 +248,7 @@ public class Flight extends Module {
                  packet.add(new CPacketPlayer.PositionRotation(x * packetFactor.getValue() + mc.player.posX, y * y > 0 ? packetFactor.getValue() : 1 + mc.player.posY, z * packetFactor.getValue() + mc.player.posZ, mc.player.rotationYaw, mc.player.rotationPitch, false));
 
             for (CPacketPlayer pkt : packet) {
-                packetlist.add(pkt);
+                packetList.add(pkt);
                 mc.player.connection.sendPacket(pkt);
             }
 
@@ -258,7 +265,7 @@ public class Flight extends Module {
             mc.player.setVelocity(x * reduction.getValue() * packetFactor.getValue(), y * reduction.getValue() * packetFactor.getValue(), z * reduction.getValue() * packetFactor.getValue());
 
             CPacketPlayer bounds = PhaseUtil.doBounds(bound.getValue(), false);
-            packetlist.add(bounds);
+            packetList.add(bounds);
             mc.player.connection.sendPacket(bounds);
 
         }
