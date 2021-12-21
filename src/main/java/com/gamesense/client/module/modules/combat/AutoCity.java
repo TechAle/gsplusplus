@@ -13,6 +13,7 @@ import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.combat.CrystalUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -42,6 +43,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,18 +58,16 @@ public class AutoCity extends Module {
 
 
     DoubleSetting range = registerDouble("Range", 6, 0, 8);
-    IntegerSetting down = registerInteger("Down", 1, 0, 3);
-    IntegerSetting sides = registerInteger("Sides", 1, 0, 4);
-    IntegerSetting depth = registerInteger("Depth", 3, 0, 10);
     DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 10);
     DoubleSetting maxDamage = registerDouble("Max Self Damage", 7, 0, 20);
-    BooleanSetting ignoreCrystals = registerBoolean("Ignore Crystals", true);
     ModeSetting target = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
     BooleanSetting switchPick = registerBoolean("Switch Pick", true);
     ModeSetting mineMode = registerMode("Mine Mode", Arrays.asList("Packet", "Vanilla"), "Packet");
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both", "None"), "Both");
     IntegerSetting width = registerInteger("Width", 1, 1, 10, () -> !renderMode.getValue().equals("None"));
     ColorSetting color = registerColor("Color", new GSColor(102, 51, 153), () -> !renderMode.getValue().equals("None"));
+    BooleanSetting newPlace = registerBoolean("New Place", false);
+    BooleanSetting disableAfter = registerBoolean("Disable After", true);
 
     private BlockPos blockMine,
                      blockCrystal;
@@ -83,6 +83,10 @@ public class AutoCity extends Module {
 
 
     public void onEnable() {
+        resetValues();
+    }
+
+    void resetValues() {
         aimTarget = null;
         blockMine = blockCrystal = null;
         isMining = packet = blockInside = finalY = noHole = noPossible = done = false;
@@ -108,25 +112,6 @@ public class AutoCity extends Module {
         if (event.getBlock() == null || event.getPosition() == null || blockMine == null) return;
 
         if (event.getPosition() == blockMine && event.getBlock() instanceof BlockAir) {
-            /*
-            if (placeCrystal.getValue()) {
-                int slot = -1;
-                EnumHand hand = EnumHand.MAIN_HAND;
-                if (mc.player.getHeldItemOffhand().getItem() == Items.END_CRYSTAL)
-                    hand = EnumHand.OFF_HAND;
-                else {
-
-                    slot = InventoryUtil.findFirstItemSlot(ItemEndCrystal.class, 0, 8);
-                    if (slot != -1) {
-                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
-                    }
-                }
-                if (hand == EnumHand.OFF_HAND || slot != -1) {
-                    mc.player.connection.sendPacket(new CPacketPlayerTryUseItemOnBlock(blockCrystal, EnumFacing.UP, hand, 0, 0, 0));
-                    mc.player.swingArm(hand);
-                }
-            }
-             */
 
             if (!packet)
                 if (oldSlot != -1)
@@ -142,13 +127,23 @@ public class AutoCity extends Module {
             return;
 
         if (isMining) {
-            if (done) {
-                disable();
-            } else
-            if (!packet) {
-                breakBlock();
+
+            if (BlockUtil.getBlock(blockMine) instanceof BlockAir) {
+               resetValues();
+                if (disableAfter.getValue())
+                    disable();
+                if (!packet && oldSlot != -1)
+                    mc.player.inventory.currentItem = oldSlot;
+            } else {
+                if (done) {
+                    if (disableAfter.getValue())
+                        disable();
+                } else if (!packet) {
+                    breakBlock();
+                }
             }
             return;
+
         }
 
         // All the setup
@@ -161,69 +156,61 @@ public class AutoCity extends Module {
             return;
         }
 
-        List<BlockPos> blocks = EntityUtil.getBlocksIn(aimTarget);
-        if (blocks.size() == 0) {
-            blockInside = true;
-            disable();
-            return;
-        }
+        boolean found = false;
+        for(int[] positions : new int[][] {
+                {1,0,0},
+                {-1,0,0},
+                {0,0,1},
+                {0,0,-1}
+        }) {
+            BlockPos blockPos = new BlockPos(aimTarget.posX + positions[0], aimTarget.posY + positions[1], aimTarget.posZ + positions[2]);
+            if (BlockUtil.getBlock(blockPos) instanceof BlockAir)
+                continue;
+            // For calculating the damage, set to air
+            Block toReplace = BlockUtil.getBlock(blockPos);
+            mc.world.setBlockToAir(blockPos);
+            // Check around
+            for (Vec3i placement : new Vec3i[]{
+                    new Vec3i(1, -1, 0),
+                    new Vec3i(-1, -1, 0),
+                    new Vec3i(0, -1, 1),
+                    new Vec3i(0, -1, -1)
+            }) {
+                // If we can place the crystal
+                BlockPos temp;
+                if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
 
-        // find lowest point of the player
-        int minY = Integer.MAX_VALUE;
-        for (BlockPos block : blocks) {
-            int y = block.getY();
-            if (y < minY) {
-                minY = y;
-            }
-        }
-        if (aimTarget.posY % 1 > .2) {
-            minY++;
-        }
+                    // Check damage
+                    if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, false) >= maxDamage.getValue())
+                        continue;
 
-        int finalMinY = minY;
-        blocks = blocks.stream().filter(blockPos -> blockPos.getY() == finalMinY).collect(Collectors.toList());
 
-        Optional<BlockPos> any = blocks.stream().findAny();
-        if (!any.isPresent()) {
-            finalY = true;
-            disable();
-            return;
-        }
+                    // Calculate damage
+                    float damagePlayer = DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                            aimTarget, false);
 
-        HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(any.get(), false, true);
-        if (holeInfo.getType() == HoleUtil.HoleType.NONE || holeInfo.getSafety() == HoleUtil.BlockSafety.UNBREAKABLE) {
-            noHole = true;
-            disable();
-            return;
-        }
+                    if (damagePlayer < minDamage.getValue())
+                        continue;
 
-        List<BlockPos> sides = new ArrayList<>();
-        for (BlockPos block : blocks) {
-            sides.addAll(cityableSides(block, HoleUtil.getUnsafeSides(block).keySet(), aimTarget));
-        }
-
-        if (sides.size() > 0) {
-            blockMine = sides.get(0);
-            /*
-            blockCrystal = new BlockPos(blockMine.getX() - (aimTarget.posX - blockMine.getX()),
-                                           blockMine.getY(),
-                                         blockMine.getZ() - (aimTarget.posZ - blockMine.getZ()));*/
-            double distance = mc.player.getDistanceSq(blockMine);
-            for(BlockPos poss : sides) {
-                if (mc.player.getDistanceSq(blockMine) < distance) {
-                    blockMine = poss;
-                    distance = mc.player.getDistanceSq(blockMine);
-                    /*
-                    blockCrystal = new BlockPos(poss.getZ() - (aimTarget.posZ - blockMine.getZ()),
-                            poss.getY(),
-                            blockMine.getZ() - (aimTarget.posZ - blockMine.getZ()));*/
+                    found = true;
+                    blockMine = blockPos;
+                    break;
                 }
             }
-        } else {
+
+            // Reset surround
+            mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+            if (found)
+                break;
+        }
+
+        if (!found) {
             noPossible = true;
-            disable();
+            if (disableAfter.getValue())
+                disable();
             return;
         }
+
 
 
         if (mc.player.getHeldItemMainhand().getItem() != Items.DIAMOND_PICKAXE && switchPick.getValue()) {
@@ -258,81 +245,13 @@ public class AutoCity extends Module {
     private void breakBlock() {
         mc.player.swingArm(EnumHand.MAIN_HAND);
         mc.playerController.onPlayerDamageBlock(blockMine, EnumFacing.UP);
+
     }
 
     public void onWorldRender(RenderEvent event) {
         if (blockMine == null)
             return;
         renderBox(blockMine);
-    }
-
-    private List<BlockPos> cityableSides(BlockPos centre, Set<HoleUtil.BlockOffset> weakSides, EntityPlayer player) {
-        List<BlockPos> cityableSides = new ArrayList<>();
-        HashMap<BlockPos, HoleUtil.BlockOffset> directions = new HashMap<>();
-        for (HoleUtil.BlockOffset weakSide : weakSides) {
-            BlockPos pos = weakSide.offset(centre);
-            if (mc.world.getBlockState(pos).getBlock() != Blocks.AIR) {
-                directions.put(pos, weakSide);
-            }
-        }
-
-        directions.forEach(((blockPos, blockOffset) -> {
-            if (blockOffset == HoleUtil.BlockOffset.DOWN) {
-                return;
-            }
-
-            BlockPos pos1 = blockOffset.left(blockPos.down(down.getValue()), sides.getValue());
-            BlockPos pos2 = blockOffset.forward(blockOffset.right(blockPos, sides.getValue()), depth.getValue());
-            List<BlockPos> square = EntityUtil.getSquare(pos1, pos2);
-
-            IBlockState holder = mc.world.getBlockState(blockPos);
-            mc.world.setBlockToAir(blockPos);
-
-
-            for (BlockPos pos : square) {
-                if (this.canPlaceCrystal(pos.down(), ignoreCrystals.getValue())) {
-
-                    if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, player, false) >= minDamage.getValue()) {
-                        if (DamageUtil.calculateDamage((double) pos.getX() + 0.5d, pos.getY(), (double) pos.getZ() + 0.5d, mc.player, false) <= maxDamage.getValue()) {
-                            cityableSides.add(blockPos);
-                        }
-                        break;
-                    }
-                }
-            }
-
-            mc.world.setBlockState(blockPos, holder);
-        }));
-
-        return cityableSides;
-    }
-
-    private boolean canPlaceCrystal(BlockPos blockPos, boolean ignoreCrystal) {
-        BlockPos boost = blockPos.add(0, 1, 0);
-        BlockPos boost2 = blockPos.add(0, 2, 0);
-        AxisAlignedBB axisAlignedBB = new AxisAlignedBB(boost, boost2);
-
-        if (!(mc.world.getBlockState(blockPos).getBlock() == Blocks.BEDROCK
-                || mc.world.getBlockState(blockPos).getBlock() == Blocks.OBSIDIAN)) {
-            return false;
-        }
-
-        if (!(mc.world.getBlockState(boost).getBlock() == Blocks.AIR)) {
-            return false;
-        }
-
-        if (!(mc.world.getBlockState(boost2).getBlock() == Blocks.AIR)) {
-            return false;
-        }
-
-        if (!ignoreCrystal)
-            return mc.world.getEntitiesWithinAABB(Entity.class, axisAlignedBB).isEmpty();
-        else {
-            List<Entity> entityList = mc.world.getEntitiesWithinAABB(Entity.class, axisAlignedBB);
-            entityList.removeIf(entity -> entity instanceof EntityEnderCrystal);
-            return entityList.isEmpty();
-        }
-
     }
 
     private void renderBox(BlockPos blockPos) {

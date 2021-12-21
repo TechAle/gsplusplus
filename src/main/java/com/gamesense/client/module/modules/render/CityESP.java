@@ -67,9 +67,6 @@ public class CityESP extends Module {
                             BlockPos blockPos = new BlockPos(entityPlayer.posX + positions[0], entityPlayer.posY + positions[1], entityPlayer.posZ + positions[2]);
                             if (BlockUtil.getBlock(blockPos) instanceof BlockAir)
                                 continue;
-                            // Best
-                            BlockPos coords = null;
-                            double damage = Double.MIN_VALUE;
                             // For calculating the damage, set to air
                             Block toReplace = BlockUtil.getBlock(blockPos);
                             mc.world.setBlockToAir(blockPos);
