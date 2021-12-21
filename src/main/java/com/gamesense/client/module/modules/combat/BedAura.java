@@ -1,4 +1,4 @@
-/*
+
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
@@ -37,12 +37,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
-*/
+
 /**
  * @author Hoosiers
  * @since 1/2/2020
- *//*
-
+ */
 
 @Module.Declaration(name = "BedAura", category = Category.Combat)
 public class BedAura extends Module {
@@ -309,4 +308,4 @@ public class BedAura extends Module {
         mc.player.connection.sendPacket(new CPacketEntityAction(mc.player, CPacketEntityAction.Action.STOP_SNEAKING));
         placedPos.add(blockPos);
     }
-}*/
+}

@@ -1,4 +1,4 @@
-/*
+
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.event.events.PacketEvent;
@@ -116,4 +116,4 @@ public class AutoCreeper extends Module {
     });
 
 }
-*/
+
