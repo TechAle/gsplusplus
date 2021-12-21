@@ -204,6 +204,11 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
     IntegerSetting predictHitDelay = registerInteger("Predict Hit Delay", 0, 0, 500, () -> breakSection.getValue() && predictHit.getValue());
     BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> breakSection.getValue());
+    BooleanSetting antiCity = registerBoolean("Anti City", false, () -> breakSection.getValue());
+    BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false, () -> breakSection.getValue() && antiCity.getValue());
+    BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false, () -> breakSection.getValue() &&  antiCity.getValue());
+    BooleanSetting allowNon1x1 = registerBoolean("Allow non 1x1", false, () -> breakSection.getValue() &&  antiCity.getValue());
+
     //endregion
 
     //region Misc
@@ -2618,6 +2623,12 @@ public class AutoCrystalRewrite extends Module {
         if (!canStartBreaking())
             return false;
 
+        if (antiCity.getValue()) {
+            if (forceBreak == null) {
+                forceBreak = possibleCrystal();
+            }
+        }
+
 
         /*
             Looking crystal break code
@@ -2986,6 +2997,142 @@ public class AutoCrystalRewrite extends Module {
                 mc.player.swingingHand = hand;
             }
         }
+    }
+
+    // endregion
+
+    // region antiCity
+
+    EntityEnderCrystal possibleCrystal() {
+        List<BlockPos> offsetPattern = this.getOffsets();
+
+        for(BlockPos pos : offsetPattern) {
+            for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos))) {
+                if (entity instanceof EntityEnderCrystal && destroyCrystal.getValue()) {
+                    return (EntityEnderCrystal) entity;
+                }
+            }
+
+            if (destroyAboveCrystal.getValue()) {
+                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                    if (entity instanceof EntityEnderCrystal) {
+                        if (sameBlockPos(entity.getPosition(), pos)) {
+                            return (EntityEnderCrystal) entity;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    List<BlockPos> getOffsets() {
+        BlockPos playerPos = this.getPlayerPos();
+        ArrayList<BlockPos> offsets = new ArrayList<BlockPos>();
+        if (this.allowNon1x1.getValue()) {
+            int z;
+            int x;
+            double decimalX = Math.abs(mc.player.posX) - Math.floor(Math.abs(mc.player.posX));
+            double decimalZ = Math.abs(mc.player.posZ) - Math.floor(Math.abs(mc.player.posZ));
+            int lengthXPos = this.calcLength(decimalX, false);
+            int lengthXNeg = this.calcLength(decimalX, true);
+            int lengthZPos = this.calcLength(decimalZ, false);
+            int lengthZNeg = this.calcLength(decimalZ, true);
+            ArrayList<BlockPos> tempOffsets = new ArrayList<BlockPos>();
+            offsets.addAll(this.getOverlapPos());
+            for (x = 1; x < lengthXPos + 1; ++x) {
+                tempOffsets.add(this.addToPlayer(playerPos, x, 0.0, 1 + lengthZPos));
+                tempOffsets.add(this.addToPlayer(playerPos, x, 0.0, -(1 + lengthZNeg)));
+            }
+            for (x = 0; x <= lengthXNeg; ++x) {
+                tempOffsets.add(this.addToPlayer(playerPos, -x, 0.0, 1 + lengthZPos));
+                tempOffsets.add(this.addToPlayer(playerPos, -x, 0.0, -(1 + lengthZNeg)));
+            }
+            for (z = 1; z < lengthZPos + 1; ++z) {
+                tempOffsets.add(this.addToPlayer(playerPos, 1 + lengthXPos, 0.0, z));
+                tempOffsets.add(this.addToPlayer(playerPos, -(1 + lengthXNeg), 0.0, z));
+            }
+            for (z = 0; z <= lengthZNeg; ++z) {
+                tempOffsets.add(this.addToPlayer(playerPos, 1 + lengthXPos, 0.0, -z));
+                tempOffsets.add(this.addToPlayer(playerPos, -(1 + lengthXNeg), 0.0, -z));
+            }
+            for (BlockPos pos : tempOffsets) {
+                if (getDown(pos)) {
+                    offsets.add(pos.add(0, -1, 0));
+                }
+                offsets.add(pos);
+            }
+        } else {
+            offsets.add(playerPos.add(0, -1, 0));
+            for (int[] surround : new int[][]{
+                    {1, 0},
+                    {0, 1},
+                    {-1, 0},
+                    {0, -1}
+            }) {
+                if (getDown(playerPos.add(surround[0], 0, surround[1])))
+                    offsets.add(playerPos.add(surround[0], -1, surround[1]));
+
+                offsets.add(playerPos.add(surround[0], 0, surround[1]));
+            }
+        }
+        return offsets;
+    }
+
+    public static boolean getDown(BlockPos pos) {
+
+        for (EnumFacing e : EnumFacing.values())
+            if (!mc.world.isAirBlock(pos.add(e.getDirectionVec())))
+                return false;
+
+        return true;
+
+    }
+    BlockPos addToPlayer(BlockPos playerPos, double x, double y, double z) {
+        if (playerPos.getX() < 0) {
+            x = -x;
+        }
+        if (playerPos.getY() < 0) {
+            y = -y;
+        }
+        if (playerPos.getZ() < 0) {
+            z = -z;
+        }
+        return playerPos.add(x, y, z);
+    }
+
+    List<BlockPos> getOverlapPos() {
+        ArrayList<BlockPos> positions = new ArrayList<BlockPos>();
+        double decimalX = mc.player.posX - Math.floor(mc.player.posX);
+        double decimalZ = mc.player.posZ - Math.floor(mc.player.posZ);
+        int offX = this.calcOffset(decimalX);
+        int offZ = this.calcOffset(decimalZ);
+        positions.add(this.getPlayerPos());
+        for (int x = 0; x <= Math.abs(offX); ++x) {
+            for (int z = 0; z <= Math.abs(offZ); ++z) {
+                int properX = x * offX;
+                int properZ = z * offZ;
+                positions.add(this.getPlayerPos().add(properX, -1, properZ));
+            }
+        }
+        return positions;
+    }
+
+    int calcOffset(double dec) {
+        return dec >= 0.7 ? 1 : (dec <= 0.3 ? -1 : 0);
+    }
+
+
+    int calcLength(double decimal, boolean negative) {
+        if (negative) {
+            return decimal <= 0.3 ? 1 : 0;
+        }
+        return decimal >= 0.7 ? 1 : 0;
+    }
+
+    BlockPos getPlayerPos() {
+        double decimalPoint = mc.player.posY - Math.floor(mc.player.posY);
+        return new BlockPos(mc.player.posX, decimalPoint > 0.8 ? Math.floor(mc.player.posY) + 1.0 : Math.floor(mc.player.posY), mc.player.posZ);
     }
 
     // endregion
