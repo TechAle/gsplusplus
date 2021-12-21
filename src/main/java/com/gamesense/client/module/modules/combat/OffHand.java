@@ -27,10 +27,8 @@ import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Keyboard;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Author TechAle and Hossier
@@ -78,6 +76,7 @@ public class OffHand extends Module {
     IntegerSetting startingBiasDamage = registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
     DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> (switchSection.getValue() && crystalCheck.getValue()));
     BooleanSetting noHotBar = registerBoolean("No HotBar", false, () -> miscSection.getValue());
+    BooleanSetting autoRefill = registerBoolean("Auto Refill", false, () -> miscSection.getValue() && noHotBar.getValue());
 
     int prevSlot,
             tickWaited,
