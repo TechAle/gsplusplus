@@ -163,8 +163,8 @@ public class AutoCity extends Module {
                 {0,0,1},
                 {0,0,-1}
         }) {
-            BlockPos blockPos = new BlockPos(aimTarget.posX + positions[0], aimTarget.posY + positions[1], aimTarget.posZ + positions[2]);
-            if (BlockUtil.getBlock(blockPos) instanceof BlockAir)
+            BlockPos blockPos = new BlockPos(aimTarget.posX + positions[0], aimTarget.posY + positions[1] + (aimTarget.posY % 1 > 0.2 ? .5 : 0), aimTarget.posZ + positions[2]);
+            if (BlockUtil.getBlock(blockPos) instanceof BlockAir || BlockUtil.getBlock(blockPos).blockResistance > 6001)
                 continue;
             // For calculating the damage, set to air
             Block toReplace = BlockUtil.getBlock(blockPos);
