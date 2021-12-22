@@ -61,6 +61,7 @@ public class AutoCity extends Module {
     DoubleSetting minDamage = registerDouble("Min Damage", 5, 0, 10);
     DoubleSetting maxDamage = registerDouble("Max Self Damage", 7, 0, 20);
     ModeSetting target = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
+    BooleanSetting onlyObby = registerBoolean("Only Obby", false);
     BooleanSetting switchPick = registerBoolean("Switch Pick", true);
     ModeSetting mineMode = registerMode("Mine Mode", Arrays.asList("Packet", "Vanilla"), "Packet");
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both", "None"), "Both");
@@ -164,10 +165,17 @@ public class AutoCity extends Module {
                 {0,0,-1}
         }) {
             BlockPos blockPos = new BlockPos(aimTarget.posX + positions[0], aimTarget.posY + positions[1] + (aimTarget.posY % 1 > 0.2 ? .5 : 0), aimTarget.posZ + positions[2]);
-            if (BlockUtil.getBlock(blockPos) instanceof BlockAir || BlockUtil.getBlock(blockPos).blockResistance > 6001)
+            Block toCheck = BlockUtil.getBlock(blockPos);
+            if (toCheck instanceof BlockAir)
                 continue;
-            // For calculating the damage, set to air
-            Block toReplace = BlockUtil.getBlock(blockPos);
+
+            if (onlyObby.getValue()) {
+                if (!(toCheck instanceof BlockObsidian))
+                    continue;
+            }else {
+                if (toCheck.blockResistance > 6001)
+                    continue;
+            }
             mc.world.setBlockToAir(blockPos);
             // Check around
             for (Vec3i placement : new Vec3i[]{
@@ -199,7 +207,7 @@ public class AutoCity extends Module {
             }
 
             // Reset surround
-            mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+            mc.world.setBlockState(blockPos, toCheck.getDefaultState());
             if (found)
                 break;
         }

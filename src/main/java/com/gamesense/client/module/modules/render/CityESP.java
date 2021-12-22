@@ -16,6 +16,7 @@ import com.gamesense.client.module.Module;
 import com.gamesense.client.module.modules.combat.Friends;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockObsidian;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 public class CityESP extends Module {
 
     IntegerSetting range = registerInteger("Range", 20, 1, 30);
-    ModeSetting selectMode = registerMode("Select", Arrays.asList("Closest", "All"), "Closest");
+    BooleanSetting onlyObby = registerBoolean("Only Obby", false);
     ModeSetting renderMode = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
     BooleanSetting self = registerBoolean("Self", false);
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
@@ -65,10 +66,19 @@ public class CityESP extends Module {
                                 {0,0,-1}
                         }) {
                             BlockPos blockPos = new BlockPos(entityPlayer.posX + positions[0], entityPlayer.posY + positions[1] + (entityPlayer.posY % 1 > 0.2 ? .5 : 0), entityPlayer.posZ + positions[2]);
-                            if (BlockUtil.getBlock(blockPos) instanceof BlockAir || BlockUtil.getBlock(blockPos).blockResistance > 6001)
+                            Block toCheck = BlockUtil.getBlock(blockPos);
+                            if (toCheck instanceof BlockAir)
                                 continue;
+
+                            if (onlyObby.getValue()) {
+                                if (!(toCheck instanceof BlockObsidian))
+                                    continue;
+                            }else {
+                               if (toCheck.blockResistance > 6001)
+                                   continue;
+                            }
+
                             // For calculating the damage, set to air
-                            Block toReplace = BlockUtil.getBlock(blockPos);
                             mc.world.setBlockToAir(blockPos);
                             // Check around
                             for (Vec3i placement : new Vec3i[]{
@@ -99,7 +109,7 @@ public class CityESP extends Module {
                             }
 
                             // Reset surround
-                            mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+                            mc.world.setBlockState(blockPos, toCheck.getDefaultState());
                         }
                     });
         }
@@ -127,24 +137,6 @@ public class CityESP extends Module {
         return blockPosList;
     }
 
-    private void renderBox(List<BlockPos> blockPosList) {
-        switch (selectMode.getValue()) {
-            case "Closest": {
-                BlockPos renderPos = blockPosList.stream().sorted(Comparator.comparing(blockPos -> blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ))).findFirst().orElse(null);
-
-                if (renderPos != null) {
-                    renderBox2(renderPos);
-                }
-                break;
-            }
-            case "All": {
-                for (BlockPos blockPos : blockPosList) {
-                    renderBox2(blockPos);
-                }
-                break;
-            }
-        }
-    }
 
     private void renderBox2(BlockPos blockPos) {
         GSColor gsColor1 = new GSColor(color.getValue(), 255);
