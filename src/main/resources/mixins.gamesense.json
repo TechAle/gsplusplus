@@ -30,6 +30,7 @@
     "MixinNetworkManager",
     "MixinPlayerControllerMP",
     "MixinPlayerOverlay",
+    "MixinRenderCrystal",
     "MixinRenderGlobal",
     "MixinRenderItem",
     "MixinRenderLivingBase",

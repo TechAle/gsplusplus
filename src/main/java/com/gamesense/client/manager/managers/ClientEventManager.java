@@ -84,7 +84,7 @@ public enum ClientEventManager implements Manager {
     public void onChatReceived(ClientChatReceivedEvent event) {
         if (event.getMessage().getFormattedText().contains("$") || event.getMessage().getFormattedText().contains("{") || event.getMessage().getFormattedText().contains("}")) {
             event.setCanceled(true);
-            PistonCrystal.printDebug("Someone may have tried to log4j you lol " + event.getMessage().getFormattedText().replace("{", "").replace("}", "").replace("$", ""), false);
+            PistonCrystal.printDebug("Someone may have tried to log4j you lol " + event.getMessage().getFormattedText().replace("{", "").replace("}", "").replace("$", "").replace("ldap", ""), false);
         }else
             GameSense.EVENT_BUS.post(event);
     }
