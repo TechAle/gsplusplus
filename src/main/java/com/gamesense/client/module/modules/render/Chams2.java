@@ -51,8 +51,8 @@ public class Chams2 extends Module {
     ColorSetting friendGlintColor = registerColor("friendGlintColor", new GSColor(255, 255, 255, 255), ()->true, true);
     DoubleSetting crystalRotateSpeed = registerDouble("crystalRotateSpeed", 1, 0, 2);
     DoubleSetting crystalScale = registerDouble("crystalScale", 1, 0, 2);
-    DoubleSetting lineWidth = registerDouble("lineWidth", 1, 0, 2);
-    DoubleSetting lineWidthInterp = registerDouble("lineWidthInterp", 1, 0, 2);
+    DoubleSetting lineWidth = registerDouble("lineWidth", 1, 0, 4);
+    DoubleSetting lineWidthInterp = registerDouble("lineWidthInterp", 1, 0.1, 4);
 
 
 
@@ -69,12 +69,15 @@ public class Chams2 extends Module {
         }
 
         if (event.entityIn instanceof EntityPlayer) {
-            if (event.entityIn == mc.player && !this.self.getValue())
-                return;
+            if (event.entityIn == mc.player) {
+                if (!this.self.getValue())
+                    return;
+            }
             else if (!this.players.getValue())
                 return;
-        } else if (event.entityIn instanceof EntityEnderCrystal && !this.crystals.getValue()) {
-            return;
+        } else if (event.entityIn instanceof EntityEnderCrystal) {
+            if (!this.crystals.getValue())
+                return;
         } else return;
 
 
