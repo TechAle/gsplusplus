@@ -26,6 +26,9 @@ public class zTrails extends Module {
     IntegerSetting life = registerInteger("Life", 300, 0, 1000);
     IntegerSetting lineWidth = registerInteger("Line Width", 1, 1, 5);
     DoubleSetting distance = registerDouble("Distance", 10, 0, 20);
+    BooleanSetting desyncColor = registerBoolean("Desync Color", false);
+    IntegerSetting speedDesyncColor = registerInteger("Speed Desync Color",1,0, 1000);
+    long count = 0;
 
     ArrayList<EntityPlayer> players = new ArrayList<>();
     ArrayList<ArrayList<Vec3d>> points = new ArrayList<>();
@@ -35,6 +38,7 @@ public class zTrails extends Module {
 
     @Override
     public void onUpdate() {
+        count += speedDesyncColor.getValue();
         if (mc.world == null || mc.player == null)
             return;
         for(int i = 0; i < points.size(); i++)
@@ -85,6 +89,9 @@ public class zTrails extends Module {
                     }
 
                     points.get(found).add(new Vec3d(e.posX, e.posY, e.posZ));
+                    if (desyncColor.getValue()) {
+                        colors.get(found).add(new GSColor(ColorSetting.getRainbowColor(count), color.getValue().getAlpha()));
+                    } else
                     colors.get(found).add(new GSColor(color.getValue(), color.getValue().getAlpha()));
                     lifeSpan.get(found).add(System.currentTimeMillis());
                 }
