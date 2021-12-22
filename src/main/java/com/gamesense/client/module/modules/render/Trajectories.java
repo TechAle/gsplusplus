@@ -3,6 +3,7 @@ package com.gamesense.client.module.modules.render;
 import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.ColorSetting;
+import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.module.Category;
@@ -28,6 +29,7 @@ public class Trajectories extends Module {
     ColorSetting color = registerColor("Color", new GSColor(255, 255, 255, 255), () -> true, true);
     BooleanSetting landed = registerBoolean("Landed", true);
     BooleanSetting line = registerBoolean("Line", true);
+    DoubleSetting lineWidth = registerDouble("Line Width", 1.5, 0, 5);
     BooleanSetting rainbowLine = registerBoolean("Rainbow Line", false);
     IntegerSetting rainbowSpeed = registerInteger("Rainbow Speed", 1, 1, 100);
     IntegerSetting rainbowDesync = registerInteger("Rainbow Desync", 1, 1, 500);
@@ -83,6 +85,7 @@ public class Trajectories extends Module {
         boolean hasLanded = false;
         Entity landingOnEntity = null;
         RayTraceResult landingPosition = null;
+        GL11.glLineWidth(lineWidth.getValue().floatValue());
         GL11.glBegin(GL11.GL_LINE_STRIP);
         while (!hasLanded && posY > 0.0) {
             Vec3d present = new Vec3d(posX, posY, posZ);
@@ -142,7 +145,7 @@ public class Trajectories extends Module {
             c.setDrawStyle(GLU.GLU_SILHOUETTE);
             if (landingOnEntity != null) {
                 GlStateManager.color(0.0f, 0.0f, 0.0f, color.getValue().getAlpha() / 255.0f);
-                GL11.glLineWidth(2.5f);
+                GL11.glLineWidth(lineWidth.getValue().floatValue() * 2);
                 c.draw(0.5f, 0.15f, 0.0f, 8, 1);
                 GL11.glLineWidth(0.1f);
                 GlStateManager.color(1.0f, 0.0f, 0.0f, color.getValue().getAlpha() / 255.0f);
@@ -150,6 +153,7 @@ public class Trajectories extends Module {
             c.draw(0.5f, 0.15f, 0.0f, 8, 1);
         }
         GlStateManager.popMatrix();
+        GL11.glLineWidth(1f);
     }
 
     protected boolean isThrowable(Item item) {
