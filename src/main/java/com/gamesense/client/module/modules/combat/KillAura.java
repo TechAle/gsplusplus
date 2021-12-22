@@ -1,14 +1,16 @@
 package com.gamesense.client.module.modules.combat;
 
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.misc.Pair;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.player.social.SocialManager;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
+import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -53,11 +55,99 @@ public class KillAura extends Module {
     BooleanSetting autoSwitch = registerBoolean("Switch", false);
     DoubleSetting switchHealth = registerDouble("Min Switch Health", 0f, 0f, 20f);
     DoubleSetting range = registerDouble("Range", 5, 0, 10);
+    ModeSetting render = registerMode("Render", Arrays.asList("None", "Rectangle", "Circle"), "None");
+    IntegerSetting life = registerInteger("Life", 300, 0, 1000, () -> !render.getValue().equals("None"));
+    DoubleSetting circleRange = registerDouble("Circle Range", 1, 0, 3);
+    ColorSetting color = registerColor("Color", new GSColor(255, 255, 255, 255), () -> true, true);
+    BooleanSetting desyncCircle = registerBoolean("Desync Circle", false);
+    IntegerSetting stepRainbowCircle = registerInteger("Step Rainbow Circle", 1, 1, 100);
+    BooleanSetting increaseHeight = registerBoolean("Increase Height", true);
+    DoubleSetting speedIncrease = registerDouble("Speed Increase", 0.01, 0.3, 0.001);
+
+    ArrayList<renderClass> toRender = new ArrayList<>();
+
+    static class renderClass {
+        final int id;
+        long start;
+        final long life;
+        final String mode;
+        final double circleRange;
+        final GSColor color;
+        final boolean desyncCircle;
+        final int stepRainbowCircle;
+        final double range;
+        final int desync;
+        final boolean increaseHeight;
+        final double speedIncrease;
+        double nowHeigth = 0;
+        boolean up = true;
+
+
+        public renderClass(int id, long life, String mode, GSColor color, double circleRange, boolean desyncCircle, int stepRainbowCircle, double range, int desync, boolean increaseHeight, double speedIncrease) {
+            this.increaseHeight = increaseHeight;
+            this.speedIncrease = speedIncrease;
+            this.id = id;
+            this.range = range;
+            start = System.currentTimeMillis();
+            this.life = life;
+            this.mode = mode;
+            this.desync = desync;
+            this.circleRange = circleRange;
+            this.color = color;
+            this.desyncCircle = desyncCircle;
+            this.stepRainbowCircle = stepRainbowCircle;
+        }
+
+        boolean update() {
+            return System.currentTimeMillis() - start > life;
+        }
+
+        boolean reset(int id) {
+            if (this.id == id) {
+                start = System.currentTimeMillis();
+                return true;
+            }
+            return false;
+        }
+
+        void render() {
+            Entity e = mc.world.getEntityByID(id);
+            if (e != null)
+                switch (mode) {
+                    case "Rectangle":
+                        RenderUtil.drawBox(e.getEntityBoundingBox(), false, e.height, color, GeometryMasks.Quad.ALL);
+                        break;
+                    case "Circle":
+                        double inc = 0;
+                        if (increaseHeight) {
+                            nowHeigth += speedIncrease * (up ? 1 : -1);
+                            if (nowHeigth > e.height)
+                                up = false;
+                            else if (nowHeigth < 0)
+                                up = true;
+                            inc = nowHeigth;
+                        }
+                        if (desyncCircle) {
+                            RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, desync, color.getAlpha());
+                        } else {
+                            RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, color);
+                        }
+                        break;
+            }
+        }
+    }
 
     boolean calcDelay = true;
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
+
+        toRender.removeIf(renderClass::update);
+        for(int i = 0; i < toRender.size(); i++)
+            if (toRender.get(i).update()) {
+                toRender.remove(i);
+                i--;
+            }
 
         final double rangeSq = Math.pow(range.getValue(), 2);
         Optional<Entity> optionalTarget = mc.world.loadedEntityList.stream()
@@ -72,6 +162,8 @@ public class KillAura extends Module {
         boolean all = itemUsed.getValue().equalsIgnoreCase("All");
 
         if (optionalTarget.isPresent()) {
+
+
             Pair<Float, Integer> newSlot = new Pair<>(0.0f, -1);
 
             if (autoSwitch.getValue() && (mc.player.getHealth() + mc.player.getAbsorptionAmount() >= switchHealth.getValue())) {
@@ -93,6 +185,20 @@ public class KillAura extends Module {
 
             if (shouldAttack(sword, axe, both, all)) {
                 Entity target = optionalTarget.get();
+
+                if (!render.getValue().equals("None")) {
+
+                    boolean found = false;
+                    for(renderClass rend : toRender)
+                        if (rend.reset(target.entityId)) {
+                            found = true;
+                            break;
+                        }
+
+                    if (!found) {
+                        toRender.add(new renderClass(target.entityId, life.getValue(), render.getValue(), color.getValue(), circleRange.getValue(), desyncCircle.getValue(), stepRainbowCircle.getValue(), circleRange.getValue(), stepRainbowCircle.getValue(), increaseHeight.getValue(), speedIncrease.getValue()));
+                    }
+                }
 
                 if (rotation.getValue()) {
                     Vec2f rotation = RotationUtil.getRotationTo(target.getEntityBoundingBox());
@@ -185,5 +291,10 @@ public class KillAura extends Module {
         }
 
         return hostileMobs.getValue() && entity instanceof EntityMob;
+    }
+
+    @Override
+    public void onWorldRender(RenderEvent event) {
+        toRender.forEach(renderClass::render);
     }
 }
