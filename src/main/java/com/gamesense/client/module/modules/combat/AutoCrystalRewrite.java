@@ -458,6 +458,16 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting endFadeBreak = registerInteger("End Fade Break pl", 0, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
     IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCapl.getValue() || fadeCabr.getValue()));
     BooleanSetting placeDominant = registerBoolean("Place Dominant", false, () -> renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
+
+    BooleanSetting circleRender = registerBoolean("Circle Render", false, () -> renders.getValue());
+    IntegerSetting life = registerInteger("Life", 300, 0, 1000, () -> renders.getValue() && circleRender.getValue());
+    DoubleSetting circleRange = registerDouble("Circle Range", 1, 0, 3, () -> renders.getValue() && circleRender.getValue());
+    ColorSetting color = registerColor("Color", new GSColor(255, 255, 255, 255), () -> renders.getValue() && circleRender.getValue(), true);
+    BooleanSetting desyncCircle = registerBoolean("Desync Circle", false, () -> renders.getValue() && circleRender.getValue());
+    IntegerSetting stepRainbowCircle = registerInteger("Step Rainbow Circle", 1, 1, 100, () -> renders.getValue() && circleRender.getValue());
+    BooleanSetting increaseHeight = registerBoolean("Increase Height", true, () -> renders.getValue() && circleRender.getValue());
+    DoubleSetting speedIncrease = registerDouble("Speed Increase", 0.01, 0.3, 0.001, () -> renders.getValue() && circleRender.getValue());
+
     //endregion
 
     //region Predict
@@ -586,6 +596,69 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     //region Global variables
+
+    static class renderClass {
+        final int id;
+        long start;
+        final long life;
+        final double circleRange;
+        final GSColor color;
+        final boolean desyncCircle;
+        final int stepRainbowCircle;
+        final double range;
+        final int desync;
+        final boolean increaseHeight;
+        final double speedIncrease;
+        double nowHeigth = 0;
+        boolean up = true;
+
+
+        public renderClass(int id, long life, GSColor color, double circleRange, boolean desyncCircle, int stepRainbowCircle, double range, int desync, boolean increaseHeight, double speedIncrease) {
+            this.increaseHeight = increaseHeight;
+            this.speedIncrease = speedIncrease;
+            this.id = id;
+            this.range = range;
+            start = System.currentTimeMillis();
+            this.life = life;
+            this.desync = desync;
+            this.circleRange = circleRange;
+            this.color = color;
+            this.desyncCircle = desyncCircle;
+            this.stepRainbowCircle = stepRainbowCircle;
+        }
+
+        boolean update() {
+            return System.currentTimeMillis() - start > life;
+        }
+
+        boolean reset(int id) {
+            if (this.id == id) {
+                start = System.currentTimeMillis();
+                return true;
+            }
+            return false;
+        }
+
+        void render() {
+            Entity e = mc.world.getEntityByID(id);
+            if (e != null) {
+                double inc = 0;
+                if (increaseHeight) {
+                    nowHeigth += speedIncrease * (up ? 1 : -1);
+                    if (nowHeigth > e.height)
+                        up = false;
+                    else if (nowHeigth < 0)
+                        up = true;
+                    inc = nowHeigth;
+                }
+                if (desyncCircle) {
+                    RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, desync, color.getAlpha());
+                } else {
+                    RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, color);
+                }
+            }
+        }
+    }
 
     // This is for comparing the distance between two players
     static class Sortbyroll implements Comparator<EntityPlayer> {
@@ -1026,6 +1099,8 @@ public class AutoCrystalRewrite extends Module {
     ArrayList<Long> durationsBreaking = new ArrayList<>();
     ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
     ArrayList<slowBreakPlayers> listPlayersBreak = new ArrayList<>();
+    ArrayList<renderClass> toRender = new ArrayList<>();
+
 
     // Multithreading power!
     ThreadPoolExecutor executor =
@@ -1116,6 +1191,12 @@ public class AutoCrystalRewrite extends Module {
             }
 
         }
+        //toRender.removeIf(KillAura.renderClass::update);
+        for(int i = 0; i < toRender.size(); i++)
+            if (toRender.get(i).update()) {
+                toRender.remove(i);
+                i--;
+            }
         breakPacketLimit.updateCrystals();
         listPlayersBreak.removeIf(slowBreakPlayers::update);
         crystalSecondBreak.updateCrystals();
@@ -1467,8 +1548,20 @@ public class AutoCrystalRewrite extends Module {
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
 
-        if (bestPlace.target != null)
+        if (bestPlace.target != null) {
             placeRender = 0;
+
+            boolean found = false;
+            for(renderClass rend : toRender)
+                if (rend.reset(bestPlace.target.entity.entityId)) {
+                    found = true;
+                    break;
+                }
+
+            if (!found) {
+                toRender.add(new renderClass(bestPlace.target.entity.entityId, life.getValue(), color.getValue(), circleRange.getValue(), desyncCircle.getValue(), stepRainbowCircle.getValue(), circleRange.getValue(), stepRainbowCircle.getValue(), increaseHeight.getValue(), speedIncrease.getValue()));
+            }
+        }
 
         // Oh well, lmao everything here is likely well commented
 
@@ -3260,6 +3353,8 @@ public class AutoCrystalRewrite extends Module {
             movingPlaceNow = new Vec3d(0f, 0f, 0f);
             movingBreakNow = new Vec3d(0f, 0f, 0f);
         }
+
+        toRender.forEach(renderClass::render);
 
         managerRenderBlocks.render();
 

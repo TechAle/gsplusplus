@@ -64,8 +64,6 @@ public class KillAura extends Module {
     BooleanSetting increaseHeight = registerBoolean("Increase Height", true);
     DoubleSetting speedIncrease = registerDouble("Speed Increase", 0.01, 0.3, 0.001);
 
-    ArrayList<renderClass> toRender = new ArrayList<>();
-
     static class renderClass {
         final int id;
         long start;
@@ -137,12 +135,15 @@ public class KillAura extends Module {
         }
     }
 
+    ArrayList<renderClass> toRender = new ArrayList<>();
+
+
     boolean calcDelay = true;
 
     public void onUpdate() {
         if (mc.player == null || !mc.player.isEntityAlive()) return;
 
-        toRender.removeIf(renderClass::update);
+        //toRender.removeIf(renderClass::update);
         for(int i = 0; i < toRender.size(); i++)
             if (toRender.get(i).update()) {
                 toRender.remove(i);
