@@ -76,6 +76,7 @@ I think it's the duty of a developer to say if he took inspiration / took some p
 * AntiPing (Phobos)
 * NewChunks (Seppuku)
 * Trajectories (Phobos)
+* Chams (k5)
 ### gs++ changelogs
 (thanks phantom)
 ## Modules Added: 
