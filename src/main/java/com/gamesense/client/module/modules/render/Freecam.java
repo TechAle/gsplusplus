@@ -1,19 +1,29 @@
 package com.gamesense.client.module.modules.render;
 
+import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
+import com.gamesense.api.util.player.PlayerPacket;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.MotionUtil;
+import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.client.CPacketInput;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent;
 
 import static java.lang.Math.PI;
@@ -24,10 +34,13 @@ public class Freecam extends Module {
     BooleanSetting source = registerBoolean("Source Engine", false);
     BooleanSetting noclip = registerBoolean("NoClip", true);
     BooleanSetting cancelPackets = registerBoolean("Cancel Packets", true);
-    DoubleSetting speed = registerDouble("Speed", 10, 0, 20);
+    DoubleSetting speedXZ = registerDouble("Speed XZ", 10, 0, 20);
+    DoubleSetting speedY = registerDouble("Speed Y", 10, 0, 20);
+    BooleanSetting rotate = registerBoolean("Rotate", false);
 
     private double posX, posY, posZ;
     private float pitch, yaw;
+    Vec3d lastHitVec;
 
     private EntityOtherPlayerMP clonedPlayer;
 
@@ -35,6 +48,7 @@ public class Freecam extends Module {
     private Entity ridingEntity;
 
     public void onEnable() {
+        lastHitVec = null;
         if (mc.player != null) {
 
 
@@ -85,11 +99,11 @@ public class Freecam extends Module {
         if (!source.getValue()){
             if (mc.gameSettings.keyBindJump.isKeyDown()) {
 
-                mc.player.motionY = (speed.getValue());
+                mc.player.motionY = (speedY.getValue());
 
             } else if (mc.gameSettings.keyBindSneak.isKeyDown()) {
 
-                mc.player.motionY = (-speed.getValue());
+                mc.player.motionY = (-speedXZ.getValue());
 
             } else
 
@@ -99,7 +113,7 @@ public class Freecam extends Module {
 
             double pitchRad = mc.player.rotationPitch * PI / 180;
             if (MotionUtil.isMoving(mc.player)){
-                mc.player.motionY = -Math.sin(pitchRad) * speed.getValue();
+                mc.player.motionY = -Math.sin(pitchRad) * speedXZ.getValue();
             } else
                 mc.player.motionY = 0;
 
@@ -107,7 +121,7 @@ public class Freecam extends Module {
         }
 
         if (MotionUtil.isMoving(mc.player)) {
-            MotionUtil.setSpeed(mc.player, speed.getValue());
+            MotionUtil.setSpeed(mc.player, speedXZ.getValue());
 
         } else {
 
@@ -118,6 +132,14 @@ public class Freecam extends Module {
         mc.player.noClip = noclip.getValue();
         mc.player.onGround = false;
         mc.player.fallDistance = 0;
+
+        if (rotate.getValue()) {
+            RayTraceResult ray = mc.player.rayTrace(12, mc.getRenderPartialTicks());
+            if (ray != null && ray.typeOfHit != RayTraceResult.Type.ENTITY) {
+                lastHitVec = ray.hitVec;
+            }
+
+        }
 
     }
 
@@ -136,7 +158,7 @@ public class Freecam extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Send> sendListener = new Listener<>(event -> {
-        if ((event.getPacket() instanceof CPacketPlayer || event.getPacket() instanceof CPacketInput) && cancelPackets.getValue()) {
+        if ((event.getPacket() instanceof CPacketPlayer.Position || event.getPacket() instanceof CPacketPlayer.PositionRotation || event.getPacket() instanceof CPacketInput) && cancelPackets.getValue()) {
             event.cancel();
         }
     });
@@ -144,5 +166,17 @@ public class Freecam extends Module {
     public static double degToRad(double deg) {
         return deg * (float) (PI / 180.0f);
     }
+
+
+    @EventHandler
+    private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
+        // If we dont have to rotate
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null || mc.world == null || mc.player == null)
+            return;
+        EntityPlayer pl = (EntityPlayer) mc.world.getEntityByID(-100);
+        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec, pl);
+        PlayerPacket packet = new PlayerPacket(this, rotation);
+        PlayerPacketManager.INSTANCE.addPacket(packet);
+    });
 
 }
