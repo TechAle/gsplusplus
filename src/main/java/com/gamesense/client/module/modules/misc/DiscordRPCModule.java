@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
-@Module.Declaration(name = "DiscordRPC", category = Category.Misc, drawn = false)
+@Module.Declaration(name = "DiscordRPC", category = Category.Misc, drawn = false, enabled = true)
 public class DiscordRPCModule extends Module {
 
 

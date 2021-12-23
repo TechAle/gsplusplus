@@ -8,7 +8,6 @@
 ## Table of Contents
 * [Information](#Information)
     * [About](#About)
-    * [Questions](#Questions)
 * [gs++ Contributors](#gs++Contributors)
 * [GameSense Contributors](#GameSenseContributors)
 * [GameSense Credits](#GameSenseCredits)
@@ -21,18 +20,6 @@
 #### About
 GS++ (GameSense++) is a private Minecraft forge "utility born" for anarchy-related servers such as 2b2t.<br>
 This project was started by TechAle after gamesense got discontinued.<br>
-
-#### Questions
-* Why is this repository public? If you see this repository is because either you are a member
-of gs++ gs++ got leaked and i decided that, if gs++ ever got leaked, i will make 
-the source code public<br>
-* I have an issue with gs++, can you help me? Unless you are a gs++ member, you wont get any support from me.
-Remember that this is a private client that is different from open source<br>
-* How can i get gs++? To be a member of gs++, you need to be vouched by most if not all members..<br>
-* Why continuing as private client? I decided to continue developing gamesense as private because well, people are annoying.
-The experience of gamesense was enough for me to make me say "No, never". So i decided to reserve my new updates
-to only few people that have a little bit of brain.
-
 
 #### GameSense Contributors
 * Cyber (original developer)

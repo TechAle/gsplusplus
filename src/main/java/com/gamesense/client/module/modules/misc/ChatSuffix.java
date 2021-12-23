@@ -13,7 +13,7 @@ import net.minecraft.network.play.client.CPacketChatMessage;
 
 import java.util.Arrays;
 
-@Module.Declaration(name = "ChatSuffix", category = Category.Misc)
+@Module.Declaration(name = "ChatSuffix", category = Category.Misc, enabled = true)
 public class ChatSuffix extends Module {
 
     ModeSetting Separator = registerMode("Separator", Arrays.asList(">>", "<<", "|"), "|");
