@@ -27,7 +27,7 @@ public class Credits extends Module {
                 "\n" +
                 "    How customchat is implemented for overriding minecraft's chat (https://www.curseforge.com/minecraft/mc-mods/better-chat)\n" +
                 "    BowExploit (https://github.com/PotatOoOoOo0/BowMcBomb)\n" +
-                "    Shaders (mm+3)\n" +
+                "    Shaders (Momentum)\n" +
                 "    FootWalker (packet logged future and konas)\n" +
                 "    ChorusPost (k5)\n" +
                 "    Aspect (quantum)\n" +
