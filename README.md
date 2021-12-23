@@ -12,6 +12,7 @@
 * [gs++ Contributors](#gs Contributors)
 * [GameSense Contributors](#GameSense Contributors)
 * [GameSense Credits](#GameSense Credits)
+* [From TechAle](#From TechAle)
 
 
 <!-- INFORMATION -->
@@ -65,3 +66,14 @@ Without these projects, GameSense would not exist so a lot of credit is due to t
 
 This client also implements the ClickGUI using PanelStudio: https://github.com/lukflug/PanelStudio/.
 If you believe that we are using your code and credits are not properly given, please message GooberTown#7384 on Discord.
+
+# From TechAle
+Hi, it's the main dev of gs++.<br>
+Developing gs++ had been really funny and, for who is wondering, the release date was decided for the 27^ December, i have no idea why Sable decided to release it 4 days before lol<br>
+Why am i releasing it? Well, basically every gs++ users are quitting, so, i see no reasons why keeping this private.<br>
+It also got boring developing in minecraft, and the last things i coded were bad+speed coded.<br>
+For the last 2 months the client become a little bit instable, mostly because of bad things i added.<br>
+"gs++ is held together by hot glue" - Historian<br>
+I dont suggest to continue gs++, it's really not worth lol, start a client from 0 that is 100%  better.<br>
+After this, i'll quit minecraft developement, i wont fork/star anything that is related to minecraft.<br>
+If you want to follow me, just know that i'll start creating things that are not for minecraft, mostly university.<br>
