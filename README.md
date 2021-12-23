@@ -56,7 +56,7 @@ If you believe that we are using your code and credits are not properly given, p
 I think it's the duty of a developer to say if he took inspiration / took some piece of code from another client.
 * How customchat is implemented for overriding  minecraft's chat (https://www.curseforge.com/minecraft/mc-mods/better-chat)
 * BowExploit (https://github.com/PotatOoOoOo0/BowMcBomb)
-* Shaders (mm+3)
+* Shaders (momentum)
 * FootWalker (packet logged future and konas)
 * ChorusPost (k5)
 * Aspect (quantum)
