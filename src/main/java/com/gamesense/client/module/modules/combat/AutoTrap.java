@@ -45,11 +45,13 @@ public class AutoTrap extends Module {
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
     BooleanSetting rotate = registerBoolean("Rotate", true);
+    IntegerSetting afterRotation = registerInteger("After Rotation", 2, 0, 5);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
 
     private int oldSlot = -1;
+    private int tickRotation;
     private int offsetSteps = 0;
     private boolean outOfTargetBlock = false;
     private boolean activedOff = false;
@@ -66,6 +68,7 @@ public class AutoTrap extends Module {
 
         oldSlot = mc.player.inventory.currentItem;
         secureSilentSwitch = -1;
+        tickRotation = -1;
     }
 
     public void onDisable() {
@@ -229,6 +232,7 @@ public class AutoTrap extends Module {
 
         if (rotate.getValue()) {
             lastHitVec = new Vec3d(pos).add(.5, .5, .5);
+            tickRotation = 0;
         }
 
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
@@ -241,9 +245,12 @@ public class AutoTrap extends Module {
         // If we dont have to rotate
         if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null || mc.world == null || mc.player == null)
             return;
-        EntityPlayer pl = (EntityPlayer) mc.world.getEntityByID(-100);
-        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec, pl);
+        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
         PlayerPacket packet = new PlayerPacket(this, rotation);
         PlayerPacketManager.INSTANCE.addPacket(packet);
+        if (tickRotation > afterRotation.getValue()) {
+            tickRotation = -1;
+            lastHitVec = null;
+        }
     });
 }
