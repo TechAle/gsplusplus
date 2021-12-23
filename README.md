@@ -12,7 +12,7 @@
 * [GameSense Contributors](#GameSenseContributors)
 * [GameSense Credits](#GameSenseCredits)
 * [Changelogs](#Changelogs)
-* [From TechAle](#From TechAle)
+* [From TechAle](#FromTechAle)
 
 
 <!-- INFORMATION -->
