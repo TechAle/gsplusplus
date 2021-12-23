@@ -69,19 +69,19 @@ I think it's the duty of a developer to say if he took inspiration / took some p
 ### gs++ changelogs
 (thanks phantom)
 ## Modules Added: 
-* Combat:<br>Anvil trap, AutoCrystalRewrite, AutoFeetPlace, AutoMend, Criticals, elevatot, Foot Walker, FootConcrete, Friends, Surround rewrite
-* Exploits:<br>AutoDupe5B, BowExploit, ChorusPost, ClipFlight, CoordsExploit, Crasher, Mining spoof(CookieClient), PacketJump, No Break Reset, Anti gap fail, no rotate, PingSpoof, RoofInteract, Rubberband
-* Movement:AirJump, Antihunger, Anti void, AutoWalk, Avoid, BoundsMove, ElytraFly, EntityControl, EntitySpeed, Fastfall, Flight, HighJump, HoleSnap, Jesus, LiquidSpeed, LongJump, PassiveSpeed, PhaseWalk, Pursue, SafeWalk, Scaffold, SlowFall, StepRewrite, Tickshift, Timer, Viewlock
-* Misc:<br>FastShulker, ExtraTab, IRC, MouseClickAction, Quiver, Spammer
-* Render:<br>Aspect, ClientTime, FOVMod, MobOwner, NoGlitchBlock, Predict, RainbowEnchant, Shaders, Swing
+* Combat:<br>Anvil trap, AutoCrystalRewrite, AutoFeetPlace, AutoMend, Criticals, elevatot, Foot Walker, FootConcrete, Friends, Surround rewrite, AutoCreeper, AutoCity
+* Exploits:<br>AutoDupe5B, BowExploit, ChorusPost, ClipFlight, CoordsExploit, Crasher, Mining spoof(CookieClient), PacketJump, No Break Reset, Anti gap fail, no rotate, PingSpoof, RoofInteract, Rubberband, Drown, newChunks, SpeedNom
+* Movement:AirJump, Antihunger, Anti void, AutoWalk, Avoid, BoundsMove, ElytraFly, EntityControl, EntitySpeed, Fastfall, Flight, HighJump, HoleSnap, Jesus, LiquidSpeed, LongJump, PassiveSpeed, PhaseWalk, Pursue, SafeWalk, Scaffold, SlowFall, StepRewrite, Tickshift, Timer, Viewlock, WallClimb, ViewLock, Phase, LevitationControl, antiVoid, antiHunger
+* Misc:<br>FastShulker, ExtraTab, IRC, MouseClickAction, Quiver, Spammer, Credits, KillEffect, PacketLogger, QueueNotifier
+* Render:<br>Aspect, ClientTime, FOVMod, MobOwner, NoGlitchBlock, Predict, RainbowEnchant, Shaders, Swing, Ambience, mobOwner, Trails
 * HUD:<br>Frames, LagNotifier
 
 ## Modules changed:
-* Combat:<br>AutoArmor(Elytra Prioity), AutoSkull(Phase Stuff), AutoTrap(Silent swap), AutoWeb(Silent swap), Blocker(Backend Stuff), HoleFill(Silent Swap+Double hole), KillAura(Hit Delay+Other stuff), Offhand(Strict+Bias Health), SelfTrap(Silent swap), SelfWeb(Silent Swap), Surround(Center changes+Silent swap)
+* Combat:<br>AutoArmor(Elytra Prioity), AutoSkull(Phase Stuff), AutoTrap(Silent swap), AutoWeb(Silent swap), Blocker(Backend Stuff), HoleFill(Silent Swap+Double hole), KillAura(Hit Delay+Other stuff), Offhand(Strict+Bias Health), SelfTrap(Silent swap), SelfWeb(Silent Swap), Surround(Center changes+Silent swap), KillAura (Renders)
 * Exploits:<br>FastBreak(Tons if things), No Interact(Added only gapple), PacketXP(Moved to Combat section)
 * Movement:<br>Anchor(Pitch+Fastfall), Blink(Made it better), PlayerTweaks(No slow strict+IceSpeed+PortalChat+updated guimove+NoWeb+NoFall), ReverseStep(Rewritten), Speed(Rewritten), Step(Improved NCP mode)
 * Misc:<br>ChatModifier(Rewritten), ChatSuffix(Changed to GS++), DiscordRPC(Rewritten), FakePlayer(Moving fakeplayer+SimulatedDamage), HotbarRefill(Strict), NoEntityTrace(Added food and all), NoKick(signs edits)
-* Render:<br>BlockHighlight(Rewritten), BreakESP(Rewritten), Capes(GS++,Amber), Chams(Pop chams), ESP(Color picker), FreeCam(Rewritten), HoleESP(RayTrace+NewColor settings), NameTags(Popchams compatibility), NoRender(No Weather), ShulkerViewer(Fixed 2.3.0 monkey), ViewModel(Rewritten)
+* Render:<br>BlockHighlight(Rewritten), BreakESP(Rewritten), Capes(GS++,Amber), Chams(Pop chams), ESP(Color picker), FreeCam(Rewritten), HoleESP(RayTrace+NewColor settings), NameTags(Popchams compatibility), NoRender(No Weather), ShulkerViewer(Fixed 2.3.0 monkey), ViewModel(Rewritten), Chams (Skidded)
 HUD:<br>Speedometer(Added Arrays)
 
 # From TechAle
