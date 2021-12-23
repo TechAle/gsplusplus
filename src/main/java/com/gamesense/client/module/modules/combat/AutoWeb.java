@@ -70,7 +70,7 @@ public class AutoWeb extends Module {
             oldSlot = -1;
         }
 
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
 
         outOfTargetBlock = false;
         targetPlayer = null;

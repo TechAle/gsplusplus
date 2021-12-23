@@ -2,6 +2,7 @@ package com.gamesense.api.util.player;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
@@ -44,6 +45,10 @@ public class RotationUtil {
      */
     public static Vec2f getRotationTo(Vec3d posTo) {
         EntityPlayerSP player = mc.player;
+        return player != null ? getRotationTo(player.getPositionEyes(1.0f), posTo) : Vec2f.ZERO;
+    }
+
+    public static Vec2f getRotationTo(Vec3d posTo, EntityPlayer player) {
         return player != null ? getRotationTo(player.getPositionEyes(1.0f), posTo) : Vec2f.ZERO;
     }
 

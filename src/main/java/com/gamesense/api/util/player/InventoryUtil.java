@@ -1,7 +1,6 @@
 package com.gamesense.api.util.player;
 
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.combat.AutoCrystal;
 import com.gamesense.client.module.modules.combat.OffHand;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockObsidian;
@@ -11,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
@@ -22,6 +22,16 @@ import java.util.List;
 public class InventoryUtil {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
+
+    public static void swap(int InvSlot, int newSlot) {
+
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, newSlot, 0, ClickType.PICKUP, mc.player);
+        mc.playerController.windowClick(0, InvSlot, 0, ClickType.PICKUP, mc.player);
+
+        mc.playerController.updateController();
+
+    }
 
     public static int findObsidianSlot(boolean offHandActived, boolean activeBefore) {
         int slot = -1;
@@ -48,6 +58,35 @@ public class InventoryUtil {
             }
         }
         return slot;
+    }
+
+    public static int findCrystalBlockSlot(boolean offHandActived, boolean activeBefore) {
+
+        int slot = -1;
+        List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
+
+        if (offHandActived && ModuleManager.isModuleEnabled(OffHand.class)) {
+            if (!activeBefore) {
+                OffHand.requestItems(0);
+            }
+            return 9;
+        }
+
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mainInventory.get(i);
+
+            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                continue;
+            }
+
+            Block block = ((ItemBlock) stack.getItem()).getBlock();
+            if (block.getBlockState().getBlock().blockHardness > 6) {
+                slot = i;
+                break;
+            }
+        }
+        return slot;
+
     }
 
     public static int findSkullSlot(boolean offHandActived, boolean activeBefore) {
@@ -133,6 +172,21 @@ public class InventoryUtil {
                 slot = i;
                 break;
             }
+        }
+        return slot;
+    }
+
+    public static int findAnyBlockSlot(int lower, int upper) {
+        int slot = -1;
+        List<ItemStack> mainInventory = mc.player.inventory.mainInventory;
+
+        for (int i = lower; i <= upper; i++) {
+            ItemStack stack = mainInventory.get(i);
+
+            if (stack == ItemStack.EMPTY || !(stack.getItem() instanceof ItemBlock)) {
+                continue;
+            }
+            slot = i;
         }
         return slot;
     }

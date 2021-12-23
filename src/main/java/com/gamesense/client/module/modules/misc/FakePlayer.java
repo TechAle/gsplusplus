@@ -2,21 +2,18 @@ package com.gamesense.client.module.modules.misc;
 
 import com.gamesense.api.event.events.PacketEvent;
 import com.gamesense.api.event.events.TotemPopEvent;
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.StringSetting;
-import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.player.RotationUtil;
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
-import com.gamesense.api.util.world.combat.ac.PlayerInfo;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.authlib.GameProfile;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
+import net.minecraft.block.BlockAir;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
-import net.minecraft.client.particle.ParticleTotem;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,11 +23,14 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.SPacketSoundEffect;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.world.GameType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,6 +57,12 @@ public class FakePlayer extends Module {
     IntegerSetting vulnerabilityTick = registerInteger("Vulnerability Tick", 4, 0, 10);
     IntegerSetting resetHealth = registerInteger("Reset Health", 10, 0, 36);
     IntegerSetting tickRegenVal = registerInteger("Tick Regen", 4, 0, 30);
+    IntegerSetting startHealth = registerInteger("Start Health", 20, 0, 30);
+    ModeSetting moving = registerMode("Moving", Arrays.asList("None", "Line", "Circle", "Random"), "None");
+    DoubleSetting speed = registerDouble("Speed", .36, 0, 4, () -> !(moving.getValue().equals("None") && moving.getValue().equals("Random")));
+    DoubleSetting range = registerDouble("Range", 3, 0, 14, () -> moving.getValue().equals("Circle"));
+    BooleanSetting followPlayer = registerBoolean("Follow Player", true, () -> moving.getValue().equals("Line"));
+    BooleanSetting resistance = registerBoolean("Resistance", true);
 
     int incr;
     public void onEnable() {
@@ -80,7 +86,7 @@ public class FakePlayer extends Module {
         clonedPlayer.rotationPitch = mc.player.rotationPitch;
         // set gameType
         clonedPlayer.setGameType(GameType.SURVIVAL);
-        clonedPlayer.setHealth(20);
+        clonedPlayer.setHealth(startHealth.getValue());
         // Add entity id
         mc.world.addEntityToWorld((-1234 + incr), clonedPlayer);
         incr++;
@@ -96,14 +102,22 @@ public class FakePlayer extends Module {
                 ItemStack item = armors[i];
                 // Add enchants
                 item.addEnchantment(
-                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                        i == 3 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
                         4);
                 // Add it to the player
                 clonedPlayer.inventory.armorInventory.set(i, item);
+
             }
         }
-        clonedPlayer.onLivingUpdate();
+        if (resistance.getValue())
+            clonedPlayer.addPotionEffect(new PotionEffect(Potion.getPotionById(11), 123456789, 0));
+        clonedPlayer.onEntityUpdate();
         listPlayers.add(new playerInfo(clonedPlayer.getName()));
+        if (!moving.getValue().equals("None"))
+            manager.addPlayer(clonedPlayer.entityId, moving.getValue(), speed.getValue(),
+                    moving.getValue().equals("Line") ? (
+                                getDirection()
+                            ) : -1, range.getValue(), followPlayer.getValue());
     }
     boolean beforePressed;
     @Override
@@ -126,19 +140,45 @@ public class FakePlayer extends Module {
                         temp.get().setHealth(temp.get().getHealth() + 1);
             }
         }
+
+        // This manage moving fakePlayers
+        manager.update();
     }
 
+    // Idk from who i skidded this, it was in a forum
+    int getDirection() {
+        int yaw = (int) RotationUtil.normalizeAngle(mc.player.getPitchYaw().y);
+
+
+
+        if (yaw<0)              //due to the yaw running a -360 to positive 360
+
+            yaw+=360;    //not sure why it's that way
+
+
+
+        yaw+=22;    //centers coordinates you may want to drop this line
+
+        yaw%=360;  //and this one if you want a strict interpretation of the zones
+
+
+
+       return yaw/45;  //  360degrees divided by 45 == 8 zones
+    }
+
+    // Simple list of players for the pop
     ArrayList<playerInfo> listPlayers = new ArrayList<>();
     class playerInfo {
         final String name;
         int tickPop = -1;
         int tickRegen = 0;
 
-
+        // We just set the new name
         public playerInfo(String name) {
             this.name = name;
         }
 
+        // If update, we have to regen and decrease vulnerability tick
         boolean update() {
             if (tickPop != -1) {
                 if (++tickPop >= vulnerabilityTick.getValue())
@@ -155,6 +195,141 @@ public class FakePlayer extends Module {
         }
     }
 
+    static class movingPlayer {
+        private final int id;
+        private final String type;
+        private final double speed;
+        private final int direction;
+        private final double range;
+        private final boolean follow;
+        int rad = 0;
+
+        public movingPlayer(int id, String type, double speed, int direction, double range, boolean follow) {
+            this.id = id;
+            this.type = type;
+            this.speed = speed;
+            this.direction = Math.abs(direction);
+            this.range = range;
+            this.follow = follow;
+        }
+
+        void move() {
+            Entity player = mc.world.getEntityByID(id);
+            if (player != null) {
+                switch (type) {
+                    case "Line":
+
+                        double posX = follow ? mc.player.posX : player.posX,
+                                posY = follow ? mc.player.posY : player.posY,
+                                 posZ = follow ? mc.player.posZ : player.posZ;
+
+
+                        switch (direction) {
+                            case 0:
+                                posZ += speed;
+                                break;
+                            case 1:
+                                posX -= speed/2;
+                                posZ += speed/2;
+                                break;
+                            case 2:
+                                posX -= speed/2;
+                                break;
+                            case 3:
+                                posZ -= speed/2;
+                                posX -= speed/2;
+                                break;
+                            case 4:
+                                posZ -= speed;
+                                break;
+                            case 5:
+                                posX += speed/2;
+                                posZ -= speed/2;
+                                break;
+                            case 6:
+                                posX += speed;
+                                break;
+                            case 7:
+                                posZ += speed/2;
+                                posX += speed/2;
+                                break;
+                        }
+
+                        if (BlockUtil.getBlock(posX, posY, posZ) instanceof BlockAir) {
+                            for(int i = 0; i < 5; i++) {
+                                if (BlockUtil.getBlock(posX, posY - 1, posZ) instanceof BlockAir) {
+                                    posY--;
+                                } else break;
+                            }
+                        } else {
+                            for(int i = 0; i < 5; i++) {
+                                if (!(BlockUtil.getBlock(posX, posY, posZ) instanceof BlockAir)) {
+                                    posY++;
+                                } else break;
+                            }
+                        }
+
+                        player.setPositionAndUpdate(
+                                posX,
+                                posY,
+                                posZ
+                        );
+                        break;
+                    case "Circle":
+
+                        double posXCir = Math.cos(rad/100.0) * range + mc.player.posX, posZCir = Math.sin(rad/100.0) * range + mc.player.posZ, posYCir = mc.player.posY;
+
+                        if (BlockUtil.getBlock(posXCir, posYCir, posZCir) instanceof BlockAir) {
+                            for(int i = 0; i < 5; i++) {
+                                if (BlockUtil.getBlock(posXCir, posYCir - 1, posZCir) instanceof BlockAir) {
+                                    posYCir--;
+                                } else break;
+                            }
+                        } else {
+                            for(int i = 0; i < 5; i++) {
+                                if (!(BlockUtil.getBlock(posXCir, posYCir, posZCir) instanceof BlockAir)) {
+                                    posYCir++;
+                                } else break;
+                            }
+                        }
+
+                        player.setPositionAndUpdate(
+                                posXCir,
+                                posYCir,
+                                posZCir
+                        );
+                        rad += speed * 10;
+                        break;
+                    case "Random":
+                        break;
+                }
+            }
+        }
+
+    }
+
+    static class movingManager {
+        // List of players
+        private final ArrayList<movingPlayer> players = new ArrayList<>();
+
+        // Just add a new player
+        void addPlayer(int id, String type, double speed, int direction, double range, boolean follow) {
+            players.add(new movingPlayer(id, type, speed, direction, range, follow));
+        }
+
+        // Update every fakePlayer' position
+        void update() {
+            this.players.forEach(movingPlayer::move);
+        }
+
+        void remove() {
+            players.clear();
+        }
+    }
+
+    // This just manage the entire fakePlayer moving
+    movingManager manager = new movingManager();
+
     public void onDisable() {
         if (mc.world != null) {
             for(int i = 0; i < incr; i++) {
@@ -162,6 +337,7 @@ public class FakePlayer extends Module {
             }
         }
         listPlayers.clear();
+        manager.remove();
     }
 
     @SuppressWarnings("unused")
@@ -188,7 +364,7 @@ public class FakePlayer extends Module {
                                             continue;
 
                                         // Calculate damage
-                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer);
+                                        float damage = DamageUtil.calculateDamage(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ(), entityPlayer, false);
                                         if (damage > entityPlayer.getHealth()) {
                                             // If higher, new health and pop
                                             entityPlayer.setHealth(resetHealth.getValue());

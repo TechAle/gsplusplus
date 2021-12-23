@@ -1,24 +1,22 @@
 package com.gamesense.client.module;
 
+import com.gamesense.api.event.events.RenderEvent;
+import com.gamesense.api.setting.SettingsManager;
+import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.MessageBus;
+import com.gamesense.api.util.render.GSColor;
+import com.gamesense.client.GameSense;
+import com.gamesense.client.module.modules.gui.ColorMain;
+import me.zero.alpine.listener.Listenable;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.input.Keyboard;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 import java.util.function.Supplier;
-
-import com.gamesense.api.setting.values.*;
-import me.zero.alpine.listener.Listenable;
-import org.lwjgl.input.Keyboard;
-
-import com.gamesense.api.event.events.RenderEvent;
-import com.gamesense.api.setting.SettingsManager;
-import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.render.GSColor;
-import com.gamesense.client.GameSense;
-import com.gamesense.client.module.modules.gui.ColorMain;
-
-import net.minecraft.client.Minecraft;
 
 public abstract class Module implements Listenable {
 
@@ -58,6 +56,10 @@ public abstract class Module implements Listenable {
 
     }
 
+    public void onDisabledUpdate() {
+
+    }
+
     protected void onDisable() {
 
     }
@@ -91,18 +93,60 @@ public abstract class Module implements Listenable {
     public void enable() {
         setEnabled(true);
         GameSense.EVENT_BUS.subscribe(this);
-        onEnable();
+        try {
+            onEnable();
+        } catch (Exception e) {
+
+            String vowel = "[aeiouAEIOU]";
+            MessageBus.sendClientPrefixMessage("Disabled " + this.getName() + " due to " + e);
+            for (StackTraceElement stack : e.getStackTrace()) {
+                System.out.println(stack.toString());
+            }
+
+        }
+
         if (toggleMsg && mc.player != null)
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getEnabledColor() + name + " turned ON!");
+            MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getEnabledColor() + name + " turned ON!", getIdFromString(name));
     }
 
     public void disable() {
         setEnabled(false);
         GameSense.EVENT_BUS.unsubscribe(this);
-        onDisable();
+        try {
+            onDisable();
+        } catch (Exception e) {
+
+            String vowel = "[aeiouAEIOU]";
+            MessageBus.sendClientPrefixMessage("Failed to onDisable " + this.getName() + "properly due to " + e);
+            for (StackTraceElement stack : e.getStackTrace()) {
+                System.out.println(stack.toString());
+            }
+
+        }
         if (toggleMsg && mc.player != null)
-            MessageBus.sendClientPrefixMessage(ModuleManager.getModule(ColorMain.class).getDisabledColor() + disabledMessage);
+            MessageBus.sendClientPrefixMessageWithID(ModuleManager.getModule(ColorMain.class).getDisabledColor() + disabledMessage, getIdFromString(name));
         setDisabledMessage(name + " turned OFF!");
+    }
+
+    public static int getIdFromString(String name) {
+
+        StringBuilder s = new StringBuilder();
+
+        name = name.replace("§", "e");
+
+        String blacklist = "[^a-z]";
+
+        for (int i = 0; i < name.length(); i++)
+            s.append(Integer.parseInt(String.valueOf(name.charAt(i)).replaceAll(blacklist,"e"), 36));
+
+        try {
+            s = new StringBuilder(s.substring(0, 8));
+        } catch (StringIndexOutOfBoundsException ignored) {
+            s = new StringBuilder(Integer.MAX_VALUE);
+        }
+
+        return Integer.MAX_VALUE - Integer.parseInt(s.toString().toLowerCase());
+
     }
 
     public void toggle() {

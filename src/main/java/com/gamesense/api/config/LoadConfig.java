@@ -105,6 +105,9 @@ public class LoadConfig {
                         ((ColorSetting) setting).fromLong(dataObject.getAsLong());
                     } else if (setting instanceof ModeSetting) {
                         setting.setValue(dataObject.getAsString());
+                    } else if (setting instanceof StringSetting) {
+                        setting.setValue(dataObject.getAsString());
+                        ((StringSetting) setting).setText(dataObject.getAsString());
                     }
                 }
             } catch (java.lang.NumberFormatException e) {

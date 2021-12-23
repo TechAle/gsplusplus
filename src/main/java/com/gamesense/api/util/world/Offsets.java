@@ -4,6 +4,7 @@ import net.minecraft.util.math.Vec3d;
 
 /**
  * @author Hoosiers
+ * @author Doogie13
  * @since 03/29/2021
  */
 
@@ -23,6 +24,15 @@ public class Offsets {
         new Vec3d(1, 0, 0),
         new Vec3d(0, 0, -1),
         new Vec3d(0, 0, 1)
+    };
+
+    public static final Vec3d[] SURROUND_MIN = {
+
+            new Vec3d(-1, 0, 0),
+            new Vec3d(1, 0, 0),
+            new Vec3d(0, 0, -1),
+            new Vec3d(0, 0, 1)
+
     };
 
     //"anti city" surround places blocks two blocks out in each cardinal direction
@@ -67,6 +77,26 @@ public class Offsets {
         new Vec3d(0, 2, 0)
     };
 
+    public static final Vec3d[] TRAP_BURROW = {
+            //layer below feet
+            new Vec3d(-1, 0, 0), //scaffold
+            //layer at feet level
+            new Vec3d(-1, 1, 0), //scaffold
+            //layer at head level
+            new Vec3d(-1, 2, 0),
+            new Vec3d(-1, 2, 1),
+            new Vec3d(-1, 2, -1),
+            //roof layer
+            new Vec3d(-1,3,0), // scaffold
+            new Vec3d(0, 3, 0),
+            new Vec3d(1, 3, 0),
+            //head layer again
+            new Vec3d(0, 2, 1),
+            new Vec3d(0, 2, -1),
+            //front head layer
+            new Vec3d(1, 2, 0),
+    };
+
     public static final Vec3d[] TRAP_STEP = {
         //layer below feet
         new Vec3d(0, -1, 0),
@@ -90,6 +120,67 @@ public class Offsets {
         new Vec3d(0, 3, 0)
     };
 
+    public static final Vec3d[] TRAP_CRYSTAL = {
+
+            //layer below feet
+            new Vec3d(-1, -1, 0), //scaffold
+            //layer at feet level
+            new Vec3d(-1, 0, 0), //scaffold
+            //layer at head level
+            new Vec3d(-1, 1, 0),
+            new Vec3d(-1, 1, 1),
+            new Vec3d(-1, 1, -1),
+            //roof layer
+            new Vec3d(-1,2,0), // scaffold
+            new Vec3d(0, 2, 0),
+            new Vec3d(1, 2, 0),
+            //head layer again
+            new Vec3d(0, 1, 1),
+            new Vec3d(0, 1, -1),
+            //front head layer
+            new Vec3d(1, 1, 0),
+
+    };
+    public static final Vec3d[] TRAP_CRYSTAL_ANVIL = {
+
+            //layer below feet
+            new Vec3d(-1, -1, 0), //scaffold
+            new Vec3d(-1, 0, 0), //scaffold
+            //layer at feet level
+            new Vec3d(-1, 1, 0), //scaffold
+            //layer at head level
+            new Vec3d(-1, 2, 0),
+            new Vec3d(-1, 2, 1),
+            new Vec3d(-1, 2, -1),
+            //roof layer
+            new Vec3d(-1,3,0), // scaffold
+            new Vec3d(0, 3, 0),
+            new Vec3d(1, 3, 0),
+            //head layer again
+            new Vec3d(0, 2, 1),
+            new Vec3d(0, 2, -1),
+            //front head layer
+            new Vec3d(1, 2, 0),
+
+    };
+
+    public static final Vec3d[] TRAP_CRYSTAL_MIN = {
+
+            //layer at head level
+            new Vec3d(-1, 1, 0),
+            new Vec3d(-1, 1, 1),
+            new Vec3d(-1, 1, -1),
+            //roof layer
+            new Vec3d(0, 2, 0),
+            new Vec3d(1, 2, 0),
+            //head layer again
+            new Vec3d(0, 1, 1),
+            new Vec3d(0, 1, -1),
+            //front head layer
+            new Vec3d(1, 1, 0),
+
+    };
+
     //"simple" trap method with least number of blocks to trap someone (no head layer)
     public static final Vec3d[] TRAP_SIMPLE = {
         //layer below feet
@@ -108,6 +199,27 @@ public class Offsets {
         //roof layer
         new Vec3d(1, 2, 0),
         new Vec3d(0, 2, 0)
+    };
+
+    public static final Vec3d[] TRAP_SIMPLE_NOSTEP = {
+            //layer below feet
+            new Vec3d(0, -1, 0),
+            new Vec3d(-1, -1, 0),
+            new Vec3d(1, -1, 0),
+            new Vec3d(0, -1, -1),
+            new Vec3d(0, -1, 1),
+            //layer at feet level
+            new Vec3d(-1, 0, 0),
+            new Vec3d(1, 0, 0),
+            new Vec3d(0, 0, -1),
+            new Vec3d(0, 0, 1),
+            //layer at head level (scaffold)
+            new Vec3d(1, 1, 0),
+            //roof layer
+            new Vec3d(1, 2, 0),
+            new Vec3d(0, 2, 0),
+            //no step
+            new Vec3d(0, 3, 0),
     };
 
     public static final Vec3d[] BURROW = {

@@ -10,7 +10,6 @@ import com.gamesense.client.module.Module;
 import com.mojang.authlib.GameProfile;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
@@ -23,10 +22,12 @@ import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.GameType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * @author Techale
@@ -48,12 +49,14 @@ public class Chams extends Module {
     ColorSetting mobColor = registerColor("Mob Color", new GSColor(255, 255, 0, 255));
     ColorSetting crystalColor = registerColor("Crystal Color", new GSColor(0, 255, 0, 255));
     BooleanSetting chamsPop = registerBoolean("Chams Pop", false);
-    ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame");
-    ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255));
-    IntegerSetting wireFramePop = registerInteger("WireFrame Pop", 4, 0, 10);
-    BooleanSetting gradientAlpha = registerBoolean("Gradient Alpha", true);
-
-    IntegerSetting life = registerInteger("Time", 100, 10, 300);
+    ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame",
+            () -> chamsPop.getValue());
+    ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255), () -> chamsPop.getValue());
+    IntegerSetting wireFramePop = registerInteger("WireFrame Pop", 4, 0, 10, () -> chamsPop.getValue());
+    BooleanSetting gradientAlpha = registerBoolean("Gradient Alpha", true, () -> chamsPop.getValue());
+    ModeSetting Movement = registerMode("Movement", Arrays.asList("None", "Heaven", "Hell"), "None", () -> chamsPop.getValue());
+    DoubleSetting yMovement = registerDouble("Y Movement", .2, 0, 1, () -> chamsPop.getValue() && !Movement.getValue().equals("None"));
+    IntegerSetting life = registerInteger("Time", 100, 10, 300, () -> chamsPop.getValue());
 
 
     private int fpNum = 0;
@@ -83,7 +86,7 @@ public class Chams extends Module {
                 }
                 listPlayers.remove(i);
                 i--; // -1237
-            }
+            } else spawnPlayer(listPlayers.get(i).id, listPlayers.get(i).coordinates);
         }
 
 
@@ -92,43 +95,53 @@ public class Chams extends Module {
 
     boolean spawnPlayer(Entity entity) {
         if (entity != null) {
-            // Clone empty player
-            EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), ""));
-            // Copy angles
-            clonedPlayer.copyLocationAndAnglesFrom(entity);
-            clonedPlayer.rotationYawHead = entity.getRotationYawHead();
-            clonedPlayer.rotationYaw = entity.rotationYaw;
-            clonedPlayer.rotationPitch = entity.rotationPitch;
-            /// Trying to make others ca not target this
-            // idk maybe some ca not considerate spectator
-            clonedPlayer.setGameType(GameType.SPECTATOR);
-            clonedPlayer.isSpectator();
-            clonedPlayer.setHealth(20);
-            // Add resistance for 0 damage
-            clonedPlayer.addPotionEffect(new PotionEffect(MobEffects.RESISTANCE, 100, 100, false, false));
-            // Add armor for not making some ca target this because "naked"
-            final ItemStack[] armors = new ItemStack[]{
-                    new ItemStack(Items.DIAMOND_BOOTS),
-                    new ItemStack(Items.DIAMOND_LEGGINGS),
-                    new ItemStack(Items.DIAMOND_CHESTPLATE),
-                    new ItemStack(Items.DIAMOND_HELMET)
-            };
-            for (int i = 0; i < 4; i++) {
-                // Create base
-                ItemStack item = armors[i];
-                // Add enchants
-                item.addEnchantment(
-                        i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
-                        50);
-                // Add it to the player
-                clonedPlayer.inventory.armorInventory.set(i, item);
-            }
             // Add entity id
-            mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
-            listPlayers.add(new playerChams(-1235 - fpNum, life.getValue()));
+            //mc.world.addEntityToWorld((-1235 - fpNum), clonedPlayer);
+            double movement = 0;
+            switch (Movement.getValue()) {
+                case "Heaven":
+                    movement = yMovement.getValue();
+                    break;
+                case "Hell":
+                    movement = -yMovement.getValue();
+                    break;
+            }
+            listPlayers.add(new playerChams(-1235 - fpNum, life.getValue(), new double[] {entity.posX, entity.posY, entity.posZ}, movement));
             fpNum++;
         }
         return true;
+    }
+
+    void spawnPlayer(int num, double[] positions) {
+        // Clone empty player
+        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), ""));
+        // Copy angles
+        clonedPlayer.setPosition(positions[0], positions[1], positions[2]);
+        /// Trying to make others ca not target this
+        // idk maybe some ca not considerate spectator
+        clonedPlayer.setGameType(GameType.SPECTATOR);
+        clonedPlayer.isSpectator();
+        clonedPlayer.setHealth(20);
+        // Add resistance for 0 damage
+        clonedPlayer.addPotionEffect(new PotionEffect(MobEffects.RESISTANCE, 100, 100, false, false));
+        // Add armor for not making some ca target this because "naked"
+        final ItemStack[] armors = new ItemStack[]{
+                new ItemStack(Items.DIAMOND_BOOTS),
+                new ItemStack(Items.DIAMOND_LEGGINGS),
+                new ItemStack(Items.DIAMOND_CHESTPLATE),
+                new ItemStack(Items.DIAMOND_HELMET)
+        };
+        for (int i = 0; i < 4; i++) {
+            // Create base
+            ItemStack item = armors[i];
+            // Add enchants
+            item.addEnchantment(
+                    i == 2 ? Enchantments.BLAST_PROTECTION : Enchantments.PROTECTION,
+                    50);
+            // Add it to the player
+            clonedPlayer.inventory.armorInventory.set(i, item);
+        }
+        mc.world.addEntityToWorld(num, clonedPlayer);
     }
 
     @SuppressWarnings("unused")
@@ -154,7 +167,7 @@ public class Chams extends Module {
             if ( chamsPop.getValue() && entity1.getName().length() == 0) {
                 renderChamsPopPre(entity1);
             } else
-            renderChamsPre(new GSColor(playerColor.getValue(), 255), true);
+                renderChamsPre(new GSColor(playerColor.getValue(), 255), true);
         }
 
         if (mob.getValue() && (entity1 instanceof EntityCreature || entity1 instanceof EntitySlime || entity1 instanceof EntitySquid)) {
@@ -170,14 +183,19 @@ public class Chams extends Module {
         private int tick;
         final private int finalTick;
         final private int id;
+        final double[] coordinates;
+        final double movement;
 
-        public playerChams(int id, int finalTick) {
+        public playerChams(int id, int finalTick, double[] coordinates, double movement) {
             this.id = id;
             this.finalTick = finalTick;
             this.tick = 0;
+            this.coordinates = coordinates;
+            this.movement = movement;
         }
 
         public boolean onUpdate() {
+            coordinates[1] += movement;
             return tick++ > finalTick;
         }
 
@@ -221,6 +239,10 @@ public class Chams extends Module {
         if (crystal.getValue() && entity1 instanceof EntityEnderCrystal) {
             renderChamsPost(false);
         }
+
+        if (entity1.getName().equals(""))
+            mc.world.removeEntityFromWorld(entity1.getEntityId());
+        int a = 0;
     });
 
     private void renderChamsPre(GSColor color, boolean isPlayer) {

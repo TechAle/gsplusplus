@@ -123,7 +123,7 @@ public class AntiCrystal extends Module {
                 // Check for the damage
                 if (checkDamage.getValue()) {
                     // Get it
-                    damage = (float) (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue());
+                    damage = (float) (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player, false) * biasDamage.getValue());
                     // If it's lower then damageMin and is lower the our health, exit
                     if (damage < damageMin.getValue() && damage < mc.player.getHealth())
                         return;
@@ -147,13 +147,14 @@ public class AntiCrystal extends Module {
     }
 
     public boolean usCrystal(Entity crystal) {
-        AutoCrystal autoCrystal = ModuleManager.getModule(AutoCrystal.class);
-
+        AutoCrystalRewrite autoCrystal = ModuleManager.getModule(AutoCrystalRewrite.class);
+        /*
         if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
             return autoCrystal.targets.stream().filter(placeInfo -> placeInfo.crystal.equals(new BlockPos((int) crystal.posX, crystal.posY - 1, (int) crystal.posZ))).findFirst().orElse(null) != null;
         } else {
             return false;
-        }
+        }*/
+        return false;
     }
 
     // This function check if the offHand has "Plates" as value
@@ -192,8 +193,8 @@ public class AntiCrystal extends Module {
 
         boolean stoppedAC = false;
 
-        if (ModuleManager.isModuleEnabled(AutoCrystal.class)) {
-            AutoCrystal.stopAC = true;
+        if (ModuleManager.isModuleEnabled(AutoCrystalRewrite.class)) {
+            AutoCrystalRewrite.stopAC = true;
             stoppedAC = true;
         }
 
@@ -223,7 +224,7 @@ public class AntiCrystal extends Module {
         }
 
         if (stoppedAC) {
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
             stoppedAC = false;
         }
 

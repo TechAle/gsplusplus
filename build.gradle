@@ -61,6 +61,9 @@ repositories {
 		name = 'forge'
 		url = 'https://maven.minecraftforge.net/'
 	}
+	maven {
+		url = 'https://mvnrepository.com/artifact/org.glassfish.tyrus.bundles'
+	}
 	mavenCentral()
 }
 
@@ -71,12 +74,15 @@ dependencies {
 		exclude module: 'gson'
 		exclude module: 'commons-io'
 	}
+	compile 'javax.websocket:javax.websocket-api:1.1'
+	compile 'club.minnced:discord-webhooks:0.5.6'
 	compile 'com.github.ZeroMemes:Alpine:1.9'
 	compile group: 'net.jodah', name: 'typetools', version: '0.5.0'
 	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
 	compile group: 'club.minnced', name: 'java-discord-rpc', version: '2.0.1'
 	compile 'com.lukflug:panelstudio:0.2.0-SNAPSHOT'
 	compile 'com.lukflug:panelstudio-mc12:0.2.0-SNAPSHOT'
+	compile group: 'org.glassfish.tyrus.bundles', name: 'tyrus-standalone-client', version: '1.9'
 }
 
 processResources {
@@ -96,6 +102,12 @@ processResources {
 }
 
 shadowJar {
+	relocate 'org.glassfish', 'shaded.glassfish'
+	relocate 'javax.websocket', 'shaded.websocket'
+	project.configurations.implementation.canBeResolved = true
+	configurations = [project.configurations.implementation]
+	relocate 'org.glassfish', 'shaded.glassfish'
+	relocate 'javax.websocket', 'shaded.websocket'
 	dependencies {
 		include(dependency('org.spongepowered:mixin'))
 		include(dependency('com.github.ZeroMemes:Alpine'))
@@ -104,7 +116,12 @@ shadowJar {
 		include(dependency('club.minnced:java-discord-rpc:2.0.1'))
 		include(dependency('com.lukflug:panelstudio'))
 		include(dependency('com.lukflug:panelstudio-mc12'))
+		include(dependency('club.minnced:discord-webhooks:0.5.6'))
+		include(dependency('javax.websocket:javax.websocket-api:1.1'))
+		include(dependency('org.glassfish.tyrus.bundles:1.9'))
 	}
+	relocate 'org.glassfish', 'shaded.glassfish'
+	relocate 'javax.websocket', 'shaded.websocket'
 	exclude 'dummyThing'
 	exclude 'LICENSE.txt'
 	classifier = 'release'

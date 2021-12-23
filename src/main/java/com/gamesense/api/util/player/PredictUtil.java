@@ -1,12 +1,15 @@
 package com.gamesense.api.util.player;
 
+import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
 import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 
@@ -23,6 +26,8 @@ public class PredictUtil {
         // entity motions
         double motionX = entity.posX - entity.prevPosX;
         double motionY = entity.posY - entity.prevPosY;
+        if (settings.debug)
+            PistonCrystal.printDebug("Motion Y:" + motionY, false);
         double motionZ = entity.posZ - entity.prevPosZ;
         // Y Prediction stuff
         boolean goingUp = false;
@@ -33,8 +38,9 @@ public class PredictUtil {
 
         // If he want manual out hole
         boolean isHole = false;
-        if (settings.manualOutHole && motionY > 0) {
-            if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE)
+        if (settings.manualOutHole && motionY > .2) {
+            if (HoleUtil.isHole(EntityUtil.getPosition(entity), false, true).getType() != HoleUtil.HoleType.NONE
+                && BlockUtil.getBlock(EntityUtil.getPosition(entity).add(0, 2, 0)) instanceof BlockAir)
                 isHole = true;
             else if (settings.aboveHoleManual && HoleUtil.isHole(EntityUtil.getPosition(entity).add(0, -1, 0), false, true).getType() != HoleUtil.HoleType.NONE)
                 isHole = true;
@@ -42,6 +48,15 @@ public class PredictUtil {
             if (isHole)
                 posVec[1] += 1;
 
+        }
+        
+        // For stair predict
+        boolean allowPredictStair = false;
+        int stairPredicted = 0;
+        if (settings.stairPredict) {
+            allowPredictStair = Math.abs(entity.posX - entity.prevPosX) + Math.abs(entity.posZ - entity.prevPosZ) > settings.speedActivationStairs;
+            if (settings.debug)
+                PistonCrystal.printDebug(String.format("Speed: %.2f Activation speed Stairs: %.2f", Math.abs(entity.posX - entity.prevPosX) + Math.abs(entity.posZ - entity.prevPosZ), settings.speedActivationStairs), false);
         }
 
         for(int i = 0; i < settings.tick; i++) {
@@ -54,8 +69,14 @@ public class PredictUtil {
                 newPosVec[0] += motionX;
                 // Check collisions
                 result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], posVec[2]));
+                boolean predictedStair = false;
                 if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
                     posVec = newPosVec.clone();
+                } else if (settings.stairPredict && allowPredictStair) {
+                    if (BlockUtil.getBlock(newPosVec[0], newPosVec[1] + 1, newPosVec[2]) instanceof BlockAir && stairPredicted++ < settings.nStairs) {
+                        posVec[1] += 1;
+                        predictedStair = true;
+                    }
                 }
                 // Calculate Z
                 newPosVec = posVec.clone();
@@ -64,6 +85,10 @@ public class PredictUtil {
                 result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], newPosVec[2]));
                 if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
                     posVec = newPosVec.clone();
+                } else if (settings.stairPredict && allowPredictStair && !predictedStair) {
+                    if (BlockUtil.getBlock(newPosVec[0], newPosVec[1] + 1, newPosVec[2]) instanceof BlockAir && stairPredicted++ < settings.nStairs) {
+                        posVec[1] += 1;
+                    }
                 }
                 // In case of calculating them toogheter
             } else {
@@ -74,6 +99,10 @@ public class PredictUtil {
                 result = mc.world.rayTraceBlocks(new Vec3d(posVec[0], posVec[1], posVec[2]), new Vec3d(newPosVec[0], posVec[1], newPosVec[2]));
                 if (result == null || result.typeOfHit == RayTraceResult.Type.ENTITY) {
                     posVec = newPosVec.clone();
+                } else if (settings.stairPredict && allowPredictStair) {
+                    if (BlockUtil.getBlock(newPosVec[0], newPosVec[1] + 1, newPosVec[2]) instanceof BlockAir && stairPredicted++ < settings.nStairs) {
+                        posVec[1] += 1;
+                    }
                 }
             }
 
@@ -160,9 +189,16 @@ public class PredictUtil {
         if (settings.debug) {
             PistonCrystal.printDebug(String.format("Player: %s Total ticks: %d Up: %d Down: %d", ((EntityPlayer) entity).getGameProfile().getName(), settings.tick, up, down), false);
         }
-        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "Fit"));
+        EntityOtherPlayerMP clonedPlayer = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), entity.getName()));
         clonedPlayer.setPosition(posVec[0], posVec[1], posVec[2]);
         clonedPlayer.inventory.copyInventory(entity.inventory);
+        clonedPlayer.setHealth(entity.getHealth());
+        clonedPlayer.prevPosX = entity.prevPosX;
+        clonedPlayer.prevPosY = entity.prevPosY;
+        clonedPlayer.prevPosZ = entity.prevPosZ;
+        for(PotionEffect effect : entity.getActivePotionEffects()) {
+            clonedPlayer.addPotionEffect(effect);
+        }
         return clonedPlayer;
     }
 
@@ -181,10 +217,13 @@ public class PredictUtil {
         final boolean show;
         final boolean manualOutHole;
         final boolean aboveHoleManual;
+        final boolean stairPredict;
+        final int nStairs;
+        final double speedActivationStairs;
         
         public PredictSettings(int tick, boolean calculateY, int startDecrease, int exponentStartDecrease, int decreaseY, int exponentDecreaseY,
                                int increaseY, int exponentIncreaseY, boolean splitXZ, int width, boolean debug, boolean show, boolean manualOutHole,
-                               boolean aboveHoleManual) {
+                               boolean aboveHoleManual, boolean stairPredict, int nStairs, double speedActivationStairs) {
             this.tick = tick;
             this.calculateY = calculateY;
             this.startDecrease = startDecrease;
@@ -199,6 +238,9 @@ public class PredictUtil {
             this.show = show;
             this.manualOutHole = manualOutHole;
             this.aboveHoleManual = aboveHoleManual;
+            this.stairPredict = stairPredict;
+            this.nStairs = nStairs;
+            this.speedActivationStairs = speedActivationStairs;
         }
     }
 }

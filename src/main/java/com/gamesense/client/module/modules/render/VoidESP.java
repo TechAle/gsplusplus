@@ -12,6 +12,7 @@ import com.gamesense.api.util.world.Offsets;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import io.netty.util.internal.ConcurrentSet;
+import net.minecraft.block.BlockAir;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -26,18 +27,15 @@ import java.util.List;
 @Module.Declaration(name = "VoidESP", category = Category.Render)
 public class VoidESP extends Module {
 
-    IntegerSetting renderDistance = registerInteger("Distance", 10, 1, 40);
+    IntegerSetting renderDistance = registerInteger("Distance", 10, 1, 256);
     IntegerSetting activeYValue = registerInteger("Activate Y", 20, 0, 256);
     ModeSetting renderType = registerMode("Render", Arrays.asList("Outline", "Fill", "Both"), "Both");
     ModeSetting renderMode = registerMode("Mode", Arrays.asList("Box", "Flat"), "Flat");
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     ColorSetting color = registerColor("Color", new GSColor(255, 255, 0));
+    IntegerSetting aboveCheck = registerInteger("Above Check", 0, 0, 10);
 
     private final ConcurrentSet<BlockPos> voidHoles = new ConcurrentSet<>();
-
-    public void onEnable() {
-        voidHoles.clear();
-    }
 
     public void onUpdate() {
         if (mc.player.dimension == 1) return;
@@ -46,12 +44,17 @@ public class VoidESP extends Module {
 
         List<BlockPos> blockPosList = BlockUtil.getCircle(mc.player.getPosition(), 0, renderDistance.getValue(), false);
 
+        voidHoles.clear();
+
         for (BlockPos blockPos : blockPosList) {
-            if (mc.world.getBlockState(blockPos).getBlock().equals(Blocks.BEDROCK)) continue;
+            if (!mc.world.getBlockState(blockPos).getBlock().equals(Blocks.BEDROCK)) {
+                voidHoles.add(blockPos);
+                for(int i = 0; i < aboveCheck.getValue(); i++)
+                    if (mc.world.getBlockState(blockPos.add(0, i + 1, 0)).getBlock() instanceof BlockAir) {
+                        break;
+                    } else voidHoles.add(blockPos.add(0, i + 1, 0));
+            }
 
-            if (isBedrock(blockPos)) continue;
-
-            voidHoles.add(blockPos);
         }
     }
 
@@ -63,19 +66,11 @@ public class VoidESP extends Module {
         voidHoles.forEach(this::renderESP);
     }
 
-    private boolean isBedrock(BlockPos blockPos) {
-        for (Vec3d vec3d : Offsets.BURROW_TRIPLE) {
-            if (mc.world.getBlockState(blockPos.add(new BlockPos(vec3d))).getBlock().equals(Blocks.BEDROCK)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private void renderESP(BlockPos blockPos) {
         GSColor fillColor = new GSColor(color.getValue(), 50);
         GSColor outlineColor = new GSColor(color.getValue(), 255);
+
+        if (blockPos.getDistance(((int) mc.player.posX), ((int) mc.player.posY), ((int) mc.player.posZ)) > renderDistance.getValue()) return;
 
         int sides = renderMode.getValue().equalsIgnoreCase("Flat") ? GeometryMasks.Quad.DOWN : GeometryMasks.Quad.ALL;
 

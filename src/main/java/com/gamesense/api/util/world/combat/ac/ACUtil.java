@@ -18,7 +18,7 @@ public class ACUtil {
         for (BlockPos crystal : possibleLocations) {
             // if player is out of range of this crystal, do nothing
             if (target.entity.getDistanceSq((double) crystal.getX() + 0.5d, (double) crystal.getY() + 1.0d, (double) crystal.getZ() + 0.5d) <= settings.enemyRangeSq) {
-                float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.getX() + 0.5d, (double) crystal.getY() + 1.0d, (double) crystal.getZ() + 0.5d, target);
+                float currentDamage = DamageUtil.calculateDamageThreaded((double) crystal.getX() + 0.5d, (double) crystal.getY() + 1.0d, (double) crystal.getZ() + 0.5d, target, false);
                 if (currentDamage == bestDamage) {
                     // this new crystal is closer
                     // higher chance of being able to break it
@@ -51,7 +51,7 @@ public class ACUtil {
         EntityEnderCrystal best = null;
         float bestDamage = 0f;
         for (EntityEnderCrystal crystal : crystals) {
-            float currentDamage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, target);
+            float currentDamage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, target, false);
             if (currentDamage == bestDamage) {
                 // this new crystal is closer
                 // higher chance of being able to break it

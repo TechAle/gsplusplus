@@ -1,5 +1,6 @@
 package com.gamesense.api.util.misc;
 
+import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.hud.Notifications;
 import com.gamesense.client.module.modules.misc.ChatModifier;
@@ -7,6 +8,8 @@ import com.mojang.realmsclient.gui.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.TextComponentString;
+
+import java.util.ConcurrentModificationException;
 
 /**
  * @author Hoosiers
@@ -24,6 +27,18 @@ public class MessageBus {
      * Sends a client-sided message WITH the client prefix
      **/
     public static void sendClientPrefixMessage(String message) {
+        sendClientPrefixMessageWithID(message, 0);
+    }
+
+    public static void sendClientPrefixMessageWithID(String message, boolean generateID) {
+        if (!generateID){
+            sendClientPrefixMessageWithID(message, 0);
+        } else {
+            sendClientPrefixMessageWithID(message, Module.getIdFromString(message));
+        }
+    }
+
+    public static void sendClientPrefixMessageWithID(String message, int id) {
         ChatModifier chat = ModuleManager.getModule(ChatModifier.class);
         TextComponentString string1 = new TextComponentString(
                 (   chat.isEnabled() &&
@@ -36,7 +51,13 @@ public class MessageBus {
         if (notifications.isEnabled() && notifications.disableChat.getValue()) {
             return;
         }
-        mc.player.sendMessage(string1);
+        try {
+            if (mc.player != null && mc.world != null) {
+                mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string1, id);
+            }
+        }catch (ConcurrentModificationException ignored) {
+
+        }
     }
 
     /**
@@ -46,7 +67,7 @@ public class MessageBus {
         String watermark1 = prefix ? watermark : "";
         TextComponentString string = new TextComponentString(watermark1 + messageFormatting + message);
 
-        mc.player.sendMessage(string);
+        mc.ingameGUI.getChatGUI().printChatMessageWithOptionalDeletion(string, Module.getIdFromString(message));
     }
 
     /**

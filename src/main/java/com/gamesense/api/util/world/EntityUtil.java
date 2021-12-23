@@ -95,22 +95,61 @@ public class EntityUtil {
         return val;
     }
 
-    public static List<BlockPos> getSphere(BlockPos loc, float r, int h, boolean hollow, boolean sphere, int plus_y) {
+    public static List<BlockPos> getSphere(BlockPos loc, float radius, int height, boolean hollow, boolean sphere, int plus_y) {
         List<BlockPos> circleBlocks = new ArrayList<>();
-        int cx = loc.getX();
-        int cy = loc.getY();
-        int cz = loc.getZ();
-        for (int x = cx - (int) r; x <= cx + r; x++) {
-            for (int z = cz - (int) r; z <= cz + r; z++) {
-                for (int y = (sphere ? cy - (int) r : cy); y < (sphere ? cy + r : cy + h); y++) {
-                    double dist = (cx - x) * (cx - x) + (cz - z) * (cz - z) + (sphere ? (cy - y) * (cy - y) : 0);
-                    if (dist < r * r && !(hollow && dist < (r - 1) * (r - 1))) {
+        int locX = loc.getX();
+        int locY = loc.getY();
+        int locZ = loc.getZ();
+
+        for (int x = locX - (int) radius; x <= locX + radius; x++) {
+            for (int z = locZ - (int) radius; z <= locZ + radius; z++) {
+                for (int y = (sphere ? locY - (int) radius : locY); y < (sphere ? locY + radius : locY + height); y++) {
+                    double dist = (locX - x) * (locX - x) + (locZ - z) * (locZ - z) + (sphere ? (locY - y) * (locY - y) : 0);
+                    if (dist < radius * radius && !(hollow && dist < (radius - 1) * (radius - 1))) {
                         BlockPos l = new BlockPos(x, y + plus_y, z);
                         circleBlocks.add(l);
                     }
                 }
             }
         }
+
+        return circleBlocks;
+    }
+
+    public static List<BlockPos> getHollowSphere(BlockPos loc, float radius, int height, boolean sphere, int plus_y, float hollowRad, float hollowHeight) {
+        List<BlockPos> circleBlocks = new ArrayList<>();
+        int locX = loc.getX();
+        int locY = loc.getY();
+        int locZ = loc.getZ();
+
+        for (int x = locX - (int) radius; x <= locX + radius; x++) {
+            for (int z = locZ - (int) radius; z <= locZ + radius; z++) {
+                for (int y = (sphere ? locY - (int) radius : locY); y < (sphere ? locY + radius : locY + height); y++) {
+                    double dist = (locX - x) * (locX - x) + (locZ - z) * (locZ - z) + (sphere ? (locY - y) * (locY - y) : 0);
+                    if (dist < radius * radius) {
+                        BlockPos l = new BlockPos(x, y + plus_y, z);
+                        circleBlocks.add(l);
+                    }
+                }
+            }
+        }
+
+        List<BlockPos> remove = new ArrayList<>();
+
+        for (int x = locX - (int) hollowRad; x <= locX + hollowRad; x++) {
+            for (int z = locZ - (int) hollowRad; z <= locZ + hollowRad; z++) {
+                for (int y = (sphere ? locY - (int) hollowRad : locY); y < (sphere ? locY + hollowRad : locY + hollowHeight); y++) {
+                    double dist = (locX - x) * (locX - x) + (locZ - z) * (locZ - z) + (sphere ? (locY - y) * (locY - y) : 0);
+                    if (dist < hollowRad * hollowRad) {
+                        BlockPos l = new BlockPos(x, y + plus_y, z);
+                        remove.add(l);
+                    }
+                }
+            }
+        }
+
+        circleBlocks.removeAll(remove);
+
         return circleBlocks;
     }
 

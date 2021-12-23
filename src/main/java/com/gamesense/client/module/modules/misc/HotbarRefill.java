@@ -1,5 +1,6 @@
 package com.gamesense.client.module.modules.misc;
 
+import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.util.misc.Pair;
 import com.gamesense.api.util.player.InventoryUtil;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @Module.Declaration(name = "HotbarRefill", category = Category.Misc)
 public class HotbarRefill extends Module {
 
+    BooleanSetting stop = registerBoolean("Strict", false);
     IntegerSetting threshold = registerInteger("Threshold", 32, 1, 63);
     IntegerSetting tickDelay = registerInteger("Tick Delay", 2, 1, 10);
 
@@ -51,15 +53,17 @@ public class HotbarRefill extends Module {
         int inventorySlot = slots.getKey();
         int hotbarSlot = slots.getValue();
 
-        // pick up inventory slot
-        mc.playerController.windowClick(0, inventorySlot, 0, ClickType.PICKUP, mc.player);
+        if ((!mc.player.isHandActive() && !(mc.player.moveForward != 0) || !stop.getValue())) { // check if we are moving and eating since this is low priority, we force neither
+            // pick up inventory slot
+            mc.playerController.windowClick(0, inventorySlot, 0, ClickType.PICKUP, mc.player);
 
-        // click on hotbar slot
-        // 36 is the offset for start of hotbar in inventoryContainer
-        mc.playerController.windowClick(0, hotbarSlot + 36, 0, ClickType.PICKUP, mc.player);
+            // click on hotbar slot
+            // 36 is the offset for start of hotbar in inventoryContainer
+            mc.playerController.windowClick(0, hotbarSlot + 36, 0, ClickType.PICKUP, mc.player);
 
-        // put back inventory slot
-        mc.playerController.windowClick(0, inventorySlot, 0, ClickType.PICKUP, mc.player);
+            // put back inventory slot
+            mc.playerController.windowClick(0, inventorySlot, 0, ClickType.PICKUP, mc.player);
+        }
     }
 
     private Pair<Integer, Integer> findReplenishableHotbarSlot() {

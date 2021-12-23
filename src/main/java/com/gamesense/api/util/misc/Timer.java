@@ -34,6 +34,8 @@ public class Timer {
         return false;
     }
 
+    public void setTimer(long time) {this.current = time;}
+
     public long time() {
         return System.currentTimeMillis() - current;
     }

@@ -113,7 +113,7 @@ public enum ACHelper implements Listenable {
         // and all crystals outside of break range
         // no point in checking these
         targetableCrystals.removeIf(crystal -> {
-            float damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self);
+            float damage = DamageUtil.calculateDamageThreaded(crystal.posX, crystal.posY, crystal.posZ, self, false);
             if (damage > settings.maxSelfDamage) {
                 return true;
             } else {
@@ -125,7 +125,7 @@ public enum ACHelper implements Listenable {
         // remove all placements that deal more than max self damage
         // no point in checking these
         possiblePlacements.removeIf(crystal -> {
-            float damage = DamageUtil.calculateDamageThreaded((double) crystal.getX() + 0.5d, (double) crystal.getY() + 1.0d, (double) crystal.getZ() + 0.5d, settings.player);
+            float damage = DamageUtil.calculateDamageThreaded((double) crystal.getX() + 0.5d, (double) crystal.getY() + 1.0d, (double) crystal.getZ() + 0.5d, settings.player, false);
             if (damage > settings.maxSelfDamage) {
                 return true;
             } else return settings.antiSuicide && damage > settings.player.health;

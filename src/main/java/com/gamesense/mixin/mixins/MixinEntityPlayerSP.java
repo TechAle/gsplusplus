@@ -2,17 +2,21 @@ package com.gamesense.mixin.mixins;
 
 import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.event.events.PlayerMoveEvent;
+import com.gamesense.api.event.events.SwingEvent;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.movement.HighJump;
 import com.gamesense.client.module.modules.movement.PlayerTweaks;
 import com.gamesense.client.module.modules.movement.Sprint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.MoverType;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
@@ -54,6 +58,8 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
     @Shadow
     private boolean serverSneakState;
 
+    PlayerTweaks playerTweaks = ModuleManager.getModule(PlayerTweaks.class);
+
     public MixinEntityPlayerSP() {
         super(Minecraft.getMinecraft().world, Minecraft.getMinecraft().session.getProfile());
     }
@@ -65,7 +71,16 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
     public void move(AbstractClientPlayer player, MoverType type, double x, double y, double z) {
         PlayerMoveEvent moveEvent = new PlayerMoveEvent(type, x, y, z);
         GameSense.EVENT_BUS.post(moveEvent);
-        super.move(type, moveEvent.getX(), moveEvent.getY(), moveEvent.getZ());
+        super.move(type, moveEvent.getX(), moveEvent.getY(), moveEvent.getZ()); // dumb fix but i want to die so it doesnt matter
+    }
+
+    @Inject(method = "swingArm", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/AbstractClientPlayer;swingArm(Lnet/minecraft/util/EnumHand;)V"), cancellable = true)
+    public void swingArm(EnumHand hand, CallbackInfo ci) {
+        SwingEvent event = new SwingEvent(hand);
+        GameSense.EVENT_BUS.post(event);
+        if (event.isCancelled()) {
+            ci.cancel();
+        }
     }
 
     @ModifyArg(method = "setSprinting", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/AbstractClientPlayer;setSprinting(Z)V"), index = 0)
@@ -187,10 +202,29 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         return yawDiff != 0.0D || pitchDiff != 0.0D;
     }
 
+    public float getJumpUpwardsMotion() {
+        final HighJump HighJump = ModuleManager.getModule(HighJump.class);
+
+        if (HighJump.isEnabled()) {
+            return HighJump.height.getValue().floatValue();
+        }
+
+        return 0.42F;
+    }
+
     @Inject(method="pushOutOfBlocks", at=@At(value="HEAD"), cancellable=true)
     private void pushOutOfBlocksHook(double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
-        PlayerTweaks vel = ModuleManager.getModule(PlayerTweaks.class);
-        if (vel.isEnabled() && vel.noPushBlock.getValue())
+        if (playerTweaks.isEnabled() && playerTweaks.noPushBlock.getValue())
             cir.setReturnValue(false);
+    }
+
+    @Redirect(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityPlayerSP;closeScreen()V"))
+    public void closeScreen(EntityPlayerSP player) {
+        if (!playerTweaks.isEnabled() || !playerTweaks.portalChat.getValue()) player.closeScreen();
+    }
+
+    @Redirect(method = "onLivingUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;displayGuiScreen(Lnet/minecraft/client/gui/GuiScreen;)V"))
+    public void closeScreen(Minecraft minecraft, GuiScreen screen) {
+        if (!playerTweaks.isEnabled() || !playerTweaks.portalChat.getValue()) mc.displayGuiScreen(screen);
     }
 }

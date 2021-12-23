@@ -1,15 +1,16 @@
 package com.gamesense.client.module.modules.combat;
 
-import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.DoubleSetting;
-import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.event.events.PlayerMoveEvent;
+import com.gamesense.api.setting.values.*;
+import com.gamesense.api.util.misc.KeyBoardClass;
 import com.gamesense.api.util.player.InventoryUtil;
 import com.gamesense.api.util.player.PlayerUtil;
 import com.gamesense.api.util.world.combat.DamageUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.realmsclient.gui.ChatFormatting;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -24,11 +25,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
+import org.lwjgl.input.Keyboard;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Author TechAle and Hossier
@@ -48,6 +48,9 @@ public class OffHand extends Module {
             "Gapple", () -> itemSection.getValue());
     ModeSetting potionChoose = registerMode("Potion", Arrays.asList("first", "strength", "swiftness"),
             "first", () -> itemSection.getValue());
+    StringSetting bind = registerString("Bind", "");
+    ModeSetting bindItem = registerMode("Bind Item", Arrays.asList("Totem", "Crystal", "Gapple", "Obby", "Pot", "Exp", "Plates", "String", "Skull"), "Crystal", () -> bind.getText().length() > 0);
+
     BooleanSetting switchSection = registerBoolean("Switch Section", true);
     IntegerSetting healthSwitch = registerInteger("Health Switch", 14, 0, 36, () -> switchSection.getValue());
     IntegerSetting tickDelay = registerInteger("Tick Delay", 0, 0, 20, () -> switchSection.getValue());
@@ -55,6 +58,8 @@ public class OffHand extends Module {
     IntegerSetting fallDistance = registerInteger("Fall Distance", 12, 0, 30, () -> (switchSection.getValue() && fallDistanceBol.getValue()));
     IntegerSetting maxSwitchPerSecond = registerInteger("Max Switch", 6, 2, 10, () -> switchSection.getValue());
     DoubleSetting playerDistance = registerDouble("Player Distance", 0, 0, 30, () -> switchSection.getValue());
+    public BooleanSetting strict = registerBoolean("Strict", true, () -> switchSection.getValue());
+
     BooleanSetting miscSection = registerBoolean("Misc Section", true);
     BooleanSetting pickObby = registerBoolean("Pick Obby", false, () -> miscSection.getValue());
     BooleanSetting pickObbyShift = registerBoolean("Pick Obby On Shift", false, () -> miscSection.getValue());
@@ -68,16 +73,20 @@ public class OffHand extends Module {
     BooleanSetting onlyHotBar = registerBoolean("Only HotBar", false, () -> miscSection.getValue());
     BooleanSetting antiWeakness = registerBoolean("AntiWeakness", false, () -> miscSection.getValue());
     BooleanSetting hotBarTotem = registerBoolean("HotBar Totem", false, () -> miscSection.getValue());
-    IntegerSetting startingBiasDamage= registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
+    IntegerSetting startingBiasDamage = registerInteger("Bias Health", 22, 0, 36, () -> (switchSection.getValue() && crystalCheck.getValue()));
     DoubleSetting biasDamage = registerDouble("Bias Damage", 1, 0, 3, () -> (switchSection.getValue() && crystalCheck.getValue()));
     BooleanSetting noHotBar = registerBoolean("No HotBar", false, () -> miscSection.getValue());
+    BooleanSetting autoRefill = registerBoolean("Auto Refill", false, () -> miscSection.getValue() && noHotBar.getValue());
 
     int prevSlot,
-        tickWaited,
-        totems;
+            tickWaited,
+            totems;
     boolean returnBack,
-        stepChanging,
-        firstChange;
+    firstChange;
+    public boolean stepChanging;
+
+    public boolean dontMove;
+
     private static String forceItem;
     private final ArrayList<Long> switchDone = new ArrayList<>();
     private final ArrayList<Item> ignoreNoSword = new ArrayList<Item>() {
@@ -147,7 +156,7 @@ public class OffHand extends Module {
         firstChange = true;
         // If they are gonna force us obby
         forceItem = "";
-        returnBack = false;
+        returnBack = isPressing = pressedBind = false;
     }
 
     @Override
@@ -166,6 +175,16 @@ public class OffHand extends Module {
             // Check if we have to wait
             if (tickWaited++ >= tickDelay.getValue()) {
                 // If we are fine, finish
+                if (strict.getValue()) {
+
+                    try {
+                        dontMove = true;
+                        mc.playerController.onStoppedUsingItem(mc.player);
+                    } catch (Exception ignored) {
+                        dontMove = true;
+                    }
+
+                }
                 tickWaited = 0;
                 stepChanging = false;
                 // Change
@@ -242,6 +261,8 @@ public class OffHand extends Module {
         toOffHand(t);
     }
 
+    boolean pressedBind = false;
+    boolean isPressing = false;
     private String getItem() {
         // This is going to contain the item
         String itemCheck = "";
@@ -255,7 +276,7 @@ public class OffHand extends Module {
             or crystalCheck
          */
         if ((fallDistanceBol.getValue() && mc.player.fallDistance >= fallDistance.getValue() && mc.player.prevPosY != mc.player.posY && !mc.player.isElytraFlying())
-            || (crystalCheck.getValue() && crystalDamage())) {
+                || (crystalCheck.getValue() && crystalDamage())) {
             normalOffHand = false;
             itemCheck = "Totem";
         }
@@ -264,12 +285,27 @@ public class OffHand extends Module {
             itemCheck = forceItem;
             normalOffHand = false;
         }
+
+        // If bind
+        if (bind.getText().length() > 0) {
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(bind.getText().charAt(0)))) {
+                if (!isPressing) {
+                    isPressing = true;
+                    pressedBind = !pressedBind;
+
+                }
+            } else if (isPressing) isPressing = false;
+        }
+        if (pressedBind) {
+            itemCheck = bindItem.getValue();
+        }
+
         // If crystal obby
         Item mainHandItem = mc.player.getHeldItemMainhand().getItem();
         if ((normalOffHand && (
-            (crystObby.getValue() && mc.gameSettings.keyBindSneak.isKeyDown()
-                && mainHandItem == Items.END_CRYSTAL)
-                || (pickObby.getValue() && mainHandItem == Items.DIAMOND_PICKAXE && (!pickObbyShift.getValue() || mc.gameSettings.keyBindSneak.isKeyDown()))))) {
+                (crystObby.getValue() && mc.gameSettings.keyBindSneak.isKeyDown()
+                        && mainHandItem == Items.END_CRYSTAL)
+                        || (pickObby.getValue() && mainHandItem == Items.DIAMOND_PICKAXE && (!pickObbyShift.getValue() || mc.gameSettings.keyBindSneak.isKeyDown()))))) {
             itemCheck = "Obby";
             normalOffHand = false;
         }
@@ -350,7 +386,7 @@ public class OffHand extends Module {
             for (Entity t : mc.world.loadedEntityList) {
                 // If it's a crystal
                 if (t instanceof EntityEnderCrystal && mc.player.getDistance(t) <= 12) {
-                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
+                    if (DamageUtil.calculateDamage(t.posX, t.posY, t.posZ, mc.player, false) * biasDamage.getValue() >= PlayerUtil.getHealth()) {
                         return true;
                     }
                 }
@@ -390,11 +426,11 @@ public class OffHand extends Module {
 
 
         return (PlayerUtil.getHealth() > healthSwitch.getValue())
-            ? (str.equals("")
-            ? nonDefaultItem.getValue()
-            : str
+                ? (str.equals("")
+                ? nonDefaultItem.getValue()
+                : str
         )
-            : defaultItem.getValue();
+                : defaultItem.getValue();
 
     }
 
@@ -477,5 +513,19 @@ public class OffHand extends Module {
     public String getHudInfo() {
         return "[" + ChatFormatting.WHITE + totems + ChatFormatting.GRAY + "]";
     }
+
+    @EventHandler
+    private final Listener<PlayerMoveEvent> playerMoveEventListener = new Listener<>(event -> {
+
+        if (dontMove) {
+
+            event.setX(0);
+            event.setZ(0);
+
+            dontMove = false;
+
+        }
+
+    });
 
 }

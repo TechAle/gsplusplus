@@ -1,14 +1,19 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.Phase;
 import com.gamesense.api.event.events.BlockChangeEvent;
+import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.api.util.player.PlayerPacket;
 import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.RotationUtil;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.mojang.realmsclient.gui.ChatFormatting;
@@ -22,6 +27,7 @@ import net.minecraft.network.play.client.*;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.apache.logging.log4j.LogManager;
 
@@ -71,6 +77,7 @@ public class Elevatot extends Module {
     BooleanSetting checkBurrow = registerBoolean("Check Burrow", false, () -> checksSection.getValue());
     BooleanSetting stopOut = registerBoolean("Stop Out", true, () -> checksSection.getValue());
     IntegerSetting tickOutHole = registerInteger("Tick Out Hole", 0, 0, 10, () -> checksSection.getValue());
+    BooleanSetting waitRotate = registerBoolean("Wait Rotate", false);
 
     EntityPlayer aimTarget;
 
@@ -182,6 +189,7 @@ public class Elevatot extends Module {
                 EnumFacing opposite = side.getOpposite();
                 Vec3d hitVec = new Vec3d(neighbour).add(0.5, 0, 0.5).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
                 BlockUtil.faceVectorPacketInstant(hitVec, true);
+                lastHitVec = hitVec;
                 /*
                 if (forceRotation.getValue()) {
                     lastHitVec = hitVec;
@@ -255,7 +263,7 @@ public class Elevatot extends Module {
 
 
         if (stopCa.getValue())
-            AutoCrystal.stopAC = false;
+            AutoCrystalRewrite.stopAC = false;
 
     }
 
@@ -426,6 +434,17 @@ public class Elevatot extends Module {
 
     }
 
+    Vec3d lastHitVec = null;
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null)
+            return;
+        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec);
+        PlayerPacket packet = new PlayerPacket(this, rotation);
+        PlayerPacketManager.INSTANCE.addPacket(packet);
+    });
+
 
     boolean continueBlock() {
         return ++blockPlaced == blocksPerTick.getValue();
@@ -507,6 +526,17 @@ public class Elevatot extends Module {
 
         // Get the position where we are gonna click
         Vec3d hitVec = new Vec3d(neighbour).add(0.5 + offsetX, 0.5, 0.5 + offsetZ).add(new Vec3d(opposite.getDirectionVec()).scale(0.5));
+
+        // If rotate
+        if (rotate.getValue()) {
+            // Look
+            BlockUtil.faceVectorPacketInstant(hitVec, true);
+            boolean stop = lastHitVec != hitVec && (lastHitVec != null && Math.abs(lastHitVec.x - hitVec.x) > .7 && Math.abs(lastHitVec.z - hitVec.z) > .7);
+            lastHitVec = hitVec;
+            if (waitRotate.getValue() && stop )
+                return false;
+        }
+
         Block neighbourBlock = mc.world.getBlockState(neighbour).getBlock();
         int oldSlot = mc.player.inventory.currentItem;
         try {
@@ -551,11 +581,6 @@ public class Elevatot extends Module {
             isSneaking = true;
         }
 
-        // If rotate
-        if (rotate.getValue()) {
-            // Look
-            BlockUtil.faceVectorPacketInstant(hitVec, true);
-        }
         // Else, we have still to rotate for the piston
         else if (piston) {
             switch (position) {
@@ -619,7 +644,7 @@ public class Elevatot extends Module {
     }
 
     void resetValues() {
-
+        lastHitVec = null;
         sur_block = new double[4][3];
         slot_mat = new int[] {
                 -1, -1, -1, -1, -1
@@ -638,7 +663,7 @@ public class Elevatot extends Module {
         delayTimeTicks = tickOut = 0;
 
         if (stopCa.getValue())
-            AutoCrystal.stopAC = true;
+            AutoCrystalRewrite.stopAC = true;
 
     }
 
@@ -703,6 +728,7 @@ public class Elevatot extends Module {
     }
 
     // Get target function
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean getAimTarget() {
         /// Get aimTarget
         // If nearest, get it
@@ -728,7 +754,7 @@ public class Elevatot extends Module {
             if (is_in_hole()) {
                 // Get enemy coordinates
                 enemyCoordsDouble = new double[]{aimTarget.posX, aimTarget.posY, aimTarget.posZ};
-                enemyCoordsInt = new int[]{aimTarget.getPosition().getX(), aimTarget.getPosition().getY(), aimTarget.getPosition().getZ()};
+                enemyCoordsInt = new int[]{(int) aimTarget.posX, aimTarget.getPosition().getY(), (int) aimTarget.posZ};
                 // Get me coordinates
                 meCoordsInt = new int[]{(int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ};
                 // Start choosing where to place what
@@ -807,6 +833,33 @@ public class Elevatot extends Module {
                 && (!(BlockUtil.getBlock(startTrap) instanceof BlockAir)
                     || !(BlockUtil.getBlock(startTrap.getX(), startTrap.getY() + 1, startTrap.getZ()) instanceof BlockAir))) {
                 continue;
+            }
+
+
+            // Checks in case you have rotate on
+            if (rotate.getValue()) {
+                int[] pistonCordInt = new int[]{(int) pistonCoordsAbs[0], (int) pistonCoordsAbs[1], (int) pistonCoordsAbs[2]};
+
+                boolean behindBol = false;
+
+                if (Math.abs(meCoordsInt[0] - enemyCoordsInt[0]) != 1 || Math.abs(meCoordsInt[2] - enemyCoordsInt[2]) != 1) {
+                    // I'm sorry phantom, but i'm too lazy-
+                    behindBol = true;
+                    if (meCoordsInt[0] == enemyCoordsInt[0] && enemyCoordsInt[0] == pistonCordInt[0]) {
+                        if (meCoordsInt[2] > enemyCoordsInt[2] == enemyCoordsInt[2] > pistonCordInt[2])
+                            behindBol = false;
+                    } else
+                    if (meCoordsInt[2] == enemyCoordsInt[2] && enemyCoordsInt[2] == pistonCordInt[2]) {
+                        if (meCoordsInt[0] > enemyCoordsInt[0] == enemyCoordsInt[0] > pistonCordInt[0])
+                            behindBol = false;
+                    }
+                }
+
+
+                // Exit
+                if (behindBol)
+                    continue;
+
             }
 
 

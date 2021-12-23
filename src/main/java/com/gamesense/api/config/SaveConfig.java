@@ -3,10 +3,7 @@ package com.gamesense.api.config;
 import com.gamesense.api.setting.Setting;
 import com.gamesense.api.setting.SettingsManager;
 import com.gamesense.api.setting.values.*;
-import com.gamesense.api.util.player.social.Enemy;
-import com.gamesense.api.util.player.social.Friend;
 import com.gamesense.api.util.player.social.SocialManager;
-import com.gamesense.api.util.player.social.SpecialNames;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.clickgui.GuiConfig;
@@ -116,6 +113,8 @@ public class SaveConfig {
                 settingObject.add(setting.getConfigName(), new JsonPrimitive(((ColorSetting) setting).toLong()));
             } else if (setting instanceof ModeSetting) {
                 settingObject.add(setting.getConfigName(), new JsonPrimitive(((ModeSetting) setting).getValue()));
+            } else if (setting instanceof StringSetting) {
+                settingObject.add(setting.getConfigName(), new JsonPrimitive(((StringSetting) setting).getText()));
             }
         }
         moduleObject.add("Settings", settingObject);

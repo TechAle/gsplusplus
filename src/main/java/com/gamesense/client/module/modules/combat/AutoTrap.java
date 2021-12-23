@@ -1,25 +1,28 @@
 package com.gamesense.client.module.modules.combat;
 
+import com.gamesense.api.event.Phase;
+import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.world.Offsets;
 import com.gamesense.api.util.misc.Timer;
-import com.gamesense.api.util.player.InventoryUtil;
-import com.gamesense.api.util.player.PlacementUtil;
-import com.gamesense.api.util.player.PlayerUtil;
+import com.gamesense.api.util.player.*;
+import com.gamesense.api.util.world.Offsets;
+import com.gamesense.client.manager.managers.PlayerPacketManager;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import me.zero.alpine.listener.EventHandler;
+import me.zero.alpine.listener.Listener;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
@@ -32,16 +35,16 @@ import java.util.Arrays;
 @Module.Declaration(name = "AutoTrap", category = Category.Combat)
 public class AutoTrap extends Module {
 
-    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple"), "Normal");
+    ModeSetting offsetMode = registerMode("Pattern", Arrays.asList("Normal", "No Step", "Simple", "Crystal"), "Normal");
     ModeSetting targetMode = registerMode("Target", Arrays.asList("Nearest", "Looking"), "Nearest");
     IntegerSetting enemyRange = registerInteger("Range", 4, 0, 6);
     IntegerSetting delayTicks = registerInteger("Tick Delay", 3, 0, 10);
     IntegerSetting blocksPerTick = registerInteger("Blocks Per Tick", 4, 1, 8);
-    BooleanSetting rotate = registerBoolean("Rotate", true);
     BooleanSetting sneakOnly = registerBoolean("Sneak Only", false);
     BooleanSetting disableNoBlock = registerBoolean("Disable No Obby", true);
     BooleanSetting offhandObby = registerBoolean("Offhand Obby", false);
     BooleanSetting silentSwitch = registerBoolean("Silent Switch", false);
+    BooleanSetting rotate = registerBoolean("Rotate", true);
 
     private final Timer delayTimer = new Timer();
     private EntityPlayer targetPlayer = null;
@@ -54,6 +57,7 @@ public class AutoTrap extends Module {
     boolean hasPlaced;
 
     public void onEnable() {
+        lastHitVec = null;
         PlacementUtil.onEnable();
         if (mc.player == null || mc.world == null) {
             disable();
@@ -75,7 +79,7 @@ public class AutoTrap extends Module {
             oldSlot = -1;
         }
 
-        AutoCrystal.stopAC = false;
+        AutoCrystalRewrite.stopAC = false;
 
         if (offhandObby.getValue() && ModuleManager.isModuleEnabled(OffHand.class)) {
             OffHand.removeItem(0);
@@ -96,7 +100,7 @@ public class AutoTrap extends Module {
             return;
         }
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if ((outOfTargetBlock || targetBlockSlot == -1) && disableNoBlock.getValue()) {
             outOfTargetBlock = true;
@@ -147,6 +151,11 @@ public class AutoTrap extends Module {
                         maxSteps = Offsets.TRAP_SIMPLE.length;
                         break;
                     }
+                    case "Crystal": {
+                        offsetPattern = Offsets.TRAP_CRYSTAL;
+                        maxSteps = Offsets.TRAP_CRYSTAL.length;
+                        break;
+                    }
                     default: {
                         offsetPattern = Offsets.TRAP_FULL;
                         maxSteps = Offsets.TRAP_FULL.length;
@@ -193,7 +202,7 @@ public class AutoTrap extends Module {
     private boolean placeBlock(BlockPos pos) {
         EnumHand handSwing = EnumHand.MAIN_HAND;
 
-        int targetBlockSlot = InventoryUtil.findObsidianSlot(offhandObby.getValue(), activedOff);
+        int targetBlockSlot = InventoryUtil.findCrystalBlockSlot(offhandObby.getValue(), activedOff);
 
         if (targetBlockSlot == -1) {
             outOfTargetBlock = true;
@@ -218,6 +227,23 @@ public class AutoTrap extends Module {
                 mc.player.inventory.currentItem = targetBlockSlot;
         }
 
+        if (rotate.getValue()) {
+            lastHitVec = new Vec3d(pos).add(.5, .5, .5);
+        }
+
         return PlacementUtil.place(pos, handSwing, rotate.getValue(), !silentSwitch.getValue());
     }
+
+    Vec3d lastHitVec;
+
+    @EventHandler
+    private final Listener<OnUpdateWalkingPlayerEvent> onUpdateWalkingPlayerEventListener = new Listener<>(event -> {
+        // If we dont have to rotate
+        if (event.getPhase() != Phase.PRE || !rotate.getValue() || lastHitVec == null || mc.world == null || mc.player == null)
+            return;
+        EntityPlayer pl = (EntityPlayer) mc.world.getEntityByID(-100);
+        Vec2f rotation = RotationUtil.getRotationTo(lastHitVec, pl);
+        PlayerPacket packet = new PlayerPacket(this, rotation);
+        PlayerPacketManager.INSTANCE.addPacket(packet);
+    });
 }

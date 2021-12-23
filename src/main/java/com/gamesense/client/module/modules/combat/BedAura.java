@@ -1,3 +1,4 @@
+
 package com.gamesense.client.module.modules.combat;
 
 import com.gamesense.api.setting.values.BooleanSetting;
@@ -19,6 +20,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemBed;
 import net.minecraft.network.play.client.CPacketEntityAction;
+import net.minecraft.network.play.client.CPacketHeldItemChange;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketPlayerTryUseItemOnBlock;
 import net.minecraft.tileentity.TileEntity;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+
 
 /**
  * @author Hoosiers
@@ -51,6 +54,7 @@ public class BedAura extends Module {
     BooleanSetting rotate = registerBoolean("Rotate", true);
     BooleanSetting disableNone = registerBoolean("Disable No Bed", false);
     BooleanSetting autoSwitch = registerBoolean("Switch", true);
+    BooleanSetting silent = registerBoolean("Silent Switch", false, () -> autoSwitch.getValue());
     BooleanSetting antiSuicide = registerBoolean("Anti Suicide", false);
     IntegerSetting antiSuicideHealth = registerInteger("Suicide Health", 14, 1, 36);
     IntegerSetting minDamage = registerInteger("Min Damage", 5, 1, 36);
@@ -74,7 +78,11 @@ public class BedAura extends Module {
 
         if (mc.player.inventory.currentItem != bedSlot && bedSlot != -1 && autoSwitch.getValue()) {
             oldSlot = mc.player.inventory.currentItem;
-            mc.player.inventory.currentItem = bedSlot;
+            if (!silent.getValue()) {
+                mc.player.inventory.currentItem = bedSlot;
+            } else {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(bedSlot));
+            }
         } else if (bedSlot == -1) {
             hasNone = true;
         }
@@ -88,7 +96,11 @@ public class BedAura extends Module {
         }
 
         if (autoSwitch.getValue() && mc.player.inventory.currentItem != oldSlot && oldSlot != -1) {
-            mc.player.inventory.currentItem = oldSlot;
+            if (!silent.getValue()) {
+                mc.player.inventory.currentItem = oldSlot;
+            } else {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+            }
         }
 
         if (hasNone && disableNone.getValue()) setDisabledMessage("No beds detected... BedAura turned OFF!");
@@ -107,7 +119,11 @@ public class BedAura extends Module {
 
         if (mc.player.inventory.currentItem != bedSlot && bedSlot != -1 && autoSwitch.getValue()) {
             oldSlot = mc.player.inventory.currentItem;
-            mc.player.inventory.currentItem = bedSlot;
+            if (!silent.getValue()) {
+                mc.player.inventory.currentItem = bedSlot;
+            } else {
+                mc.player.connection.sendPacket(new CPacketHeldItemChange(bedSlot));
+            }
         } else if (bedSlot == -1) {
             hasNone = true;
         }
@@ -181,11 +197,7 @@ public class BedAura extends Module {
                     continue;
                 }
 
-                if (entityPlayer.getPosition() == targetPos1) {
-                    continue;
-                }
-
-                if (DamageUtil.calculateDamage(targetPos1.getX(), targetPos1.getY(), targetPos1.getZ(), entityPlayer) < minDamage.getValue()) {
+                if (DamageUtil.calculateDamage(targetPos1.getX(), targetPos1.getY(), targetPos1.getZ(), entityPlayer, false) < minDamage.getValue()) {
                     continue;
                 }
 
@@ -255,7 +267,7 @@ public class BedAura extends Module {
         targetPlacePos.addAll(EntityUtil.getSphere(mc.player.getPosition(), attackRange.getValue().floatValue(), attackRange.getValue().intValue(), false, true, 0)
             .stream()
             .filter(this::canPlaceBed)
-            .sorted(Comparator.comparing(blockPos -> 1 - (DamageUtil.calculateDamage(blockPos.up().getX(), blockPos.up().getY(), blockPos.up().getZ(), entityPlayer))))
+            .sorted(Comparator.comparing(blockPos -> 1 - (DamageUtil.calculateDamage(blockPos.up().getX(), blockPos.up().getY(), blockPos.up().getZ(), entityPlayer, false))))
             .collect(Collectors.toList()));
 
         return targetPlacePos;

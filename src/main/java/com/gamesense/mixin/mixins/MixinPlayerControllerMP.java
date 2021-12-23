@@ -1,11 +1,15 @@
 package com.gamesense.mixin.mixins;
 
+import com.gamesense.api.event.events.BlockResetEvent;
 import com.gamesense.api.event.events.DamageBlockEvent;
 import com.gamesense.api.event.events.DestroyBlockEvent;
 import com.gamesense.api.event.events.ReachDistanceEvent;
 import com.gamesense.client.GameSense;
+import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
-import com.gamesense.client.module.modules.exploits.PacketUse;
+import com.gamesense.client.module.modules.combat.AutoArmor;
+import com.gamesense.client.module.modules.combat.OffHand;
+import com.gamesense.client.module.modules.exploits.PacketUtils;
 import com.gamesense.client.module.modules.render.noGlitchBlock;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.entity.player.EntityPlayer;
@@ -25,6 +29,15 @@ public abstract class MixinPlayerControllerMP {
 
     @Shadow
     public abstract void syncCurrentPlayItem();
+
+    @Inject(method = "resetBlockRemoving", at = @At("HEAD"), cancellable = true)
+    private void resetBlockWrapper(CallbackInfo callbackInfo) {
+        BlockResetEvent uwu = new BlockResetEvent();
+        GameSense.EVENT_BUS.post(uwu);
+        if (uwu.isCancelled()) {
+            callbackInfo.cancel();
+        }
+    }
 
     @Inject(method = "onPlayerDestroyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playEvent(ILnet/minecraft/util/math/BlockPos;I)V"), cancellable = true)
     private void onPlayerDestroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> callbackInfoReturnable) {
@@ -55,12 +68,14 @@ public abstract class MixinPlayerControllerMP {
 
     @Inject(method = "onStoppedUsingItem", at = @At("HEAD"), cancellable = true)
     public void onStoppedUsingItem(EntityPlayer playerIn, CallbackInfo ci) {
-        PacketUse packetUse = ModuleManager.getModule(PacketUse.class);
+        PacketUtils packetUtils = ModuleManager.getModule(PacketUtils.class);
+        OffHand offHand = ModuleManager.getModule(OffHand.class);
+        AutoArmor armor = ModuleManager.getModule(AutoArmor.class);
 
-        if (packetUse.isEnabled()) {
-            if ((packetUse.food.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemFood)
-                || (packetUse.potion.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemPotion)
-                || packetUse.all.getValue()) {
+        if (packetUtils.isEnabled()) {
+           if ((!offHand.dontMove || !armor.dontMove) && (packetUtils.food.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemFood)
+                || (packetUtils.potion.getValue() && playerIn.getHeldItem(playerIn.getActiveHand()).getItem() instanceof ItemPotion)
+                || packetUtils.all.getValue()) {
                 this.syncCurrentPlayItem();
                 playerIn.stopActiveHand();
                 ci.cancel();

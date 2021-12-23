@@ -5,9 +5,7 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import net.minecraft.block.BlockEnderChest;
 import net.minecraft.block.BlockObsidian;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.*;
 
 /**
  * @author 0b00101010
@@ -18,6 +16,7 @@ import net.minecraft.item.ItemPickaxe;
 public class NoEntityTrace extends Module {
 
     BooleanSetting pickaxe = registerBoolean("Pickaxe", true);
+    BooleanSetting gap = registerBoolean("Food Stuffs", false); // for miningtrace
     BooleanSetting obsidian = registerBoolean("Obsidian", false);
     BooleanSetting eChest = registerBoolean("EnderChest", false);
     BooleanSetting block = registerBoolean("Blocks", false);
@@ -27,11 +26,14 @@ public class NoEntityTrace extends Module {
     boolean isHoldingObsidian = false;
     boolean isHoldingEChest = false;
     boolean isHoldingBlock = false;
+    boolean isHoldingGap = false;
 
     public void onUpdate() {
         Item item = mc.player.getHeldItemMainhand().getItem();
         isHoldingPickaxe = item instanceof ItemPickaxe;
         isHoldingBlock = item instanceof ItemBlock;
+        isHoldingGap = item instanceof ItemFood || item instanceof ItemPotion;
+
         if (isHoldingBlock) {
             isHoldingObsidian = ((ItemBlock) item).getBlock() instanceof BlockObsidian;
             isHoldingEChest = ((ItemBlock) item).getBlock() instanceof BlockEnderChest;
@@ -46,6 +48,7 @@ public class NoEntityTrace extends Module {
         if (obsidian.getValue() && isHoldingObsidian) return isEnabled();
         if (eChest.getValue() && isHoldingEChest) return isEnabled();
         if (block.getValue() && isHoldingBlock) return isEnabled();
+        if (gap.getValue() && isHoldingGap) return isEnabled();
         if (all.getValue()) return isEnabled();
         return false;
     }
