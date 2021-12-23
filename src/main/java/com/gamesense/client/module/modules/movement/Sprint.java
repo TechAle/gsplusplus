@@ -15,6 +15,7 @@ public class Sprint extends Module {
 
         if (player != null) {
             player.setSprinting(shouldSprint(player));
+
         }
     }
 

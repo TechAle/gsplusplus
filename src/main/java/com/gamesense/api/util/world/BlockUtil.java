@@ -61,13 +61,27 @@ public class BlockUtil {
         return getBlock(pos).canCollideCheck(getState(pos), false);
     }
 
-    public static void faceVectorPacketInstant(Vec3d vec, Boolean roundAngles) {
+    public static CPacketPlayer.Rotation faceVectorPacketInstant(Vec3d vec, Boolean roundAngles) {
         float[] rotations = getNeededRotations2(vec);
 
-        mc.player.connection.sendPacket(new CPacketPlayer.Rotation(rotations[0], roundAngles ? MathHelper.normalizeAngle((int) rotations[1], 360) : rotations[1], mc.player.onGround));
+        CPacketPlayer.Rotation e = new CPacketPlayer.Rotation(rotations[0], roundAngles ? MathHelper.normalizeAngle((int) rotations[1], 360) : rotations[1], mc.player.onGround);
+
+        mc.player.connection.sendPacket(e);
+
+        return e;
     }
 
-    private static float[] getNeededRotations2(Vec3d vec) {
+    public static CPacketPlayer.Rotation getFaceVectorPacket(Vec3d vec, Boolean roundAngles) {
+        float[] rotations = getNeededRotations2(vec);
+
+        CPacketPlayer.Rotation e = new CPacketPlayer.Rotation(rotations[0], roundAngles ? MathHelper.normalizeAngle((int) rotations[1], 360) : rotations[1], mc.player.onGround);
+
+        mc.player.connection.sendPacket(e);
+
+        return e;
+    }
+
+    public static float[] getNeededRotations2(Vec3d vec) {
         Vec3d eyesPos = getEyesPos();
 
         double diffX = vec.x - eyesPos.x;

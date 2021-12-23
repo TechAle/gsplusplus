@@ -2,6 +2,7 @@ package com.gamesense.client;
 
 import com.gamesense.api.config.LoadConfig;
 import com.gamesense.api.util.font.CFontRenderer;
+import com.gamesense.api.util.fix.Fixer;
 import com.gamesense.api.util.render.CapeUtil;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.command.CommandManager;
@@ -10,7 +11,9 @@ import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.bus.EventBus;
 import me.zero.alpine.bus.EventManager;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.Display;
@@ -22,7 +25,7 @@ public class GameSense {
 
     public static final String MODNAME = "gs++";
     public static final String MODID = "gs++";
-    public static final String MODVER = "v2.3.3";
+    public static final String MODVER = "v2.3.4";
     /**
      * Official release starts with a "v", dev versions start with a "d" to bypass version check
      */
@@ -35,6 +38,21 @@ public class GameSense {
 
     public GameSense() {
         INSTANCE = this;
+    }
+
+    @Mod.EventHandler
+    public void construct(FMLConstructionEvent event) {
+        try {
+            Fixer.disableJndiManager();
+        } catch (Exception ex) {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
+
+
+    @Mod.EventHandler
+    public void preInit(FMLPreInitializationEvent event) {
+        Fixer.doRuntimeTest(event.getModLog());
     }
 
     @Mod.EventHandler

@@ -1,9 +1,8 @@
 package com.gamesense.api.util.player.social;
 
-import com.gamesense.client.module.modules.combat.PistonCrystal;
+import com.gamesense.client.module.modules.combat.Friends;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class SocialManager {
 
@@ -40,11 +39,21 @@ public class SocialManager {
     public static boolean isFriend(String name) {
 
         for (Friend friend : getFriends()) {
-            if (friend.getName().equalsIgnoreCase(name)) {
+            if (friend.getName().equalsIgnoreCase(name) && Friends.INSTANCE.isEnabled()) {
                 return true;
             }
         }
 
+        return false;
+    }
+
+    public static boolean isFriendForce(String name) {
+
+        for (Friend friend : SocialManager.getFriends()) {
+            if (friend.getName().equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
         return false;
     }
 

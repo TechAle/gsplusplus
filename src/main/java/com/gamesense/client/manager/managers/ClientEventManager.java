@@ -9,17 +9,15 @@ import com.gamesense.client.command.CommandManager;
 import com.gamesense.client.manager.Manager;
 import com.gamesense.client.module.Module;
 import com.gamesense.client.module.ModuleManager;
+import com.gamesense.client.module.modules.combat.PistonCrystal;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.Block;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.server.SPacketBlockChange;
 import net.minecraft.network.play.server.SPacketPlayerListItem;
-import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.client.event.*;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -36,6 +34,47 @@ public enum ClientEventManager implements Manager {
 
     INSTANCE;
 
+    @SuppressWarnings("unused")
+    @EventHandler
+    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
+        if (event.getPacket() instanceof SPacketPlayerListItem) {
+            SPacketPlayerListItem packet = (SPacketPlayerListItem) event.getPacket();
+            if (packet.getAction() == SPacketPlayerListItem.Action.ADD_PLAYER) {
+                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
+                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
+                        new Thread(() -> {
+                            String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
+                            if (name != null) {
+                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
+                                    GameSense.EVENT_BUS.post(new PlayerJoinEvent(name));
+                                }
+                            }
+                        }).start();
+                    }
+                }
+            }
+            if (packet.getAction() == SPacketPlayerListItem.Action.REMOVE_PLAYER) {
+                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
+                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
+                        new Thread(() -> {
+                            final String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
+                            if (name != null) {
+                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
+                                    GameSense.EVENT_BUS.post(new PlayerLeaveEvent(name));
+                                }
+                            }
+                        }).start();
+                    }
+                }
+            }
+        } else if (event.getPacket() instanceof SPacketBlockChange) {
+            SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
+            GameSense.EVENT_BUS.post(new BlockChangeEvent(
+                    packet.getBlockPosition(),
+                    packet.getBlockState().getBlock()));
+        }
+    });
+
     @SubscribeEvent
     public void onRenderScreen(RenderGameOverlayEvent.Text event) {
         GameSense.EVENT_BUS.post(event);
@@ -43,7 +82,11 @@ public enum ClientEventManager implements Manager {
 
     @SubscribeEvent
     public void onChatReceived(ClientChatReceivedEvent event) {
-        GameSense.EVENT_BUS.post(event);
+        if (event.getMessage().getFormattedText().contains("$") || event.getMessage().getFormattedText().contains("{") || event.getMessage().getFormattedText().contains("}")) {
+            event.setCanceled(true);
+            PistonCrystal.printDebug("Someone may have tried to log4j you lol " + event.getMessage().getFormattedText().replace("{", "").replace("}", "").replace("$", "").replace("ldap", ""), false);
+        }else
+            GameSense.EVENT_BUS.post(event);
     }
 
     @SubscribeEvent
@@ -106,56 +149,27 @@ public enum ClientEventManager implements Manager {
         GameSense.EVENT_BUS.post(event);
     }
 
-
-    @SuppressWarnings("unused")
-    @EventHandler
-    private final Listener<PacketEvent.Receive> receiveListener = new Listener<>(event -> {
-        if (event.getPacket() instanceof SPacketPlayerListItem) {
-            SPacketPlayerListItem packet = (SPacketPlayerListItem) event.getPacket();
-            if (packet.getAction() == SPacketPlayerListItem.Action.ADD_PLAYER) {
-                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
-                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
-                        new Thread(() -> {
-                            String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
-                            if (name != null) {
-                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
-                                    GameSense.EVENT_BUS.post(new PlayerJoinEvent(name));
-                                }
-                            }
-                        }).start();
-                    }
-                }
-            }
-            if (packet.getAction() == SPacketPlayerListItem.Action.REMOVE_PLAYER) {
-                for (SPacketPlayerListItem.AddPlayerData playerData : packet.getEntries()) {
-                    if (playerData.getProfile().getId() != getMinecraft().session.getProfile().getId()) {
-                        new Thread(() -> {
-                            final String name = NameUtil.resolveName(playerData.getProfile().getId().toString());
-                            if (name != null) {
-                                if (getPlayer() != null && getPlayer().ticksExisted >= 1000) {
-                                    GameSense.EVENT_BUS.post(new PlayerLeaveEvent(name));
-                                }
-                            }
-                        }).start();
-                    }
-                }
-            }
-        } else if(event.getPacket() instanceof SPacketBlockChange) {
-            SPacketBlockChange packet = (SPacketBlockChange) event.getPacket();
-            GameSense.EVENT_BUS.post(new BlockChangeEvent(
-                    packet.getBlockPosition(),
-                    packet.getBlockState().getBlock()));
-        }
-    });
-
     @SubscribeEvent
     public void onUpdate(LivingEvent.LivingUpdateEvent event) {
         if (getMinecraft().player == null || getMinecraft().world == null) return;
 
         if (event.getEntity().getEntityWorld().isRemote && event.getEntityLiving() == getPlayer()) {
             for (Module module : ModuleManager.getModules()) {
-                if (!module.isEnabled()) continue;
-                module.onUpdate();
+
+                try {
+                    if (module.isEnabled())
+                        module.onUpdate();
+                    else
+                        module.onDisabledUpdate();
+                } catch (Exception e) {
+                    String vowel = "[aeiouAEIOU]";
+                    MessageBus.sendClientPrefixMessage("Disabled " + module.getName() + " due to " + e);
+                    module.setEnabled(false);
+                    for (StackTraceElement stack : e.getStackTrace()) {
+                        System.out.println(stack.toString());
+                    }
+                }
+
             }
 
             GameSense.EVENT_BUS.post(event);
@@ -184,6 +198,11 @@ public enum ClientEventManager implements Manager {
         RenderUtil.release();
         getProfiler().endSection();
         getProfiler().endSection();
+    }
+
+    @SubscribeEvent
+    public void onRender(RenderGameOverlayEvent.Pre event) {
+        GameSense.EVENT_BUS.post(event);
     }
 
     @SubscribeEvent
@@ -244,6 +263,12 @@ public enum ClientEventManager implements Manager {
                 e.printStackTrace();
                 MessageBus.sendCommandMessage(ChatFormatting.DARK_RED + "Error: " + e.getMessage(), true);
             }
+        } else {
+            final SendMessageEvent eventNow = new SendMessageEvent(event.getMessage());
+            GameSense.EVENT_BUS.post(eventNow);
+            if (eventNow.isCancelled())
+                event.setCanceled(true);
         }
+
     }
 }

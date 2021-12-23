@@ -5,7 +5,6 @@ import com.gamesense.api.event.events.OnUpdateWalkingPlayerEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
-import com.gamesense.api.setting.values.ModeSetting;
 import com.gamesense.api.util.player.*;
 import com.gamesense.api.util.world.BlockUtil;
 import com.gamesense.api.util.world.EntityUtil;
@@ -15,7 +14,6 @@ import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockSkull;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemSkull;
@@ -27,7 +25,6 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import static com.gamesense.api.util.player.SpoofRotationUtil.ROTATION_UTIL;
 

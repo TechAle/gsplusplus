@@ -4,7 +4,6 @@ import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.StringSetting;
 import com.gamesense.api.util.misc.MessageBus;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
@@ -12,70 +11,39 @@ import com.gamesense.client.module.Module;
 @Module.Declaration(name = "Spammer", category = Category.Misc)
 public class Spammer extends Module {
 
-    StringSetting string = registerString("Message","$VER on top!");
+    StringSetting string = registerString("Message", "$VER on top!");
     BooleanSetting green = registerBoolean("Green Text", true);
     BooleanSetting fancy = registerBoolean("Fancy", false);
     BooleanSetting bypass = registerBoolean("Bypass", true);
-    IntegerSetting delay = registerInteger("Delay", 10,1,50);
-    IntegerSetting range = registerInteger("Range", 3,0,20);
-    BooleanSetting debug = registerBoolean("Debug", false);
+    IntegerSetting delay = registerInteger("Speed", 10, 1, 20);
 
-    boolean calcDelay = true;
-    int thisDelay;
-    String thisString;
-    int i;
+    int i = 0;
+
+    String str;
 
     @Override
     public void onUpdate() {
 
-        if (calcDelay) {
-
-            thisDelay = getRand(delay.getValue() - (range.getValue()/2), delay.getValue() + (range.getValue()/2));
-            calcDelay = false;
-
-        }
-
-        thisString = string.getText()
-                .replace("$VER", GameSense.MODVER)
+        str = string.getValue()
+                .replace("$VER", GameSense.MODID + " " + GameSense.MODVER)
                 .replace("$NAME", mc.player.getName());
 
-        if (green.getValue()) {
+        if (green.getValue())
+            str = "> " + str;
 
-            thisString = "> "+ thisString;
+        if (fancy.getValue())
+            str = toUnicode(str);
 
-        }
-        if (bypass.getValue()) {
+        if (bypass.getValue())
+            str = str + " " + (int) (Math.random() * 10000);
 
-            thisString = thisString + getRand(10000, 99999);
 
-        }
 
-        if (fancy.getValue()) {
-
-            thisString = toUnicode(thisString);
-
-        }
-
-        if (i % thisDelay == 0) {
-
-            calcDelay= true;
-            MessageBus.sendServerMessage(thisString);
-
-        } else {
-
-            if (debug.getValue()){
-                MessageBus.sendClientRawMessage("ticksExisted % delay" + mc.player.ticksExisted % thisDelay + "delay:" + thisDelay);
-            }
+        if (i == delay.getValue()) {
+            MessageBus.sendServerMessage(str);
+            i = 0;
+        } else
             i++;
-
-        }
-
-    }
-
-    int getRand(int min, int max) {
-
-        return (((int) (Math.random() * (max - min))) + min);
-
     }
 
     private String toUnicode(String s) {

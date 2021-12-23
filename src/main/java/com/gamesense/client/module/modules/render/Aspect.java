@@ -1,7 +1,6 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.AspectEvent;
-import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.DoubleSetting;
 import com.gamesense.client.module.Category;

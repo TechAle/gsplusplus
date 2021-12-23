@@ -10,13 +10,9 @@ import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.MotionUtil;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
-import com.gamesense.client.module.modules.combat.PistonCrystal;
-import com.mojang.realmsclient.gui.ChatFormatting;
+import com.gamesense.client.module.ModuleManager;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
-import net.minecraft.block.BlockLiquid;
-import net.minecraft.init.MobEffects;
-import net.minecraft.network.play.client.CPacketEntityAction;
 
 import java.util.Arrays;
 
@@ -71,7 +67,6 @@ public class LiquidSpeed extends Module {
         Double velX = event.getX();
         Double velY = event.getY(), memY = velY;
         Double velZ = event.getZ();
-        EntityUtil.resetTimer();
 
         // Some servers doesnt like speed while onGround lol
         if (groundIgnore.getValue() || !mc.player.onGround) {
@@ -79,7 +74,9 @@ public class LiquidSpeed extends Module {
             // If water
             if (mc.player.isInWater()) {
                 // Set timer
-                EntityUtil.setTimer(timerVal.getValue().floatValue());
+                if (!ModuleManager.isModuleEnabled(TickShift.class) && timerVal.getValue() != 1) {
+                    EntityUtil.setTimer(timerVal.getValue().floatValue());
+                }
                 // Add vel
                 velX *= XZWater.getValue();
                 // We split goUp and goDown
@@ -112,7 +109,9 @@ public class LiquidSpeed extends Module {
 
             // Same as water
             if (mc.player.isInLava()) {
-                EntityUtil.setTimer(timerVal.getValue().floatValue());
+                if (!ModuleManager.isModuleEnabled(TickShift.class) && timerVal.getValue() != 1) {
+                    EntityUtil.setTimer(timerVal.getValue().floatValue());
+                }
                 velX *= XZLava.getValue();
                 velY *= isMovingUp ? YPLava.getValue() : YMLava.getValue();
                 velZ *= XZLava.getValue();

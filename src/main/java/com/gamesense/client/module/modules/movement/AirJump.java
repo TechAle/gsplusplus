@@ -2,7 +2,6 @@ package com.gamesense.client.module.modules.movement;
 
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
-import com.gamesense.api.util.misc.Timer;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 

@@ -27,8 +27,6 @@ public final class ZipUtils {
                 zos.closeEntry();
             }
             zos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

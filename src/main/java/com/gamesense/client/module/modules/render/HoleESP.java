@@ -333,13 +333,21 @@ public class HoleESP extends Module {
     ModeSetting mode = registerMode("Mode", Arrays.asList("Air", "Ground", "Flat", "Slab", "Double"), "Air");
     BooleanSetting hideOwn = registerBoolean("Hide Own", false);
     BooleanSetting flatOwn = registerBoolean("Flat Own", false);
-    DoubleSetting slabHeight = registerDouble("Slab Height", 0.5, 0.1, 1.5);
+    DoubleSetting slabHeightOutline = registerDouble("Slab Height Outline", 0.5, 0.1, 1.5);
+    DoubleSetting slabHeightFill = registerDouble("Slab Height Fill", 0.5, 0.1, 1.5);
+    BooleanSetting animatedHeight = registerBoolean("Animated Heith", false, () -> mode.getValue().equals("Slab"));
+    BooleanSetting animatedAlpha = registerBoolean("Animated Alpha", false);
+    BooleanSetting desyncColor = registerBoolean("Desync Color", false);
+    IntegerSetting desyncColorValue = registerInteger("Desync Color Value", 100, 0, 3000);
+    IntegerSetting desyncSpeed = registerInteger("Desync Speed", 10, 1, 500);
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     IntegerSetting ufoAlpha = registerInteger("UFOAlpha", 255, 0, 255);
 
     private ConcurrentHashMap<AxisAlignedBB, Integer> holes;
+    long count = 0;
 
     public void onUpdate() {
+        count += desyncSpeed.getValue();
         if (mc.player == null || mc.world == null) {
             return;
         }
@@ -492,7 +500,9 @@ public class HoleESP extends Module {
                 if (flatOwn.getValue() && hole.intersects(mc.player.getEntityBoundingBox())) {
                     RenderUtil.drawBox(hole, true, 1, fillColor, ufoAlpha, GeometryMasks.Quad.DOWN);
                 } else {
-                    RenderUtil.drawBox(hole, false, slabHeight.getValue(), fillColor, ufoAlpha, GeometryMasks.Quad.ALL);
+                    RenderUtil.drawBox(hole, false, slabHeightFill.getValue() * (animatedHeight.getValue() ?
+                            1 - mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / Math.pow(range.getValue(), 2)
+                            : 1), fillColor, ufoAlpha, GeometryMasks.Quad.ALL);
                 }
                 break;
             }
@@ -533,7 +543,9 @@ public class HoleESP extends Module {
                 if (this.flatOwn.getValue() && hole.intersects(mc.player.getEntityBoundingBox())) {
                     RenderUtil.drawBoundingBoxWithSides(hole, width.getValue(), outlineColor, ufoAlpha.getValue(), GeometryMasks.Quad.DOWN);
                 } else {
-                    RenderUtil.drawBoundingBox(hole.setMaxY(hole.minY + slabHeight.getValue()), width.getValue(), outlineColor, ufoAlpha.getValue());
+                    RenderUtil.drawBoundingBox(hole.setMaxY(hole.minY + slabHeightOutline.getValue() * (animatedHeight.getValue() ?
+                            1 - mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / Math.pow(range.getValue(), 2)
+                            : 1)), width.getValue(), outlineColor, ufoAlpha.getValue());
                 }
                 break;
             }
@@ -565,22 +577,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (bdirection2OutLineBot.getValue().equals("X")) {
-                            colors.add(bfirstVerticeOutlineBot.getValue());
-                            colors.add(bsecondVerticeOutlineBot.getValue());
-                            colors.add(bfirstVerticeOutlineBot.getValue());
-                            colors.add(bsecondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeOutlineBot.getValue());
+                                colors.add(bsecondVerticeOutlineBot.getValue());
+                                colors.add(bfirstVerticeOutlineBot.getValue());
+                                colors.add(bsecondVerticeOutlineBot.getValue());
+                            }
                         } else {
-                            colors.add(bfirstVerticeOutlineBot.getValue());
-                            colors.add(bfirstVerticeOutlineBot.getValue());
-                            colors.add(bsecondVerticeOutlineBot.getValue());
-                            colors.add(bsecondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeOutlineBot.getValue());
+                                colors.add(bfirstVerticeOutlineBot.getValue());
+                                colors.add(bsecondVerticeOutlineBot.getValue());
+                                colors.add(bsecondVerticeOutlineBot.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(bfirstVerticeOutlineBot.getValue());
-                        colors.add(bsecondVerticeOutlineBot.getValue());
-                        colors.add(bthirdVerticeOutlineBot.getValue());
-                        colors.add(bfourVerticeOutlineBot.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), bfirstVerticeOutlineBot.getColor().getAlpha()));
+                        } else {
+                            colors.add(bfirstVerticeOutlineBot.getValue());
+                            colors.add(bsecondVerticeOutlineBot.getValue());
+                            colors.add(bthirdVerticeOutlineBot.getValue());
+                            colors.add(bfourVerticeOutlineBot.getValue());
+                        }
                         break;
                 }
                 switch (bNVerticesOutlineTop.getValue()) {
@@ -592,22 +625,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (bdirection2OutLineTop.getValue().equals("X")) {
-                            colors.add(bfirstVerticeOutlineTop.getValue());
-                            colors.add(bsecondVerticeOutlineTop.getValue());
-                            colors.add(bfirstVerticeOutlineTop.getValue());
-                            colors.add(bsecondVerticeOutlineTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeOutlineTop.getValue());
+                                colors.add(bsecondVerticeOutlineTop.getValue());
+                                colors.add(bfirstVerticeOutlineTop.getValue());
+                                colors.add(bsecondVerticeOutlineTop.getValue());
+                            }
                         } else {
-                            colors.add(bfirstVerticeOutlineTop.getValue());
-                            colors.add(bfirstVerticeOutlineTop.getValue());
-                            colors.add(bsecondVerticeOutlineTop.getValue());
-                            colors.add(bsecondVerticeOutlineTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeOutlineTop.getValue());
+                                colors.add(bfirstVerticeOutlineTop.getValue());
+                                colors.add(bsecondVerticeOutlineTop.getValue());
+                                colors.add(bsecondVerticeOutlineTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(bfirstVerticeOutlineTop.getValue());
-                        colors.add(bsecondVerticeOutlineTop.getValue());
-                        colors.add(bthirdVerticeOutlineTop.getValue());
-                        colors.add(bfourVerticeOutlineTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), bfirstVerticeOutlineTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(bfirstVerticeOutlineTop.getValue());
+                            colors.add(bsecondVerticeOutlineTop.getValue());
+                            colors.add(bthirdVerticeOutlineTop.getValue());
+                            colors.add(bfourVerticeOutlineTop.getValue());
+                        }
                         break;
                 }
                 break;
@@ -621,22 +675,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (odirection2OutLineBot.getValue().equals("X")) {
-                            colors.add(ofirstVerticeOutlineBot.getValue());
-                            colors.add(osecondVerticeOutlineBot.getValue());
-                            colors.add(ofirstVerticeOutlineBot.getValue());
-                            colors.add(osecondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeOutlineBot.getValue());
+                                colors.add(osecondVerticeOutlineBot.getValue());
+                                colors.add(ofirstVerticeOutlineBot.getValue());
+                                colors.add(osecondVerticeOutlineBot.getValue());
+                            }
                         } else {
-                            colors.add(ofirstVerticeOutlineBot.getValue());
-                            colors.add(ofirstVerticeOutlineBot.getValue());
-                            colors.add(osecondVerticeOutlineBot.getValue());
-                            colors.add(osecondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeOutlineBot.getValue());
+                                colors.add(ofirstVerticeOutlineBot.getValue());
+                                colors.add(osecondVerticeOutlineBot.getValue());
+                                colors.add(osecondVerticeOutlineBot.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(ofirstVerticeOutlineBot.getValue());
-                        colors.add(osecondVerticeOutlineBot.getValue());
-                        colors.add(othirdVerticeOutlineBot.getValue());
-                        colors.add(ofourVerticeOutlineBot.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), othirdVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), ofourVerticeOutlineBot.getColor().getAlpha()));
+                        } else {
+                            colors.add(ofirstVerticeOutlineBot.getValue());
+                            colors.add(osecondVerticeOutlineBot.getValue());
+                            colors.add(othirdVerticeOutlineBot.getValue());
+                            colors.add(ofourVerticeOutlineBot.getValue());
+                        }
                         break;
                 }
                 switch (oNVerticesOutlineTop.getValue()) {
@@ -648,22 +723,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (odirection2OutLineTop.getValue().equals("X")) {
-                            colors.add(ofirstVerticeOutlineTop.getValue());
-                            colors.add(osecondVerticeOutlineTop.getValue());
-                            colors.add(ofirstVerticeOutlineTop.getValue());
-                            colors.add(osecondVerticeOutlineTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), osecondVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeOutlineTop.getValue());
+                                colors.add(osecondVerticeOutlineTop.getValue());
+                                colors.add(ofirstVerticeOutlineTop.getValue());
+                                colors.add(osecondVerticeOutlineTop.getValue());
+                            }
                         } else {
-                            colors.add(ofirstVerticeOutlineTop.getValue());
-                            colors.add(ofirstVerticeOutlineTop.getValue());
-                            colors.add(osecondVerticeOutlineTop.getValue());
-                            colors.add(osecondVerticeOutlineTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeOutlineTop.getValue());
+                                colors.add(ofirstVerticeOutlineTop.getValue());
+                                colors.add(osecondVerticeOutlineTop.getValue());
+                                colors.add(osecondVerticeOutlineTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(ofirstVerticeOutlineTop.getValue());
-                        colors.add(osecondVerticeOutlineTop.getValue());
-                        colors.add(othirdVerticeOutlineTop.getValue());
-                        colors.add(ofourVerticeOutlineTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), othirdVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), ofourVerticeOutlineTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(ofirstVerticeOutlineTop.getValue());
+                            colors.add(osecondVerticeOutlineTop.getValue());
+                            colors.add(othirdVerticeOutlineTop.getValue());
+                            colors.add(ofourVerticeOutlineTop.getValue());
+                        }
                         break;
                 }
                 break;
@@ -677,22 +773,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (direction2OutLineBot.getValue().equals("X")) {
-                            colors.add(firstVerticeOutlineBot.getValue());
-                            colors.add(secondVerticeOutlineBot.getValue());
-                            colors.add(firstVerticeOutlineBot.getValue());
-                            colors.add(secondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeOutlineBot.getValue());
+                                colors.add(secondVerticeOutlineBot.getValue());
+                                colors.add(firstVerticeOutlineBot.getValue());
+                                colors.add(secondVerticeOutlineBot.getValue());
+                            }
                         } else {
-                            colors.add(firstVerticeOutlineBot.getValue());
-                            colors.add(firstVerticeOutlineBot.getValue());
-                            colors.add(secondVerticeOutlineBot.getValue());
-                            colors.add(secondVerticeOutlineBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeOutlineBot.getValue());
+                                colors.add(firstVerticeOutlineBot.getValue());
+                                colors.add(secondVerticeOutlineBot.getValue());
+                                colors.add(secondVerticeOutlineBot.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(firstVerticeOutlineBot.getValue());
-                        colors.add(secondVerticeOutlineBot.getValue());
-                        colors.add(thirdVerticeOutlineBot.getValue());
-                        colors.add(fourVerticeOutlineBot.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), thirdVerticeOutlineBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), fourVerticeOutlineBot.getColor().getAlpha()));
+                        } else {
+                            colors.add(firstVerticeOutlineBot.getValue());
+                            colors.add(secondVerticeOutlineBot.getValue());
+                            colors.add(thirdVerticeOutlineBot.getValue());
+                            colors.add(fourVerticeOutlineBot.getValue());
+                        }
                         break;
                 }
                 switch (NVerticesOutlineTop.getValue()) {
@@ -704,25 +821,61 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (direction2OutLineTop.getValue().equals("X")) {
-                            colors.add(firstVerticeOutlineTop.getValue());
-                            colors.add(secondVerticeOutlineTop.getValue());
-                            colors.add(firstVerticeOutlineTop.getValue());
-                            colors.add(secondVerticeOutlineTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeOutlineTop.getValue());
+                                colors.add(secondVerticeOutlineTop.getValue());
+                                colors.add(firstVerticeOutlineTop.getValue());
+                                colors.add(secondVerticeOutlineTop.getValue());
+                            }
+
                         } else {
-                            colors.add(firstVerticeOutlineTop.getValue());
-                            colors.add(firstVerticeOutlineTop.getValue());
-                            colors.add(secondVerticeOutlineTop.getValue());
-                            colors.add(secondVerticeOutlineTop.getValue());
+
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeOutlineTop.getValue());
+                                colors.add(firstVerticeOutlineTop.getValue());
+                                colors.add(secondVerticeOutlineTop.getValue());
+                                colors.add(secondVerticeOutlineTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(firstVerticeOutlineTop.getValue());
-                        colors.add(secondVerticeOutlineTop.getValue());
-                        colors.add(thirdVerticeOutlineTop.getValue());
-                        colors.add(fourVerticeOutlineTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), thirdVerticeOutlineTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), fourVerticeOutlineTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(firstVerticeOutlineTop.getValue());
+                            colors.add(secondVerticeOutlineTop.getValue());
+                            colors.add(thirdVerticeOutlineTop.getValue());
+                            colors.add(fourVerticeOutlineTop.getValue());
+                        }
                         break;
                 }
                 break;
+        }
+
+        if (animatedAlpha.getValue()) {
+            ArrayList<GSColor> newColors = new ArrayList();
+            for(GSColor col : colors) {
+                int alpha = (int) (col.getAlpha() * (1 - (mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / (range.getValue() * range.getValue()))));
+                if (alpha < 0)
+                    alpha = 0;
+                else if (alpha > 255)
+                    alpha = 255;
+                newColors.add(new GSColor(col, alpha));
+            }
+            colors = newColors;
         }
 
         switch (mode.getValue()) {
@@ -742,7 +895,11 @@ public class HoleESP extends Module {
             case "Slab":
                 if (flatOwn.getValue() && hole.intersects(mc.player.getEntityBoundingBox())) {
                     hole = hole.setMaxY(hole.maxY - 1);
-                } else hole = hole.setMaxY(hole.minY + slabHeight.getValue());
+                } else {
+                    hole = hole.setMaxY(hole.minY + slabHeightOutline.getValue() * (animatedHeight.getValue() ?
+                        1 - mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / Math.pow(range.getValue(), 2)
+                : 1));
+                }
                 break;
             case "Flat":
                 hole = hole.setMaxY(hole.maxY - 1);
@@ -797,22 +954,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (bdirection2FillTop.getValue().equals("X")) {
-                            colors.add(bfirstVerticeFillTop.getValue());
-                            colors.add(bsecondVerticeFillTop.getValue());
-                            colors.add(bfirstVerticeFillTop.getValue());
-                            colors.add(bsecondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bsecondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bsecondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeFillTop.getValue());
+                                colors.add(bsecondVerticeFillTop.getValue());
+                                colors.add(bfirstVerticeFillTop.getValue());
+                                colors.add(bsecondVerticeFillTop.getValue());
+                            }
                         } else {
-                            colors.add(bfirstVerticeFillTop.getValue());
-                            colors.add(bfirstVerticeFillTop.getValue());
-                            colors.add(bsecondVerticeFillTop.getValue());
-                            colors.add(bsecondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bsecondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bsecondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(bfirstVerticeFillTop.getValue());
+                                colors.add(bfirstVerticeFillTop.getValue());
+                                colors.add(bsecondVerticeFillTop.getValue());
+                                colors.add(bsecondVerticeFillTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(bfirstVerticeFillTop.getValue());
-                        colors.add(bsecondVerticeFillTop.getValue());
-                        colors.add(bthirdVerticeFillTop.getValue());
-                        colors.add(bfourVerticeFillTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), bfirstVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), bsecondVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), bthirdVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), bfourVerticeFillTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(bfirstVerticeFillTop.getValue());
+                            colors.add(bsecondVerticeFillTop.getValue());
+                            colors.add(bthirdVerticeFillTop.getValue());
+                            colors.add(bfourVerticeFillTop.getValue());
+                        }
                         break;
                 }
                 break;
@@ -826,22 +1004,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (odirection2FillBot.getValue().equals("X")) {
-                            colors.add(ofirstVerticeFillBot.getValue());
-                            colors.add(osecondVerticeFillBot.getValue());
-                            colors.add(ofirstVerticeFillBot.getValue());
-                            colors.add(osecondVerticeFillBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeFillBot.getValue());
+                                colors.add(osecondVerticeFillBot.getValue());
+                                colors.add(ofirstVerticeFillBot.getValue());
+                                colors.add(osecondVerticeFillBot.getValue());
+                            }
                         } else {
-                            colors.add(ofirstVerticeFillBot.getValue());
-                            colors.add(ofirstVerticeFillBot.getValue());
-                            colors.add(osecondVerticeFillBot.getValue());
-                            colors.add(osecondVerticeFillBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeFillBot.getValue());
+                                colors.add(ofirstVerticeFillBot.getValue());
+                                colors.add(osecondVerticeFillBot.getValue());
+                                colors.add(osecondVerticeFillBot.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(ofirstVerticeFillBot.getValue());
-                        colors.add(osecondVerticeFillBot.getValue());
-                        colors.add(othirdVerticeFillBot.getValue());
-                        colors.add(ofourVerticeFillBot.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), othirdVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), ofourVerticeFillBot.getColor().getAlpha()));
+                        } else {
+                            colors.add(ofirstVerticeFillBot.getValue());
+                            colors.add(osecondVerticeFillBot.getValue());
+                            colors.add(othirdVerticeFillBot.getValue());
+                            colors.add(ofourVerticeFillBot.getValue());
+                        }
                         break;
                 }
                 switch (oNVerticesFillTop.getValue()) {
@@ -853,22 +1052,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (odirection2FillTop.getValue().equals("X")) {
-                            colors.add(ofirstVerticeFillTop.getValue());
-                            colors.add(osecondVerticeFillTop.getValue());
-                            colors.add(ofirstVerticeFillTop.getValue());
-                            colors.add(osecondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeFillTop.getValue());
+                                colors.add(osecondVerticeFillTop.getValue());
+                                colors.add(ofirstVerticeFillTop.getValue());
+                                colors.add(osecondVerticeFillTop.getValue());
+                            }
                         } else {
-                            colors.add(ofirstVerticeFillTop.getValue());
-                            colors.add(ofirstVerticeFillTop.getValue());
-                            colors.add(osecondVerticeFillTop.getValue());
-                            colors.add(osecondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(ofirstVerticeFillTop.getValue());
+                                colors.add(ofirstVerticeFillTop.getValue());
+                                colors.add(osecondVerticeFillTop.getValue());
+                                colors.add(osecondVerticeFillTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(ofirstVerticeFillTop.getValue());
-                        colors.add(osecondVerticeFillTop.getValue());
-                        colors.add(othirdVerticeFillTop.getValue());
-                        colors.add(ofourVerticeFillTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), ofirstVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), osecondVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), othirdVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), ofourVerticeFillTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(ofirstVerticeFillTop.getValue());
+                            colors.add(osecondVerticeFillTop.getValue());
+                            colors.add(othirdVerticeFillTop.getValue());
+                            colors.add(ofourVerticeFillTop.getValue());
+                        }
                         break;
                 }
                 break;
@@ -882,22 +1102,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (direction2FillBot.getValue().equals("X")) {
-                            colors.add(firstVerticeFillBot.getValue());
-                            colors.add(secondVerticeFillBot.getValue());
-                            colors.add(firstVerticeFillBot.getValue());
-                            colors.add(secondVerticeFillBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeFillBot.getValue());
+                                colors.add(secondVerticeFillBot.getValue());
+                                colors.add(firstVerticeFillBot.getValue());
+                                colors.add(secondVerticeFillBot.getValue());
+                            }
                         } else {
-                            colors.add(firstVerticeFillBot.getValue());
-                            colors.add(firstVerticeFillBot.getValue());
-                            colors.add(secondVerticeFillBot.getValue());
-                            colors.add(secondVerticeFillBot.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillBot.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillBot.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeFillBot.getValue());
+                                colors.add(firstVerticeFillBot.getValue());
+                                colors.add(secondVerticeFillBot.getValue());
+                                colors.add(secondVerticeFillBot.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(firstVerticeFillBot.getValue());
-                        colors.add(secondVerticeFillBot.getValue());
-                        colors.add(thirdVerticeFillBot.getValue());
-                        colors.add(fourVerticeFillBot.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), thirdVerticeFillBot.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), fourVerticeFillBot.getColor().getAlpha()));
+                        } else {
+                            colors.add(firstVerticeFillBot.getValue());
+                            colors.add(secondVerticeFillBot.getValue());
+                            colors.add(thirdVerticeFillBot.getValue());
+                            colors.add(fourVerticeFillBot.getValue());
+                        }
                         break;
                 }
                 switch (NVerticesFillTop.getValue()) {
@@ -909,22 +1150,43 @@ public class HoleESP extends Module {
                         break;
                     case "2":
                         if (direction2FillTop.getValue().equals("X")) {
-                            colors.add(firstVerticeFillTop.getValue());
-                            colors.add(secondVerticeFillTop.getValue());
-                            colors.add(firstVerticeFillTop.getValue());
-                            colors.add(secondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeFillTop.getValue());
+                                colors.add(secondVerticeFillTop.getValue());
+                                colors.add(firstVerticeFillTop.getValue());
+                                colors.add(secondVerticeFillTop.getValue());
+                            }
                         } else {
-                            colors.add(firstVerticeFillTop.getValue());
-                            colors.add(firstVerticeFillTop.getValue());
-                            colors.add(secondVerticeFillTop.getValue());
-                            colors.add(secondVerticeFillTop.getValue());
+                            if (desyncColor.getValue()) {
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillTop.getColor().getAlpha()));
+                                colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillTop.getColor().getAlpha()));
+                            } else {
+                                colors.add(firstVerticeFillTop.getValue());
+                                colors.add(firstVerticeFillTop.getValue());
+                                colors.add(secondVerticeFillTop.getValue());
+                                colors.add(secondVerticeFillTop.getValue());
+                            }
                         }
                         break;
                     case "4":
-                        colors.add(firstVerticeFillTop.getValue());
-                        colors.add(secondVerticeFillTop.getValue());
-                        colors.add(thirdVerticeFillTop.getValue());
-                        colors.add(fourVerticeFillTop.getValue());
+                        if (desyncColor.getValue()) {
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*0), firstVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*1), secondVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*2), thirdVerticeFillTop.getColor().getAlpha()));
+                            colors.add(new GSColor(ColorSetting.getRainbowColor(count + desyncColorValue.getValue()*3), fourVerticeFillTop.getColor().getAlpha()));
+                        } else {
+                            colors.add(firstVerticeFillTop.getValue());
+                            colors.add(secondVerticeFillTop.getValue());
+                            colors.add(thirdVerticeFillTop.getValue());
+                            colors.add(fourVerticeFillTop.getValue());
+                        }
                         break;
                 }
                 break;
@@ -947,11 +1209,28 @@ public class HoleESP extends Module {
             case "Slab":
                 if (flatOwn.getValue() && hole.intersects(mc.player.getEntityBoundingBox())) {
                     mask = GeometryMasks.Quad.DOWN;
-                } else hole = hole.setMaxY(hole.minY + slabHeight.getValue());
+                } else
+                    hole = hole.setMaxY(hole.minY + slabHeightFill.getValue() * (animatedHeight.getValue() ?
+                            1 - mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / Math.pow(range.getValue(), 2)
+                            : 1));
+
                 break;
             case "Flat":
                 mask = GeometryMasks.Quad.DOWN;
                 break;
+        }
+
+        if (animatedAlpha.getValue()) {
+            ArrayList<GSColor> newColors = new ArrayList();
+            for(GSColor col : colors) {
+                int alpha = (int) (col.getAlpha() * (1 - (mc.player.getDistanceSq(hole.minX + .5, hole.minY + .5, hole.minZ + .5) / (range.getValue() * range.getValue()))));
+                if (alpha < 0)
+                    alpha = 0;
+                else if (alpha > 255)
+                    alpha = 255;
+                newColors.add(new GSColor(col, alpha));
+            }
+            colors = newColors;
         }
 
         RenderUtil.drawBoxProva2(hole, true, 1, colors.toArray(new GSColor[7]), mask, true);

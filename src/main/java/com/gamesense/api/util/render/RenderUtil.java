@@ -1,5 +1,6 @@
 package com.gamesense.api.util.render;
 
+import com.gamesense.api.setting.values.ColorSetting;
 import com.gamesense.api.util.font.FontUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
@@ -451,6 +452,32 @@ public class RenderUtil {
 
     }
 
+    public static void drawCircle(float x, float y, float z, Double radius, int stepCircle, int alphaVal) {
+
+        GlStateManager.disableCull();
+        GlStateManager.disableAlpha();
+        GlStateManager.shadeModel(GL_SMOOTH);
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+
+        int alpha = 255 - alphaVal;
+
+        if (alpha == 0) alpha = 1;
+
+        for (int i = 0; i < 361; i++) {
+            GSColor colour = ColorSetting.getRainbowColor((i % 180) * stepCircle);
+            bufferbuilder.pos(x + Math.sin(Math.toRadians(i)) * radius - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, (z + Math.cos(Math.toRadians(i)) * radius) - mc.getRenderManager().viewerPosZ).color((float) colour.getRed() / 255, (float) colour.getGreen() / 255, (float) colour.getBlue() / 255, alpha).endVertex();
+        }
+
+        tessellator.draw();
+
+        GlStateManager.enableCull();
+        GlStateManager.enableAlpha();
+        GlStateManager.shadeModel(GL_FLAT);
+
+    }
+
 
     public static void drawNametag(Entity entity, String[] text, GSColor color, int type) {
         Vec3d pos = EntityUtil.getInterpolatedPos(entity, mc.getRenderPartialTicks());
@@ -517,6 +544,10 @@ public class RenderUtil {
     }
 
     private static void colorVertex(double x, double y, double z, GSColor color, int alpha, BufferBuilder bufferbuilder) {
+        bufferbuilder.pos(x - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, z - mc.getRenderManager().viewerPosZ).color(color.getRed(), color.getGreen(), color.getBlue(), alpha).endVertex();
+    }
+
+    public static void PublicColorVertex(double x, double y, double z, GSColor color, int alpha, BufferBuilder bufferbuilder) {
         bufferbuilder.pos(x - mc.getRenderManager().viewerPosX, y - mc.getRenderManager().viewerPosY, z - mc.getRenderManager().viewerPosZ).color(color.getRed(), color.getGreen(), color.getBlue(), alpha).endVertex();
     }
 

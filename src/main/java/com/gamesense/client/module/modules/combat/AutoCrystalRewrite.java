@@ -54,6 +54,8 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.*;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
 import java.util.*;
@@ -200,7 +202,13 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting timeSlowBreak = registerInteger("Time Slow Break", 3, 0, 10,
             () -> breakSection.getValue() && slowBreak.getValue().equals("Time"));
     BooleanSetting predictHit = registerBoolean("Predict Hit", false, () -> breakSection.getValue());
+    IntegerSetting predictHitDelay = registerInteger("Predict Hit Delay", 0, 0, 500, () -> breakSection.getValue() && predictHit.getValue());
     BooleanSetting antiSuicidebr = registerBoolean("AntiSuicide br", true, () -> breakSection.getValue());
+    BooleanSetting antiCity = registerBoolean("Anti City", false, () -> breakSection.getValue());
+    BooleanSetting destroyCrystal = registerBoolean("Destroy Stuck Crystal", false, () -> breakSection.getValue() && antiCity.getValue());
+    BooleanSetting destroyAboveCrystal = registerBoolean("Destroy Above Crystal", false, () -> breakSection.getValue() &&  antiCity.getValue());
+    BooleanSetting allowNon1x1 = registerBoolean("Allow non 1x1", false, () -> breakSection.getValue() &&  antiCity.getValue());
+
     //endregion
 
     //region Misc
@@ -441,6 +449,8 @@ public class AutoCrystalRewrite extends Module {
     BooleanSetting movingBreak = registerBoolean("Moving Break", false, () -> renders.getValue());
     DoubleSetting movingBreakSpeed = registerDouble("Moving Break Speed", 0.1, 0.01, 0.5, () -> renders.getValue() && movingPlace.getValue());
 
+    IntegerSetting extendedPlace = registerInteger("Extended place", 5, 0, 20, () -> renders.getValue());
+    IntegerSetting extendedBreak = registerInteger("Extended break", 5, 0, 20, () -> renders.getValue());
 
     BooleanSetting fadeCapl = registerBoolean("Fade Ca pl", true, () -> renders.getValue());
     IntegerSetting endFadePlace = registerInteger("End Fade Place pl", 0, 0, 255, () -> renders.getValue() && fadeCapl.getValue());
@@ -448,6 +458,16 @@ public class AutoCrystalRewrite extends Module {
     IntegerSetting endFadeBreak = registerInteger("End Fade Break pl", 0, 0, 255, () -> renders.getValue() && fadeCabr.getValue());
     IntegerSetting lifeTime = registerInteger("Life Time", 3000, 0, 5000, () -> renders.getValue() && (fadeCapl.getValue() || fadeCabr.getValue()));
     BooleanSetting placeDominant = registerBoolean("Place Dominant", false, () -> renders.getValue() && !(typePlace.getValue().equals("None") && typeBreak.getValue().equals("None")));
+
+    BooleanSetting circleRender = registerBoolean("Circle Render", false, () -> renders.getValue());
+    IntegerSetting life = registerInteger("Life", 300, 0, 1000, () -> renders.getValue() && circleRender.getValue());
+    DoubleSetting circleRange = registerDouble("Circle Range", 1, 0, 3, () -> renders.getValue() && circleRender.getValue());
+    ColorSetting color = registerColor("Color", new GSColor(255, 255, 255, 255), () -> renders.getValue() && circleRender.getValue(), true);
+    BooleanSetting desyncCircle = registerBoolean("Desync Circle", false, () -> renders.getValue() && circleRender.getValue());
+    IntegerSetting stepRainbowCircle = registerInteger("Step Rainbow Circle", 1, 1, 100, () -> renders.getValue() && circleRender.getValue());
+    BooleanSetting increaseHeight = registerBoolean("Increase Height", true, () -> renders.getValue() && circleRender.getValue());
+    DoubleSetting speedIncrease = registerDouble("Speed Increase", 0.01, 0.3, 0.001, () -> renders.getValue() && circleRender.getValue());
+
     //endregion
 
     //region Predict
@@ -568,11 +588,77 @@ public class AutoCrystalRewrite extends Module {
     //endregion
 
     //region Binds
-    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain Bind: ", "", () -> logicTarget.getValue() && ignoreTerrain.getValue() && bindIgnoreTerrain.getValue());
-    StringSetting forceFacePlace = registerString("Force FacePlace", "", () -> place.getValue());
+    StringSetting letterIgnoreTerrain = registerString("Ignore Terrain", "");
+    StringSetting forceFacePlace = registerString("Force FacePlace", "");
+    StringSetting anvilCity = registerString("Anvil City", "");
+    IntegerSetting placeAnvil = registerInteger("Place Anvil", 10, 0, 100);
+    //endregion
     //endregion
 
     //region Global variables
+
+    static class renderClass {
+        final int id;
+        long start;
+        final long life;
+        final double circleRange;
+        final GSColor color;
+        final boolean desyncCircle;
+        final int stepRainbowCircle;
+        final double range;
+        final int desync;
+        final boolean increaseHeight;
+        final double speedIncrease;
+        double nowHeigth = 0;
+        boolean up = true;
+
+
+        public renderClass(int id, long life, GSColor color, double circleRange, boolean desyncCircle, int stepRainbowCircle, double range, int desync, boolean increaseHeight, double speedIncrease) {
+            this.increaseHeight = increaseHeight;
+            this.speedIncrease = speedIncrease;
+            this.id = id;
+            this.range = range;
+            start = System.currentTimeMillis();
+            this.life = life;
+            this.desync = desync;
+            this.circleRange = circleRange;
+            this.color = color;
+            this.desyncCircle = desyncCircle;
+            this.stepRainbowCircle = stepRainbowCircle;
+        }
+
+        boolean update() {
+            return System.currentTimeMillis() - start > life;
+        }
+
+        boolean reset(int id) {
+            if (this.id == id) {
+                start = System.currentTimeMillis();
+                return true;
+            }
+            return false;
+        }
+
+        void render() {
+            Entity e = mc.world.getEntityByID(id);
+            if (e != null) {
+                double inc = 0;
+                if (increaseHeight) {
+                    nowHeigth += speedIncrease * (up ? 1 : -1);
+                    if (nowHeigth > e.height)
+                        up = false;
+                    else if (nowHeigth < 0)
+                        up = true;
+                    inc = nowHeigth;
+                }
+                if (desyncCircle) {
+                    RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, desync, color.getAlpha());
+                } else {
+                    RenderUtil.drawCircle((float) e.posX, (float) (e.posY + inc), (float) e.posZ, range, color);
+                }
+            }
+        }
+    }
 
     // This is for comparing the distance between two players
     static class Sortbyroll implements Comparator<EntityPlayer> {
@@ -975,7 +1061,8 @@ public class AutoCrystalRewrite extends Module {
 
     boolean checkTimePlace, checkTimeBreak, placedCrystal, brokenCrystal,  isRotating;
 
-    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack, highestId = -100000;
+    int oldSlot, tick = 0, tickBeforePlace = 0, tickBeforeBreak, slotChange, tickSwitch, oldSlotBackWeb, oldSlotObby, slotWebBack, highestId = -100000,
+        placeRender, breakRender;
 
     double xPlayerRotation, yPlayerRotation;
 
@@ -1012,6 +1099,8 @@ public class AutoCrystalRewrite extends Module {
     ArrayList<Long> durationsBreaking = new ArrayList<>();
     ArrayList<packetBlock> packetsBlocks = new ArrayList<>();
     ArrayList<slowBreakPlayers> listPlayersBreak = new ArrayList<>();
+    ArrayList<renderClass> toRender = new ArrayList<>();
+
 
     // Multithreading power!
     ThreadPoolExecutor executor =
@@ -1034,6 +1123,7 @@ public class AutoCrystalRewrite extends Module {
         // Just reset some variables
         tickBeforePlace = tickBeforeBreak = tick = 0;
         timePlace = timeBreak = 0;
+        placeRender = breakRender = 0;
         oldSlotBackWeb = tickSwitch = slotWebBack = oldSlotObby = -1;
         checkTimePlace = placedCrystal = brokenCrystal = checkTimeBreak;
         yPlayerRotation = xPlayerRotation = Double.MAX_VALUE;
@@ -1043,8 +1133,10 @@ public class AutoCrystalRewrite extends Module {
         // Idk shits happened
         bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
         bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
-        isRotating = false;
+        isRotating = isAnvilling = false;
         stopAC = false;
+        crystalAnvil = null;
+        highestId = 0;
         // Lmao
         String rickroll = "Never gonna give you up\n" +
                 "            Never gonna let you down\n" +
@@ -1099,6 +1191,12 @@ public class AutoCrystalRewrite extends Module {
             }
 
         }
+        //toRender.removeIf(KillAura.renderClass::update);
+        for(int i = 0; i < toRender.size(); i++)
+            if (toRender.get(i).update()) {
+                toRender.remove(i);
+                i--;
+            }
         breakPacketLimit.updateCrystals();
         listPlayersBreak.removeIf(slowBreakPlayers::update);
         crystalSecondBreak.updateCrystals();
@@ -1130,29 +1228,51 @@ public class AutoCrystalRewrite extends Module {
             Coding and reading help me dealing with all the shits are happening,
             they help me distracting myself.
          */
-        switch (logic.getValue()) {
-            case "Place->Break":
-                if (!placeCrystals() || !oneStop.getValue())
-                    breakCrystals();
-                break;
-            case "Break->Place":
-                if (!breakCrystals() || !oneStop.getValue())
+        try {
+            switch (logic.getValue()) {
+                case "Place->Break":
+                    if (!placeCrystals() || !oneStop.getValue())
+                        breakCrystals();
+                    break;
+                case "Break->Place":
+                    if (!breakCrystals() || !oneStop.getValue())
+                        placeCrystals();
+                    break;
+                case "Place":
                     placeCrystals();
-                break;
-            case "Place":
-                placeCrystals();
-                if (bestBreak.crystal != null)
-                    bestBreak = new CrystalInfo.NewBreakInfo(0, null, null, 0);
-                break;
-            case "Break":
-                breakCrystals();
-                if (bestPlace.crystal != null)
-                    bestPlace = new CrystalInfo.PlaceInfo(0, null, null, 0);
-                break;
+                    if (bestBreak.crystal != null)
+                        bestBreak = new CrystalInfo.NewBreakInfo(0, null, null, 0);
+                    break;
+                case "Break":
+                    breakCrystals();
+                    if (bestPlace.crystal != null)
+                        bestPlace = new CrystalInfo.PlaceInfo(0, null, null, 0);
+                    break;
+            }
+        }catch (Exception e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
         }
 
         // Remember this slot. This is used for preventing the bug with normal switch (shit that only gs has patched lmao)
+
         oldSlot = mc.player.inventory.currentItem;
+
+        PlacementUtil.stopSneaking();
 
     }
 
@@ -1246,8 +1366,42 @@ public class AutoCrystalRewrite extends Module {
 
     //region Calculate Place Crystal
 
+    boolean isAnvilling = false;
+    BlockPos crystalAnvil = null;
     // Main function for calculating the best crystal
     CrystalInfo.PlaceInfo getTargetPlacing(String mode) {
+
+        // AnvilCity
+        if (this.anvilCity.getText().length() > 0)
+            // If we are pressing a button
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
+
+                if (crystalAnvil != null && blockCity != null) {
+                    if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
+                        int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                        if (slot != -1) { // 622 2 357
+                            int oldSlot = mc.player.inventory.currentItem;
+                            // Place anvil
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                            PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                            // Return back
+                            mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                        }
+                    }
+                }
+
+                if (crystalAnvil != null) {
+                    if (mc.world.getLoadedEntityList().stream().filter(e -> e instanceof EntityEnderCrystal && e.getPosition() == crystalAnvil).findAny().isPresent()) {
+                        crystalAnvil = null;
+                    } else {
+                        return new CrystalInfo.PlaceInfo(8, null, crystalAnvil, 6d);
+                    }
+                }
+            } else {isAnvilling = false; crystalAnvil = null;}
+        else {isAnvilling = false; crystalAnvil = null;}
+
+
+
         // All this mess for just a little improvement lmao
         PredictUtil.PredictSettings settings = new PredictUtil.PredictSettings(tickPredict.getValue(), calculateYPredict.getValue(), startDecrease.getValue(), exponentStartDecrease.getValue(), decreaseY.getValue(), exponentDecreaseY.getValue(), increaseY.getValue(), exponentIncreaseY.getValue(), splitXZ.getValue(), widthPredict.getValue(), debugPredict.getValue(), showPredictions.getValue(), manualOutHole.getValue(), aboveHoleManual.getValue(), stairPredict.getValue(), nStair.getValue(), speedActivationStair.getValue());
         int nThread = this.nThread.getValue();
@@ -1393,6 +1547,21 @@ public class AutoCrystalRewrite extends Module {
         // Just repalce every webs we removed
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
+        if (bestPlace.target != null) {
+            placeRender = 0;
+
+            boolean found = false;
+            for(renderClass rend : toRender)
+                if (rend.reset(bestPlace.target.entity.entityId)) {
+                    found = true;
+                    break;
+                }
+
+            if (!found) {
+                toRender.add(new renderClass(bestPlace.target.entity.entityId, life.getValue(), color.getValue(), circleRange.getValue(), desyncCircle.getValue(), stepRainbowCircle.getValue(), circleRange.getValue(), stepRainbowCircle.getValue(), increaseHeight.getValue(), speedIncrease.getValue()));
+            }
+        }
 
         // Oh well, lmao everything here is likely well commented
 
@@ -1670,6 +1839,7 @@ public class AutoCrystalRewrite extends Module {
         // Get target
         if (forcePlaceCrystal != null && forcePlace.getValue()) {
             bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
+            placeRender = 0;
             instaPlaceBol = true;
         }
         else {
@@ -1678,6 +1848,7 @@ public class AutoCrystalRewrite extends Module {
                 if (sameBlockPos(forcePlaceCrystal, bestPlace.crystal))
                     // This is basically useless lmao
                     instaPlaceBol = true;
+            placeRender = 0;
         }
 
 
@@ -1701,6 +1872,7 @@ public class AutoCrystalRewrite extends Module {
             // Idk instaplace useless thing
             bestPlace = new CrystalInfo.PlaceInfo(forcePlaceDamage, forcePlaceTarget, forcePlaceCrystal, -10);
             instaPlaceBol = true;
+            placeRender = 0;
         }
 
         forcePlaceCrystal = null;
@@ -1780,7 +1952,7 @@ public class AutoCrystalRewrite extends Module {
             if (slot == -1)
                 return false;
             // If something found and silentSwitch, change slot
-            else if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+            else if (silentSwitchWeb.getValue()) {mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));mc.playerController.updateController();}
             // If we have to switch back at the end, normal switch + set oldSlotBack to oldSlot
             else if (switchBackEnd.getValue()) {
                 oldSlotBackWeb = oldSlot;
@@ -1832,7 +2004,7 @@ public class AutoCrystalRewrite extends Module {
             if (silentSwitchWeb.getValue()) mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
             // Normal switchBack
             else mc.player.inventory.currentItem = oldSlot;
-
+        mc.playerController.updateController();
         return true;
     }
 
@@ -2012,13 +2184,16 @@ public class AutoCrystalRewrite extends Module {
                         }
                         mc.player.inventory.currentItem = slotChange;
                         mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                        mc.playerController.updateController();
                     }
 
                 }
             } else {
                 // Change to crystal
-                if (oldSlot != mc.player.inventory.currentItem)
+                if (oldSlot != mc.player.inventory.currentItem) {
                     mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                    mc.playerController.updateController();
+                }
             }
         }
 
@@ -2088,8 +2263,10 @@ public class AutoCrystalRewrite extends Module {
 
         // For silent switch
         if (slotChange != -1) {
-            if (silentSwitch.getValue())
+            if (silentSwitch.getValue()) {
                 mc.player.connection.sendPacket(new CPacketHeldItemChange(mc.player.inventory.currentItem));
+                mc.playerController.updateController();
+            }
         }
 
         // For limiting place packets
@@ -2305,6 +2482,9 @@ public class AutoCrystalRewrite extends Module {
         // Replace webs
         for(BlockPos web : webRemoved)
             mc.world.setBlockState(web, Blocks.WEB.getDefaultState());
+
+        if (bestBreak.target != null)
+            breakRender = 0;
 
         return bestBreak;
 
@@ -2535,6 +2715,12 @@ public class AutoCrystalRewrite extends Module {
 
         if (!canStartBreaking())
             return false;
+
+        if (antiCity.getValue()) {
+            if (forceBreak == null) {
+                forceBreak = possibleCrystal();
+            }
+        }
 
 
         /*
@@ -2780,8 +2966,81 @@ public class AutoCrystalRewrite extends Module {
         if (showBreakCrystalsSecond.getValue())
             attempedCrystalBreak.addCrystalId(cr.getPosition(), cr.entityId, 500);
 
+
+        // AnvilCity
+        if (this.anvilCity.getText().length() > 0)
+            // If we are pressing a button
+            if (Keyboard.isKeyDown(KeyBoardClass.getKeyFromChar(this.anvilCity.getText().charAt(0))) && bestBreak.damage > 5) {
+                // 618, 1, 366, 621 1 366
+                boolean isCity = false;
+                BlockPos anvilPosition = BlockPos.ORIGIN;
+                final int[] endCrystalPositions = {(int) cr.posX, (int) cr.posY, (int) cr.posZ};
+                // Check if the target is getting city
+                for(Vec3i surround : new Vec3i[]{
+                        new Vec3i(1, 0, 0),
+                        new Vec3i(-1, 0, 0),
+                        new Vec3i(0, 0, 1),
+                        new Vec3i(0, 0, -1)
+                }) { // 11, 2, -9
+                    final int[] surroundPosition = new int[] {endCrystalPositions[0] + surround.x, endCrystalPositions[1], endCrystalPositions[2] + surround.z};
+                    for(EntityPlayer t : getBasicPlayers(40.0).collect(Collectors.toList())) {
+                        int[] playerPosition = new int[]{(int) t.posX, (int) t.posY, (int) t.posZ};
+                        if (playerPosition[1] == surroundPosition[1]) {
+                            if (playerPosition[0] == surroundPosition[0]) {
+                                if (Math.abs(playerPosition[2] - surroundPosition[2]) == 1) {
+                                    if (BlockUtil.getBlock(cr.getPosition().add(surround)) instanceof BlockAir) {
+                                        isCity = true;
+                                        anvilPosition = cr.getPosition().add(surround);
+                                        break;
+                                    }
+                                }
+                            } else if (playerPosition[2] == surroundPosition[2]) {
+                                if (Math.abs(playerPosition[0] - surroundPosition[0]) == 1) {
+                                    if (BlockUtil.getBlock(cr.getPosition().add(surround)) instanceof BlockAir) {
+                                        isCity = true;
+                                        anvilPosition = cr.getPosition().add(surround);
+                                        break;
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                } //622 2 357
+
+                if (isCity) {
+                    // Get anvil
+                    int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                    if (slot != -1) { // 622 2 357
+                        isAnvilling = true;
+                        java.util.Timer t = new java.util.Timer();
+                        BlockPos finalCity = anvilPosition;
+                        blockCity = anvilPosition;
+                        crystalAnvil = cr.getPosition().add(0, -1, 0);
+                        t.schedule(
+                                new java.util.TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        int oldSlot = mc.player.inventory.currentItem;
+                                        // Place anvil
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                                        PlacementUtil.place(finalCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                                        // Return back
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                                        t.cancel();
+                                    }
+                                },
+                                placeAnvil.getValue()
+                        );
+                    }
+                }
+            } else isAnvilling = false;
+            // 621 1 366
+        else isAnvilling = false;
+
         return true;
     }
+    BlockPos blockCity = null;
 
     // Function swing arm
     private void swingArm(String swingMode, boolean hideClient, EnumHand handSwingDef) {
@@ -2835,6 +3094,142 @@ public class AutoCrystalRewrite extends Module {
 
     // endregion
 
+    // region antiCity
+
+    EntityEnderCrystal possibleCrystal() {
+        List<BlockPos> offsetPattern = this.getOffsets();
+
+        for(BlockPos pos : offsetPattern) {
+            for (Entity entity : mc.world.getEntitiesWithinAABBExcludingEntity(null, new AxisAlignedBB(pos))) {
+                if (entity instanceof EntityEnderCrystal && destroyCrystal.getValue()) {
+                    return (EntityEnderCrystal) entity;
+                }
+            }
+
+            if (destroyAboveCrystal.getValue()) {
+                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                    if (entity instanceof EntityEnderCrystal) {
+                        if (sameBlockPos(entity.getPosition(), pos)) {
+                            return (EntityEnderCrystal) entity;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    List<BlockPos> getOffsets() {
+        BlockPos playerPos = this.getPlayerPos();
+        ArrayList<BlockPos> offsets = new ArrayList<BlockPos>();
+        if (this.allowNon1x1.getValue()) {
+            int z;
+            int x;
+            double decimalX = Math.abs(mc.player.posX) - Math.floor(Math.abs(mc.player.posX));
+            double decimalZ = Math.abs(mc.player.posZ) - Math.floor(Math.abs(mc.player.posZ));
+            int lengthXPos = this.calcLength(decimalX, false);
+            int lengthXNeg = this.calcLength(decimalX, true);
+            int lengthZPos = this.calcLength(decimalZ, false);
+            int lengthZNeg = this.calcLength(decimalZ, true);
+            ArrayList<BlockPos> tempOffsets = new ArrayList<BlockPos>();
+            offsets.addAll(this.getOverlapPos());
+            for (x = 1; x < lengthXPos + 1; ++x) {
+                tempOffsets.add(this.addToPlayer(playerPos, x, 0.0, 1 + lengthZPos));
+                tempOffsets.add(this.addToPlayer(playerPos, x, 0.0, -(1 + lengthZNeg)));
+            }
+            for (x = 0; x <= lengthXNeg; ++x) {
+                tempOffsets.add(this.addToPlayer(playerPos, -x, 0.0, 1 + lengthZPos));
+                tempOffsets.add(this.addToPlayer(playerPos, -x, 0.0, -(1 + lengthZNeg)));
+            }
+            for (z = 1; z < lengthZPos + 1; ++z) {
+                tempOffsets.add(this.addToPlayer(playerPos, 1 + lengthXPos, 0.0, z));
+                tempOffsets.add(this.addToPlayer(playerPos, -(1 + lengthXNeg), 0.0, z));
+            }
+            for (z = 0; z <= lengthZNeg; ++z) {
+                tempOffsets.add(this.addToPlayer(playerPos, 1 + lengthXPos, 0.0, -z));
+                tempOffsets.add(this.addToPlayer(playerPos, -(1 + lengthXNeg), 0.0, -z));
+            }
+            for (BlockPos pos : tempOffsets) {
+                if (getDown(pos)) {
+                    offsets.add(pos.add(0, -1, 0));
+                }
+                offsets.add(pos);
+            }
+        } else {
+            offsets.add(playerPos.add(0, -1, 0));
+            for (int[] surround : new int[][]{
+                    {1, 0},
+                    {0, 1},
+                    {-1, 0},
+                    {0, -1}
+            }) {
+                if (getDown(playerPos.add(surround[0], 0, surround[1])))
+                    offsets.add(playerPos.add(surround[0], -1, surround[1]));
+
+                offsets.add(playerPos.add(surround[0], 0, surround[1]));
+            }
+        }
+        return offsets;
+    }
+
+    public static boolean getDown(BlockPos pos) {
+
+        for (EnumFacing e : EnumFacing.values())
+            if (!mc.world.isAirBlock(pos.add(e.getDirectionVec())))
+                return false;
+
+        return true;
+
+    }
+    BlockPos addToPlayer(BlockPos playerPos, double x, double y, double z) {
+        if (playerPos.getX() < 0) {
+            x = -x;
+        }
+        if (playerPos.getY() < 0) {
+            y = -y;
+        }
+        if (playerPos.getZ() < 0) {
+            z = -z;
+        }
+        return playerPos.add(x, y, z);
+    }
+
+    List<BlockPos> getOverlapPos() {
+        ArrayList<BlockPos> positions = new ArrayList<BlockPos>();
+        double decimalX = mc.player.posX - Math.floor(mc.player.posX);
+        double decimalZ = mc.player.posZ - Math.floor(mc.player.posZ);
+        int offX = this.calcOffset(decimalX);
+        int offZ = this.calcOffset(decimalZ);
+        positions.add(this.getPlayerPos());
+        for (int x = 0; x <= Math.abs(offX); ++x) {
+            for (int z = 0; z <= Math.abs(offZ); ++z) {
+                int properX = x * offX;
+                int properZ = z * offZ;
+                positions.add(this.getPlayerPos().add(properX, -1, properZ));
+            }
+        }
+        return positions;
+    }
+
+    int calcOffset(double dec) {
+        return dec >= 0.7 ? 1 : (dec <= 0.3 ? -1 : 0);
+    }
+
+
+    int calcLength(double decimal, boolean negative) {
+        if (negative) {
+            return decimal <= 0.3 ? 1 : 0;
+        }
+        return decimal >= 0.7 ? 1 : 0;
+    }
+
+    BlockPos getPlayerPos() {
+        double decimalPoint = mc.player.posY - Math.floor(mc.player.posY);
+        return new BlockPos(mc.player.posX, decimalPoint > 0.8 ? Math.floor(mc.player.posY) + 1.0 : Math.floor(mc.player.posY), mc.player.posZ);
+    }
+
+    // endregion
+
     //region predict
 
     // This function is called by a thread and, given a list of entity, it return
@@ -2880,10 +3275,14 @@ public class AutoCrystalRewrite extends Module {
     BlockPos lastBestBreak = null;
     // This function is used for getting a basic list of possible players
     Stream<EntityPlayer> getBasicPlayers(double rangeEnemySQ) {
-        return mc.world.playerEntities.stream()
-                .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
-                .filter(entity -> !EntityUtil.basicChecksEntity(entity))
-                .filter(entity -> entity.getHealth() > 0.0f);
+        try {
+            return mc.world.playerEntities.stream()
+                    .filter(entity -> entity.getDistanceSq(mc.player) <= rangeEnemySQ)
+                    .filter(entity -> !EntityUtil.basicChecksEntity(entity))
+                    .filter(entity -> entity.getHealth() > 0.0f);
+        }catch (Exception e) {
+            return new ArrayList<EntityPlayer>().stream();
+        }
     }
 
     boolean lookingCrystal(EntityEnderCrystal cr) {
@@ -2954,6 +3353,8 @@ public class AutoCrystalRewrite extends Module {
             movingPlaceNow = new Vec3d(0f, 0f, 0f);
             movingBreakNow = new Vec3d(0f, 0f, 0f);
         }
+
+        toRender.forEach(renderClass::render);
 
         managerRenderBlocks.render();
 
@@ -3058,8 +3459,10 @@ public class AutoCrystalRewrite extends Module {
                 }
             });
 
-        bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
-        bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
+        if (placeRender++ > extendedPlace.getValue())
+            bestPlace = new CrystalInfo.PlaceInfo(-100, null, null, 100d);
+        if (breakRender++ > extendedBreak.getValue())
+            bestBreak = new CrystalInfo.NewBreakInfo(-100, null, null, 100d);
 
     }
 
@@ -3168,110 +3571,112 @@ public class AutoCrystalRewrite extends Module {
     // Listen for when we are breaking a block
     @EventHandler
     private final Listener<DamageBlockEvent> listener = new Listener<>(event -> {
+        try {
 
-        if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
-        if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
+            if (mc.world == null || mc.player == null || !predictPacketSurround.getValue()) return;
+            if (!canBreak(event.getBlockPos()) || event.getBlockPos() == null) return;
 
-        // If air (Minecraft is strange)
-        BlockPos blockPos = event.getBlockPos();
+            // If air (Minecraft is strange)
+            BlockPos blockPos = event.getBlockPos();
 
-        if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
+            if (mc.world.getBlockState(blockPos).getBlock() == Blocks.AIR) return;
 
-        if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
-            return;
+            if (packetsBlocks.stream().anyMatch(e -> sameBlockPos(e.block, blockPos)))
+                return;
 
-        // Check distance
-        if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
-            // If percent
-            float armourPercent = armourFacePlace.getValue() / 100.0f;
+            // Check distance
+            if (blockPos.getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) <= placeRange.getValue()) {
+                // If percent
+                float armourPercent = armourFacePlace.getValue() / 100.0f;
 
-            // Check around the block
-            for (Vec3i surround : new Vec3i[]{
-                    new Vec3i(1, 0, 0),
-                    new Vec3i(-1, 0, 0),
-                    new Vec3i(0, 0, 1),
-                    new Vec3i(0, 0, -1)
-            }) {
-                // Get possible players that collide
-                List<Entity> players =
-                        new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
-                                null, new AxisAlignedBB(blockPos.add(surround))));
+                // Check around the block
+                for (Vec3i surround : new Vec3i[]{
+                        new Vec3i(1, 0, 0),
+                        new Vec3i(-1, 0, 0),
+                        new Vec3i(0, 0, 1),
+                        new Vec3i(0, 0, -1)
+                }) {
+                    // Get possible players that collide
+                    List<Entity> players =
+                            new ArrayList<>(mc.world.getEntitiesWithinAABBExcludingEntity(
+                                    null, new AxisAlignedBB(blockPos.add(surround))));
 
-                PlayerInfo info = null;
-                // Iterate
-                for(Entity pl : players) {
-                    // Remove us and remove players above
-                    if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
-                        EntityPlayer temp;
-                        // If we found 1, we are fine
-                        info = new PlayerInfo( (temp = (EntityPlayer) pl), armourPercent,
-                                temp.getTotalArmorValue(),
-                                (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
-                        break;
-                    }
-                }
-
-                // This is for force quitting. Is used for not multiPlacing
-                boolean quit = false;
-                if (info != null) {
-                    // Best values
-                    BlockPos coords = null;
-                    double damage = Double.MIN_VALUE;
-                    // Set to air the block for calculating the damage
-                    Block toReplace = BlockUtil.getBlock(blockPos);
-                    mc.world.setBlockToAir(blockPos);
-                    // Check around
-                    for (Vec3i placement : new Vec3i[]{
-                            new Vec3i(1, -1, 0),
-                            new Vec3i(-1, -1, 0),
-                            new Vec3i(0, -1, 1),
-                            new Vec3i(0, -1, -1)
-                    }) {
-                        // If it's placable
-                        BlockPos temp;
-                        if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
-
-                            // Check the damage on us
-                            if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue() )
-                                continue;
-
-                            // If there is a crystal, stop
-                            if ( !placeOnCrystal.getValue() && !isCrystalHere(temp)) {
-                                quit = true;
-                                break;
-                            }
-
-                            // Check damage on the target
-                            float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
-                                    info, ignoreTerrain.getValue());
-
-                            // IF >, add
-                            if (damagePlayer > damage) {
-                                damage = damagePlayer;
-                                coords = temp;
-                                quit = true;
-                            }
+                    PlayerInfo info = null;
+                    // Iterate
+                    for (Entity pl : players) {
+                        // Remove us and remove players above
+                        if (pl instanceof EntityPlayer && pl != mc.player && pl.posY + .5 >= blockPos.y) {
+                            EntityPlayer temp;
+                            // If we found 1, we are fine
+                            info = new PlayerInfo((temp = (EntityPlayer) pl), armourPercent,
+                                    temp.getTotalArmorValue(),
+                                    (float) temp.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+                            break;
                         }
                     }
 
-                    // Reset block
-                    mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+                    // This is for force quitting. Is used for not multiPlacing
+                    boolean quit = false;
+                    if (info != null) {
+                        // Best values
+                        BlockPos coords = null;
+                        double damage = Double.MIN_VALUE;
+                        // Set to air the block for calculating the damage
+                        Block toReplace = BlockUtil.getBlock(blockPos);
+                        mc.world.setBlockToAir(blockPos);
+                        // Check around
+                        for (Vec3i placement : new Vec3i[]{
+                                new Vec3i(1, -1, 0),
+                                new Vec3i(-1, -1, 0),
+                                new Vec3i(0, -1, 1),
+                                new Vec3i(0, -1, -1)
+                        }) {
+                            // If it's placable
+                            BlockPos temp;
+                            if (CrystalUtil.canPlaceCrystal((temp = blockPos.add(placement)), newPlace.getValue())) {
 
-                    // Add to packet block
-                    if (coords != null) {
-                        packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                                // Check the damage on us
+                                if (DamageUtil.calculateDamage(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D, mc.player, ignoreTerrain.getValue()) >= maxSelfDamageSur.getValue())
+                                    continue;
+
+                                // If there is a crystal, stop
+                                if (!placeOnCrystal.getValue() && !isCrystalHere(temp)) {
+                                    quit = true;
+                                    break;
+                                }
+
+                                // Check damage on the target
+                                float damagePlayer = DamageUtil.calculateDamageThreaded(temp.getX() + .5D, temp.getY() + 1D, temp.getZ() + .5D,
+                                        info, ignoreTerrain.getValue());
+
+                                // IF >, add
+                                if (damagePlayer > damage) {
+                                    damage = damagePlayer;
+                                    coords = temp;
+                                    quit = true;
+                                }
+                            }
+                        }
+
+                        // Reset block
+                        mc.world.setBlockState(blockPos, toReplace.getDefaultState());
+
+                        // Add to packet block
+                        if (coords != null) {
+                            packetsBlocks.add(new packetBlock(coords, tickPacketBreak.getValue(), tickMaxPacketBreak.getValue()));
+                        }
+
+                        // Quit
+                        if (quit)
+                            break;
+
                     }
 
-                    // Quit
-                    if (quit)
-                        break;
 
                 }
 
-
             }
-
-        }
+        } catch (Exception ignored) {}
 
 
     });
@@ -3671,13 +4076,32 @@ public class AutoCrystalRewrite extends Module {
     }
 
     void attackID(BlockPos pos, int id) {
-        Entity entity = mc.world.getEntityByID(id);
-        if (entity == null || entity instanceof EntityEnderCrystal) {
-            CPacketUseEntity attack = new CPacketUseEntity();
-            ((AccessorCPacketAttack) attack).setId(id);
-            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
-            mc.player.connection.sendPacket((Packet)attack);
-            mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
+        try {
+            Entity entity = mc.world.getEntityByID(id);
+            if (entity == null || entity instanceof EntityEnderCrystal) {
+                CPacketUseEntity attack = new CPacketUseEntity();
+                ((AccessorCPacketAttack) attack).setId(id);
+                ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                mc.player.connection.sendPacket((Packet) attack);
+                mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+            }
+        }catch(Exception e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
         }
     }
 
@@ -3788,109 +4212,154 @@ public class AutoCrystalRewrite extends Module {
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<PacketEvent.Receive> packetReceiveListener = new Listener<>(event -> {
-        if (mc.world == null || mc.player == null)
-            return;
-        // Spawn object
-        if (event.getPacket() instanceof SPacketSpawnObject) {
-            // Get it
-            SPacketSpawnObject SpawnObject = (SPacketSpawnObject)event.getPacket();
-            if (entityPredict.getValue())
-                checkID(SpawnObject.getEntityID());
-            // Idk why 51
-            if (SpawnObject.getType() == 51 ) {
-                double[] positions = {
-                        SpawnObject.getX() - .5D,
-                        SpawnObject.getY() - .5D,
-                        SpawnObject.getZ() - .5D
-                };
-                // If limitPacketPlace, remove the crystal
-                if (!limitPacketPlace.getValue().equals("None"))
-                    listCrystalsPlaced.removeCrystal(positions[0], positions[1], positions[2]);
-                // If crystalPlace is not null
-                if (crystalPlace != null)
-                    // Check if it's it
-                    if (sameBlockPos(new BlockPos(positions[0], positions[1], positions[2]), crystalPlace.posCrystal)) {
-                        // If yes, remove it
-                        crystalPlace = null;
-                    }
-
-                // If we have to check for crystal seconds
-                if (showPlaceCrystalsSecond.getValue())
-                    // Check if we tried to place something
-                    if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
-                        // If yes, add
-                        crystalSecondPlace.addCrystal(null, 1000);
-
-                // firstHit thing for the break
-                switch(firstHit.getValue()) {
-                    case "Tick":
-                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
-                        break;
-                    case "Time":
-                        existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
-                        break;
-                }
-
-                if (predictHit.getValue()) {
-                    boolean hit = false;
-                    switch(chooseCrystal.getValue()) {
-                        case "All":
-                            hit = true;
-                            break;
-                        case "Own":
-                            if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
-                                hit = true;
-                            break;
-                        case "Smart":
-                            if ( sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
-                                hit = true;
-                            break;
-                    }
-
-                    if (hit) {
-                        CPacketUseEntity attack = new CPacketUseEntity();
-                        ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
-                        ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
-                        mc.player.connection.sendPacket((Packet)attack);
-                        mc.player.connection.sendPacket((Packet)new CPacketAnimation(EnumHand.MAIN_HAND));
-
-                    }
-                }
-            }
-        }
-        else
-        if (event.getPacket() instanceof SPacketSoundEffect) {
-            // Sound predict
-            final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
-            if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
-                for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
-                    if (entity instanceof EntityEnderCrystal) {
-                        // SetDead, that's just visual lol
-                        if ( setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
-                            entity.setDead();
+        try {
+            if (mc.world == null || mc.player == null)
+                return;
+            // Spawn object
+            if (event.getPacket() instanceof SPacketSpawnObject) {
+                // Get it
+                SPacketSpawnObject SpawnObject = (SPacketSpawnObject) event.getPacket();
+                if (entityPredict.getValue())
+                    checkID(SpawnObject.getEntityID());
+                // Idk why 51
+                if (SpawnObject.getType() == 51) {
+                    double[] positions = {
+                            SpawnObject.getX() - .5D,
+                            SpawnObject.getY() - .5D,
+                            SpawnObject.getZ() - .5D
+                    };
+                    // If limitPacketPlace, remove the crystal
+                    if (!limitPacketPlace.getValue().equals("None"))
+                        listCrystalsPlaced.removeCrystal(positions[0], positions[1], positions[2]);
+                    // If crystalPlace is not null
+                    if (crystalPlace != null)
+                        // Check if it's it
+                        if (sameBlockPos(new BlockPos(positions[0], positions[1], positions[2]), crystalPlace.posCrystal)) {
+                            // If yes, remove it
+                            crystalPlace = null;
                         }
 
-                        // For not spamming of packets lol
-                        if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
-                            crystalSecondBreak.addCrystal(null, 1000);
+                    // If we have to check for crystal seconds
+                    if (showPlaceCrystalsSecond.getValue())
+                        // Check if we tried to place something
+                        if (listCrystalsSecondWait.removeCrystal(positions[0], positions[1], positions[2]))
+                            // If yes, add
+                            crystalSecondPlace.addCrystal(null, 1000);
+
+                    // firstHit thing for the break
+                    switch (firstHit.getValue()) {
+                        case "Tick":
+                            existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), 0, firstHitTick.getValue());
+                            break;
+                        case "Time":
+                            existsCrystal.addCrystal(new BlockPos(positions[0], positions[1], positions[2]), fitstHitTime.getValue());
+                            break;
+                    }
+
+                    if (predictHit.getValue()) {
+                        boolean hit = false;
+                        switch (chooseCrystal.getValue()) {
+                            case "All":
+                                hit = true;
+                                break;
+                            case "Own":
+                                if (endCrystalPlaced.hasCrystal(new BlockPos(positions[0], positions[1], positions[2])))
+                                    hit = true;
+                                break;
+                            case "Smart":
+                                if (sameBlockPos(getTargetPlacing(targetPlacing.getValue()).crystal, new BlockPos(positions[0], positions[1], positions[2])))
+                                    hit = true;
+                                break;
+                        }
+
+                        if (hit) {
+                            java.util.Timer t = new java.util.Timer();
+                            t.schedule(
+                                    new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            CPacketUseEntity attack = new CPacketUseEntity();
+                                            ((AccessorCPacketAttack) attack).setId(SpawnObject.getEntityID());
+                                            ((AccessorCPacketAttack) attack).setAction(CPacketUseEntity.Action.ATTACK);
+                                            mc.player.connection.sendPacket((Packet) attack);
+                                            mc.player.connection.sendPacket((Packet) new CPacketAnimation(EnumHand.MAIN_HAND));
+                                            t.cancel();
+                                        }
+                                    },
+                                    predictHitDelay.getValue()
+                            );
+
+                        }
                     }
                 }
-                breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
+            } else if (event.getPacket() instanceof SPacketSoundEffect) {
+                // Sound predict
+                final SPacketSoundEffect packetSoundEffect = (SPacketSoundEffect) event.getPacket();
+                if (packetSoundEffect.getCategory() == SoundCategory.BLOCKS && packetSoundEffect.getSound() == SoundEvents.ENTITY_GENERIC_EXPLODE) {
+                    for (Entity entity : new ArrayList<>(mc.world.loadedEntityList)) {
+                        if (entity instanceof EntityEnderCrystal) {
+                            // SetDead, that's just visual lol
+                            if (setDead.getValue() && entity.getDistanceSq(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()) <= 36.0f) {
+                                try {
+                                    entity.setDead();
+                                } catch (Exception ignored) {}
+                            }
+
+                            // For not spamming of packets lol
+                            if (attempedCrystalBreak.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))
+                                crystalSecondBreak.addCrystal(null, 1000);
+
+                            if (crystalAnvil != null && sameBlockPos(crystalAnvil, new BlockPos(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ()))) {
+                                int slot = InventoryUtil.findFirstBlockSlot(Blocks.ANVIL.getClass(), 0, 8);
+                                if (slot != -1) {
+                                    if (BlockUtil.getBlock(blockCity) instanceof BlockAir) {
+                                        int oldSlot = mc.player.inventory.currentItem;
+                                        // Place anvil
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(slot));
+                                        PlacementUtil.place(blockCity, EnumHand.MAIN_HAND, rotate.getValue(), false);
+                                        // Return back
+                                        mc.player.connection.sendPacket(new CPacketHeldItemChange(oldSlot));
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                    breakPacketLimit.removeCrystal(packetSoundEffect.getX(), packetSoundEffect.getY(), packetSoundEffect.getZ());
+                }
+            } else if (event.getPacket() instanceof SPacketSpawnExperienceOrb) {
+                this.checkID(((SPacketSpawnExperienceOrb) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnPlayer) {
+                this.checkID(((SPacketSpawnPlayer) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnGlobalEntity) {
+                this.checkID(((SPacketSpawnGlobalEntity) event.getPacket()).getEntityId());
+            } else if (event.getPacket() instanceof SPacketSpawnPainting) {
+                this.checkID(((SPacketSpawnPainting) event.getPacket()).getEntityID());
+            } else if (event.getPacket() instanceof SPacketSpawnMob) {
+                this.checkID(((SPacketSpawnMob) event.getPacket()).getEntityID());
             }
-        } else if (event.getPacket() instanceof SPacketSpawnExperienceOrb) {
-            this.checkID(((SPacketSpawnExperienceOrb)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnPlayer) {
-            this.checkID(((SPacketSpawnPlayer)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnGlobalEntity) {
-            this.checkID(((SPacketSpawnGlobalEntity)event.getPacket()).getEntityId());
-        } else if (event.getPacket() instanceof SPacketSpawnPainting) {
-            this.checkID(((SPacketSpawnPainting)event.getPacket()).getEntityID());
-        } else if (event.getPacket() instanceof SPacketSpawnMob) {
-            this.checkID(((SPacketSpawnMob)event.getPacket()).getEntityID());
+        }catch(ConcurrentModificationException e) {
+            PistonCrystal.printDebug("Prevented a crash from the ca. If this repet, spam me in dm", true);
+            final Logger LOGGER = LogManager.getLogger("GameSense");
+            LOGGER.error("[AutoCrystalRewrite] error during the creation of the structure.");
+            if (e.getMessage() != null)
+                LOGGER.error("[AutoCrystalRewrite] error message: " + e.getClass().getName() + " " + e.getMessage());
+            else
+                LOGGER.error("[AutoCrystalRewrite] cannot find the cause");
+            int i5 = 0;
+
+            if (e.getStackTrace().length != 0) {
+                LOGGER.error("[AutoCrystalRewrite] StackTrace Start");
+                for (StackTraceElement errorMess : e.getStackTrace()) {
+                    LOGGER.error("[AutoCrystalRewrite] " + errorMess.toString());
+                }
+                LOGGER.error("[AutoCrystalRewrite] StackTrace End");
+            }
         }
 
-
     });
+
+
 
 
     //endregion

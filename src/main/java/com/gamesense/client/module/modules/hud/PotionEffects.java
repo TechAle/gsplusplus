@@ -1,10 +1,6 @@
 package com.gamesense.client.module.modules.hud;
 
-import java.awt.Color;
-
 import com.gamesense.api.setting.values.BooleanSetting;
-import com.gamesense.api.setting.values.ColorSetting;
-import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.clickgui.GameSenseGUI;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.HUDModule;
@@ -14,10 +10,11 @@ import com.lukflug.panelstudio.hud.ListComponent;
 import com.lukflug.panelstudio.setting.Labeled;
 import com.lukflug.panelstudio.theme.ITheme;
 import com.mojang.realmsclient.gui.ChatFormatting;
-
 import net.minecraft.client.resources.I18n;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+
+import java.awt.*;
 
 @Module.Declaration(name = "PotionEffects", category = Category.HUD)
 @HUDModule.Declaration(posX = 0, posZ = 300)
@@ -25,7 +22,6 @@ public class PotionEffects extends HUDModule {
 
     BooleanSetting sortUp = registerBoolean("Sort Up", false);
     BooleanSetting sortRight = registerBoolean("Sort Right", false);
-    ColorSetting color = registerColor("Color", new GSColor(0, 255, 0, 255));
 
     private final PotionList list = new PotionList();
 
@@ -51,8 +47,12 @@ public class PotionEffects extends HUDModule {
         }
 
         @Override
-        public Color getItemColor(int index) {
-            return color.getValue();
+        public Color getItemColor(int i) {
+            if (mc.player.getActivePotionEffects().toArray().length != 0) {
+                return getColour((PotionEffect) mc.player.getActivePotionEffects().toArray()[i]);
+            } else {
+                return null;
+            }
         }
 
         @Override
@@ -65,4 +65,17 @@ public class PotionEffects extends HUDModule {
             return sortRight.getValue();
         }
     }
+
+    Color getColour(PotionEffect potion) {
+
+        int colour = potion.getPotion().getLiquidColor();
+
+        float r = (float)(colour >> 16 & 255) / 255.0F;
+        float g = (float)(colour >> 8 & 255) / 255.0F;
+        float b = (float)(colour & 255) / 255.0F;
+
+        return new Color(r,g,b);
+
+    }
+
 }
