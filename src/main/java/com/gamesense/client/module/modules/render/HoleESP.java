@@ -8,19 +8,19 @@ import com.gamesense.api.util.render.RenderUtil;
 import com.gamesense.api.util.world.EntityUtil;
 import com.gamesense.api.util.world.GeometryMasks;
 import com.gamesense.api.util.world.HoleUtil;
+import com.gamesense.api.util.world.combat.ac.CrystalInfo;
+import com.gamesense.api.util.world.combat.ac.PositionInfo;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import com.google.common.collect.Sets;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * @reworked by 0b00101010 on 14/01/2021
@@ -342,9 +342,15 @@ public class HoleESP extends Module {
     IntegerSetting desyncSpeed = registerInteger("Desync Speed", 10, 1, 500);
     IntegerSetting width = registerInteger("Width", 1, 1, 10);
     IntegerSetting ufoAlpha = registerInteger("UFOAlpha", 255, 0, 255);
+    IntegerSetting nThreads = registerInteger("N Threads", 4, 1, 10);
+    IntegerSetting timeOut = registerInteger("TimeOut", 500, 0, 2000);
 
     private ConcurrentHashMap<AxisAlignedBB, Integer> holes;
     long count = 0;
+
+    // Multithreading power!
+    ThreadPoolExecutor executor =
+            (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
     public void onUpdate() {
         count += desyncSpeed.getValue();
@@ -363,24 +369,64 @@ public class HoleESP extends Module {
         HashSet<BlockPos> possibleHoles = Sets.newHashSet();
         List<BlockPos> blockPosList = EntityUtil.getSphere(PlayerUtil.getPlayerPos(), range, range, false, true, 0);
 
-        for (BlockPos pos : blockPosList) {
+        List<List<BlockPos>> blockPosListSub = splitList(blockPosList, nThreads.getValue());
 
-            if (!mc.world.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
+        Collection<Future<?>> futures = new LinkedList<>();
+        // Iterate for every thread we have
+        for (int i = 0; i < nThreads.getValue(); i++) {
+            int finalI = i;
+            // Add them
+            futures.add(executor.submit(() -> getPossibleHoles(blockPosListSub.get(finalI), mc.world)));
+        }
 
-            if (mc.world.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-            if (!mc.world.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
-                continue;
-            }
-
-            if (mc.world.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
-                possibleHoles.add(pos);
+        Stack<HashSet<BlockPos>> possibleHolesList = new Stack<>();
+        int found = 0;
+        // For every thread
+        for (Future<?> future : futures) {
+            try {
+                // Get it
+                HashSet<BlockPos> temp;
+                temp = (HashSet<BlockPos>) future.get(timeOut.getValue(), TimeUnit.MILLISECONDS);
+                // If not null, add
+                if (temp != null) {
+                    possibleHolesList.add(temp);
+                    found++;
+                }
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                e.printStackTrace();
             }
         }
 
+
+        futures = new LinkedList<>();
+        // Iterate for every thread we have
+        for (int i = 0; i < found; i++) {
+            int finalI = i;
+            // Add them
+            futures.add(executor.submit(() -> getPossibleHoles(possibleHolesList.get(finalI))));
+        }
+
+        // For every thread
+        for (Future<?> future : futures) {
+            try {
+                // Get it
+                HashMap<AxisAlignedBB, Integer> temp;
+                temp = (HashMap<AxisAlignedBB, Integer>) future.get(timeOut.getValue(), TimeUnit.MILLISECONDS);
+                // If not null, add
+                if (temp != null) {
+                    temp.forEach( (holeAdd, type) -> {
+                        holes.put(holeAdd, type);
+                    });
+                }
+            } catch (ExecutionException | InterruptedException | TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    HashMap<AxisAlignedBB, Integer> getPossibleHoles(HashSet<BlockPos> possibleHoles) {
+        HashMap<AxisAlignedBB, Integer> output = new HashMap<>();
         possibleHoles.forEach(pos -> {
             HoleUtil.HoleInfo holeInfo = HoleUtil.isHole(pos, false, false);
             HoleUtil.HoleType holeType = holeInfo.getType();
@@ -395,7 +441,7 @@ public class HoleESP extends Module {
                 if (holeSafety == HoleUtil.BlockSafety.UNBREAKABLE) {
                     typeHole = 0;
                 } else {
-                   typeHole = 1;
+                    typeHole = 1;
                 }
                 if (holeType == HoleUtil.HoleType.CUSTOM) {
                     typeHole = 2;
@@ -403,14 +449,64 @@ public class HoleESP extends Module {
 
                 String mode = customHoles.getValue();
                 if (mode.equalsIgnoreCase("Custom") && (holeType == HoleUtil.HoleType.CUSTOM || holeType == HoleUtil.HoleType.DOUBLE)) {
-                    holes.put(centreBlocks, typeHole);
+                    output.put(centreBlocks, typeHole);
                 } else if (mode.equalsIgnoreCase("Double") && holeType == HoleUtil.HoleType.DOUBLE) {
-                    holes.put(centreBlocks, typeHole);
+                    output.put(centreBlocks, typeHole);
                 } else if (holeType == HoleUtil.HoleType.SINGLE) {
-                    holes.put(centreBlocks, typeHole);
+                    output.put(centreBlocks, typeHole);
                 }
             }
         });
+        return output;
+    }
+
+
+    HashSet<BlockPos> getPossibleHoles(List<BlockPos> input, WorldClient wrd) {
+        HashSet<BlockPos> possibleHoles = Sets.newHashSet();
+        for (BlockPos pos : input) {
+
+            if (!wrd.getBlockState(pos).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+
+            if (wrd.getBlockState(pos.add(0, -1, 0)).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+            if (!wrd.getBlockState(pos.add(0, 1, 0)).getBlock().equals(Blocks.AIR)) {
+                continue;
+            }
+
+            if (wrd.getBlockState(pos.add(0, 2, 0)).getBlock().equals(Blocks.AIR)) {
+                possibleHoles.add(pos);
+            }
+        }
+        return possibleHoles;
+    }
+
+    List<List<BlockPos>> splitList(List<BlockPos> start, int nThreads) {
+        // If we have only 1  thread, return only 1 thing (sad)
+        if (nThreads == 1)
+            return new ArrayList<List<BlockPos>>() {
+                {
+                    add(start);
+                }
+            };
+        // Get n^Possibilites
+        int count;
+        if ((count = start.size()) == 0)
+            return null;
+        // Output
+        List<List<BlockPos>> output = new ArrayList<>(nThreads);
+        for (int i = 0; i < nThreads; i++) output.add(new ArrayList<>());
+
+        // Add everything
+        for (int i = 0; i < count; i++) {
+            // i % nThreads allow us to iterate in an efficent way
+            output.get(i % nThreads).add(start.get(i));
+        }
+
+        // Return
+        return output;
     }
 
     public void onWorldRender(RenderEvent event) {
