@@ -242,7 +242,7 @@ public class IRC extends Module {
         Thread t = new Thread(() -> {
             String imageURL = "https://crafatar.com/avatars/" + getUUID(realNameMsg).replaceAll("-", "") + "?size=64&default=MHF_Steve&overlay";
 
-            String url = "https://discord.com/api/webhooks/906976095901986846/6mtRpFDzCEWuwTuuvWPfRywdcPPWtBWTjOlWxtusaC2gABELZ7N4Zr3_nQX8XwuFPYVz";
+            String url = "";
             WebhookClient client = WebhookClient.withUrl(url);
 
             if (Files.exists(Paths.get("screenshots"))) {
@@ -323,7 +323,7 @@ public class IRC extends Module {
                             clientEndPoint.sendMessage(getSendMessageRequest(mc.player.getName(), msgSend));
                             String imageURL = "https://crafatar.com/avatars/" + getUUID(mc.player.getName()).replaceAll("-", "") + "?size=64&default=MHF_Steve&overlay";
 
-                            String url = "https://discord.com/api/webhooks/906976095901986846/6mtRpFDzCEWuwTuuvWPfRywdcPPWtBWTjOlWxtusaC2gABELZ7N4Zr3_nQX8XwuFPYVz";
+                            String url = "";
                             WebhookClient client = WebhookClient.withUrl(url);
 
                             WebhookMessage realMSG = new WebhookMessageBuilder()
