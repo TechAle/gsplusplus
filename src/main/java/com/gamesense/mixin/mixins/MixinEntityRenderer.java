@@ -1,18 +1,23 @@
 package com.gamesense.mixin.mixins;
 
 import com.gamesense.api.event.events.AspectEvent;
+import com.gamesense.api.event.events.RenderHand;
 import com.gamesense.api.util.render.GSColor;
 import com.gamesense.client.GameSense;
 import com.gamesense.client.module.ModuleManager;
 import com.gamesense.client.module.modules.misc.NoEntityTrace;
 import com.gamesense.client.module.modules.render.Ambience;
+import com.gamesense.client.module.modules.render.ItemShaders;
 import com.gamesense.client.module.modules.render.NoRender;
 import com.gamesense.client.module.modules.render.RenderTweaks;
 import com.google.common.base.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
@@ -30,11 +35,145 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Mixin(EntityRenderer.class)
-public class MixinEntityRenderer {
+public abstract class MixinEntityRenderer {
+
+    /*
+        I wasnt able to make invoker work so, i had to do shitty things.
+        It works, it's just really really bad code :P
+        But ehy! It's been months that gs++ code is shit, so i find no problems on making it worst
+     */
+    @Inject(method = "renderHand", at = @At("HEAD"), cancellable = true)
+    public void renderHandMain(float partialTicks, int pass, CallbackInfo ci) {
+        ItemShaders module = ModuleManager.getModule(ItemShaders.class);
+        if (module.isEnabled()) {
+            Minecraft mc = Minecraft.getMinecraft();
+            if (!module.cancelItem.getValue()) {
+                doRenderHand(partialTicks, pass, mc);
+            }
+
+            if (!module.glowESP.getValue().equals("None")) {
+                GlStateManager.pushMatrix();
+                RenderHand.PreOutline hand = new RenderHand.PreOutline(partialTicks);
+                GameSense.EVENT_BUS.post(hand);
+                doRenderHand(partialTicks, pass, mc);
+                RenderHand.PostOutline hand2 = new RenderHand.PostOutline(partialTicks);
+                GameSense.EVENT_BUS.post(hand2);
+                GlStateManager.popMatrix();
+            }
+
+            if (!module.fillShader.getValue().equals("None")) {
+                GlStateManager.pushMatrix();
+                RenderHand.PreFill hand = new RenderHand.PreFill(partialTicks);
+                GameSense.EVENT_BUS.post(hand);
+                doRenderHand(partialTicks, pass, mc);
+                RenderHand.PostFill hand2 = new RenderHand.PostFill(partialTicks);
+                GameSense.EVENT_BUS.post(hand2);
+                GlStateManager.popMatrix();
+            }
+
+            ci.cancel();
+        }
+    }
+
+    @Shadow
+    public
+    boolean debugView;
+
+    @Shadow
+    public abstract float getFOVModifier(float partialTicks, boolean useFOVSetting);
+
+    @Shadow
+    public abstract void hurtCameraEffect(float partialTicks);
+
+    @Shadow
+    public abstract void applyBobbing(float partialTicks);
+
+    @Shadow
+    public abstract void enableLightmap();
+
+    @Shadow
+    public float farPlaneDistance;
+
+    @Final
+    @Shadow
+    public ItemRenderer itemRenderer;
+
+    @Shadow
+    public abstract void disableLightmap();
+
+    void doRenderHand(float partialTicks, int pass, Minecraft mc) {
+        if (!this.debugView)
+        {
+            GlStateManager.matrixMode(5889);
+            GlStateManager.loadIdentity();
+            float f = 0.07F;
+
+            if (mc.gameSettings.anaglyph)
+            {
+                GlStateManager.translate((float)(-(pass * 2 - 1)) * 0.07F, 0.0F, 0.0F);
+            }
+
+            Project.gluPerspective(this.getFOVModifier(partialTicks, false), (float)mc.displayWidth / (float)mc.displayHeight, 0.05F, this.farPlaneDistance * 2.0F);
+            GlStateManager.matrixMode(5888);
+            GlStateManager.loadIdentity();
+
+            if (mc.gameSettings.anaglyph)
+            {
+                GlStateManager.translate((float)(pass * 2 - 1) * 0.1F, 0.0F, 0.0F);
+            }
+
+            GlStateManager.pushMatrix();
+            this.hurtCameraEffect(partialTicks);
+
+            if (mc.gameSettings.viewBobbing)
+            {
+                this.applyBobbing(partialTicks);
+            }
+
+            boolean flag = mc.getRenderViewEntity() instanceof EntityLivingBase && ((EntityLivingBase)mc.getRenderViewEntity()).isPlayerSleeping();
+
+            if (!net.minecraftforge.client.ForgeHooksClient.renderFirstPersonHand(mc.renderGlobal, partialTicks, pass))
+                if (mc.gameSettings.thirdPersonView == 0 && !flag && !mc.gameSettings.hideGUI && !mc.playerController.isSpectator())
+                {
+                    this.enableLightmap();
+                    this.itemRenderer.renderItemInFirstPerson(partialTicks);
+                    this.disableLightmap();
+                }
+
+            GlStateManager.popMatrix();
+
+            if (mc.gameSettings.thirdPersonView == 0 && !flag)
+            {
+                this.itemRenderer.renderOverlays(partialTicks);
+                this.hurtCameraEffect(partialTicks);
+            }
+
+            if (mc.gameSettings.viewBobbing)
+            {
+                this.applyBobbing(partialTicks);
+            }
+        }
+    }
+
+
+    /*
+        RenderHandPre hand = new RenderHandPre(partialTicks);
+
+        GameSense.EVENT_BUS.post(hand);
+    */
+
+    /*
+        RenderHand hand = new RenderHand(partialTicks);
+
+        GameSense.EVENT_BUS.post(hand);
+    */
+
 
     @Shadow
     @Final
     private int[] lightmapColors;
+
+    @Shadow public abstract void renderHand(float partialTicks, int pass);
 
     @Redirect(method = "orientCamera", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/WorldClient;rayTraceBlocks(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/RayTraceResult;"))
     public RayTraceResult rayTraceBlocks(WorldClient world, Vec3d start, Vec3d end) {
