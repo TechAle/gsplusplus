@@ -2928,8 +2928,8 @@ public class AutoCrystalRewrite extends Module {
                 }
                 // Ok, lets make instaPlace actual useful
                 EnumHand hand = getHandCrystal();
-                if (hand != null)
-                    placeCrystal(crystal == null ? position : crystal, hand, true);
+                if (hand != null && crystal != null)
+                    placeCrystal(crystal, hand, true);
 
             } else {
                 // ForcePlace is fine
