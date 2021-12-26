@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL20;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 public final class AstralOutlineShader extends FramebufferShader
 {
@@ -80,6 +81,28 @@ public final class AstralOutlineShader extends FramebufferShader
         GlStateManager.popMatrix( );
         GlStateManager.popAttrib( );
     }
+
+
+    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float red, float green, float blue, float alpha, int iteractions, float formuparam2,
+                         float zoom, float volumSteps, float stepSize, float title, float distfading, float saturation, float cloud, int fade, Predicate<Boolean> fill) {
+        mc.gameSettings.entityShadows = entityShadows;
+        framebuffer.unbindFramebuffer( );
+        GL11.glEnable( 3042 );
+        GL11.glBlendFunc( 770, 771 );
+        mc.getFramebuffer( ).bindFramebuffer( true );
+        mc.entityRenderer.disableLightmap( );
+        RenderHelper.disableStandardItemLighting( );
+        startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate, red, green, blue, alpha, iteractions, formuparam2, zoom, volumSteps, stepSize, title, distfading, saturation, cloud, fade);
+        mc.entityRenderer.setupOverlayRendering( );
+        drawFramebuffer( framebuffer );
+        fill.test(false);
+        drawFramebuffer(framebuffer);
+        stopShader( );
+        mc.entityRenderer.disableLightmap( );
+        GlStateManager.popMatrix( );
+        GlStateManager.popAttrib( );
+    }
+
 
     public void startShader(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float red, float green, float blue, float alpha, int iteractions, float formuparam2,
                             float zoom, float volumSteps, float stepSize, float title, float distfading, float saturation, float cloud, int fade) {

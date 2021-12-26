@@ -53,6 +53,7 @@ public class GradientShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(duplicate, moreGradient, creepy, alpha, numOctaves);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -63,7 +64,6 @@ public class GradientShader extends FramebufferShader {
     }
 
     public void startShader(float duplicate, float moreGradient, float creepy, float alpha, int numOctaves) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();

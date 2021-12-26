@@ -62,6 +62,7 @@ public class FlowShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(duplicate, red, green, blue, alpha, iteractions, formuparam2, zoom, volumSteps, stepSize, title, distfading, saturation, cloud, fade);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -72,7 +73,6 @@ public class FlowShader extends FramebufferShader {
     }
 
     public void startShader(float duplicate, float red, float green, float blue, float alpha, int iteractions, float formuparam2, float zoom, float volumSteps, float stepSize, float title, float distfading, float saturation, float cloud, int fade) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();

@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL20;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 public final class GradientOutlineShader extends FramebufferShader
 {
@@ -63,6 +64,25 @@ public final class GradientOutlineShader extends FramebufferShader
         RenderHelper.disableStandardItemLighting( );
         startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate, moreGradient, creepy, alpha, numOctaves);
         mc.entityRenderer.setupOverlayRendering( );
+        drawFramebuffer( framebuffer );
+        stopShader( );
+        mc.entityRenderer.disableLightmap( );
+        GlStateManager.popMatrix( );
+        GlStateManager.popAttrib( );
+    }
+
+    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alphaOutline, float duplicate, float moreGradient, float creepy, float alpha, int numOctaves, Predicate<Boolean> fill) {
+        mc.gameSettings.entityShadows = entityShadows;
+        framebuffer.unbindFramebuffer( );
+        GL11.glEnable( 3042 );
+        GL11.glBlendFunc( 770, 771 );
+        mc.getFramebuffer( ).bindFramebuffer( true );
+        mc.entityRenderer.disableLightmap( );
+        RenderHelper.disableStandardItemLighting( );
+        startShader(color, radius, quality, gradientAlpha, alphaOutline, duplicate, moreGradient, creepy, alpha, numOctaves);
+        mc.entityRenderer.setupOverlayRendering( );
+        drawFramebuffer( framebuffer );
+        fill.test(false);
         drawFramebuffer( framebuffer );
         stopShader( );
         mc.entityRenderer.disableLightmap( );

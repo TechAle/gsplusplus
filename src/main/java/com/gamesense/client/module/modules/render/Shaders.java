@@ -19,11 +19,12 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 @Module.Declaration(name = "Shaders", category = Category.Render)
 public class Shaders extends Module {
 
-    ModeSetting glowESP = registerMode("Glow ESP", Arrays.asList("None", "Color", "Astral", "RainbowCube", "Gradient", "Aqua", "Circle", "Smoke"), "None");
+    ModeSetting glowESP = registerMode("Glow ESP", Arrays.asList("None", "Color", "Astral", "RainbowCube", "Gradient", "Circle", "Smoke"), "None");
     ColorSetting colorESP = registerColor("Color ESP", new GSColor(255, 255, 255, 255));
     DoubleSetting radius = registerDouble("Radius ESP", 1, 0, 5);
     DoubleSetting quality = registerDouble("Quality ESP", 1, 0, 20);
@@ -129,106 +130,157 @@ public class Shaders extends Module {
             renderTags = false;
             renderCape = false;
 
+            if (!glowESP.getValue().equals("None") && !fillShader.getValue().equals("None")) {
+                Predicate<Boolean> newFill = getFill();
 
-            switch (glowESP.getValue()) {
-                case "Color":
-                    GlowShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue());
-                    break;
-                case "RainbowCube":
-                    RainbowCubeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    RainbowCubeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), colorImgOutline.getColor(), WaveLenghtOutline.getValue(), RSTARTOutline.getValue(), GSTARTOutline.getValue(), BSTARTOutline.getValue());
-                    RainbowCubeOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-                case "Gradient":
-                    GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), moreGradientOutline.getValue().floatValue(), creepyOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(), NUM_OCTAVESOutline.getValue());
-                    GradientOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-                case "Astral":
-                    AstralOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    AstralOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(),
-                            redOutline.getValue().floatValue(), greenOutline.getValue().floatValue(), blueOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(),
-                            iterationsOutline.getValue(), formuparam2Outline.getValue().floatValue(), zoomOutline.getValue().floatValue(), volumStepsOutline.getValue(), stepSizeOutline.getValue().floatValue(), titleOutline.getValue().floatValue(), distfadingOutline.getValue().floatValue(),
-                            saturationOutline.getValue().floatValue(), 0f, fadeOutline.getValue() ? 1 : 0);
-                    AstralOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-                case "Aqua":
-                    AquaOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    AquaOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), MaxIterOutline.getValue(), tauOutline.getValue());
-                    AquaOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-                case "Circle":
-                    CircleOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    CircleOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), PIOutline.getValue(), radOutline.getValue());
-                    CircleOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-                case "Smoke":
-                    SmokeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersOutline(event.getPartialTicks());
-                    SmokeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), secondColorImgOutline.getValue(), thirdColorImgOutline.getValue(), NUM_OCTAVESOutline.getValue());
-                    SmokeOutlineShader.INSTANCE.update(speedOutline.getValue());
-                    break;
-            }
+                switch (glowESP.getValue()) {
+                    case "Color":
+                        GlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), newFill);
+                        break;
+                    case "RainbowCube":
+                        RainbowCubeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        RainbowCubeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), colorImgOutline.getColor(), WaveLenghtOutline.getValue(), RSTARTOutline.getValue(), GSTARTOutline.getValue(), BSTARTOutline.getValue(), newFill);
+                        RainbowCubeOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Gradient":
+                        GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), moreGradientOutline.getValue().floatValue(), creepyOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(), NUM_OCTAVESOutline.getValue(), newFill);
+                        GradientOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Astral":
+                        AstralOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        AstralOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(),
+                                redOutline.getValue().floatValue(), greenOutline.getValue().floatValue(), blueOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(),
+                                iterationsOutline.getValue(), formuparam2Outline.getValue().floatValue(), zoomOutline.getValue().floatValue(), volumStepsOutline.getValue(), stepSizeOutline.getValue().floatValue(), titleOutline.getValue().floatValue(), distfadingOutline.getValue().floatValue(),
+                                saturationOutline.getValue().floatValue(), 0f, fadeOutline.getValue() ? 1 : 0, newFill);
+                        AstralOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Aqua":
+                        AquaOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        AquaOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), MaxIterOutline.getValue(), tauOutline.getValue(), newFill);
+                        AquaOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Circle":
+                        CircleOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        CircleOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), PIOutline.getValue(), radOutline.getValue(), newFill);
+                        CircleOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Smoke":
+                        SmokeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        SmokeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), secondColorImgOutline.getValue(), thirdColorImgOutline.getValue(), NUM_OCTAVESOutline.getValue(), newFill);
+                        SmokeOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                }
 
-            switch (fillShader.getValue()) {
-                case "Astral":
-                    FlowShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(),
-                            redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
-                            iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
-                            saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0);
-                    FlowShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Aqua":
-                    AquaShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    AquaShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
-                    AquaShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Smoke":
-                    SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());
-                    SmokeShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "RainbowCube":
-                    RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());
-                    RainbowCubeShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Gradient":
-                    GradientShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicateFill.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());
-                    GradientShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Fill":
-                    FillShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    FillShader.INSTANCE.stopDraw(new GSColor(colorImgFill.getValue() , colorImgFill.getColor().getAlpha()));
-                    FillShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Circle":
-                    CircleShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    CircleShader.INSTANCE.stopDraw(duplicateFill.getValue().floatValue(), colorImgFill.getValue(), PI.getValue(), rad.getValue());
-                    CircleShader.INSTANCE.update(speedFill.getValue());
-                    break;
-                case "Phobos":
-                    PhobosShader.INSTANCE.startDraw(event.getPartialTicks());
-                    renderPlayersFill(event.getPartialTicks());
-                    PhobosShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
-                    PhobosShader.INSTANCE.update(speedFill.getValue());
-                    break;
+            } else {
+                switch (glowESP.getValue()) {
+                    case "Color":
+                        GlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        GlowShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue());
+                        break;
+                    case "RainbowCube":
+                        RainbowCubeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        RainbowCubeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), colorImgOutline.getColor(), WaveLenghtOutline.getValue(), RSTARTOutline.getValue(), GSTARTOutline.getValue(), BSTARTOutline.getValue());
+                        RainbowCubeOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Gradient":
+                        GradientOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        GradientOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), moreGradientOutline.getValue().floatValue(), creepyOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(), NUM_OCTAVESOutline.getValue());
+                        GradientOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Astral":
+                        AstralOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        AstralOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(),
+                                redOutline.getValue().floatValue(), greenOutline.getValue().floatValue(), blueOutline.getValue().floatValue(), alphaOutline.getValue().floatValue(),
+                                iterationsOutline.getValue(), formuparam2Outline.getValue().floatValue(), zoomOutline.getValue().floatValue(), volumStepsOutline.getValue(), stepSizeOutline.getValue().floatValue(), titleOutline.getValue().floatValue(), distfadingOutline.getValue().floatValue(),
+                                saturationOutline.getValue().floatValue(), 0f, fadeOutline.getValue() ? 1 : 0);
+                        AstralOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Aqua":
+                        AquaOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        AquaOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), MaxIterOutline.getValue(), tauOutline.getValue());
+                        AquaOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Circle":
+                        CircleOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        CircleOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), PIOutline.getValue(), radOutline.getValue());
+                        CircleOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                    case "Smoke":
+                        SmokeOutlineShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersOutline(event.getPartialTicks());
+                        SmokeOutlineShader.INSTANCE.stopDraw(colorESP.getValue(), radius.getValue().floatValue(), quality.getValue().floatValue(), GradientAlpha.getValue(), alphaValue.getValue(), duplicateOutline.getValue().floatValue(), secondColorImgOutline.getValue(), thirdColorImgOutline.getValue(), NUM_OCTAVESOutline.getValue());
+                        SmokeOutlineShader.INSTANCE.update(speedOutline.getValue());
+                        break;
+                }
+
+                switch (fillShader.getValue()) {
+                    case "Astral":
+                        FlowShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        FlowShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(),
+                                redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
+                                iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
+                                saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0);
+                        FlowShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Aqua":
+                        AquaShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        AquaShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
+                        AquaShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Smoke":
+                        SmokeShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        SmokeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());
+                        SmokeShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "RainbowCube":
+                        RainbowCubeShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        RainbowCubeShader.INSTANCE.stopDraw(Color.WHITE, 1f, 1f, duplicateFill.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());
+                        RainbowCubeShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Gradient":
+                        GradientShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        GradientShader.INSTANCE.stopDraw(colorESP.getValue(), 1f, 1f, duplicateFill.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());
+                        GradientShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Fill":
+                        FillShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        FillShader.INSTANCE.stopDraw(new GSColor(colorImgFill.getValue(), colorImgFill.getColor().getAlpha()));
+                        FillShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Circle":
+                        CircleShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        CircleShader.INSTANCE.stopDraw(duplicateFill.getValue().floatValue(), colorImgFill.getValue(), PI.getValue(), rad.getValue());
+                        CircleShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                    case "Phobos":
+                        PhobosShader.INSTANCE.startDraw(event.getPartialTicks());
+                        renderPlayersFill(event.getPartialTicks());
+                        PhobosShader.INSTANCE.stopDraw(colorImgFill.getColor(), 1f, 1f, duplicateFill.getValue().floatValue(), MaxIterFill.getValue(), tauFill.getValue());
+                        PhobosShader.INSTANCE.update(speedFill.getValue());
+                        break;
+                }
             }
 
 
@@ -239,6 +291,45 @@ public class Shaders extends Module {
 
         }
     });
+
+    Predicate<Boolean> getFill() {
+        Predicate<Boolean> output = a -> true;
+
+        switch (fillShader.getValue()) {
+            case "Astral":
+                output = a -> {FlowShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(),
+                        redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
+                        iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
+                        saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0); return true;};
+                break;
+            case "Aqua":
+                output = a -> {AquaShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), MaxIterFill.getValue(), tauFill.getValue());return true;};
+                break;
+            case "Smoke":
+                output = a -> {SmokeShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());return true;};
+                break;
+            case "RainbowCube":
+                output = a -> {RainbowCubeShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());return true;};
+                break;
+            case "Gradient":
+                output = a -> {GradientShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());return true;};
+                break;
+            case "Fill":
+                GSColor col = new GSColor(colorImgFill.getValue(), colorImgFill.getColor().getAlpha());
+                output = a -> {
+                    FillShader.INSTANCE.startShader(col.getRed() / 255.0f, col.getGreen() / 255.0f, col.getBlue() / 255.0f, col.getAlpha() / 255.0f);
+                    return false;
+                };
+                break;
+            case "Circle":
+                output = a -> {CircleShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getValue(), PI.getValue(), rad.getValue());return true;};
+                break;
+            case "Phobos":
+                output = a -> {PhobosShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), MaxIterFill.getValue(), tauFill.getValue());return true;};
+                break;
+        }
+        return output;
+    }
 
 
     void renderPlayersFill(float tick) {

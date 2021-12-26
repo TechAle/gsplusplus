@@ -34,6 +34,7 @@ public class FillShader extends FramebufferShader {
         mc.getFramebuffer( ).bindFramebuffer( true );
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(color.getRed() / 255.0f, color.getGreen() / 255.0f, color.getBlue() / 255.0f, color.getAlpha() / 255.0f);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -44,7 +45,6 @@ public class FillShader extends FramebufferShader {
     }
 
     public void startShader(float red, float green, float blue, float alpha) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();

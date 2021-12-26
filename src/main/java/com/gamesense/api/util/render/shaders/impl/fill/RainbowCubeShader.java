@@ -65,6 +65,7 @@ public class RainbowCubeShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(duplicate, start, wave, rStart, gStart, bStart);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -75,7 +76,6 @@ public class RainbowCubeShader extends FramebufferShader {
     }
 
     public void startShader(float duplicate, Color start, int wave, int rStart, int gStart, int bStart) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();

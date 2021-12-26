@@ -43,6 +43,7 @@ public class CircleShader extends FramebufferShader {
         mc.getFramebuffer( ).bindFramebuffer( true );
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(duplicate, color, PI, rad);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -53,7 +54,6 @@ public class CircleShader extends FramebufferShader {
     }
 
     public void startShader(float duplicate, Color color, Double PI, Double rad) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();

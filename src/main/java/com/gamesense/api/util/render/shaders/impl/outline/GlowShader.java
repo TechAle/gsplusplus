@@ -1,6 +1,7 @@
 package com.gamesense.api.util.render.shaders.impl.outline;
 
 import com.gamesense.api.util.render.shaders.FramebufferShader;
+import com.gamesense.api.util.render.shaders.impl.fill.FillShader;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
@@ -9,6 +10,7 @@ import org.lwjgl.opengl.GL20;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.function.Predicate;
 
 public final class GlowShader extends FramebufferShader
 {
@@ -56,6 +58,25 @@ public final class GlowShader extends FramebufferShader
         GlStateManager.popAttrib( );
     }
 
+    public void stopDraw(final Color color, final float radius, final float quality, boolean gradientAlpha, int alpha, Predicate<Boolean> fill) {
+        mc.gameSettings.entityShadows = entityShadows;
+        framebuffer.unbindFramebuffer( );
+        GL11.glEnable( 3042 );
+        GL11.glBlendFunc( 770, 771 );
+        mc.getFramebuffer( ).bindFramebuffer( true );
+        mc.entityRenderer.disableLightmap( );
+        RenderHelper.disableStandardItemLighting( );
+        startShader(color, radius, quality, gradientAlpha, alpha);
+        mc.entityRenderer.setupOverlayRendering( );
+        drawFramebuffer( framebuffer );
+        fill.test(true);
+        drawFramebuffer( framebuffer );
+        stopShader( );
+        mc.entityRenderer.disableLightmap( );
+        GlStateManager.popMatrix( );
+        GlStateManager.popAttrib( );
+    }
+
     public void startShader(final Color color, final float radius, final float quality, boolean gradientAlpha, int alpha) {
         GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
@@ -64,6 +85,7 @@ public final class GlowShader extends FramebufferShader
             this.setupUniforms();
         }
         this.updateUniforms(color, radius, quality, gradientAlpha, alpha);
+
     }
 
     static {

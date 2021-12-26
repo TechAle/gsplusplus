@@ -49,6 +49,7 @@ public class PhobosShader extends FramebufferShader {
         this.quality = quality;
         mc.entityRenderer.disableLightmap( );
         RenderHelper.disableStandardItemLighting( );
+        GL11.glPushMatrix();
         startShader(duplicate, color, lines, tau);
         mc.entityRenderer.setupOverlayRendering( );
         drawFramebuffer( framebuffer );
@@ -59,7 +60,6 @@ public class PhobosShader extends FramebufferShader {
     }
 
     public void startShader(float duplicate, Color color, int lines, double tau) {
-        GL11.glPushMatrix();
         GL20.glUseProgram(this.program);
         if (this.uniformsMap == null) {
             this.uniformsMap = new HashMap<String, Integer>();
