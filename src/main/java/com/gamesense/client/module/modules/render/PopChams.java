@@ -96,9 +96,7 @@ public class PopChams extends Module {
                         else {
                             EntityOtherPlayerMP test = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "oky"));
                             test.setPosition(posX, posY, posZ);
-                            mc.world.addEntityToWorld(-14135, test);
                             mc.effectRenderer.emitParticleAtEntity(test, part, lifeTime.getValue());
-                            mc.world.removeEntityFromWorld(-14135);
                         }
                         if (soundParticles.getValue())
                             mc.world.playSound(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, SoundEvents.ITEM_TOTEM_USE, entityPlayer.getSoundCategory(), 1.0F, 1.0F, false);
