@@ -1,15 +1,20 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.BossbarEvent;
+import com.gamesense.api.event.events.PacketEvent;
+import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.BooleanSetting;
 import com.gamesense.api.setting.values.IntegerSetting;
 import com.gamesense.api.setting.values.ModeSetting;
+import com.gamesense.client.GameSense;
 import com.gamesense.client.module.Category;
 import com.gamesense.client.module.Module;
 import me.zero.alpine.listener.EventHandler;
 import me.zero.alpine.listener.Listener;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
 import net.minecraft.init.MobEffects;
+import net.minecraft.network.play.server.SPacketEntityStatus;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.client.event.RenderBlockOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
@@ -31,6 +36,19 @@ public class NoRender extends Module {
     public ModeSetting weather = registerMode("Allowed Weather", Arrays.asList("Clear", "Rain", "Thunder"), "Clear");
     public BooleanSetting noCluster = registerBoolean("No Cluster", false);
     IntegerSetting maxNoClusterRender = registerInteger("No Cluster Max", 5, 1, 25);
+    BooleanSetting noTotem = registerBoolean("No Totem", false);
+
+    @EventHandler
+    private final Listener<PacketEvent.Receive> packetEventListener = new Listener<>(event -> {
+        if (mc.player == null || mc.world == null || !noTotem.getValue()) return;
+
+        if (event.getPacket() instanceof SPacketEntityStatus) {
+            SPacketEntityStatus packet = (SPacketEntityStatus) event.getPacket();
+            if (packet.getOpCode() == 35) {
+                event.cancel();
+            }
+        }
+    });
 
     public int currentClusterAmount = 0;
 
