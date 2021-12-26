@@ -301,18 +301,23 @@ public class Shaders extends Module {
                         redFill.getValue().floatValue(), greenFill.getValue().floatValue(), blueFill.getValue().floatValue(), alphaFill.getValue().floatValue(),
                         iterationsFill.getValue(), formuparam2Fill.getValue().floatValue(), zoomFill.getValue().floatValue(), volumStepsFill.getValue(), stepSizeFill.getValue().floatValue(), titleFill.getValue().floatValue(), distfadingFill.getValue().floatValue(),
                         saturationFill.getValue().floatValue(), 0f, fadeFill.getValue() ? 1 : 0); return true;};
+                FlowShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Aqua":
                 output = a -> {AquaShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), MaxIterFill.getValue(), tauFill.getValue());return true;};
+                AquaShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Smoke":
                 output = a -> {SmokeShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), secondColorImgFill.getColor(), thirdColorImgFIll.getColor(), NUM_OCTAVESFill.getValue());return true;};
+                SmokeShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "RainbowCube":
                 output = a -> {RainbowCubeShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), WaveLenghtFIll.getValue(), RSTARTFill.getValue(), GSTARTFill.getValue(), BSTARTFIll.getValue());return true;};
+                RainbowCubeShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Gradient":
                 output = a -> {GradientShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), moreGradientFill.getValue().floatValue(), creepyFill.getValue().floatValue(), alphaFill.getValue().floatValue(), NUM_OCTAVESFill.getValue());return true;};
+                GradientShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Fill":
                 GSColor col = new GSColor(colorImgFill.getValue(), colorImgFill.getColor().getAlpha());
@@ -320,12 +325,15 @@ public class Shaders extends Module {
                     FillShader.INSTANCE.startShader(col.getRed() / 255.0f, col.getGreen() / 255.0f, col.getBlue() / 255.0f, col.getAlpha() / 255.0f);
                     return false;
                 };
+                FillShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Circle":
                 output = a -> {CircleShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getValue(), PI.getValue(), rad.getValue());return true;};
+                CircleShader.INSTANCE.update(speedFill.getValue());
                 break;
             case "Phobos":
                 output = a -> {PhobosShader.INSTANCE.startShader(duplicateFill.getValue().floatValue(), colorImgFill.getColor(), MaxIterFill.getValue(), tauFill.getValue());return true;};
+                PhobosShader.INSTANCE.update(speedFill.getValue());
                 break;
         }
         return output;
