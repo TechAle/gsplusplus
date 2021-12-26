@@ -1,6 +1,7 @@
 package com.gamesense.client.module.modules.render;
 
 import com.gamesense.api.event.events.RenderEntityEvent;
+import com.gamesense.api.event.events.RenderEvent;
 import com.gamesense.api.event.events.TotemPopEvent;
 import com.gamesense.api.setting.values.*;
 import com.gamesense.api.util.render.ChamsUtil;
@@ -20,14 +21,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.ReportedException;
 import net.minecraft.world.GameType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Techale
@@ -37,6 +38,19 @@ import java.util.UUID;
 @Module.Declaration(name = "PopChams", category = Category.Render)
 public class PopChams extends Module {
 
+    List<String> getParticlesList() {
+        List<String> output = new ArrayList<>();
+        output.add("None");
+        output.addAll(EnumParticleTypes.getParticleNames());
+        return output;
+    }
+
+    ModeSetting particles = registerMode("Particles", getParticlesList(), "None");
+    BooleanSetting soundParticles = registerBoolean("Sound Particles", false, () -> !particles.getValue().equals("None"));
+    IntegerSetting lifeTime = registerInteger("LifeTime", 30, 0, 200, () -> !particles.getValue().equals("None"));
+    IntegerSetting repeted = registerInteger("Repeted", 0, 0, 10, () -> !particles.getValue().equals("None"));
+    BooleanSetting followPlayer = registerBoolean("Follow Player", false);
+    BooleanSetting player = registerBoolean("Player", true);
     IntegerSetting range = registerInteger("Range", 100, 10, 260);
     ModeSetting chamsPopType = registerMode("Chams Type Pop", Arrays.asList("Color", "WireFrame"), "WireFrame");
     ColorSetting chamsColor = registerColor("Chams Color", new GSColor(255, 255, 255, 255), () -> true, true);
@@ -51,12 +65,82 @@ public class PopChams extends Module {
 
     ArrayList<Entity> toSpawn = new ArrayList<>();
 
+    class particleContinue {
+        int id;
+        EnumParticleTypes part;
+        int tick = 0;
+        double posX = 0, posY = 0, posZ = 0;
+        @SuppressWarnings("ConstantConditions")
+        public particleContinue(int id, EnumParticleTypes part) {
+            this.id = id;
+            this.part = part;
+            try {
+                this.posX = mc.world.getEntityByID(id).posX;
+                this.posY = mc.world.getEntityByID(id).posY;
+                this.posZ = mc.world.getEntityByID(id).posZ;
+            }catch (NullPointerException ignored) {
+
+            }
+        }
+
+        public boolean update() {
+            if (tick++ > repeted.getValue())
+                return true;
+            else {
+
+                Entity entityPlayer = mc.world.getEntityByID(id);
+                if (entityPlayer != null) {
+                    try {
+                        if (followPlayer.getValue())
+                            mc.effectRenderer.emitParticleAtEntity(entityPlayer, part, lifeTime.getValue());
+                        else {
+                            EntityOtherPlayerMP test = new EntityOtherPlayerMP(mc.world, new GameProfile(UUID.fromString("fdee323e-7f0c-4c15-8d1c-0f277442342a"), "oky"));
+                            test.setPosition(posX, posY, posZ);
+                            mc.world.addEntityToWorld(-14135, test);
+                            mc.effectRenderer.emitParticleAtEntity(test, part, lifeTime.getValue());
+                            mc.world.removeEntityFromWorld(-14135);
+                        }
+                        if (soundParticles.getValue())
+                            mc.world.playSound(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, SoundEvents.ITEM_TOTEM_USE, entityPlayer.getSoundCategory(), 1.0F, 1.0F, false);
+                    }catch (ReportedException ignored ) {
+
+                    }
+                }
+                return false;
+            }
+        }
+
+    }
+
+
+    ArrayList<particleContinue> particleList = new ArrayList<>();
+
     @SuppressWarnings("unused")
     @EventHandler
     private final Listener<TotemPopEvent> totemPopEventListener = new Listener<>(event -> {
-        if (event.getEntity() != null)
-            toSpawn.add(event.getEntity());
+        if (event.getEntity() != null) {
+            if (player.getValue())
+                toSpawn.add(event.getEntity());
+            if (!particles.getValue().equals("None")) {
+                EnumParticleTypes part = EnumParticleTypes.getByName(particles.getValue());
+
+                if (part != null) {
+                    Entity entityPlayer = event.getEntity();
+                    particleList.add(new particleContinue(entityPlayer.entityId, part));
+                }
+            }
+        }
     });
+
+    @Override
+    public void onWorldRender(RenderEvent event) {
+
+        for(int i = 0; i < particleList.size(); i++)
+            if (particleList.get(i).update()) {
+                particleList.remove(i);
+                i--;
+            }
+    }
 
     @Override
     public void onUpdate() {

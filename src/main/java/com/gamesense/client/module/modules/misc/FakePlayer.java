@@ -63,6 +63,7 @@ public class FakePlayer extends Module {
     DoubleSetting range = registerDouble("Range", 3, 0, 14, () -> moving.getValue().equals("Circle"));
     BooleanSetting followPlayer = registerBoolean("Follow Player", true, () -> moving.getValue().equals("Line"));
     BooleanSetting resistance = registerBoolean("Resistance", true);
+    BooleanSetting pop = registerBoolean("Pop", true);
 
     int incr;
     public void onEnable() {
@@ -368,9 +369,12 @@ public class FakePlayer extends Module {
                                         if (damage > entityPlayer.getHealth()) {
                                             // If higher, new health and pop
                                             entityPlayer.setHealth(resetHealth.getValue());
-                                            mc.effectRenderer.emitParticleAtEntity(entityPlayer, EnumParticleTypes.TOTEM, 30);
-                                            mc.world.playSound(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, SoundEvents.ITEM_TOTEM_USE, entity.getSoundCategory(), 1.0F, 1.0F, false);
+                                            if (pop.getValue()) {
+                                                mc.effectRenderer.emitParticleAtEntity(entityPlayer, EnumParticleTypes.TOTEM, 30);
+                                                mc.world.playSound(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, SoundEvents.ITEM_TOTEM_USE, entity.getSoundCategory(), 1.0F, 1.0F, false);
+                                            }
                                             GameSense.EVENT_BUS.post(new TotemPopEvent(entityPlayer));
+
                                         // Else, setHealth
                                         } else entityPlayer.setHealth(entityPlayer.getHealth() - damage);
 
