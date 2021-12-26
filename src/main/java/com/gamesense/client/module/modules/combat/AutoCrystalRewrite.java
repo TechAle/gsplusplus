@@ -2915,7 +2915,7 @@ public class AutoCrystalRewrite extends Module {
 
         // placeAfter things
         if (placeAfterBreak.getValue()) {
-            BlockPos position = forceBreak == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace;
+            BlockPos position = forceBreak == null ? cr.getPosition().add(0, -1, 0) : (forceBreakPlace == null ? cr.getPosition().add(0, -1, 0) : forceBreakPlace);
             // instaPlace is fucking useless
             if (instaPlace.getValue()) {
                 BlockPos crystal = null;
@@ -2929,7 +2929,7 @@ public class AutoCrystalRewrite extends Module {
                 // Ok, lets make instaPlace actual useful
                 EnumHand hand = getHandCrystal();
                 if (hand != null)
-                    placeCrystal(position, hand, true);
+                    placeCrystal(crystal == null ? position : crystal, hand, true);
 
             } else {
                 // ForcePlace is fine
