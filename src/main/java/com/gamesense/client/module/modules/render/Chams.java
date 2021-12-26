@@ -53,6 +53,7 @@ public class Chams extends Module {
     DoubleSetting crystalScale = registerDouble("crystalScale", 1, 0, 2);
     DoubleSetting lineWidth = registerDouble("lineWidth", 1, 0, 4);
     DoubleSetting lineWidthInterp = registerDouble("lineWidthInterp", 1, 0.1, 4);
+    ColorSetting resetColor = registerColor("Reset Color", new GSColor(255, 255, 255, 255), () -> true, true);
 
 
 
@@ -184,7 +185,7 @@ public class Chams extends Module {
         GlStateManager.popMatrix();
         GL11.glEnable(3553);
         GL11.glPolygonMode(1032, 6914);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        resetColor.getValue().glColor();
     }
 
     float getInterpolatedLinWid(float distance, float line, float lineFactor) {
