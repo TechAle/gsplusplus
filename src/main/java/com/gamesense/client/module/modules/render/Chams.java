@@ -184,6 +184,7 @@ public class Chams extends Module {
         GlStateManager.popMatrix();
         GL11.glEnable(3553);
         GL11.glPolygonMode(1032, 6914);
+        GlStateManager.color(1f, 1f, 1f, 1f);
     }
 
     float getInterpolatedLinWid(float distance, float line, float lineFactor) {
