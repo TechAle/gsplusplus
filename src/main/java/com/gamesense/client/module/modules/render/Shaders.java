@@ -293,8 +293,8 @@ public class Shaders extends Module {
                     return distancePl > minRange && distancePl < maxRange;
                 }
             }).forEach(e -> mc.getRenderManager().renderEntityStatic(e, tick, true));
-        }catch (NullPointerException e) {
-            PistonCrystal.printDebug("e", false);
+        }catch (Exception ignored) {
+
         }
     }
 
