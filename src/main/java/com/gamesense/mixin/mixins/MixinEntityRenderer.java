@@ -51,6 +51,16 @@ public abstract class MixinEntityRenderer {
                 doRenderHand(partialTicks, pass, mc);
             }
 
+            if (!module.glowESP.getValue().equals("None") && !module.fillShader.getValue().equals("None")) {
+                GlStateManager.pushMatrix();
+                RenderHand.PreBoth hand = new RenderHand.PreBoth(partialTicks);
+                GameSense.EVENT_BUS.post(hand);
+                doRenderHand(partialTicks, pass, mc);
+                RenderHand.PostBoth hand2 = new RenderHand.PostBoth(partialTicks);
+                GameSense.EVENT_BUS.post(hand2);
+                GlStateManager.popMatrix();
+            }
+
             if (!module.glowESP.getValue().equals("None")) {
                 GlStateManager.pushMatrix();
                 RenderHand.PreOutline hand = new RenderHand.PreOutline(partialTicks);

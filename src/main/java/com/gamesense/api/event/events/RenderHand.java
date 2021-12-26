@@ -38,6 +38,18 @@ public class RenderHand extends GameSenseEvent {
         }
     }
 
+    public static class PostBoth extends RenderHand {
+        public PostBoth(float ticks) {
+            super(ticks);
+        }
+    }
+
+    public static class PreBoth extends RenderHand {
+        public PreBoth(float ticks) {
+            super(ticks);
+        }
+    }
+
 
 
 }
